@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
-import '../../models/scripture.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/scripture.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 

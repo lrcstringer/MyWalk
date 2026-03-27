@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../../../data/datasources/remote/auth_service.dart';
+import '../../../domain/entities/circle.dart';
+import '../../../domain/repositories/circle_repository.dart';
 import '../../theme/app_theme.dart';
 
 class SOSPrayerRequestView extends StatefulWidget {
   final String circleId;
-  final List<CircleMemberInfo> members;
+  final List<CircleMember> members;
 
   const SOSPrayerRequestView({super.key, required this.circleId, required this.members});
 
@@ -23,7 +25,7 @@ class _SOSPrayerRequestViewState extends State<SOSPrayerRequestView> {
 
   static const _maxRecipients = 20;
 
-  List<CircleMemberInfo> get _otherMembers {
+  List<CircleMember> get _otherMembers {
     final myId = AuthService.shared.userId;
     return widget.members.where((m) => m.userId != myId).toList();
   }
@@ -39,10 +41,11 @@ class _SOSPrayerRequestViewState extends State<SOSPrayerRequestView> {
     final msg = _messageController.text.trim();
     final finalMsg = msg.isEmpty ? 'Please pray for me' : msg;
     try {
-      final response = await APIService.shared.sendSOS(
+      final count = _selectedIds.length;
+      await context.read<CircleRepository>().sendSOS(
           widget.circleId, finalMsg, _selectedIds.toList());
       if (!mounted) return;
-      setState(() { _recipientCount = response.recipientCount; _sentSuccessfully = true; });
+      setState(() { _recipientCount = count; _sentSuccessfully = true; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _isSending = false; });
     }
@@ -239,7 +242,7 @@ class _SOSPrayerRequestViewState extends State<SOSPrayerRequestView> {
     );
   }
 
-  Widget _recipientRow(CircleMemberInfo m) {
+  Widget _recipientRow(CircleMember m) {
     final isSelected = _selectedIds.contains(m.userId);
     final isDisabled = !isSelected && _selectedIds.length >= _maxRecipients;
     return Opacity(

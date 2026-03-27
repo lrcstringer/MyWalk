@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
+import '../../../domain/entities/habit.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
@@ -54,19 +54,21 @@ class _EditHabitViewState extends State<EditHabitView> {
     final trimmed = _nameController.text.trim();
     if (trimmed.isEmpty) return;
     final isPremium = context.read<StoreProvider>().isPremium;
-    if (!widget.habit.isBuiltIn) widget.habit.name = trimmed;
-    if (isPremium) widget.habit.purposeStatement = _purposeController.text;
-    widget.habit.dailyTarget = _dailyTarget;
-    widget.habit.targetUnit = _targetUnit;
-    widget.habit.activeDaySet = _activeDays;
-    widget.habit.trigger = _triggerController.text;
-    widget.habit.copingPlan = _copingController.text;
-    context.read<HabitProvider>().updateHabit(widget.habit);
+    final updated = widget.habit.copyWith(
+      name: !widget.habit.isBuiltIn ? trimmed : null,
+      purposeStatement: isPremium ? _purposeController.text : null,
+      dailyTarget: _dailyTarget,
+      targetUnit: _targetUnit,
+      activeDays: (_activeDays.toList()..sort()).join(','),
+      trigger: _triggerController.text,
+      copingPlan: _copingController.text,
+    );
+    context.read<HabitProvider>().updateHabit(updated);
     Navigator.pop(context);
   }
 
   IconData _categoryIcon() {
-    switch (widget.habit.habitCategory) {
+    switch (widget.habit.category) {
       case HabitCategory.exercise: return Icons.fitness_center;
       case HabitCategory.scripture: return Icons.menu_book;
       case HabitCategory.rest: return Icons.bedtime;
@@ -81,7 +83,7 @@ class _EditHabitViewState extends State<EditHabitView> {
   }
 
   List<String> _triggerChips() {
-    switch (widget.habit.habitCategory) {
+    switch (widget.habit.category) {
       case HabitCategory.exercise: return ['After my morning coffee', 'Before work', 'During lunch break', 'After dinner'];
       case HabitCategory.scripture: return ['First thing in the morning', 'Before bed', 'During lunch', 'After prayer'];
       case HabitCategory.rest: return ['At 10pm', 'After dinner', 'When I feel tired'];
@@ -96,7 +98,7 @@ class _EditHabitViewState extends State<EditHabitView> {
   @override
   Widget build(BuildContext context) {
     final isPremium = context.watch<StoreProvider>().isPremium;
-    final isAbstain = widget.habit.habitTrackingType == HabitTrackingType.abstain;
+    final isAbstain = widget.habit.trackingType == HabitTrackingType.abstain;
 
     return Scaffold(
       backgroundColor: TributeColor.charcoal,
@@ -130,11 +132,11 @@ class _EditHabitViewState extends State<EditHabitView> {
           _nameSection(),
           const SizedBox(height: 20),
           _purposeSection(isPremium),
-          if (widget.habit.habitTrackingType == HabitTrackingType.timed) ...[
+          if (widget.habit.trackingType == HabitTrackingType.timed) ...[
             const SizedBox(height: 20),
             _timedTargetSection(),
           ],
-          if (widget.habit.habitTrackingType == HabitTrackingType.count) ...[
+          if (widget.habit.trackingType == HabitTrackingType.count) ...[
             const SizedBox(height: 20),
             _countTargetSection(),
           ],
@@ -149,12 +151,12 @@ class _EditHabitViewState extends State<EditHabitView> {
   }
 
   Widget _headerSection() {
-    final isAbstain = widget.habit.habitTrackingType == HabitTrackingType.abstain;
+    final isAbstain = widget.habit.trackingType == HabitTrackingType.abstain;
     return Row(children: [
       Icon(_categoryIcon(), size: 18,
           color: isAbstain ? TributeColor.warmCoral : TributeColor.golden),
       const SizedBox(width: 10),
-      Text(widget.habit.habitCategory.rawValue,
+      Text(widget.habit.category.rawValue,
           style: TextStyle(
             fontSize: 15,
             color: TributeColor.softGold.withValues(alpha: 0.7),
@@ -167,7 +169,7 @@ class _EditHabitViewState extends State<EditHabitView> {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
-          _trackingLabel(widget.habit.habitTrackingType),
+          _trackingLabel(widget.habit.trackingType),
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
               color: TributeColor.softGold.withValues(alpha: 0.5)),
         ),

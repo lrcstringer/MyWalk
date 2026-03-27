@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/habit.dart';
+import '../entities/habit.dart';
+import '../repositories/user_preferences_repository.dart';
 
 enum EngagementAccent { golden, sage }
 
@@ -27,15 +27,15 @@ class EngagementMessage {
 }
 
 class EngagementService extends ChangeNotifier {
-  static final EngagementService instance = EngagementService._();
-  EngagementService._();
+  final UserPreferencesRepository _prefs;
+
+  EngagementService(this._prefs);
 
   EngagementMessage? currentMessage;
   bool isPremium = false;
 
   Future<int> get daysSinceOnboarding async {
-    final prefs = await SharedPreferences.getInstance();
-    final ms = prefs.getInt('tribute_onboarding_date');
+    final ms = await _prefs.getInt('tribute_onboarding_date');
     if (ms == null) return 0;
     final onboarding = DateTime.fromMillisecondsSinceEpoch(ms);
     final today = DateTime.now();
@@ -46,14 +46,12 @@ class EngagementService extends ChangeNotifier {
 
   Future<bool> get _isDismissedToday async {
     final day = await daysSinceOnboarding;
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('tribute_engagement_dismissed_day_$day') ?? false;
+    return await _prefs.getBool('tribute_engagement_dismissed_day_$day') ?? false;
   }
 
   Future<void> dismissCurrentMessage() async {
     final day = await daysSinceOnboarding;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tribute_engagement_dismissed_day_$day', true);
+    await _prefs.setBool('tribute_engagement_dismissed_day_$day', true);
     currentMessage = null;
     notifyListeners();
   }
@@ -72,7 +70,7 @@ class EngagementService extends ChangeNotifier {
       return;
     }
 
-    final gratitudeHabit = habits.where((h) => h.isBuiltIn && h.habitCategory == HabitCategory.gratitude).firstOrNull;
+    final gratitudeHabit = habits.where((h) => h.isBuiltIn && h.category == HabitCategory.gratitude).firstOrNull;
     final customHabits = habits.where((h) => !h.isBuiltIn).toList();
     final firstCustom = customHabits.firstOrNull;
     final gratitudeDays = gratitudeHabit?.totalCompletedDays() ?? 0;
@@ -119,10 +117,9 @@ class EngagementService extends ChangeNotifier {
 
   Future<void> _evaluateTimeMilestoneMessage(List<Habit> habits) async {
     final day = await daysSinceOnboarding;
-    final prefs = await SharedPreferences.getInstance();
     final milestoneKey = 'tribute_time_milestone_shown_$day';
 
-    if (prefs.getBool(milestoneKey) ?? false) {
+    if (await _prefs.getBool(milestoneKey) ?? false) {
       await _evaluateVariableReinforcement(habits);
       return;
     }
@@ -143,7 +140,7 @@ class EngagementService extends ChangeNotifier {
     final milestone = available.where((m) => m.$1 == day).firstOrNull;
 
     if (milestone != null) {
-      await prefs.setBool(milestoneKey, true);
+      await _prefs.setBool(milestoneKey, true);
       PaywallContext? paywallCtx;
       if (!isPremium && milestone.$1 == 21) {
         paywallCtx = const PaywallContext(title: '3 weeks in and still going', message: 'Unlock your 52-week heatmap, detailed analytics, and see the full picture of your journey.');
@@ -161,14 +158,13 @@ class EngagementService extends ChangeNotifier {
     final day = await daysSinceOnboarding;
     if (day <= 14) { currentMessage = null; notifyListeners(); return; }
 
-    final prefs = await SharedPreferences.getInstance();
-    final lastShown = prefs.getInt('tribute_variable_reinforcement_last') ?? 0;
+    final lastShown = await _prefs.getInt('tribute_variable_reinforcement_last') ?? 0;
     final daysSinceLast = day - lastShown;
     final rng = _SeededRng(day * 7 + 31);
     final interval = 14 + (rng.next() % 15);
     if (daysSinceLast < interval) { currentMessage = null; notifyListeners(); return; }
 
-    final gratitudeHabit = habits.where((h) => h.isBuiltIn && h.habitCategory == HabitCategory.gratitude).firstOrNull;
+    final gratitudeHabit = habits.where((h) => h.isBuiltIn && h.category == HabitCategory.gratitude).firstOrNull;
     final gratitudeDays = gratitudeHabit?.totalCompletedDays() ?? 0;
     final customHabits = habits.where((h) => !h.isBuiltIn).toList();
 
@@ -178,11 +174,11 @@ class EngagementService extends ChangeNotifier {
     if (gratitudeDays >= 100) messages.add(('heart.fill', 'Gratitude milestone', 'Your gratitude count just passed $gratitudeDays. $gratitudeDays days of thanking God. Let that sink in.'));
 
     for (final h in customHabits) {
-      if (h.habitTrackingType == HabitTrackingType.timed) {
+      if (h.trackingType == HabitTrackingType.timed) {
         final hours = (h.totalValue() / 60).toInt();
         if (hours >= 50) messages.add(('flame.fill', 'Time given', "You\u2019ve given God $hours hours through ${h.name.toLowerCase()}. That\u2019s incredible dedication."));
       }
-      if (h.habitTrackingType == HabitTrackingType.count) {
+      if (h.trackingType == HabitTrackingType.count) {
         final total = h.totalValue().toInt();
         if (total >= 500) {
           final unit = h.targetUnit.isEmpty ? 'completed' : h.targetUnit;
@@ -195,13 +191,13 @@ class EngagementService extends ChangeNotifier {
 
     final idx = rng.next() % messages.length;
     final (icon, title, body) = messages[idx];
-    await prefs.setInt('tribute_variable_reinforcement_last', day);
+    await _prefs.setInt('tribute_variable_reinforcement_last', day);
     currentMessage = EngagementMessage(icon: icon, title: title, body: body, accent: EngagementAccent.golden);
     notifyListeners();
   }
 
   String _statDescription(Habit habit) {
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
         final mins = habit.totalValue().toInt();
         return mins >= 60 ? '${mins ~/ 60}h ${mins % 60}m' : '$mins minutes';

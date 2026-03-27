@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
-import '../../models/scripture.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/scripture.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
-import '../../services/milestone_service.dart';
+import '../../../domain/services/milestone_service.dart';
 import '../../theme/app_theme.dart';
 import '../circles/sos_view.dart';
 import '../shared/golden_pulse_view.dart';
@@ -38,6 +38,10 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   Scripture? _completionVerse;
   Milestone? _celebrationMilestone;
 
+  // Write-serialization token: incremented on every timed/count update so
+  // only the most-recent async write commits its post-await setState.
+  int _writeToken = 0;
+
   Habit get _habit => widget.habit;
   DateTime get _targetDate => widget.targetDate;
 
@@ -62,7 +66,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     _countValue = entry?.value ?? 0;
     if (_isCompleted) {
       // isPremium read deferred to build time to avoid context-in-initState issues
-      _completionVerse = ScriptureLibrary.completionVerse(_habit.habitCategory, _targetDate, isPremium: false);
+      _completionVerse = ScriptureLibrary.completionVerse(_habit.category, _targetDate, isPremium: false);
     }
   }
 
@@ -71,7 +75,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     super.didChangeDependencies();
     if (_isCompleted) {
       final isPremium = context.read<StoreProvider>().isPremium;
-      _completionVerse = ScriptureLibrary.completionVerse(_habit.habitCategory, _targetDate, isPremium: isPremium);
+      _completionVerse = ScriptureLibrary.completionVerse(_habit.category, _targetDate, isPremium: isPremium);
     }
   }
 
@@ -87,7 +91,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     if (!mounted) return;
     final isPremium = storeProvider.isPremium;
     setState(() {
-      _completionVerse = ScriptureLibrary.completionVerse(_habit.habitCategory, _targetDate, isPremium: isPremium);
+      _completionVerse = ScriptureLibrary.completionVerse(_habit.category, _targetDate, isPremium: isPremium);
     });
     if (!widget.isRetroactive) {
       final newTotal = previousTotal + 1;
@@ -109,17 +113,25 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   Future<void> _updateTimed(double delta) async {
     final provider = context.read<HabitProvider>();
     final newVal = (_timedMinutes + delta).clamp(0, 999).toDouble();
+    // Optimistic UI update is always immediate and correct.
     setState(() => _timedMinutes = newVal);
+    // Stamp a token before the await so rapid taps only commit the last write.
+    final token = ++_writeToken;
     await provider.updateTimedEntry(_habit, newVal, date: _targetDate);
-    setState(() => _isCompleted = _habit.entryFor(_targetDate)?.isCompleted ?? newVal >= _habit.dailyTarget);
+    if (!mounted || token != _writeToken) return;
+    setState(() => _isCompleted =
+        _habit.entryFor(_targetDate)?.isCompleted ?? newVal >= _habit.dailyTarget);
   }
 
   Future<void> _updateCount(double delta) async {
     final provider = context.read<HabitProvider>();
     final newVal = (_countValue + delta).clamp(0, 9999).toDouble();
     setState(() => _countValue = newVal);
+    final token = ++_writeToken;
     await provider.updateCountEntry(_habit, newVal, date: _targetDate);
-    setState(() => _isCompleted = _habit.entryFor(_targetDate)?.isCompleted ?? newVal >= _habit.dailyTarget);
+    if (!mounted || token != _writeToken) return;
+    setState(() => _isCompleted =
+        _habit.entryFor(_targetDate)?.isCompleted ?? newVal >= _habit.dailyTarget);
   }
 
   @override
@@ -127,7 +139,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     final isPulse = context.select<HabitProvider, bool>(
       (p) => p.checkInPulseHabitId == _habit.id,
     );
-    final isAbstain = _habit.habitTrackingType == HabitTrackingType.abstain;
+    final isAbstain = _habit.trackingType == HabitTrackingType.abstain;
     final accentColor = isAbstain ? TributeColor.sage : TributeColor.golden;
 
     return Stack(
@@ -169,7 +181,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
           Positioned.fill(
             child: MilestoneCelebrationView(
               milestone: _celebrationMilestone!,
-              trackingType: _habit.habitTrackingType,
+              trackingType: _habit.trackingType,
               onDismiss: () => setState(() => _celebrationMilestone = null),
             ),
           ),
@@ -241,7 +253,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   }
 
   Widget _trackingUI(Color accentColor) {
-    switch (_habit.habitTrackingType) {
+    switch (_habit.trackingType) {
       case HabitTrackingType.checkIn:
         return _checkInButton(accentColor);
       case HabitTrackingType.abstain:
@@ -473,7 +485,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   }
 
   String _completedSubtitle() {
-    switch (_habit.habitTrackingType) {
+    switch (_habit.trackingType) {
       case HabitTrackingType.timed:
         return '${_timedMinutes.toInt()} min given';
       case HabitTrackingType.count:
@@ -487,8 +499,8 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   }
 
   IconData _habitIcon() {
-    if (_habit.habitTrackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
-    switch (_habit.habitCategory) {
+    if (_habit.trackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
+    switch (_habit.category) {
       case HabitCategory.gratitude: return Icons.auto_awesome;
       case HabitCategory.scripture: return Icons.menu_book;
       case HabitCategory.exercise: return Icons.fitness_center;

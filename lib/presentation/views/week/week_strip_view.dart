@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/habit.dart';
-import '../../services/daily_score_service.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/services/daily_score_service.dart';
 import '../../theme/app_theme.dart';
 
 class WeekStripView extends StatelessWidget {

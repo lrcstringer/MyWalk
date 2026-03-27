@@ -1,12 +1,17 @@
+import 'package:uuid/uuid.dart';
+
+// Sentinel for copyWith — distinguishes "not provided" from explicit null.
+const _keep = Object();
+
 class HabitEntry {
   final String id;
-  DateTime date;
-  double value;
-  bool isCompleted;
-  String? gratitudeNote;
-  String habitId;
+  final DateTime date;
+  final double value;
+  final bool isCompleted;
+  final String? gratitudeNote;
+  final String habitId;
 
-  HabitEntry({
+  const HabitEntry({
     required this.id,
     required this.date,
     this.value = 0,
@@ -24,7 +29,7 @@ class HabitEntry {
   }) {
     final dayStart = DateTime(date.year, date.month, date.day);
     return HabitEntry(
-      id: _generateId(),
+      id: const Uuid().v4(),
       date: dayStart,
       value: value,
       isCompleted: isCompleted,
@@ -33,26 +38,39 @@ class HabitEntry {
     );
   }
 
-  static String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString() +
-        (1000 + (DateTime.now().microsecond % 9000)).toString();
-  }
+  HabitEntry copyWith({
+    DateTime? date,
+    double? value,
+    bool? isCompleted,
+    // Use _keep sentinel so callers can pass null to explicitly clear the note.
+    Object? gratitudeNote = _keep,
+  }) =>
+      HabitEntry(
+        id: id,
+        date: date ?? this.date,
+        value: value ?? this.value,
+        isCompleted: isCompleted ?? this.isCompleted,
+        gratitudeNote: identical(gratitudeNote, _keep)
+            ? this.gratitudeNote
+            : (gratitudeNote as String?),
+        habitId: habitId,
+      );
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'date': date.toIso8601String(),
-    'value': value,
-    'isCompleted': isCompleted ? 1 : 0,
-    'gratitudeNote': gratitudeNote,
-    'habitId': habitId,
-  };
+        'id': id,
+        'date': date.toIso8601String(),
+        'value': value,
+        'isCompleted': isCompleted ? 1 : 0,
+        'gratitudeNote': gratitudeNote,
+        'habitId': habitId,
+      };
 
   factory HabitEntry.fromMap(Map<String, dynamic> map) => HabitEntry(
-    id: map['id'] as String,
-    date: DateTime.parse(map['date'] as String),
-    value: (map['value'] as num).toDouble(),
-    isCompleted: (map['isCompleted'] as int) == 1,
-    gratitudeNote: map['gratitudeNote'] as String?,
-    habitId: map['habitId'] as String,
-  );
+        id: map['id'] as String? ?? const Uuid().v4(),
+        date: DateTime.parse(map['date'] as String),
+        value: (map['value'] as num?)?.toDouble() ?? 0,
+        isCompleted: ((map['isCompleted'] as num?)?.toInt() ?? 0) == 1,
+        gratitudeNote: map['gratitudeNote'] as String?,
+        habitId: map['habitId'] as String? ?? '',
+      );
 }

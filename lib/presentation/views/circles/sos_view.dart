@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
-import '../../models/scripture.dart';
-import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
-import '../../services/milestone_service.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/scripture.dart';
+import '../../../data/datasources/remote/auth_service.dart';
+import '../../../domain/repositories/circle_repository.dart';
+import '../../../domain/services/milestone_service.dart';
 import '../../theme/app_theme.dart';
 import 'sos_circle_picker_view.dart';
 
@@ -42,7 +42,7 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
   }
 
   List<String> get _microActions {
-    switch (widget.habit.habitCategory) {
+    switch (widget.habit.category) {
       case HabitCategory.exercise:
         return ['Just do the first 5 minutes.', 'Do 10 pushups to reset your headspace.', 'Step outside and walk for 2 minutes.'];
       case HabitCategory.scripture:
@@ -75,7 +75,7 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
 
   String get _milestoneShieldMessage {
     final habit = widget.habit;
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.abstain:
         final consecutive = _milestoneService.consecutiveCleanDays(habit);
         final total = habit.totalCompletedDays();
@@ -134,7 +134,7 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
   Future<void> _loadCirclesAndShow() async {
     setState(() => _isLoadingCircles = true);
     try {
-      final circles = await APIService.shared.listCircles();
+      final circles = await context.read<CircleRepository>().listCircles();
       if (!mounted) return;
       if (circles.isEmpty) {
         setState(() => _showPrayerCircleMessage = true);
@@ -207,7 +207,7 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
   }
 
   Widget _refocusSection() {
-    final verse = ScriptureLibrary.anchorVerse(widget.habit.habitCategory);
+    final verse = ScriptureLibrary.anchorVerse(widget.habit.category);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

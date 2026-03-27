@@ -16,6 +16,8 @@ class AuthService extends ChangeNotifier {
   String? _displayName;
   bool _isLoading = false;
   String? _error;
+  // Guards against double-registration of the Firebase auth listener.
+  bool _initCalled = false;
 
   bool get isAuthenticated => _isAuthenticated;
   String? get userId => _userId;
@@ -24,6 +26,9 @@ class AuthService extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> init() async {
+    if (_initCalled) return;
+    _initCalled = true;
+
     // Restore display name from local storage
     final prefs = await SharedPreferences.getInstance();
     _displayName = prefs.getString('tribute_display_name');

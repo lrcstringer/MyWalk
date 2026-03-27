@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
-import '../../models/scripture.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/scripture.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
-import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
-import '../../services/engagement_service.dart';
-import '../../services/week_cycle_manager.dart';
+import '../../../data/datasources/remote/api_service.dart';
+import '../../../data/datasources/remote/auth_service.dart';
+import '../../../domain/services/engagement_service.dart';
+import '../../../domain/services/week_cycle_manager.dart';
 import '../../theme/app_theme.dart';
 import '../circles/share_gratitude_sheet.dart';
 import '../circles/sos_view.dart';
@@ -58,9 +58,10 @@ class _TodayViewState extends State<TodayView> {
   Future<void> _loadEngagementMessage() async {
     final habits = context.read<HabitProvider>().habits;
     final isPremium = context.read<StoreProvider>().isPremium;
-    EngagementService.instance.isPremium = isPremium;
-    await EngagementService.instance.evaluateMessage(habits.toList());
-    final msg = EngagementService.instance.currentMessage;
+    final engagement = context.read<EngagementService>();
+    engagement.isPremium = isPremium;
+    await engagement.evaluateMessage(habits.toList());
+    final msg = engagement.currentMessage;
     if (msg != null && mounted) {
       setState(() {
         _engagementMessage = msg;
@@ -76,12 +77,19 @@ class _TodayViewState extends State<TodayView> {
     final habits = habitProvider.sortedHabits;
     final isPremium = store.isPremium;
 
+    // habits may be empty during initial load — guard before any .first access.
+    if (habits.isEmpty) {
+      return const Scaffold(
+        backgroundColor: TributeColor.charcoal,
+        body: Center(child: CircularProgressIndicator(color: TributeColor.golden)),
+      );
+    }
     final gratitudeHabit = habits.firstWhere(
-      (h) => h.isBuiltIn && h.habitCategory == HabitCategory.gratitude,
+      (h) => h.isBuiltIn && h.category == HabitCategory.gratitude,
       orElse: () => habits.first,
     );
     final userHabits = habits.where((h) => !h.isBuiltIn).toList();
-    final abstainHabits = userHabits.where((h) => h.habitTrackingType == HabitTrackingType.abstain).toList();
+    final abstainHabits = userHabits.where((h) => h.trackingType == HabitTrackingType.abstain).toList();
 
     final atLimit = !isPremium && userHabits.length >= _freeHabitLimit;
 
@@ -112,7 +120,7 @@ class _TodayViewState extends State<TodayView> {
                             message: _engagementMessage!,
                             onDismiss: () {
                               setState(() => _showEngagementBanner = false);
-                              EngagementService.instance.dismissCurrentMessage();
+                              context.read<EngagementService>().dismissCurrentMessage();
                             },
                           ),
                         ),
@@ -140,7 +148,7 @@ class _TodayViewState extends State<TodayView> {
                       const SizedBox(height: 16),
 
                       // Gratitude card
-                      if (habits.any((h) => h.isBuiltIn && h.habitCategory == HabitCategory.gratitude))
+                      if (habits.any((h) => h.isBuiltIn && h.category == HabitCategory.gratitude))
                         _gratitudeCard(gratitudeHabit),
 
                       // User habits
@@ -419,9 +427,23 @@ class _GratitudeCheckInCardState extends State<_GratitudeCheckInCard> {
     _isCompleted = entry?.isCompleted ?? false;
     if (_isCompleted) {
       final isPremium = context.read<StoreProvider>().isPremium;
-      _verse = ScriptureLibrary.completionVerse(widget.habit.habitCategory, widget.targetDate, isPremium: isPremium);
+      _verse = ScriptureLibrary.completionVerse(
+          widget.habit.category, widget.targetDate,
+          isPremium: isPremium);
     } else {
       _verse = null;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Re-evaluate verse when StoreProvider.isPremium changes (e.g. user buys premium).
+    if (_isCompleted) {
+      final isPremium = context.read<StoreProvider>().isPremium;
+      _verse = ScriptureLibrary.completionVerse(
+          widget.habit.category, widget.targetDate,
+          isPremium: isPremium);
     }
   }
 
@@ -432,18 +454,21 @@ class _GratitudeCheckInCardState extends State<_GratitudeCheckInCard> {
   }
 
   Future<void> _complete() async {
+    if (_isCompleted) return; // Guard: ignore taps while already completed or in-flight.
     final provider = context.read<HabitProvider>();
     final isPremium = context.read<StoreProvider>().isPremium;
+    final isAuthenticated = context.read<AuthService>().isAuthenticated;
     final note = _controller.text.trim().isEmpty ? null : _controller.text.trim();
     setState(() { _showPulse = true; _isCompleted = true; _expanded = false; });
     await provider.checkInGratitude(widget.habit, note: note, date: widget.targetDate);
     if (!mounted) return;
     setState(() {
-      _verse = ScriptureLibrary.completionVerse(widget.habit.habitCategory, widget.targetDate, isPremium: isPremium);
+      _verse = ScriptureLibrary.completionVerse(widget.habit.category, widget.targetDate, isPremium: isPremium);
     });
     await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) setState(() => _showPulse = false);
-    if (!widget.isRetroactive && AuthService.shared.isAuthenticated) {
+    if (!mounted) return;
+    setState(() => _showPulse = false);
+    if (!widget.isRetroactive && isAuthenticated) {
       _loadCirclesForShare();
     }
   }
@@ -458,7 +483,7 @@ class _GratitudeCheckInCardState extends State<_GratitudeCheckInCard> {
   }
 
   void _doShare(List<String> circleIds, bool isAnonymous) {
-    final auth = AuthService.shared;
+    final auth = context.read<AuthService>();
     final entry = widget.habit.entryFor(widget.targetDate);
     final text = (entry?.gratitudeNote?.isNotEmpty ?? false)
         ? entry!.gratitudeNote!

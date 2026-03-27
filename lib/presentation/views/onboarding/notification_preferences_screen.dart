@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/notification_service.dart';
+import '../../../data/datasources/local/notification_service.dart';
 import '../../theme/app_theme.dart';
 
 class NotificationPreferencesScreen extends StatefulWidget {

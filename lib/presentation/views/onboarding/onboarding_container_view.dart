@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../models/habit.dart';
+import '../../../domain/entities/habit.dart';
 import '../../providers/habit_provider.dart';
 import '../../theme/app_theme.dart';
 import 'welcome_screen.dart';
@@ -212,7 +212,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
   void _createGratitudeHabit(String? note) {
     final provider = context.read<HabitProvider>();
     final hasGratitude = provider.habits.any(
-        (h) => h.isBuiltIn && h.habitCategory == HabitCategory.gratitude);
+        (h) => h.isBuiltIn && h.category == HabitCategory.gratitude);
     if (hasGratitude) return;
     provider.addHabit(
       name: 'Daily Gratitude',
@@ -224,7 +224,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
     ).then((_) {
       if (note != null && provider.habits.isNotEmpty) {
         final gratitude = provider.habits.firstWhere(
-            (h) => h.isBuiltIn && h.habitCategory == HabitCategory.gratitude,
+            (h) => h.isBuiltIn && h.category == HabitCategory.gratitude,
             orElse: () => provider.habits.first);
         provider.checkInGratitude(gratitude, note: note, date: DateTime.now());
       }

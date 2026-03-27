@@ -11,7 +11,7 @@ class StoreProvider extends ChangeNotifier {
   bool _configured = false;
 
   void configure(String apiKey) {
-    if (apiKey.isEmpty) return;
+    if (apiKey.isEmpty || _configured) return;
     Purchases.configure(PurchasesConfiguration(apiKey));
     _configured = true;
     _init();

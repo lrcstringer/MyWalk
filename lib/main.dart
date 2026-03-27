@@ -8,7 +8,13 @@ import 'data/datasources/local/database_service.dart';
 import 'data/datasources/remote/api_service.dart';
 import 'data/datasources/remote/auth_service.dart';
 import 'data/datasources/local/notification_service.dart';
+import 'data/datasources/local/shared_preferences_repository.dart';
 import 'data/repositories/habit_repository_impl.dart';
+import 'data/repositories/circle_repository_impl.dart';
+import 'domain/repositories/user_preferences_repository.dart';
+import 'domain/repositories/circle_repository.dart';
+import 'domain/services/week_cycle_manager.dart';
+import 'domain/services/engagement_service.dart';
 import 'app.dart';
 
 void main() async {
@@ -21,10 +27,16 @@ void main() async {
   await NotificationService.shared.init();
 
   final habitRepository = HabitRepositoryImpl(DatabaseService());
+  final userPrefs = SharedPreferencesRepository();
 
   runApp(
     MultiProvider(
       providers: [
+        Provider<UserPreferencesRepository>.value(value: userPrefs),
+        Provider<WeekCycleManager>(create: (_) => WeekCycleManager(userPrefs)),
+        ChangeNotifierProvider<EngagementService>(create: (_) => EngagementService(userPrefs)),
+        Provider<CircleRepository>(
+            create: (_) => CircleRepositoryImpl(APIService.shared)),
         ChangeNotifierProvider(create: (_) => HabitProvider(habitRepository)..loadHabits()),
         ChangeNotifierProvider(create: (_) => StoreProvider()),
         ChangeNotifierProvider.value(value: AuthService.shared),

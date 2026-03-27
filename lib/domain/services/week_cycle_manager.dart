@@ -1,7 +1,11 @@
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/habit.dart';
+import '../entities/habit.dart';
+import '../repositories/user_preferences_repository.dart';
 
 class WeekCycleManager {
+  final UserPreferencesRepository _prefs;
+
+  WeekCycleManager(this._prefs);
+
   // Week starts Sunday. Flutter weekday: Mon=1..Sun=7.
   // We convert to Swift convention (Sun=1..Sat=7) in Habit.isActive().
 
@@ -33,41 +37,38 @@ class WeekCycleManager {
   // Persistence helpers (async)
 
   Future<DateTime?> get weekDedicatedDate async {
-    final prefs = await SharedPreferences.getInstance();
-    final ms = prefs.getInt('tribute_week_dedicated_date');
+    final ms = await _prefs.getInt('tribute_week_dedicated_date');
     return ms != null ? DateTime.fromMillisecondsSinceEpoch(ms) : null;
   }
 
   Future<void> setWeekDedicatedDate(DateTime? date) async {
-    final prefs = await SharedPreferences.getInstance();
     if (date == null) {
-      await prefs.remove('tribute_week_dedicated_date');
+      await _prefs.remove('tribute_week_dedicated_date');
     } else {
-      await prefs.setInt('tribute_week_dedicated_date', date.millisecondsSinceEpoch);
+      await _prefs.setInt('tribute_week_dedicated_date', date.millisecondsSinceEpoch);
     }
   }
 
   Future<DateTime?> get lastLookBackWeekStart async {
-    final prefs = await SharedPreferences.getInstance();
-    final ms = prefs.getInt('tribute_last_lookback_week');
+    final ms = await _prefs.getInt('tribute_last_lookback_week');
     return ms != null ? DateTime.fromMillisecondsSinceEpoch(ms) : null;
   }
 
   Future<void> setLastLookBackWeekStart(DateTime? date) async {
-    final prefs = await SharedPreferences.getInstance();
     if (date == null) {
-      await prefs.remove('tribute_last_lookback_week');
+      await _prefs.remove('tribute_last_lookback_week');
     } else {
-      await prefs.setInt('tribute_last_lookback_week', date.millisecondsSinceEpoch);
+      await _prefs.setInt('tribute_last_lookback_week', date.millisecondsSinceEpoch);
     }
   }
 
   Future<bool> get isCurrentWeekDedicated async {
     final dedicated = await weekDedicatedDate;
     if (dedicated == null) return false;
-    final ws = currentWeekStart;
-    // Same week-of-year
-    return _weekOf(dedicated) == _weekOf(ws) && dedicated.year == ws.year;
+    // Compare by week-start date rather than (_weekOf, year) to avoid the
+    // year-boundary bug where a week spanning Dec 28–Jan 3 has two different
+    // `year` values depending on which day the dedication was saved.
+    return _weekStartOf(dedicated) == currentWeekStart;
   }
 
   Future<bool> get needsDedication async => !(await isCurrentWeekDedicated);
@@ -75,8 +76,7 @@ class WeekCycleManager {
   Future<bool> get needsLookBack async {
     final lastLookBack = await lastLookBackWeekStart;
     if (lastLookBack == null) {
-      final prefs = await SharedPreferences.getInstance();
-      final onboardingMs = prefs.getInt('tribute_onboarding_date');
+      final onboardingMs = await _prefs.getInt('tribute_onboarding_date');
       if (onboardingMs == null) return false;
       final onboarding = DateTime.fromMillisecondsSinceEpoch(onboardingMs);
       final onboardingWeekStart = _weekStartOf(onboarding);
@@ -110,7 +110,7 @@ class WeekCycleManager {
 
   String weekProjectionSummary(Habit habit) {
     final activeDaysInWeek = currentWeekDates.where((d) => habit.isActive(d)).length;
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
         final totalMinutes = habit.dailyTarget * activeDaysInWeek;
         if (totalMinutes >= 60) {
@@ -140,7 +140,7 @@ class WeekCycleManager {
   }
 
   int consecutiveCleanDays(Habit habit) {
-    if (habit.habitTrackingType != HabitTrackingType.abstain) return 0;
+    if (habit.trackingType != HabitTrackingType.abstain) return 0;
     var count = 0;
     var checkDate = DateTime.now();
     checkDate = DateTime(checkDate.year, checkDate.month, checkDate.day);
@@ -160,7 +160,7 @@ class WeekCycleManager {
   String? microMilestonePreview(Habit habit) {
     final activeDaysRemaining = currentWeekDates.where((d) => d.isAfter(DateTime.now()) && habit.isActive(d)).length;
 
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
         final totalMinutes = habit.totalValue();
         final projected = totalMinutes + (habit.dailyTarget * (activeDaysRemaining + 1));
@@ -220,7 +220,7 @@ class WeekCycleManager {
   }
 
   String? proximityMessage(Habit habit) {
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
         final totalMinutes = habit.totalValue();
         final currentHours = totalMinutes / 60;
@@ -283,11 +283,6 @@ class WeekCycleManager {
         }
         return null;
     }
-  }
-
-  static int _weekOf(DateTime date) {
-    final startOfYear = DateTime(date.year, 1, 1);
-    return (date.difference(startOfYear).inDays / 7).floor();
   }
 
   static DateTime _weekStartOf(DateTime date) {

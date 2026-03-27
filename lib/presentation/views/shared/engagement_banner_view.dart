@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/engagement_service.dart';
+import '../../../domain/services/engagement_service.dart';
 
 class EngagementBannerView extends StatefulWidget {
   final EngagementMessage message;

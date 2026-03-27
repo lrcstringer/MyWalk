@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
+import '../../../domain/entities/habit.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
-import '../../services/milestone_service.dart';
-import '../../services/week_cycle_manager.dart';
+import '../../../domain/services/milestone_service.dart';
+import '../../../domain/services/week_cycle_manager.dart';
 import '../../theme/app_theme.dart';
 import 'tribute_paywall_view.dart';
 
@@ -343,7 +343,7 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
     return Column(
       children: habits.map((h) {
         final completed = widget.weekCycleManager.completedDays(h, prevWeekDates);
-        final isAbstain = h.habitTrackingType == HabitTrackingType.abstain;
+        final isAbstain = h.trackingType == HabitTrackingType.abstain;
         final accent = isAbstain ? TributeColor.sage : TributeColor.golden;
 
         return Padding(
@@ -455,8 +455,8 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   IconData _habitIcon(Habit habit) {
-    if (habit.habitTrackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
-    switch (habit.habitCategory) {
+    if (habit.trackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
+    switch (habit.category) {
       case HabitCategory.gratitude: return Icons.auto_awesome;
       case HabitCategory.scripture: return Icons.menu_book;
       case HabitCategory.exercise: return Icons.fitness_center;

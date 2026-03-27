@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import 'package:provider/provider.dart';
+import '../../../domain/repositories/circle_repository.dart';
 import '../../theme/app_theme.dart';
 
 class JoinCircleView extends StatefulWidget {
@@ -36,7 +37,7 @@ class _JoinCircleViewState extends State<JoinCircleView> {
 
     setState(() { _isLoading = true; _error = null; });
     try {
-      final response = await APIService.shared.joinCircle(code);
+      final response = await context.read<CircleRepository>().joinCircle(code);
       if (!mounted) return;
       if (response.alreadyMember) {
         setState(() { _error = "You're already a member of this circle"; _isLoading = false; });

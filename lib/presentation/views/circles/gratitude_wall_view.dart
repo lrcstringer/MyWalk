@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import '../../../data/datasources/remote/api_service.dart';
 import '../../theme/app_theme.dart';
 
 /// Embeddable gratitude wall widget (used inside CircleDetailView).

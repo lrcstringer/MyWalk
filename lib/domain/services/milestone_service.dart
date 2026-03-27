@@ -1,5 +1,5 @@
-import '../models/habit.dart';
-import '../models/scripture.dart';
+import '../entities/habit.dart';
+import '../entities/scripture.dart';
 
 class Milestone {
   final String id;
@@ -37,7 +37,7 @@ class MilestoneService {
   const MilestoneService._();
 
   LifetimeStat lifetimeStat(Habit habit) {
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
         final totalMinutes = habit.totalValue();
         final hours = totalMinutes ~/ 60;
@@ -107,7 +107,7 @@ class MilestoneService {
     }).toList()..sort((a, b) => a.date.compareTo(b.date));
 
     double valueBefore;
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
       case HabitTrackingType.count:
         valueBefore = entriesBefore.fold(0.0, (s, e) => s + e.value);
@@ -119,7 +119,7 @@ class MilestoneService {
     var running = valueBefore;
     for (final entry in entriesDuring) {
       final prev = running;
-      switch (habit.habitTrackingType) {
+      switch (habit.trackingType) {
         case HabitTrackingType.timed:
         case HabitTrackingType.count:
           running += entry.value;
@@ -149,7 +149,7 @@ class MilestoneService {
   // Private
 
   double _currentValue(Habit habit) {
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
       case HabitTrackingType.count:
         return habit.totalValue();
@@ -160,7 +160,7 @@ class MilestoneService {
   }
 
   List<double> _thresholds(Habit habit) {
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed: return [60, 600, 3000, 6000, 30000, 60000];
       case HabitTrackingType.count: return [100, 500, 1000, 5000];
       case HabitTrackingType.checkIn: return [7, 30, 100, 365];
@@ -169,8 +169,8 @@ class MilestoneService {
   }
 
   List<Milestone> _buildMilestones(Habit habit) {
-    final anchor = ScriptureLibrary.anchorVerse(habit.habitCategory);
-    switch (habit.habitTrackingType) {
+    final anchor = ScriptureLibrary.anchorVerse(habit.category);
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
         final total = habit.totalValue();
         return [
@@ -217,8 +217,8 @@ class MilestoneService {
   }
 
   Milestone? _milestoneFor(Habit habit, double threshold) {
-    final anchor = ScriptureLibrary.anchorVerse(habit.habitCategory);
-    switch (habit.habitTrackingType) {
+    final anchor = ScriptureLibrary.anchorVerse(habit.category);
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
         final labels = {60.0: '1 hour', 600.0: '10 hours', 3000.0: '50 hours', 6000.0: '100 hours', 30000.0: '500 hours', 60000.0: '1,000 hours'};
         final label = labels[threshold];
@@ -236,7 +236,7 @@ class MilestoneService {
   }
 
   String _progressHint(Habit habit, double remaining) {
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
         final hours = remaining ~/ 60;
         final mins = remaining.toInt() % 60;
@@ -251,7 +251,7 @@ class MilestoneService {
   }
 
   int _consecutiveCleanDays(Habit habit) {
-    if (habit.habitTrackingType != HabitTrackingType.abstain) return 0;
+    if (habit.trackingType != HabitTrackingType.abstain) return 0;
     var count = 0;
     var checkDate = DateTime.now();
     checkDate = DateTime(checkDate.year, checkDate.month, checkDate.day);

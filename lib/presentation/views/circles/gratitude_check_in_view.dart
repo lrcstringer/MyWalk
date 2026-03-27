@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
-import '../../models/scripture.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/scripture.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
-import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
+import '../../../data/datasources/remote/api_service.dart';
+import '../../../data/datasources/remote/auth_service.dart';
 import '../../theme/app_theme.dart';
 import 'share_gratitude_sheet.dart';
 
@@ -64,7 +64,7 @@ class _GratitudeCheckInViewState extends State<GratitudeCheckInView> {
       _isCompleted = completed;
       _verse = completed
           ? ScriptureLibrary.completionVerse(
-              widget.habit.habitCategory, widget.targetDate, isPremium: isPremium)
+              widget.habit.category, widget.targetDate, isPremium: isPremium)
           : null;
     });
   }
@@ -83,7 +83,7 @@ class _GratitudeCheckInViewState extends State<GratitudeCheckInView> {
       if (mounted) {
         setState(() {
           _verse = ScriptureLibrary.completionVerse(
-              widget.habit.habitCategory, widget.targetDate, isPremium: isPremium);
+              widget.habit.category, widget.targetDate, isPremium: isPremium);
         });
       }
     });

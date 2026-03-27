@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
-import '../../models/scripture.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/scripture.dart';
 import '../../providers/habit_provider.dart';
-import '../../services/week_cycle_manager.dart';
+import '../../../domain/services/week_cycle_manager.dart';
 import '../../theme/app_theme.dart';
 
 class SundayDedicationView extends StatefulWidget {
@@ -313,8 +313,8 @@ class _SundayDedicationViewState extends State<SundayDedicationView>
 
   Widget _dedicationHabitTile(Habit habit) {
     final accent =
-        habit.habitTrackingType == HabitTrackingType.abstain ? TributeColor.sage : TributeColor.golden;
-    final verse = ScriptureLibrary.anchorVerse(habit.habitCategory);
+        habit.trackingType == HabitTrackingType.abstain ? TributeColor.sage : TributeColor.golden;
+    final verse = ScriptureLibrary.anchorVerse(habit.category);
     final summary = widget.weekCycleManager.weekProjectionSummary(habit);
 
     return Container(
@@ -452,8 +452,8 @@ class _SundayDedicationViewState extends State<SundayDedicationView>
   }
 
   IconData _habitIcon(Habit habit) {
-    if (habit.habitTrackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
-    switch (habit.habitCategory) {
+    if (habit.trackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
+    switch (habit.category) {
       case HabitCategory.gratitude: return Icons.auto_awesome;
       case HabitCategory.scripture: return Icons.menu_book;
       case HabitCategory.exercise: return Icons.fitness_center;

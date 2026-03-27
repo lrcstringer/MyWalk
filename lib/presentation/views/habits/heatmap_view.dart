@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/habit.dart';
-import '../../services/daily_score_service.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/services/daily_score_service.dart';
 import '../../theme/app_theme.dart';
 
 class HeatmapView extends StatelessWidget {
@@ -41,7 +41,7 @@ class HeatmapView extends StatelessWidget {
     final weeks = _buildWeeks();
     final tileSpacing = weekCount > 4 ? 2.0 : 3.0;
     final cornerRadius = weekCount > 12 ? 2.0 : 3.0;
-    final isAbstain = habit.habitTrackingType == HabitTrackingType.abstain;
+    final isAbstain = habit.trackingType == HabitTrackingType.abstain;
     final accentColor = isAbstain ? TributeColor.sage : TributeColor.golden;
 
     return Column(

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/habit_provider.dart';
-import '../services/notification_service.dart';
-import '../services/week_cycle_manager.dart';
+import '../../data/datasources/local/notification_service.dart';
+import '../../domain/services/week_cycle_manager.dart';
 import 'content_view.dart';
 import 'onboarding/onboarding_container_view.dart';
 
@@ -38,12 +38,12 @@ class _RootViewState extends State<RootView> {
   }
 
   Future<void> _completeOnboarding() async {
+    final wcm = context.read<WeekCycleManager>();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('tribute_onboarding_complete', true);
     await prefs.setInt('tribute_onboarding_date', DateTime.now().millisecondsSinceEpoch);
 
-    final manager = WeekCycleManager();
-    await manager.dedicateCurrentWeek();
+    await wcm.dedicateCurrentWeek();
 
     final authorized = await NotificationService.shared.requestAuthorization();
     if (authorized) {

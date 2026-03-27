@@ -1,10 +1,10 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
-import '../../models/scripture.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/scripture.dart';
 import '../../providers/store_provider.dart';
-import '../../services/milestone_service.dart';
+import '../../../domain/services/milestone_service.dart';
 import '../../theme/app_theme.dart';
 import '../shared/tribute_paywall_view.dart';
 import 'edit_habit_view.dart';
@@ -26,7 +26,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
   Habit get _habit => widget.habit;
 
   Color _accentColor() =>
-      _habit.habitTrackingType == HabitTrackingType.abstain
+      _habit.trackingType == HabitTrackingType.abstain
           ? TributeColor.sage
           : TributeColor.golden;
 
@@ -47,7 +47,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
     final lifetimeStat = _milestoneService.lifetimeStat(_habit);
     final milestones = _milestoneService.milestones(_habit);
     final habitAge = _milestoneService.habitAge(_habit);
-    final verse = ScriptureLibrary.completionVerse(_habit.habitCategory, DateTime.now(), isPremium: isPremium);
+    final verse = ScriptureLibrary.completionVerse(_habit.category, DateTime.now(), isPremium: isPremium);
 
     return Scaffold(
       backgroundColor: TributeColor.charcoal,
@@ -129,9 +129,9 @@ class _HabitDetailViewState extends State<HabitDetailView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (_habit.habitTrackingType == HabitTrackingType.abstain)
+              if (_habit.trackingType == HabitTrackingType.abstain)
                 Icon(Icons.shield_outlined, size: 13, color: TributeColor.sage.withValues(alpha: 0.6)),
-              if (_habit.habitTrackingType == HabitTrackingType.abstain)
+              if (_habit.trackingType == HabitTrackingType.abstain)
                 const SizedBox(width: 4),
               Text(
                 stat.detail!,
@@ -195,7 +195,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
     final isActive = _habit.isActive(date);
     final entry = _habit.entryFor(date);
 
-    switch (_habit.habitTrackingType) {
+    switch (_habit.trackingType) {
       case HabitTrackingType.timed:
         return _timedDayBar(entry, isFuture, isActive);
       case HabitTrackingType.count:
@@ -613,7 +613,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
       decoration: TributeDecorations.card,
       child: Column(
         children: [
-          _infoRow('Tracking type', _habit.habitTrackingType.name[0].toUpperCase() + _habit.habitTrackingType.name.substring(1)),
+          _infoRow('Tracking type', _habit.trackingType.name[0].toUpperCase() + _habit.trackingType.name.substring(1)),
           const SizedBox(height: 8),
           _infoRow('Started', '$habitAge days ago'),
           const SizedBox(height: 8),
@@ -643,8 +643,8 @@ class _HabitDetailViewState extends State<HabitDetailView> {
   }
 
   IconData _habitIcon() {
-    if (_habit.habitTrackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
-    switch (_habit.habitCategory) {
+    if (_habit.trackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
+    switch (_habit.category) {
       case HabitCategory.gratitude: return Icons.auto_awesome;
       case HabitCategory.scripture: return Icons.menu_book;
       case HabitCategory.exercise: return Icons.fitness_center;

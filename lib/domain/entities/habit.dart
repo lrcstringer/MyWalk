@@ -1,3 +1,4 @@
+import 'package:uuid/uuid.dart';
 import 'habit_entry.dart';
 
 enum HabitTrackingType {
@@ -43,33 +44,55 @@ enum HabitCategory {
 
   String get iconName {
     switch (this) {
-      case exercise: return 'figure.run';
-      case scripture: return 'book.fill';
-      case rest: return 'moon.fill';
-      case fasting: return 'leaf.fill';
-      case study: return 'graduationcap.fill';
-      case service: return 'heart.fill';
-      case connection: return 'person.2.fill';
-      case health: return 'drop.fill';
-      case abstain: return 'shield.fill';
-      case custom: return 'sparkles';
-      case gratitude: return 'hands.sparkles.fill';
+      case exercise:
+        return 'figure.run';
+      case scripture:
+        return 'book.fill';
+      case rest:
+        return 'moon.fill';
+      case fasting:
+        return 'leaf.fill';
+      case study:
+        return 'graduationcap.fill';
+      case service:
+        return 'heart.fill';
+      case connection:
+        return 'person.2.fill';
+      case health:
+        return 'drop.fill';
+      case abstain:
+        return 'shield.fill';
+      case custom:
+        return 'sparkles';
+      case gratitude:
+        return 'hands.sparkles.fill';
     }
   }
 
   String get defaultPurpose {
     switch (this) {
-      case exercise: return 'My body is a gift. Moving it honours the One who made it.';
-      case scripture: return "I'm someone who puts God's Word first.";
-      case rest: return "Rest isn't laziness. God commands it because He designed me to need it.";
-      case fasting: return 'Fasting draws me closer to God and teaches me discipline.';
-      case study: return 'Growing my mind is an act of stewardship.';
-      case service: return 'Serving others is serving God.';
-      case connection: return 'I was made for community.';
-      case health: return "My body is God's temple. Nourishing it is an act of worship.";
-      case abstain: return 'God made me for freedom.';
-      case custom: return 'Whatever you do, do it all for the glory of God.';
-      case gratitude: return 'Every good gift comes from above.';
+      case exercise:
+        return 'My body is a gift. Moving it honours the One who made it.';
+      case scripture:
+        return "I'm someone who puts God's Word first.";
+      case rest:
+        return "Rest isn't laziness. God commands it because He designed me to need it.";
+      case fasting:
+        return 'Fasting draws me closer to God and teaches me discipline.';
+      case study:
+        return 'Growing my mind is an act of stewardship.';
+      case service:
+        return 'Serving others is serving God.';
+      case connection:
+        return 'I was made for community.';
+      case health:
+        return "My body is God's temple. Nourishing it is an act of worship.";
+      case abstain:
+        return 'God made me for freedom.';
+      case custom:
+        return 'Whatever you do, do it all for the glory of God.';
+      case gratitude:
+        return 'Every good gift comes from above.';
     }
   }
 
@@ -96,21 +119,26 @@ enum HabitCategory {
 
 class Habit {
   final String id;
-  String name;
-  String category;
-  String trackingType;
-  String purposeStatement;
-  double dailyTarget;
-  String targetUnit;
-  bool isBuiltIn;
-  DateTime createdAt;
-  int sortOrder;
-  String activeDays; // comma-separated weekday numbers (1=Sun..7=Sat)
-  String trigger;
-  String copingPlan;
-  List<HabitEntry> entries;
+  final String name;
+  final HabitCategory category;
+  final HabitTrackingType trackingType;
+  final String purposeStatement;
+  final double dailyTarget;
+  final String targetUnit;
+  final bool isBuiltIn;
+  final DateTime createdAt;
+  final int sortOrder;
+  // Comma-separated weekday numbers using Swift convention (1=Sun..7=Sat).
+  final String activeDays;
+  final String trigger;
+  final String copingPlan;
+  final List<HabitEntry> entries;
+  // Lifetime aggregates populated by DatabaseService to avoid loading all historical rows.
+  // When non-null, totalCompletedDays() and totalValue() use these instead of entries.
+  final int? allTimeCompletedCount;
+  final double? allTimeTotalValue;
 
-  Habit({
+  const Habit({
     required this.id,
     required this.name,
     required this.category,
@@ -125,6 +153,8 @@ class Habit {
     this.trigger = '',
     this.copingPlan = '',
     this.entries = const [],
+    this.allTimeCompletedCount,
+    this.allTimeTotalValue,
   });
 
   factory Habit.create({
@@ -140,13 +170,14 @@ class Habit {
     String trigger = '',
     String copingPlan = '',
   }) {
-    final purpose = purposeStatement.isEmpty ? category.defaultPurpose : purposeStatement;
+    final purpose =
+        purposeStatement.isEmpty ? category.defaultPurpose : purposeStatement;
     final days = (activeDays.toList()..sort()).join(',');
     return Habit(
-      id: _generateId(),
+      id: const Uuid().v4(),
       name: name,
-      category: category.rawValue,
-      trackingType: trackingType.rawValue,
+      category: category,
+      trackingType: trackingType,
       purposeStatement: purpose,
       dailyTarget: dailyTarget,
       targetUnit: targetUnit,
@@ -156,32 +187,58 @@ class Habit {
       activeDays: days,
       trigger: trigger,
       copingPlan: copingPlan,
-      entries: [],
+      entries: const [],
     );
   }
 
-  static String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString() +
-        (1000 + (DateTime.now().microsecond % 9000)).toString();
-  }
-
-  HabitCategory get habitCategory => HabitCategory.fromString(category);
-  HabitTrackingType get habitTrackingType => HabitTrackingType.fromString(trackingType);
+  Habit copyWith({
+    String? name,
+    HabitCategory? category,
+    HabitTrackingType? trackingType,
+    String? purposeStatement,
+    double? dailyTarget,
+    String? targetUnit,
+    bool? isBuiltIn,
+    DateTime? createdAt,
+    int? sortOrder,
+    String? activeDays,
+    String? trigger,
+    String? copingPlan,
+    List<HabitEntry>? entries,
+    int? allTimeCompletedCount,
+    double? allTimeTotalValue,
+  }) =>
+      Habit(
+        id: id,
+        name: name ?? this.name,
+        category: category ?? this.category,
+        trackingType: trackingType ?? this.trackingType,
+        purposeStatement: purposeStatement ?? this.purposeStatement,
+        dailyTarget: dailyTarget ?? this.dailyTarget,
+        targetUnit: targetUnit ?? this.targetUnit,
+        isBuiltIn: isBuiltIn ?? this.isBuiltIn,
+        createdAt: createdAt ?? this.createdAt,
+        sortOrder: sortOrder ?? this.sortOrder,
+        activeDays: activeDays ?? this.activeDays,
+        trigger: trigger ?? this.trigger,
+        copingPlan: copingPlan ?? this.copingPlan,
+        entries: entries ?? this.entries,
+        allTimeCompletedCount: allTimeCompletedCount ?? this.allTimeCompletedCount,
+        allTimeTotalValue: allTimeTotalValue ?? this.allTimeTotalValue,
+      );
 
   Set<int> get activeDaySet {
     if (activeDays.isEmpty) return {1, 2, 3, 4, 5, 6, 7};
-    return activeDays.split(',').map((s) => int.tryParse(s.trim()) ?? 0).toSet();
-  }
-
-  set activeDaySet(Set<int> days) {
-    activeDays = (days.toList()..sort()).join(',');
+    return activeDays
+        .split(',')
+        .map((s) => int.tryParse(s.trim()) ?? 0)
+        .toSet();
   }
 
   bool get isActiveToday => isActive(DateTime.now());
 
   bool isActive(DateTime date) {
     // Flutter weekday: Mon=1..Sun=7. Swift weekday: Sun=1..Sat=7.
-    // Convert: Flutter Sun=7 → Swift Sun=1, Flutter Mon=1 → Swift Mon=2, etc.
     final flutterWeekday = date.weekday; // 1=Mon..7=Sun
     final swiftWeekday = flutterWeekday % 7 + 1; // 1=Sun..7=Sat
     return activeDaySet.contains(swiftWeekday);
@@ -189,11 +246,7 @@ class Habit {
 
   HabitEntry? entryFor(DateTime date) {
     final dayStart = DateTime(date.year, date.month, date.day);
-    try {
-      return entries.firstWhere((e) => _isSameDay(e.date, dayStart));
-    } catch (_) {
-      return null;
-    }
+    return entries.where((e) => _isSameDay(e.date, dayStart)).firstOrNull;
   }
 
   HabitEntry? get todayEntry => entryFor(DateTime.now());
@@ -209,9 +262,11 @@ class Habit {
   int completedDaysThisWeek() =>
       entriesForCurrentWeek().where((e) => e.isCompleted).length;
 
-  int totalCompletedDays() => entries.where((e) => e.isCompleted).length;
+  int totalCompletedDays() =>
+      allTimeCompletedCount ?? entries.where((e) => e.isCompleted).length;
 
-  double totalValue() => entries.fold(0.0, (sum, e) => sum + e.value);
+  double totalValue() =>
+      allTimeTotalValue ?? entries.fold(0.0, (sum, e) => sum + e.value);
 
   static bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
@@ -224,35 +279,44 @@ class Habit {
   }
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'category': category,
-    'trackingType': trackingType,
-    'purposeStatement': purposeStatement,
-    'dailyTarget': dailyTarget,
-    'targetUnit': targetUnit,
-    'isBuiltIn': isBuiltIn ? 1 : 0,
-    'createdAt': createdAt.toIso8601String(),
-    'sortOrder': sortOrder,
-    'activeDays': activeDays,
-    'trigger': trigger,
-    'copingPlan': copingPlan,
-  };
+        'id': id,
+        'name': name,
+        'category': category.rawValue,
+        'trackingType': trackingType.rawValue,
+        'purposeStatement': purposeStatement,
+        'dailyTarget': dailyTarget,
+        'targetUnit': targetUnit,
+        'isBuiltIn': isBuiltIn ? 1 : 0,
+        'createdAt': createdAt.toIso8601String(),
+        'sortOrder': sortOrder,
+        'activeDays': activeDays,
+        'trigger': trigger,
+        'copingPlan': copingPlan,
+      };
 
-  factory Habit.fromMap(Map<String, dynamic> map) => Habit(
-    id: map['id'] as String,
-    name: map['name'] as String,
-    category: map['category'] as String,
-    trackingType: map['trackingType'] as String,
-    purposeStatement: map['purposeStatement'] as String? ?? '',
-    dailyTarget: (map['dailyTarget'] as num).toDouble(),
-    targetUnit: map['targetUnit'] as String? ?? '',
-    isBuiltIn: (map['isBuiltIn'] as int) == 1,
-    createdAt: DateTime.parse(map['createdAt'] as String),
-    sortOrder: map['sortOrder'] as int? ?? 0,
-    activeDays: map['activeDays'] as String? ?? '1,2,3,4,5,6,7',
-    trigger: map['trigger'] as String? ?? '',
-    copingPlan: map['copingPlan'] as String? ?? '',
-    entries: [],
-  );
+  factory Habit.fromMap(Map<String, dynamic> map,
+      {List<HabitEntry> entries = const [],
+      int? allTimeCompletedCount,
+      double? allTimeTotalValue}) =>
+      Habit(
+        id: map['id'] as String? ?? const Uuid().v4(),
+        name: map['name'] as String? ?? '',
+        category:
+            HabitCategory.fromString(map['category'] as String? ?? ''),
+        trackingType:
+            HabitTrackingType.fromString(map['trackingType'] as String? ?? ''),
+        purposeStatement: map['purposeStatement'] as String? ?? '',
+        dailyTarget: (map['dailyTarget'] as num?)?.toDouble() ?? 1,
+        targetUnit: map['targetUnit'] as String? ?? '',
+        isBuiltIn: ((map['isBuiltIn'] as num?)?.toInt() ?? 0) == 1,
+        createdAt: DateTime.parse(
+            map['createdAt'] as String? ?? DateTime.now().toIso8601String()),
+        sortOrder: (map['sortOrder'] as num?)?.toInt() ?? 0,
+        activeDays: map['activeDays'] as String? ?? '1,2,3,4,5,6,7',
+        trigger: map['trigger'] as String? ?? '',
+        copingPlan: map['copingPlan'] as String? ?? '',
+        entries: entries,
+        allTimeCompletedCount: allTimeCompletedCount,
+        allTimeTotalValue: allTimeTotalValue,
+      );
 }

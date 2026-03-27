@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../models/habit.dart';
+import '../../../domain/entities/habit.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
-import '../../services/auth_service.dart';
-import '../../services/milestone_service.dart';
-import '../../services/notification_service.dart';
+import '../../../data/datasources/remote/auth_service.dart';
+import '../../../domain/services/milestone_service.dart';
+import '../../../data/datasources/local/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../shared/tribute_paywall_view.dart';
 
@@ -135,13 +135,13 @@ class _SettingsViewState extends State<SettingsView> {
 
     final totalCheckIns = habits.fold<int>(0, (s, h) => s + h.totalCompletedDays());
     final totalMinutes = habits
-        .where((h) => h.habitTrackingType == HabitTrackingType.timed)
+        .where((h) => h.trackingType == HabitTrackingType.timed)
         .fold<double>(0, (s, h) => s + h.totalValue());
     final totalCleanDays = habits
-        .where((h) => h.habitTrackingType == HabitTrackingType.abstain)
+        .where((h) => h.trackingType == HabitTrackingType.abstain)
         .fold<int>(0, (s, h) => s + h.totalCompletedDays());
     final totalCount = habits
-        .where((h) => h.habitTrackingType == HabitTrackingType.count)
+        .where((h) => h.trackingType == HabitTrackingType.count)
         .fold<double>(0, (s, h) => s + h.totalValue());
     final milestoneCount = habits
         .expand((h) => _milestoneService.milestones(h).where((m) => m.isReached))
@@ -447,7 +447,7 @@ class _SettingsViewState extends State<SettingsView> {
                 ],
               ]),
               Row(children: [
-                Text(habit.habitTrackingType.name,
+                Text(habit.trackingType.name,
                     style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
                 Text(' \u00B7 ', style: TextStyle(color: Colors.white.withValues(alpha: 0.2))),
                 Text('${_milestoneService.habitAge(habit)} days',
@@ -536,8 +536,8 @@ class _SettingsViewState extends State<SettingsView> {
   }
 
   IconData _habitIcon(Habit habit) {
-    if (habit.habitTrackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
-    switch (habit.habitCategory) {
+    if (habit.trackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
+    switch (habit.category) {
       case HabitCategory.gratitude: return Icons.auto_awesome;
       case HabitCategory.scripture: return Icons.menu_book;
       case HabitCategory.exercise: return Icons.fitness_center;

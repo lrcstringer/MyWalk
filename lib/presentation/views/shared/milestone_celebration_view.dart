@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/habit.dart';
-import '../../services/milestone_service.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/services/milestone_service.dart';
 import '../../theme/app_theme.dart';
 
 class MilestoneCelebrationView extends StatefulWidget {

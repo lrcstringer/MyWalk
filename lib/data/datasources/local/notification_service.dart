@@ -2,7 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
-import '../models/habit.dart';
+import '../../../domain/entities/habit.dart';
 
 class NotificationService {
   static final NotificationService shared = NotificationService._();
@@ -167,13 +167,18 @@ class NotificationService {
       "Some days it's easy, some days it's not. You show up either way. That matters.",
     ];
 
-    final daysUntilNext = 14 + (DateTime.now().millisecond % 15);
+    // Use a deterministic seeded RNG keyed on daysSinceOnboarding so the
+    // same run produces the same schedule, avoiding message/interval drift
+    // across multiple calls within the same app session.
+    final rng = _SeededRng(daysSinceOnboarding * 13 + 7);
+    final daysUntilNext = 14 + (rng.next() % 15);
+    final messageIdx = rng.next() % messages.length;
     final target = DateTime.now().add(Duration(days: daysUntilNext));
     final prefs = await SharedPreferences.getInstance();
     final hour = prefs.getInt('tribute_reminder_hour') ?? 10;
     final minute = prefs.getInt('tribute_reminder_minute') ?? 0;
     final scheduled = DateTime(target.year, target.month, target.day, hour, minute);
-    final body = messages[DateTime.now().millisecond % messages.length];
+    final body = messages[messageIdx];
 
     await _plugin.zonedSchedule(
       99999, 'Tribute', body,
@@ -201,5 +206,17 @@ class NotificationService {
       scheduled = scheduled.add(const Duration(days: 1));
     }
     return scheduled;
+  }
+}
+
+// Minimal LCG seeded RNG — identical to the one in engagement_service.dart.
+// Kept local to avoid coupling the data layer to a domain service file.
+class _SeededRng {
+  int _state;
+  _SeededRng(int seed) : _state = seed;
+
+  int next() {
+    _state = ((_state * 1103515245) + 12345) & 0x7fffffff;
+    return _state;
   }
 }

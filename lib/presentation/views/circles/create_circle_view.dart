@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import 'package:provider/provider.dart';
+import '../../../domain/repositories/circle_repository.dart';
+import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
 
 class CreateCircleView extends StatefulWidget {
-  final void Function(CircleResponse)? onCreated;
+  final void Function(Circle)? onCreated;
 
   const CreateCircleView({super.key, this.onCreated});
 
@@ -30,7 +32,7 @@ class _CreateCircleViewState extends State<CreateCircleView> {
 
     setState(() { _isLoading = true; _error = null; });
     try {
-      final response = await APIService.shared.createCircle(
+      final response = await context.read<CircleRepository>().createCircle(
         name,
         description: _descController.text.trim(),
       );

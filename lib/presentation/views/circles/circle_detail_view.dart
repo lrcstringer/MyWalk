@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/store_provider.dart';
-import '../../services/api_service.dart';
+import '../../../domain/repositories/circle_repository.dart';
+import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
 import 'circle_sunday_summary_view.dart';
 import 'gratitude_wall_view.dart' show GratitudeWallWidget;
@@ -17,13 +18,13 @@ class CircleDetailView extends StatefulWidget {
 }
 
 class _CircleDetailViewState extends State<CircleDetailView> {
-  CircleDetail? _detail;
+  CircleDetails? _detail;
   bool _isLoading = true;
   String? _error;
   bool _isLeaving = false;
-  List<SOSItem> _recentSOS = [];
-  CircleHeatmapResponse? _heatmap;
-  CircleMilestonesResponse? _milestones;
+  List<SOSMessage> _recentSOS = [];
+  CircleHeatmap? _heatmap;
+  CollectiveMilestones? _milestones;
 
   @override
   void initState() {
@@ -37,7 +38,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
   Future<void> _loadDetail() async {
     setState(() { _isLoading = true; _error = null; });
     try {
-      final detail = await APIService.shared.getCircleDetail(widget.circleId);
+      final detail = await context.read<CircleRepository>().getCircleDetail(widget.circleId);
       if (mounted) setState(() { _detail = detail; _isLoading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
@@ -46,7 +47,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
 
   Future<void> _loadRecentSOS() async {
     try {
-      final sos = await APIService.shared.getRecentSOS(circleId: widget.circleId, limit: 5);
+      final sos = await context.read<CircleRepository>().getRecentSOS(circleId: widget.circleId, limit: 5);
       if (mounted) setState(() => _recentSOS = sos);
     } catch (_) {}
   }
@@ -54,7 +55,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
   Future<void> _loadHeatmap() async {
     final isPremium = context.read<StoreProvider>().isPremium;
     try {
-      final heatmap = await APIService.shared.getCircleHeatmap(
+      final heatmap = await context.read<CircleRepository>().getCircleHeatmap(
         widget.circleId, weekCount: isPremium ? 52 : 1);
       if (mounted) setState(() => _heatmap = heatmap);
     } catch (_) {}
@@ -62,7 +63,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
 
   Future<void> _loadMilestones() async {
     try {
-      final milestones = await APIService.shared.getCircleMilestones(widget.circleId);
+      final milestones = await context.read<CircleRepository>().getCircleMilestones(widget.circleId);
       if (mounted) setState(() => _milestones = milestones);
     } catch (_) {}
   }
@@ -70,7 +71,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
   Future<void> _leaveCircle() async {
     setState(() => _isLeaving = true);
     try {
-      await APIService.shared.leaveCircle(widget.circleId);
+      await context.read<CircleRepository>().leaveCircle(widget.circleId);
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _isLeaving = false; });
@@ -117,7 +118,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     return _circleContent(_detail!);
   }
 
-  Widget _circleContent(CircleDetail detail) {
+  Widget _circleContent(CircleDetails detail) {
     return CustomScrollView(
       slivers: [
         SliverAppBar(
@@ -241,7 +242,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     );
   }
 
-  Widget _collaborativeHeatmapSection(CircleDetail detail) {
+  Widget _collaborativeHeatmapSection(CircleDetails detail) {
     final isPremium = context.watch<StoreProvider>().isPremium;
     final heatmap = _heatmap;
     return Container(
@@ -281,7 +282,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     );
   }
 
-  Widget _collectiveMilestonesSection(CircleDetail detail) {
+  Widget _collectiveMilestonesSection(CircleDetails detail) {
     final ms = _milestones;
     return Container(
       padding: const EdgeInsets.all(14),
@@ -322,7 +323,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     );
   }
 
-  Widget _milestoneTotalsRow(CircleMilestonesResponse ms) {
+  Widget _milestoneTotalsRow(CollectiveMilestones ms) {
     final items = <_TotalItem>[];
     if (ms.totalGivingDays > 0) items.add(_TotalItem('${ms.totalGivingDays}', 'giving days'));
     if (ms.totalHours >= 1) {
@@ -342,7 +343,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     );
   }
 
-  Widget _milestoneTile(CircleMilestone m) {
+  Widget _milestoneTile(CollectiveMilestone m) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -400,7 +401,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     );
   }
 
-  Widget _sosItem(SOSItem sos) {
+  Widget _sosItem(SOSMessage sos) {
     final isMine = sos.isMine;
     final color = isMine ? TributeColor.golden : TributeColor.warmCoral;
     return Container(
@@ -425,7 +426,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     );
   }
 
-  Widget _memberRow(CircleMemberInfo m) {
+  Widget _memberRow(CircleMember m) {
     final isAdmin = m.role == 'admin';
     final color = isAdmin ? TributeColor.golden : TributeColor.sage;
     return Container(
@@ -470,21 +471,21 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     );
   }
 
-  void _showSOSRequest(CircleDetail detail) {
+  void _showSOSRequest(CircleDetails detail) {
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: TributeColor.charcoal,
       builder: (_) => SOSPrayerRequestView(circleId: widget.circleId, members: detail.members),
     );
   }
 
-  void _showSundaySummary(CircleDetail detail) {
+  void _showSundaySummary(CircleDetails detail) {
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: TributeColor.charcoal,
       builder: (_) => CircleSundaySummaryView(circleId: widget.circleId, circleName: detail.name),
     );
   }
 
-  void _shareInvite(CircleDetail detail) {
+  void _shareInvite(CircleDetails detail) {
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: TributeColor.charcoal,
       builder: (_) => _ShareInviteSheet(
@@ -606,7 +607,7 @@ class _TotalItem {
 // ─── Collaborative heatmap grid ───────────────────────────────────────────────
 
 class _CircleHeatmapGrid extends StatelessWidget {
-  final CircleHeatmapResponse heatmap;
+  final CircleHeatmap heatmap;
   final bool isPremium;
 
   const _CircleHeatmapGrid({required this.heatmap, required this.isPremium});

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/habit_provider.dart';
-import '../services/api_service.dart';
-import '../services/auth_service.dart';
-import '../services/week_cycle_manager.dart';
+import '../../data/datasources/remote/auth_service.dart';
+import '../../domain/repositories/circle_repository.dart';
+import '../../domain/services/week_cycle_manager.dart';
 import 'today/today_view.dart';
 import 'week/week_view.dart';
 import 'journey/journey_view.dart';
@@ -25,9 +25,8 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
   bool _showingDedication = false;
   bool _showAutoCarryBanner = false;
   bool _hasNewGratitudes = false;
+  bool _checkingGratitudes = false;
   String? _pendingInviteCode;
-
-  final _weekCycleManager = WeekCycleManager();
 
   @override
   void initState() {
@@ -55,9 +54,10 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
   }
 
   Future<void> _checkWeekCycleState() async {
+    final wcm = context.read<WeekCycleManager>();
     final habits = context.read<HabitProvider>().habits;
-    final needsLookBack = await _weekCycleManager.needsLookBack;
-    final needsDedication = await _weekCycleManager.needsDedication;
+    final needsLookBack = await wcm.needsLookBack;
+    final needsDedication = await wcm.needsDedication;
 
     if (!mounted) return;
 
@@ -67,7 +67,8 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
       if (habits.isEmpty) {
         setState(() => _showAutoCarryBanner = false);
       } else {
-        final dedicated = await _weekCycleManager.weekDedicatedDate;
+        final dedicated = await wcm.weekDedicatedDate;
+        if (!mounted) return;
         if (dedicated != null) setState(() => _showAutoCarryBanner = true);
         if (mounted) setState(() => _showingDedication = true);
       }
@@ -75,22 +76,30 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
   }
 
   Future<void> _checkNewGratitudes() async {
-    if (!AuthService.shared.isAuthenticated) return;
+    final isAuthenticated = context.read<AuthService>().isAuthenticated;
+    if (!isAuthenticated) return;
+    // Prevent stacked concurrent calls (e.g. rapid background/foreground).
+    if (_checkingGratitudes) return;
+    _checkingGratitudes = true;
     try {
-      final circles = await APIService.shared.listCircles();
-      for (final circle in circles) {
-        final count = await APIService.shared.getGratitudeNewCount(circle.id);
-        if (count.newCount > 0) {
-          if (mounted) setState(() => _hasNewGratitudes = true);
-          return;
-        }
-      }
-      if (mounted) setState(() => _hasNewGratitudes = false);
-    } catch (_) {}
+      final circleRepo = context.read<CircleRepository>();
+      final circles = await circleRepo.listCircles();
+      // Fetch all counts in parallel instead of sequentially.
+      final counts = await Future.wait(
+        circles.map((c) => circleRepo.getGratitudeNewCount(c.id)),
+      );
+      final hasNew = counts.any((n) => n > 0);
+      if (mounted) setState(() => _hasNewGratitudes = hasNew);
+    } catch (_) {
+      // Network failure — leave badge state unchanged.
+    } finally {
+      _checkingGratitudes = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final wcm = context.read<WeekCycleManager>();
     return Stack(
       children: [
         Scaffold(
@@ -98,11 +107,11 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
             index: _selectedTab,
             children: [
               TodayView(
-                weekCycleManager: _weekCycleManager,
+                weekCycleManager: wcm,
                 showAutoCarryBanner: _showAutoCarryBanner,
                 onDismissAutoCarry: () => setState(() => _showAutoCarryBanner = false),
               ),
-              WeekView(weekCycleManager: _weekCycleManager),
+              WeekView(weekCycleManager: wcm),
               const JourneyView(),
               CirclesTab(
                 pendingInviteCode: _pendingInviteCode,
@@ -148,10 +157,10 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
         ),
         if (_showingLookBack)
           WeekLookBackView(
-            weekCycleManager: _weekCycleManager,
+            weekCycleManager: wcm,
             onDismiss: () async {
-              await _weekCycleManager.completeLookBack();
-              final needsDedication = await _weekCycleManager.needsDedication;
+              await wcm.completeLookBack();
+              final needsDedication = await wcm.needsDedication;
               if (mounted) {
                 setState(() {
                   _showingLookBack = false;
@@ -162,7 +171,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
           ),
         if (_showingDedication)
           SundayDedicationView(
-            weekCycleManager: _weekCycleManager,
+            weekCycleManager: wcm,
             onDismiss: () => setState(() => _showingDedication = false),
           ),
       ],

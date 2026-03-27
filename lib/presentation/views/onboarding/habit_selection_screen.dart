@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/habit.dart';
+import '../../../domain/entities/habit.dart';
 import '../../theme/app_theme.dart';
 
 class HabitSelectionScreen extends StatelessWidget {

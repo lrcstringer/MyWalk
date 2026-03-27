@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
+import '../../../data/datasources/remote/auth_service.dart';
+import '../../../domain/repositories/circle_repository.dart';
+import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
 import 'circle_detail_view.dart';
 import 'create_circle_view.dart';
@@ -148,7 +149,7 @@ class _CirclesListView extends StatefulWidget {
 }
 
 class _CirclesListViewState extends State<_CirclesListView> {
-  List<CircleListItem> _circles = [];
+  List<Circle> _circles = [];
   bool _isLoading = true;
   String? _error;
   String _joinCode = '';
@@ -168,7 +169,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
   Future<void> _loadCircles() async {
     setState(() { _isLoading = true; _error = null; });
     try {
-      final circles = await APIService.shared.listCircles();
+      final circles = await context.read<CircleRepository>().listCircles();
       if (mounted) setState(() => _circles = circles);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -187,7 +188,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
   void _openCreate() => showModalBottomSheet(
     context: context, isScrollControlled: true, backgroundColor: TributeColor.charcoal,
     builder: (_) => CreateCircleView(
-      onCreated: (c) => setState(() => _circles.insert(0, CircleListItem(
+      onCreated: (c) => setState(() => _circles.insert(0, Circle(
         id: c.id, name: c.name, description: '', memberCount: 1, role: 'admin', inviteCode: c.inviteCode,
       ))),
     ),

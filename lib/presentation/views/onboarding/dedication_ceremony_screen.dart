@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../models/habit.dart';
+import '../../../domain/entities/habit.dart';
 import '../../theme/app_theme.dart';
 
 class DedicationCeremonyScreen extends StatefulWidget {

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import 'package:provider/provider.dart';
+import '../../../domain/entities/circle.dart';
+import '../../../domain/repositories/circle_repository.dart';
 import '../../theme/app_theme.dart';
 import 'sos_prayer_request_view.dart';
 
 class SOSCirclePickerView extends StatefulWidget {
-  final List<CircleListItem> circles;
+  final List<Circle> circles;
   const SOSCirclePickerView({super.key, required this.circles});
 
   @override
@@ -12,13 +14,14 @@ class SOSCirclePickerView extends StatefulWidget {
 }
 
 class _SOSCirclePickerViewState extends State<SOSCirclePickerView> {
-  CircleListItem? _selectedCircle;
+  Circle? _selectedCircle;
   bool _isLoadingDetail = false;
 
-  Future<void> _selectCircle(CircleListItem circle) async {
+  Future<void> _selectCircle(Circle circle) async {
     setState(() { _selectedCircle = circle; _isLoadingDetail = true; });
     try {
-      final detail = await APIService.shared.getCircleDetail(circle.id);
+      final circleRepo = context.read<CircleRepository>();
+      final detail = await circleRepo.getCircleDetail(circle.id);
       if (!mounted) return;
       setState(() => _isLoadingDetail = false);
       showModalBottomSheet(
@@ -94,7 +97,7 @@ class _SOSCirclePickerViewState extends State<SOSCirclePickerView> {
     );
   }
 
-  Widget _circleRow(CircleListItem circle) {
+  Widget _circleRow(Circle circle) {
     final isLoading = _isLoadingDetail && _selectedCircle?.id == circle.id;
     return GestureDetector(
       onTap: isLoading ? null : () => _selectCircle(circle),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/api_service.dart';
-import '../../services/auth_service.dart';
+import '../../../data/datasources/remote/api_service.dart';
+import '../../../data/datasources/remote/auth_service.dart';
 import '../../theme/app_theme.dart';
 
 class ShareGratitudeSheet extends StatefulWidget {

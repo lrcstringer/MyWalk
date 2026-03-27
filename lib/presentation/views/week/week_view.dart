@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
+import '../../../domain/entities/habit.dart';
 import '../../providers/habit_provider.dart';
-import '../../services/daily_score_service.dart';
-import '../../services/week_cycle_manager.dart';
+import '../../../domain/services/daily_score_service.dart';
+import '../../../domain/services/week_cycle_manager.dart';
 import '../../theme/app_theme.dart';
 
 class WeekView extends StatelessWidget {
@@ -219,7 +219,7 @@ class WeekView extends StatelessWidget {
   }
 
   Widget _habitWeekCard(Habit habit, List<DateTime> weekDates, DateTime todayStart) {
-    final isAbstain = habit.habitTrackingType == HabitTrackingType.abstain;
+    final isAbstain = habit.trackingType == HabitTrackingType.abstain;
     final accent = isAbstain ? TributeColor.sage : TributeColor.golden;
     final daysElapsed = weekDates.where((d) => !d.isAfter(todayStart)).toList();
     final milestone = weekCycleManager.microMilestonePreview(habit);
@@ -318,7 +318,7 @@ class WeekView extends StatelessWidget {
             shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.03)),
       );
     }
-    final isAbstain = habit.habitTrackingType == HabitTrackingType.abstain;
+    final isAbstain = habit.trackingType == HabitTrackingType.abstain;
     final icon = isAbstain ? Icons.shield_rounded : Icons.check;
 
     switch (tier) {
@@ -384,7 +384,7 @@ class WeekView extends StatelessWidget {
     final activeDays = daysElapsed.where((d) => habit.isActive(d)).toList();
     final count = activeDays.length;
 
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
         final total = activeDays.fold<double>(0, (s, d) => s + (habit.entryFor(d)?.value ?? 0));
         final target = habit.dailyTarget * count;
@@ -404,8 +404,8 @@ class WeekView extends StatelessWidget {
   }
 
   IconData _habitIcon(Habit habit) {
-    if (habit.habitTrackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
-    switch (habit.habitCategory) {
+    if (habit.trackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
+    switch (habit.category) {
       case HabitCategory.gratitude: return Icons.auto_awesome;
       case HabitCategory.scripture: return Icons.menu_book;
       case HabitCategory.exercise: return Icons.fitness_center;

@@ -1,10 +1,10 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/habit.dart';
+import '../../../domain/entities/habit.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
-import '../../services/milestone_service.dart';
+import '../../../domain/services/milestone_service.dart';
 import '../../theme/app_theme.dart';
 import '../habits/all_habits_heatmap_view.dart';
 import '../shared/tribute_paywall_view.dart';
@@ -39,7 +39,7 @@ class _JourneyViewState extends State<JourneyView> {
     final totalGivingDays = _totalGivingDays(habits);
     final totalCheckIns = habits.fold<int>(0, (s, h) => s + h.entries.where((e) => e.isCompleted).length);
     final gratitudeDays = habits
-        .where((h) => h.isBuiltIn && h.habitCategory == HabitCategory.gratitude)
+        .where((h) => h.isBuiltIn && h.category == HabitCategory.gratitude)
         .firstOrNull
         ?.totalCompletedDays() ?? 0;
 
@@ -172,7 +172,7 @@ class _JourneyViewState extends State<JourneyView> {
           const SizedBox(height: 14),
           ...habits.map((habit) {
             final stat = _milestoneService.lifetimeStat(habit);
-            final isAbstain = habit.habitTrackingType == HabitTrackingType.abstain;
+            final isAbstain = habit.trackingType == HabitTrackingType.abstain;
             final accent = isAbstain ? TributeColor.sage : TributeColor.golden;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -208,8 +208,8 @@ class _JourneyViewState extends State<JourneyView> {
   }
 
   IconData _habitIcon(Habit habit) {
-    if (habit.habitTrackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
-    switch (habit.habitCategory) {
+    if (habit.trackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
+    switch (habit.category) {
       case HabitCategory.gratitude: return Icons.auto_awesome;
       case HabitCategory.scripture: return Icons.menu_book;
       case HabitCategory.exercise: return Icons.fitness_center;
@@ -413,7 +413,7 @@ class _JourneyViewState extends State<JourneyView> {
           else
             ...allMilestones.map((item) {
               final (habit, milestone) = item;
-              final isAbstain = habit.habitTrackingType == HabitTrackingType.abstain;
+              final isAbstain = habit.trackingType == HabitTrackingType.abstain;
               final accent = isAbstain ? TributeColor.sage : TributeColor.golden;
 
               return Padding(

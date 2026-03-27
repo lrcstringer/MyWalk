@@ -1,4 +1,4 @@
-import '../models/habit.dart';
+import '../entities/habit.dart';
 
 enum DayTier { nothing, partial, substantial, full }
 
@@ -13,7 +13,7 @@ class DailyScoreService {
     final entry = habit.entryFor(dayStart);
     if (entry == null) return 0;
 
-    switch (habit.habitTrackingType) {
+    switch (habit.trackingType) {
       case HabitTrackingType.timed:
       case HabitTrackingType.count:
         if (habit.dailyTarget <= 0) return entry.isCompleted ? 1.0 : 0.0;
