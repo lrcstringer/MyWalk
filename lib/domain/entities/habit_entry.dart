@@ -73,4 +73,34 @@ class HabitEntry {
         gratitudeNote: map['gratitudeNote'] as String?,
         habitId: map['habitId'] as String? ?? '',
       );
+
+  // ── Firestore ─────────────────────────────────────────────────────────────
+
+  /// Date key used as the Firestore document ID (e.g. "2024-03-27").
+  static String dateKey(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}'
+      '-${date.month.toString().padLeft(2, '0')}'
+      '-${date.day.toString().padLeft(2, '0')}';
+
+  Map<String, dynamic> toFirestore() => {
+        'id': id,
+        'date': dateKey(date),
+        'value': value,
+        'isCompleted': isCompleted,
+        'gratitudeNote': gratitudeNote,
+        'habitId': habitId,
+      };
+
+  factory HabitEntry.fromFirestore(Map<String, dynamic> data) {
+    final dateStr = data['date'] as String? ?? '';
+    final parsed = DateTime.tryParse(dateStr);
+    return HabitEntry(
+      id: data['id'] as String? ?? (throw StateError('HabitEntry.fromFirestore: missing id in $data')),
+      date: parsed != null ? DateTime(parsed.year, parsed.month, parsed.day) : DateTime(2000, 1, 1),
+      value: (data['value'] as num?)?.toDouble() ?? 0,
+      isCompleted: (data['isCompleted'] as bool?) ?? false,
+      gratitudeNote: data['gratitudeNote'] as String?,
+      habitId: data['habitId'] as String? ?? '',
+    );
+  }
 }

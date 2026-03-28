@@ -1,76 +1,164 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
+
+/// Product IDs — must match App Store Connect / Google Play Console exactly.
+class TributeProducts {
+  static const monthly = 'tribute_premium_monthly';
+  static const annual = 'tribute_premium_annual';
+  static const lifetime = 'tribute_premium_lifetime';
+  static const all = {monthly, annual, lifetime};
+}
 
 class StoreProvider extends ChangeNotifier {
-  Offerings? offerings;
+  final FirebaseFirestore _db;
+  final InAppPurchase _iap;
+
+  StoreProvider({
+    FirebaseFirestore? db,
+    InAppPurchase? iap,
+  })  : _db = db ?? FirebaseFirestore.instance,
+        _iap = iap ?? InAppPurchase.instance;
+
+  Map<String, ProductDetails> _products = {};
   bool isPremium = false;
   bool isLoading = false;
   bool isPurchasing = false;
   String? error;
 
-  bool _configured = false;
+  StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
 
-  void configure(String apiKey) {
-    if (apiKey.isEmpty || _configured) return;
-    Purchases.configure(PurchasesConfiguration(apiKey));
-    _configured = true;
-    _init();
+  // ── Getters ───────────────────────────────────────────────────────────────
+
+  ProductDetails? get monthlyProduct => _products[TributeProducts.monthly];
+  ProductDetails? get annualProduct => _products[TributeProducts.annual];
+  ProductDetails? get lifetimeProduct => _products[TributeProducts.lifetime];
+
+  String? get monthlySavingsText {
+    final monthly = monthlyProduct;
+    final annual = annualProduct;
+    if (monthly == null || annual == null) return null;
+    final monthlyTotal = monthly.rawPrice * 12;
+    final annualPrice = annual.rawPrice;
+    if (monthlyTotal <= annualPrice) return null;
+    final savings = ((monthlyTotal - annualPrice) / monthlyTotal * 100).round();
+    return 'Save $savings%';
   }
 
-  Future<void> _init() async {
-    _listenForUpdates();
-    await fetchOfferings();
-    await checkStatus();
-  }
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-  void _listenForUpdates() {
-    if (!_configured) return;
-    Purchases.addCustomerInfoUpdateListener((info) {
-      isPremium = info.entitlements.all['premium']?.isActive == true;
-      notifyListeners();
-    });
-  }
-
-  Future<void> fetchOfferings() async {
-    if (!_configured) return;
+  /// Call once after the provider is created (and the user may be authenticated).
+  Future<void> init() async {
     isLoading = true;
     notifyListeners();
-    try {
-      offerings = await Purchases.getOfferings();
-    } catch (e) {
-      error = e.toString();
+
+    final available = await _iap.isAvailable();
+    if (!available) {
+      isLoading = false;
+      notifyListeners();
+      return;
     }
+
+    _purchaseSub = _iap.purchaseStream.listen(
+      _onPurchaseUpdates,
+      onError: (Object e) {
+        error = e.toString();
+        notifyListeners();
+      },
+    );
+
+    await Future.wait([
+      _loadProducts(),
+      _syncPremiumFromFirestore(),
+    ]);
+
     isLoading = false;
     notifyListeners();
   }
 
-  Future<void> purchase(Package package) async {
-    if (!_configured) return;
+  @override
+  void dispose() {
+    _purchaseSub?.cancel();
+    super.dispose();
+  }
+
+  // ── Products ──────────────────────────────────────────────────────────────
+
+  Future<void> _loadProducts() async {
+    try {
+      final response = await _iap.queryProductDetails(TributeProducts.all);
+      _products = {for (final p in response.productDetails) p.id: p};
+    } catch (e) {
+      error = e.toString();
+    }
+  }
+
+  // ── Premium status ────────────────────────────────────────────────────────
+
+  /// Reads premium status from Firestore (source of truth after server validation).
+  Future<void> _syncPremiumFromFirestore() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      isPremium = false;
+      return;
+    }
+    try {
+      final snap = await _db
+          .collection('users')
+          .doc(uid)
+          .collection('subscription')
+          .doc('status')
+          .get();
+
+      if (!snap.exists || snap.data() == null) {
+        isPremium = false;
+        return;
+      }
+      final data = snap.data()!;
+      final status = data['status'] as String?;
+      if (status != 'active') {
+        isPremium = false;
+        return;
+      }
+      final expiresAt = data['expiresAt'];
+      if (expiresAt == null) {
+        isPremium = true; // lifetime
+        return;
+      }
+      final expiry = expiresAt is Timestamp ? expiresAt.toDate() : null;
+      isPremium = expiry != null && expiry.isAfter(DateTime.now());
+    } catch (_) {
+      // Network error — leave isPremium unchanged (optimistic for existing users).
+    }
+  }
+
+  // ── Purchase flow ─────────────────────────────────────────────────────────
+
+  Future<void> purchase(ProductDetails product) async {
     isPurchasing = true;
     error = null;
     notifyListeners();
     try {
-      final result = await Purchases.purchasePackage(package);
-      isPremium = result.entitlements.all['premium']?.isActive == true;
-    } on PurchasesErrorCode catch (e) {
-      if (e != PurchasesErrorCode.purchaseCancelledError && e != PurchasesErrorCode.paymentPendingError) {
-        error = e.toString();
-      }
+      final param = PurchaseParam(productDetails: product);
+      await _iap.buyNonConsumable(purchaseParam: param);
+      // Actual delivery happens in _onPurchaseUpdates.
     } catch (e) {
       error = e.toString();
+      isPurchasing = false;
+      notifyListeners();
     }
-    isPurchasing = false;
-    notifyListeners();
   }
 
   Future<void> restore() async {
-    if (!_configured) return;
     isLoading = true;
+    error = null;
     notifyListeners();
     try {
-      final info = await Purchases.restorePurchases();
-      isPremium = info.entitlements.all['premium']?.isActive == true;
-      if (!isPremium) error = 'No active subscription found.';
+      await _iap.restorePurchases();
+      // Delivery/verification happens in _onPurchaseUpdates.
     } catch (e) {
       error = e.toString();
     }
@@ -78,31 +166,87 @@ class StoreProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> checkStatus() async {
-    if (!_configured) return;
-    try {
-      final info = await Purchases.getCustomerInfo();
-      isPremium = info.entitlements.all['premium']?.isActive == true;
-      notifyListeners();
-    } catch (_) {}
+  // ── Purchase stream handler ───────────────────────────────────────────────
+
+  Future<void> _onPurchaseUpdates(List<PurchaseDetails> purchases) async {
+    for (final purchase in purchases) {
+      switch (purchase.status) {
+        case PurchaseStatus.pending:
+          // Nothing to do — UI already shows spinner.
+          break;
+
+        case PurchaseStatus.purchased:
+        case PurchaseStatus.restored:
+          // Complete the transaction on the store side first.
+          if (purchase.pendingCompletePurchase) {
+            await _iap.completePurchase(purchase);
+          }
+          await _validateWithServer(purchase);
+          isPurchasing = false;
+          notifyListeners();
+
+        case PurchaseStatus.error:
+          final msg = purchase.error?.message ?? 'Purchase failed';
+          // Ignore user-cancelled (code 2 on iOS, userCancelled on Android).
+          if (!_isCancelledError(purchase.error)) {
+            error = msg;
+          }
+          isPurchasing = false;
+          notifyListeners();
+
+        case PurchaseStatus.canceled:
+          isPurchasing = false;
+          notifyListeners();
+      }
+    }
   }
 
-  Package? get monthlyPackage => offerings?.current?.availablePackages
-      .where((p) => p.identifier == '\$rc_monthly')
-      .firstOrNull;
+  bool _isCancelledError(IAPError? err) {
+    if (err == null) return false;
+    if (Platform.isIOS && err.code == 'storekit_duplicate_product_object') return false;
+    // iOS cancel code is 2 (SKErrorPaymentCancelled)
+    return err.message.toLowerCase().contains('cancel') ||
+        err.code == 'BillingResponse.userCanceled' ||
+        err.code == '2';
+  }
 
-  Package? get annualPackage => offerings?.current?.availablePackages
-      .where((p) => p.identifier == '\$rc_annual')
-      .firstOrNull;
+  // ── Server validation ─────────────────────────────────────────────────────
 
-  String? get monthlySavingsText {
-    final monthly = monthlyPackage;
-    final annual = annualPackage;
-    if (monthly == null || annual == null) return null;
-    final monthlyTotal = monthly.storeProduct.price * 12;
-    final annualPrice = annual.storeProduct.price;
-    if (monthlyTotal <= annualPrice) return null;
-    final savings = ((monthlyTotal - annualPrice) / monthlyTotal * 100).round();
-    return 'Save $savings%';
+  /// Calls the `validateReceipt` Firebase Function to verify the purchase
+  /// server-side and write subscription status to Firestore.
+  Future<void> _validateWithServer(PurchaseDetails purchase) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      // TODO(production): call the `validateReceipt` Firebase callable function here,
+      // passing platform + receiptData/purchaseToken + productId. The function validates
+      // with Apple/Google and writes to users/{uid}/subscription/status in Firestore.
+      //
+      // Example payload to send:
+      //   { platform: 'ios', receiptData: <base64>, productId: purchase.productID }
+      //   { platform: 'android', purchaseToken: <token>, productId: purchase.productID }
+      //
+      // Dev placeholder: write directly to Firestore so the app is testable locally.
+      await _setDevPremium(uid, purchase.productID);
+    } catch (e) {
+      error = 'Receipt validation failed: ${e.toString()}';
+    }
+  }
+
+  /// Temporary dev-only helper: writes a local-only subscription record.
+  /// Replace with a real callable function invocation before production launch.
+  Future<void> _setDevPremium(String uid, String productId) async {
+    final isLifetime = productId == TributeProducts.lifetime;
+    await _db.collection('users').doc(uid).collection('subscription').doc('status').set({
+      'productId': productId,
+      'platform': Platform.isIOS ? 'ios' : 'android',
+      'status': 'active',
+      'validatedAt': FieldValue.serverTimestamp(),
+      'expiresAt': isLifetime
+          ? null
+          : Timestamp.fromDate(DateTime.now().add(const Duration(days: 365))),
+    });
+    isPremium = true;
   }
 }

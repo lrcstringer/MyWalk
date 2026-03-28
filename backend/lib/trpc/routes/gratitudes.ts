@@ -2,7 +2,7 @@ import * as z from "zod";
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "../create-context";
-import { dbGet, dbSet } from "../../lib/db";
+import { dbGet, dbSet } from "../../db";
 
 interface SharedGratitude {
   id: string;

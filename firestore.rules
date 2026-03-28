@@ -25,7 +25,25 @@ service cloud.firestore {
 
     // ─── users ────────────────────────────────────────────────────────────
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      // Profile doc: owner read/write. Subscription field must never be set by client.
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+                   && !('subscription' in request.resource.data);
+
+      // ── habits subcollection ──────────────────────────────────────────
+      match /habits/{habitId} {
+        allow read, write: if isOwner(userId);
+
+        match /entries/{entryId} {
+          allow read, write: if isOwner(userId);
+        }
+      }
+
+      // ── subscription (server-write only via Admin SDK / Cloud Functions) ──
+      match /subscription/{docId} {
+        allow read:  if isOwner(userId);
+        allow write: if false; // All writes come from validateReceipt / webhook Functions
+      }
     }
 
     // ─── inviteCodes ──────────────────────────────────────────────────────

@@ -44,9 +44,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _purchase(StoreProvider store) async {
-    final pkg = _yearlySelected ? store.annualPackage : store.monthlyPackage;
-    if (pkg != null) {
-      await store.purchase(pkg);
+    final product = _yearlySelected ? store.annualProduct : store.monthlyProduct;
+    if (product != null) {
+      await store.purchase(product);
       if (store.isPremium && mounted) widget.onNext();
     } else {
       widget.onNext();
@@ -136,6 +136,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5))),
             ),
           ]),
+          if (store.error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(store.error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12, color: TributeColor.warmCoral)),
+            ),
         ]),
       ),
     ]);
@@ -192,11 +199,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Widget _planSelector(StoreProvider store) {
+    final monthly = store.monthlyProduct;
+    final annual = store.annualProduct;
+
+    if (monthly == null && annual == null) {
+      return Text('Loading plans\u2026',
+          style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)));
+    }
+
     return Row(children: [
-      if (store.monthlyPackage != null) ...[
+      if (monthly != null) ...[
         Expanded(child: _planOption(
           title: 'Monthly',
-          price: '\$${store.monthlyPackage!.storeProduct.price.toStringAsFixed(2)}',
+          price: monthly.price,
           detail: 'per month',
           isSelected: !_yearlySelected,
           badge: null,
@@ -204,11 +219,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
         )),
         const SizedBox(width: 12),
       ],
-      if (store.annualPackage != null)
+      if (annual != null)
         Expanded(child: _planOption(
           title: 'Yearly',
-          price: '\$${store.annualPackage!.storeProduct.price.toStringAsFixed(2)}',
-          detail: '\$${(store.annualPackage!.storeProduct.price / 365).toStringAsFixed(2)}/day',
+          price: annual.price,
+          detail: '\$${(annual.rawPrice / 365).toStringAsFixed(2)}/day',
           trialText: '7-day free trial',
           isSelected: _yearlySelected,
           badge: store.monthlySavingsText,

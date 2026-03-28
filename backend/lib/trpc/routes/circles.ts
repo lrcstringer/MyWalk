@@ -2,7 +2,7 @@ import * as z from "zod";
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "../create-context";
-import { dbGet, dbSet, dbDelete, dbList } from "../../lib/db";
+import { dbGet, dbSet, dbDelete, dbList } from "../../db";
 
 const MAX_CIRCLE_MEMBERS = 10_000;
 

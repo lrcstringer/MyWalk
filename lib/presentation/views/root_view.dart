@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/habit_provider.dart';
-import '../../data/datasources/local/notification_service.dart';
+import '../../data/datasources/local/notification_service.dart'; // used in _loadOnboardingState
 import '../../domain/services/week_cycle_manager.dart';
 import 'content_view.dart';
 import 'onboarding/onboarding_container_view.dart';
@@ -38,19 +38,19 @@ class _RootViewState extends State<RootView> {
   }
 
   Future<void> _completeOnboarding() async {
-    final wcm = context.read<WeekCycleManager>();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tribute_onboarding_complete', true);
-    await prefs.setInt('tribute_onboarding_date', DateTime.now().millisecondsSinceEpoch);
-
-    await wcm.dedicateCurrentWeek();
-
-    final authorized = await NotificationService.shared.requestAuthorization();
-    if (authorized) {
-      await NotificationService.shared.scheduleDailyReminders();
+    // Notification permission and scheduling are handled by NotificationPreferencesScreen
+    // (step 8 of onboarding). Do not repeat them here — a second requestAuthorization()
+    // call can throw and would prevent the app from ever transitioning out of onboarding.
+    try {
+      final wcm = context.read<WeekCycleManager>();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('tribute_onboarding_complete', true);
+      await prefs.setInt('tribute_onboarding_date', DateTime.now().millisecondsSinceEpoch);
+      await wcm.dedicateCurrentWeek();
+    } catch (_) {
+      // Always complete onboarding — errors here must not leave the user stuck.
     }
-
-    setState(() => _onboardingComplete = true);
+    if (mounted) setState(() => _onboardingComplete = true);
   }
 
   @override

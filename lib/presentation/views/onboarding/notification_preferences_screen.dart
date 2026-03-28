@@ -32,14 +32,18 @@ class _NotificationPreferencesScreenState extends State<NotificationPreferencesS
   }
 
   Future<void> _handleContinue() async {
-    if (_remindersEnabled) {
-      await NotificationService.shared.requestAuthorization();
-      await _savePreferences();
-      if (NotificationService.shared.isAuthorized) {
-        await NotificationService.shared.scheduleDailyReminders();
+    try {
+      if (_remindersEnabled) {
+        await NotificationService.shared.requestAuthorization();
+        await _savePreferences();
+        if (NotificationService.shared.isAuthorized) {
+          await NotificationService.shared.scheduleDailyReminders();
+        }
+      } else {
+        await _savePreferences();
       }
-    } else {
-      await _savePreferences();
+    } catch (_) {
+      // Always advance — notification permission errors must not block onboarding.
     }
     widget.onNext();
   }

@@ -116,13 +116,22 @@ class _TributePaywallViewState extends State<TributePaywallView> {
   }
 
   Widget _planCards(StoreProvider store) {
-    final monthly = store.monthlyPackage;
-    final annual = store.annualPackage;
+    final monthly = store.monthlyProduct;
+    final annual = store.annualProduct;
+
+    if (monthly == null && annual == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Text('Loading plans\u2026',
+            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4))),
+      );
+    }
+
     return Row(children: [
       if (monthly != null) ...[
         Expanded(child: _planCard(
           title: 'Monthly',
-          price: '\$${monthly.storeProduct.price.toStringAsFixed(2)}',
+          price: monthly.price,
           subtitle: 'per month',
           selected: !_yearlySelected,
           badge: null,
@@ -133,14 +142,12 @@ class _TributePaywallViewState extends State<TributePaywallView> {
       if (annual != null)
         Expanded(child: _planCard(
           title: 'Yearly',
-          price: '\$${annual.storeProduct.price.toStringAsFixed(2)}',
+          price: annual.price,
           subtitle: 'best value',
           selected: _yearlySelected,
           badge: store.monthlySavingsText,
           onTap: () => setState(() => _yearlySelected = true),
-        ))
-      else if (monthly == null)
-        _noPlansFallback(),
+        )),
     ]);
   }
 
@@ -190,15 +197,6 @@ class _TributePaywallViewState extends State<TributePaywallView> {
           Text(subtitle,
               style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.4))),
         ]),
-      ),
-    );
-  }
-
-  Widget _noPlansFallback() {
-    return Expanded(
-      child: Center(
-        child: Text('Loading plans...',
-            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4))),
       ),
     );
   }
@@ -275,7 +273,7 @@ class _TributePaywallViewState extends State<TributePaywallView> {
   }
 
   Future<void> _purchase(StoreProvider store) async {
-    final pkg = _yearlySelected ? store.annualPackage : store.monthlyPackage;
-    if (pkg != null) await store.purchase(pkg);
+    final product = _yearlySelected ? store.annualProduct : store.monthlyProduct;
+    if (product != null) await store.purchase(product);
   }
 }

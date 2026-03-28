@@ -1,6 +1,7 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { IncomingMessage, ServerResponse } from 'http';
 import app from './hono';
+export { validateReceipt, appleNotification, googleNotification } from './iap';
 
 // Convert Firebase's Express-style req/res into a Fetch API Request,
 // run it through the Hono app, and pipe the Response back out.

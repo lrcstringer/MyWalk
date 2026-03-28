@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'habit_entry.dart';
 
@@ -267,7 +268,7 @@ class Habit {
       allTimeCompletedCount ?? entries.where((e) => e.isCompleted).length;
 
   double totalValue() =>
-      allTimeTotalValue ?? entries.fold(0.0, (sum, e) => sum + e.value);
+      allTimeTotalValue ?? entries.fold(0.0, (acc, e) => acc + e.value);
 
   static bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
@@ -320,4 +321,57 @@ class Habit {
         allTimeCompletedCount: allTimeCompletedCount,
         allTimeTotalValue: allTimeTotalValue,
       );
+
+  // ── Firestore ─────────────────────────────────────────────────────────────
+
+  Map<String, dynamic> toFirestore() => {
+        'id': id,
+        'name': name,
+        'category': category.rawValue,
+        'trackingType': trackingType.rawValue,
+        'purposeStatement': purposeStatement,
+        'dailyTarget': dailyTarget,
+        'targetUnit': targetUnit,
+        'isBuiltIn': isBuiltIn,
+        'createdAt': Timestamp.fromDate(createdAt),
+        'sortOrder': sortOrder,
+        'activeDays': activeDays,
+        'trigger': trigger,
+        'copingPlan': copingPlan,
+        'allTimeCompletedCount': allTimeCompletedCount ?? 0,
+        'allTimeTotalValue': allTimeTotalValue ?? 0.0,
+      };
+
+  factory Habit.fromFirestore(
+    Map<String, dynamic> data, {
+    List<HabitEntry> entries = const [],
+  }) {
+    DateTime createdAt;
+    final raw = data['createdAt'];
+    if (raw is Timestamp) {
+      createdAt = raw.toDate();
+    } else if (raw is String) {
+      createdAt = DateTime.tryParse(raw) ?? DateTime.now();
+    } else {
+      createdAt = DateTime.now();
+    }
+    return Habit(
+      id: data['id'] as String? ?? const Uuid().v4(),
+      name: data['name'] as String? ?? '',
+      category: HabitCategory.fromString(data['category'] as String? ?? ''),
+      trackingType: HabitTrackingType.fromString(data['trackingType'] as String? ?? ''),
+      purposeStatement: data['purposeStatement'] as String? ?? '',
+      dailyTarget: (data['dailyTarget'] as num?)?.toDouble() ?? 1,
+      targetUnit: data['targetUnit'] as String? ?? '',
+      isBuiltIn: (data['isBuiltIn'] as bool?) ?? false,
+      createdAt: createdAt,
+      sortOrder: (data['sortOrder'] as num?)?.toInt() ?? 0,
+      activeDays: data['activeDays'] as String? ?? '1,2,3,4,5,6,7',
+      trigger: data['trigger'] as String? ?? '',
+      copingPlan: data['copingPlan'] as String? ?? '',
+      entries: entries,
+      allTimeCompletedCount: (data['allTimeCompletedCount'] as num?)?.toInt(),
+      allTimeTotalValue: (data['allTimeTotalValue'] as num?)?.toDouble(),
+    );
+  }
 }

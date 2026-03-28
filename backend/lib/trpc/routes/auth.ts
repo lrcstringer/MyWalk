@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 import { createTRPCRouter, publicProcedure } from "../create-context";
-import { dbGet, dbSet } from "../../lib/db";
+import { dbGet, dbSet } from "../../db";
 
 interface UserRecord {
   id: string;

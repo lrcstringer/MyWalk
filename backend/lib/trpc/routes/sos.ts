@@ -2,7 +2,7 @@ import * as z from "zod";
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "../create-context";
-import { dbGet, dbSet } from "../../lib/db";
+import { dbGet, dbSet } from "../../db";
 
 const MAX_SOS_RECIPIENTS = 20;
 

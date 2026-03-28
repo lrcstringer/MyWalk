@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 import { createTRPCRouter, publicProcedure, protectedProcedure } from "../create-context";
-import { dbGet } from "../../lib/db";
+import { dbGet } from "../../db";
 
 interface Circle {
   id: string;
