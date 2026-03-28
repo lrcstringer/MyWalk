@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
 class IdentityScreen extends StatefulWidget {
-  final void Function(List<String>) onContinue;
+  /// Called with (name, selections) when the user taps "That's me".
+  final void Function(String name, List<String> selections) onContinue;
   final VoidCallback onSkip;
 
-  const IdentityScreen({super.key, required this.onContinue, required this.onSkip});
+  /// Name pre-filled from the sign-in provider (Apple / Google display name).
+  final String? prefilledName;
+
+  const IdentityScreen({
+    super.key,
+    required this.onContinue,
+    required this.onSkip,
+    this.prefilledName,
+  });
 
   @override
   State<IdentityScreen> createState() => _IdentityScreenState();
@@ -13,6 +22,7 @@ class IdentityScreen extends StatefulWidget {
 
 class _IdentityScreenState extends State<IdentityScreen> {
   final Set<String> _selectedOptions = {};
+  String _name = '';
 
   static const _options = [
     ('body', 'Taking better care of my body', Icons.directions_run_rounded),
@@ -23,15 +33,50 @@ class _IdentityScreenState extends State<IdentityScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _name = widget.prefilledName ?? '';
+    // Show the name bottom sheet after the first frame so the screen is visible first.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showNameSheet());
+  }
+
+  Future<void> _showNameSheet() async {
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _NameBottomSheet(
+        initial: _name,
+        onSave: (name) {
+          if (mounted) setState(() => _name = name);
+        },
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final greeting = _name.isNotEmpty ? 'What is God working on\nin your life, $_name?' : 'What is God working on\nin your life right now?';
+
     return Column(children: [
       Expanded(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text(
-              "What's God working on\nin your life right now?",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: TributeColor.warmWhite, height: 1.3),
+            GestureDetector(
+              onTap: _showNameSheet,
+              child: Row(children: [
+                Expanded(
+                  child: Text(
+                    greeting,
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.w700, color: TributeColor.warmWhite, height: 1.3),
+                  ),
+                ),
+                Icon(Icons.edit_rounded,
+                    size: 16, color: TributeColor.golden.withValues(alpha: 0.5)),
+              ]),
             ),
             const SizedBox(height: 10),
             Text(
@@ -128,7 +173,7 @@ class _IdentityScreenState extends State<IdentityScreen> {
               child: ElevatedButton.icon(
                 onPressed: _selectedOptions.isEmpty
                     ? null
-                    : () => widget.onContinue(_selectedOptions.toList()),
+                    : () => widget.onContinue(_name, _selectedOptions.toList()),
                 icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                 label: const Text("That's me",
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
@@ -143,12 +188,121 @@ class _IdentityScreenState extends State<IdentityScreen> {
           ),
           const SizedBox(height: 12),
           TextButton(
-            onPressed: widget.onSkip,
+            onPressed: () => widget.onSkip(),
             child: Text('Skip for now',
                 style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.5))),
           ),
         ]),
       ),
     ]);
+  }
+}
+
+// ── Name Bottom Sheet ─────────────────────────────────────────────────────────
+
+class _NameBottomSheet extends StatefulWidget {
+  final String initial;
+  final void Function(String) onSave;
+
+  const _NameBottomSheet({required this.initial, required this.onSave});
+
+  @override
+  State<_NameBottomSheet> createState() => _NameBottomSheetState();
+}
+
+class _NameBottomSheetState extends State<_NameBottomSheet> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initial);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + bottom),
+      decoration: const BoxDecoration(
+        color: Color(0xFF252535),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Handle bar
+        Center(
+          child: Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          "What should we call you?",
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: TributeColor.warmWhite),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "We\u2019ll use your first name to personalise your experience.",
+          style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.5)),
+        ),
+        const SizedBox(height: 20),
+        TextField(
+          controller: _ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          style: const TextStyle(color: TributeColor.warmWhite, fontSize: 17),
+          decoration: InputDecoration(
+            hintText: 'Your first name',
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+            filled: true,
+            fillColor: TributeColor.cardBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: TributeColor.cardBorder, width: 0.5),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: TributeColor.cardBorder, width: 0.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: TributeColor.golden.withValues(alpha: 0.4), width: 1),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          onSubmitted: (_) => _save(),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _save,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: TributeColor.golden,
+              foregroundColor: TributeColor.charcoal,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  void _save() {
+    widget.onSave(_ctrl.text.trim());
+    Navigator.of(context).pop();
   }
 }

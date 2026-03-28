@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../data/datasources/remote/auth_service.dart';
+import '../../../data/repositories/firestore_user_repository.dart';
 import '../../../domain/entities/habit.dart';
 import '../../providers/habit_provider.dart';
 import '../../theme/app_theme.dart';
 import 'welcome_screen.dart';
+import 'sign_in_screen.dart';
 import 'identity_screen.dart';
 import 'reframe_screen.dart';
 import 'first_gratitude_screen.dart';
@@ -37,19 +39,21 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
   String _customCopingPlan = '';
   Set<int> _customActiveDays = const {1, 2, 3, 4, 5, 6, 7};
 
-  static const int _totalSteps = 11;
+  // 0: Welcome  1: SignIn  2: Identity  3: Reframe  4: FirstGratitude
+  // 5: HabitSelection  6: HabitSetup  7: HabitSummary  8: CoreMechanics
+  // 9: NotificationPrefs  10: Paywall  11: DedicationCeremony
+  static const int _totalSteps = 12;
 
-  void _advance() {
-    setState(() => _currentStep++);
-  }
+  void _advance() => setState(() => _currentStep++);
 
   void _back() {
-    if (_currentStep > 1) setState(() => _currentStep--);
+    if (_currentStep > 2) setState(() => _currentStep--);
   }
 
   @override
   Widget build(BuildContext context) {
-    final showNav = _currentStep > 0 && _currentStep < _totalSteps - 1;
+    // Show nav bar for steps 2-10 (between sign-in and dedication).
+    final showNav = _currentStep >= 2 && _currentStep < _totalSteps - 1;
 
     return Scaffold(
       backgroundColor: TributeColor.charcoal,
@@ -66,7 +70,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(children: [
-        if (_currentStep > 1)
+        if (_currentStep > 2)
           GestureDetector(
             onTap: _back,
             child: SizedBox(
@@ -85,10 +89,12 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
   }
 
   Widget _progressDots() {
+    // Dots for steps 2-10 (9 dots total).
+    const dotSteps = _totalSteps - 3; // steps 2..10 = 9
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(_totalSteps - 2, (i) {
-        final step = i + 1;
+      children: List.generate(dotSteps, (i) {
+        final step = i + 2;
         final active = step == _currentStep;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 250),
@@ -112,20 +118,20 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
         return WelcomeScreen(onNext: _advance);
 
       case 1:
+        return SignInScreen(onNext: _advance);
+
+      case 2:
+        final auth = context.read<AuthService>();
         return IdentityScreen(
-          onContinue: (selections) {
-            SharedPreferences.getInstance().then((prefs) {
-              prefs.setStringList('tribute_identity_selections', selections);
-            });
-            _advance();
-          },
+          prefilledName: auth.givenName,
+          onContinue: (name, selections) => _onIdentityContinue(name, selections),
           onSkip: _advance,
         );
 
-      case 2:
+      case 3:
         return ReframeScreen(onNext: _advance);
 
-      case 3:
+      case 4:
         return FirstGratitudeScreen(
           onComplete: (note) {
             _gratitudeNote = note;
@@ -134,7 +140,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
           },
         );
 
-      case 4:
+      case 5:
         return HabitSelectionScreen(
           onSelect: (category) {
             setState(() => _selectedCategory = category);
@@ -142,7 +148,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
           },
         );
 
-      case 5:
+      case 6:
         if (_selectedCategory == null) {
           _advance();
           return const SizedBox.shrink();
@@ -164,7 +170,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
           },
         );
 
-      case 6:
+      case 7:
         if (_selectedCategory == null) {
           _advance();
           return const SizedBox.shrink();
@@ -183,16 +189,16 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
           },
         );
 
-      case 7:
+      case 8:
         return CoreMechanicsScreen(onNext: _advance);
 
-      case 8:
+      case 9:
         return NotificationPreferencesScreen(onNext: _advance);
 
-      case 9:
+      case 10:
         return PaywallScreen(onNext: _advance);
 
-      case 10:
+      case 11:
         return DedicationCeremonyScreen(
           gratitudeNote: _gratitudeNote,
           habitName: _customHabitName,
@@ -207,6 +213,21 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
       default:
         return const SizedBox.shrink();
     }
+  }
+
+  // ── Callbacks ─────────────────────────────────────────────────────────────
+
+  Future<void> _onIdentityContinue(String name, List<String> selections) async {
+    // Persist name + identity selections to Firestore.
+    final auth = context.read<AuthService>();
+    if (auth.userId != null) {
+      final repo = FirestoreUserRepository();
+      await repo.updateFields({
+        'name': name.isNotEmpty ? name : null,
+        'identitySelections': selections,
+      });
+    }
+    _advance();
   }
 
   void _createGratitudeHabit(String? note) {
