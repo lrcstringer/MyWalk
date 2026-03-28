@@ -3,19 +3,50 @@ import '../../theme/app_theme.dart';
 
 class CoreMechanicsScreen extends StatefulWidget {
   final VoidCallback onNext;
-  const CoreMechanicsScreen({super.key, required this.onNext});
+  final String? givenName;
+  const CoreMechanicsScreen({super.key, required this.onNext, this.givenName});
 
   @override
   State<CoreMechanicsScreen> createState() => _CoreMechanicsScreenState();
 }
 
-class _CoreMechanicsScreenState extends State<CoreMechanicsScreen> {
+class _CoreMechanicsScreenState extends State<CoreMechanicsScreen>
+    with SingleTickerProviderStateMixin {
   final _pageController = PageController();
   int _currentPanel = 0;
   int _counterKey = 0;
 
+  late final AnimationController _nudgeController;
+  late final Animation<double> _nudgeOffset;
+  int _nudgeCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _nudgeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _nudgeOffset = Tween<double>(begin: 0, end: 8).animate(
+      CurvedAnimation(parent: _nudgeController, curve: Curves.easeInOut),
+    );
+    _nudgeController.addStatusListener((status) {
+      if (!mounted) return;
+      if (status == AnimationStatus.completed) {
+        _nudgeController.reverse();
+      } else if (status == AnimationStatus.dismissed) {
+        _nudgeCount++;
+        if (_nudgeCount < 3) _nudgeController.forward();
+      }
+    });
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) _nudgeController.forward();
+    });
+  }
+
   @override
   void dispose() {
+    _nudgeController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -25,6 +56,7 @@ class _CoreMechanicsScreenState extends State<CoreMechanicsScreen> {
       _currentPanel = index;
       if (index == 1) _counterKey++;
     });
+    if (index > 0) _nudgeController.stop();
   }
 
   @override
@@ -89,8 +121,15 @@ class _CoreMechanicsScreenState extends State<CoreMechanicsScreen> {
                       Text('Swipe to continue',
                           style: TextStyle(fontSize: 15, color: TributeColor.softGold.withValues(alpha: 0.5))),
                       const SizedBox(width: 4),
-                      Icon(Icons.chevron_right, size: 14,
-                          color: TributeColor.softGold.withValues(alpha: 0.4)),
+                      AnimatedBuilder(
+                        animation: _nudgeOffset,
+                        builder: (context, child) => Transform.translate(
+                          offset: Offset(_nudgeOffset.value, 0),
+                          child: child,
+                        ),
+                        child: Icon(Icons.chevron_right, size: 14,
+                            color: TributeColor.softGold.withValues(alpha: 0.4)),
+                      ),
                     ]),
                   ),
           ),
@@ -190,8 +229,10 @@ class _CoreMechanicsScreenState extends State<CoreMechanicsScreen> {
         const SizedBox(height: 20),
         const Icon(Icons.groups_rounded, size: 48, color: TributeColor.golden),
         const SizedBox(height: 24),
-        const Text(
-          'You\u2019re not doing\nthis alone.',
+        Text(
+          widget.givenName != null
+              ? 'You\u2019re not doing\nthis alone, ${widget.givenName}.'
+              : 'You\u2019re not doing\nthis alone.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: TributeColor.softGold),
         ),

@@ -190,7 +190,10 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
         );
 
       case 8:
-        return CoreMechanicsScreen(onNext: _advance);
+        return CoreMechanicsScreen(
+          onNext: _advance,
+          givenName: context.read<AuthService>().givenName,
+        );
 
       case 9:
         return NotificationPreferencesScreen(onNext: _advance);
@@ -208,6 +211,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
           dailyTarget: _customDailyTarget,
           targetUnit: _customTargetUnit,
           onComplete: widget.onComplete,
+          givenName: context.read<AuthService>().givenName,
         );
 
       default:

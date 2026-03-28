@@ -12,6 +12,7 @@ class DedicationCeremonyScreen extends StatefulWidget {
   final double dailyTarget;
   final String targetUnit;
   final VoidCallback onComplete;
+  final String? givenName;
 
   const DedicationCeremonyScreen({
     super.key,
@@ -23,6 +24,7 @@ class DedicationCeremonyScreen extends StatefulWidget {
     this.dailyTarget = 1,
     this.targetUnit = '',
     required this.onComplete,
+    this.givenName,
   });
 
   @override
@@ -300,8 +302,11 @@ class _DedicationCeremonyScreenState extends State<DedicationCeremonyScreen>
               const Text('Your tribute is set.',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: TributeColor.warmWhite)),
               const SizedBox(height: 8),
-              const Text('Go in grace.',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: TributeColor.softGold)),
+              Text(
+                  widget.givenName != null
+                      ? 'Remain steadfast in all you do, ${widget.givenName}.'
+                      : 'Remain steadfast in all you do.',
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: TributeColor.softGold)),
             ]),
           ),
         ),
