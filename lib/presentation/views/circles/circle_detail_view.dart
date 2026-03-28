@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../providers/store_provider.dart';
 import '../../../domain/repositories/circle_repository.dart';
 import '../../../domain/entities/circle.dart';
@@ -485,21 +486,21 @@ class _CircleDetailViewState extends State<CircleDetailView> {
 
   void _showSOSRequest(CircleDetails detail) {
     showModalBottomSheet(
-      context: context, isScrollControlled: true, backgroundColor: TributeColor.charcoal,
+      context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: TributeColor.charcoal,
       builder: (_) => SOSPrayerRequestView(circleId: widget.circleId, members: detail.members),
     );
   }
 
   void _showSundaySummary(CircleDetails detail) {
     showModalBottomSheet(
-      context: context, isScrollControlled: true, backgroundColor: TributeColor.charcoal,
+      context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: TributeColor.charcoal,
       builder: (_) => CircleSundaySummaryView(circleId: widget.circleId, circleName: detail.name),
     );
   }
 
   void _shareInvite(CircleDetails detail) {
     showModalBottomSheet(
-      context: context, isScrollControlled: true, backgroundColor: TributeColor.charcoal,
+      context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: TributeColor.charcoal,
       builder: (_) => _ShareInviteSheet(
         circleName: detail.name, inviteCode: detail.inviteCode),
     );
@@ -570,11 +571,8 @@ class _ShareInviteSheet extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  final text = 'Join my Prayer Circle "$circleName" on Tribute! Use invite code: $inviteCode';
-                  Clipboard.setData(ClipboardData(text: text));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Copied to clipboard')),
-                  );
+                  final text = 'Join my Prayer Circle "$circleName" on Tribute!\n\nUse invite code: $inviteCode\n\nDownload Tribute: https://tribute.app';
+                  Share.share(text);
                 },
                 icon: const Icon(Icons.share_rounded, size: 18),
                 label: const Text('Share Invite', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),

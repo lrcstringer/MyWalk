@@ -70,6 +70,9 @@ dependencies:
   # Timezone (required by flutter_local_notifications for scheduling)
   timezone: ^0.9.4
 
+  # System share sheet (invite links)
+  share_plus: ^10.1.4
+
   # Custom fonts (DM Serif Display + Inter)
   google_fonts: ^6.2.1
 

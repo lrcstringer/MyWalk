@@ -28,6 +28,7 @@ class _SOSCirclePickerViewState extends State<SOSCirclePickerView> {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
+        useSafeArea: true,
         backgroundColor: TributeColor.charcoal,
         builder: (_) => SOSPrayerRequestView(circleId: detail.id, members: detail.members),
       );

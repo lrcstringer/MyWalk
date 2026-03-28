@@ -143,6 +143,7 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
+          useSafeArea: true,
           backgroundColor: TributeColor.charcoal,
           builder: (_) => SOSCirclePickerView(circles: circles),
         );

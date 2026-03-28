@@ -178,7 +178,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
   }
 
   void _openJoin() => showModalBottomSheet(
-    context: context, isScrollControlled: true, backgroundColor: TributeColor.charcoal,
+    context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: TributeColor.charcoal,
     builder: (_) => JoinCircleView(
       initialCode: _joinCode,
       onJoined: () async { _joinCode = ''; await _loadCircles(); },
@@ -186,7 +186,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
   );
 
   void _openCreate() => showModalBottomSheet(
-    context: context, isScrollControlled: true, backgroundColor: TributeColor.charcoal,
+    context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: TributeColor.charcoal,
     builder: (_) => CreateCircleView(
       onCreated: (c) => setState(() => _circles.insert(0, Circle(
         id: c.id, name: c.name, description: '', memberCount: 1, role: 'admin', inviteCode: c.inviteCode,
