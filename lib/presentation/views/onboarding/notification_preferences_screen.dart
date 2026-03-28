@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import '../../../data/datasources/local/notification_service.dart';
+import '../../../domain/repositories/user_preferences_repository.dart';
 import '../../theme/app_theme.dart';
 
 class NotificationPreferencesScreen extends StatefulWidget {
@@ -25,10 +26,10 @@ class _NotificationPreferencesScreenState extends State<NotificationPreferencesS
   }
 
   Future<void> _savePreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tribute_reminders_enabled', _remindersEnabled);
-    await prefs.setInt('tribute_reminder_hour', _reminderTime.hour);
-    await prefs.setInt('tribute_reminder_minute', _reminderTime.minute);
+    final userPrefs = context.read<UserPreferencesRepository>();
+    await userPrefs.setBool('tribute_reminders_enabled', _remindersEnabled);
+    await userPrefs.setInt('tribute_reminder_hour', _reminderTime.hour);
+    await userPrefs.setInt('tribute_reminder_minute', _reminderTime.minute);
   }
 
   Future<void> _handleContinue() async {

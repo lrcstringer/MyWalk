@@ -4,6 +4,7 @@ class UserProfile {
   final String uid;
   final String? name;
   final String? email;
+  final String? photoURL;
   final List<String> identitySelections;
   final DateTime createdAt;
   final DateTime? weekDedicatedAt;
@@ -13,6 +14,7 @@ class UserProfile {
     required this.uid,
     this.name,
     this.email,
+    this.photoURL,
     this.identitySelections = const [],
     required this.createdAt,
     this.weekDedicatedAt,
@@ -22,6 +24,7 @@ class UserProfile {
   UserProfile copyWith({
     String? name,
     String? email,
+    String? photoURL,
     List<String>? identitySelections,
     DateTime? weekDedicatedAt,
     DateTime? onboardingDate,
@@ -30,6 +33,7 @@ class UserProfile {
         uid: uid,
         name: name ?? this.name,
         email: email ?? this.email,
+        photoURL: photoURL ?? this.photoURL,
         identitySelections: identitySelections ?? this.identitySelections,
         createdAt: createdAt,
         weekDedicatedAt: weekDedicatedAt ?? this.weekDedicatedAt,
@@ -41,6 +45,7 @@ class UserProfile {
         'email': email,
         'identitySelections': identitySelections,
         'createdAt': Timestamp.fromDate(createdAt),
+        if (photoURL != null) 'photoURL': photoURL,
         if (weekDedicatedAt != null) 'weekDedicatedAt': Timestamp.fromDate(weekDedicatedAt!),
         if (onboardingDate != null) 'onboardingDate': Timestamp.fromDate(onboardingDate!),
       };
@@ -63,6 +68,7 @@ class UserProfile {
       uid: uid,
       name: data['name'] as String?,
       email: data['email'] as String?,
+      photoURL: data['photoURL'] as String?,
       identitySelections: (data['identitySelections'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??

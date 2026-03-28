@@ -15,6 +15,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _yearlySelected = true;
   bool _showContent = false;
   bool _showFeatures = false;
+  bool _purchaseStarted = false;
+  StoreProvider? _store;
 
   static const _freeFeatures = [
     (Icons.volunteer_activism, 'Daily Gratitude'),
@@ -41,13 +43,34 @@ class _PaywallScreenState extends State<PaywallScreen> {
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) setState(() => _showFeatures = true);
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _store = context.read<StoreProvider>();
+      _store!.addListener(_onStoreChanged);
+    });
+  }
+
+  @override
+  void dispose() {
+    _store?.removeListener(_onStoreChanged);
+    super.dispose();
+  }
+
+  void _onStoreChanged() {
+    final store = _store;
+    if (store == null || !mounted) return;
+    if (_purchaseStarted && store.isPremium && !store.isPurchasing) {
+      _purchaseStarted = false;
+      widget.onNext();
+    }
   }
 
   Future<void> _purchase(StoreProvider store) async {
     final product = _yearlySelected ? store.annualProduct : store.monthlyProduct;
     if (product != null) {
+      _purchaseStarted = true;
       await store.purchase(product);
-      if (store.isPremium && mounted) widget.onNext();
+      // Navigation handled by _onStoreChanged when isPremium becomes true.
     } else {
       widget.onNext();
     }

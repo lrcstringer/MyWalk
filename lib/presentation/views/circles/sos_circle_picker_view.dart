@@ -16,9 +16,10 @@ class SOSCirclePickerView extends StatefulWidget {
 class _SOSCirclePickerViewState extends State<SOSCirclePickerView> {
   Circle? _selectedCircle;
   bool _isLoadingDetail = false;
+  String? _detailError;
 
   Future<void> _selectCircle(Circle circle) async {
-    setState(() { _selectedCircle = circle; _isLoadingDetail = true; });
+    setState(() { _selectedCircle = circle; _isLoadingDetail = true; _detailError = null; });
     try {
       final circleRepo = context.read<CircleRepository>();
       final detail = await circleRepo.getCircleDetail(circle.id);
@@ -31,7 +32,7 @@ class _SOSCirclePickerViewState extends State<SOSCirclePickerView> {
         builder: (_) => SOSPrayerRequestView(circleId: detail.id, members: detail.members),
       );
     } catch (_) {
-      if (mounted) setState(() => _isLoadingDetail = false);
+      if (mounted) setState(() { _isLoadingDetail = false; _detailError = "Couldn't connect. Try again."; });
     }
   }
 
@@ -50,7 +51,19 @@ class _SOSCirclePickerViewState extends State<SOSCirclePickerView> {
         leadingWidth: 80,
       ),
       body: SafeArea(
-        child: widget.circles.isEmpty ? _emptyState() : _circleList(),
+        child: Column(children: [
+          Expanded(child: widget.circles.isEmpty ? _emptyState() : _circleList()),
+          if (_detailError != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Row(children: [
+                const Icon(Icons.warning_amber, size: 14, color: TributeColor.warmCoral),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_detailError!,
+                    style: const TextStyle(fontSize: 12, color: TributeColor.warmCoral))),
+              ]),
+            ),
+        ]),
       ),
     );
   }

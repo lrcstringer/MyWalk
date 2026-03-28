@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../data/datasources/remote/api_service.dart';
+import 'package:provider/provider.dart';
+import '../../../domain/entities/circle.dart';
+import '../../../domain/repositories/circle_repository.dart';
 import '../../theme/app_theme.dart';
 
 /// Embeddable gratitude wall widget (used inside CircleDetailView).
@@ -12,14 +14,15 @@ class GratitudeWallWidget extends StatefulWidget {
 }
 
 class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
-  List<SharedGratitudeItem> _gratitudes = [];
+  List<GratitudePost> _gratitudes = [];
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _hasOlderWeeks = true;
   int _weeksBack = 0;
   int _newCount = 0;
   bool _showNewBadge = false;
-  SharedGratitudeItem? _deleteTarget;
+  bool _loadError = false;
+  GratitudePost? _deleteTarget;
 
   @override
   void initState() {
@@ -30,20 +33,20 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
   }
 
   Future<void> _loadWall() async {
-    setState(() => _isLoading = true);
+    setState(() { _isLoading = true; _loadError = false; });
     try {
-      final r = await APIService.shared.getGratitudeWall(widget.circleId, weeksBack: _weeksBack);
+      final r = await context.read<CircleRepository>().getGratitudeWall(widget.circleId, weeksBack: _weeksBack);
       if (mounted) setState(() { _gratitudes = r.gratitudes; _isLoading = false; });
     } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() { _isLoading = false; _loadError = true; });
     }
   }
 
   Future<void> _loadNewCount() async {
     try {
-      final r = await APIService.shared.getGratitudeNewCount(widget.circleId);
-      if (mounted && r.newCount > 0) {
-        setState(() { _newCount = r.newCount; _showNewBadge = true; });
+      final count = await context.read<CircleRepository>().getGratitudeNewCount(widget.circleId);
+      if (mounted && count > 0) {
+        setState(() { _newCount = count; _showNewBadge = true; });
         Future.delayed(const Duration(seconds: 5), () {
           if (mounted) setState(() => _showNewBadge = false);
         });
@@ -52,13 +55,13 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
   }
 
   Future<void> _markSeen() async {
-    try { await APIService.shared.markGratitudesSeen(widget.circleId); } catch (_) {}
+    try { await context.read<CircleRepository>().markGratitudesSeen(widget.circleId); } catch (_) {}
   }
 
   void _loadPreviousWeek() {
     setState(() => _isLoadingMore = true);
     final nextWeek = _weeksBack + 1;
-    APIService.shared.getGratitudeWall(widget.circleId, weeksBack: nextWeek).then((r) {
+    context.read<CircleRepository>().getGratitudeWall(widget.circleId, weeksBack: nextWeek).then((r) {
       if (!mounted) return;
       if (r.gratitudes.isEmpty) {
         setState(() { _hasOlderWeeks = false; _isLoadingMore = false; });
@@ -74,9 +77,9 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
     });
   }
 
-  Future<void> _deleteGratitude(SharedGratitudeItem item) async {
+  Future<void> _deleteGratitude(GratitudePost item) async {
     try {
-      await APIService.shared.deleteGratitude(widget.circleId, item.id);
+      await context.read<CircleRepository>().deleteGratitude(widget.circleId, item.id);
       if (mounted) setState(() => _gratitudes.removeWhere((g) => g.id == item.id));
     } catch (_) {}
   }
@@ -105,6 +108,16 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
           padding: EdgeInsets.all(16),
           child: CircularProgressIndicator(color: TributeColor.golden, strokeWidth: 2),
         ))
+      else if (_loadError && _gratitudes.isEmpty)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Center(
+            child: Text(
+              "Couldn't connect. Check your connection.",
+              style: TextStyle(fontSize: 13, color: TributeColor.warmCoral.withValues(alpha: 0.8)),
+            ),
+          ),
+        )
       else if (_gratitudes.isEmpty)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -145,7 +158,7 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
     ]);
   }
 
-  Widget _gratitudeCard(SharedGratitudeItem item) {
+  Widget _gratitudeCard(GratitudePost item) {
     return GestureDetector(
       onLongPress: item.isMine
           ? () => setState(() => _deleteTarget = item)

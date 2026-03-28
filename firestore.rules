@@ -39,6 +39,11 @@ service cloud.firestore {
         }
       }
 
+      // ── user preferences (synced from all devices via FirestoreUserPreferencesRepository) ──
+      match /state/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // ── subscription (server-write only via Admin SDK / Cloud Functions) ──
       match /subscription/{docId} {
         allow read:  if isOwner(userId);

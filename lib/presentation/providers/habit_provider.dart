@@ -40,9 +40,26 @@ class HabitProvider extends ChangeNotifier {
   }
 
   Future<void> ensureGratitudeHabit() async {
-    final hasGratitude = _habits
-        .any((h) => h.isBuiltIn && h.category == HabitCategory.gratitude);
-    if (!hasGratitude) {
+    final gratitudes = _habits
+        .where((h) => h.category == HabitCategory.gratitude)
+        .toList();
+
+    // Deduplicate: if more than one exists, delete the extras, keeping the
+    // built-in one (or the first if none are flagged built-in).
+    if (gratitudes.length > 1) {
+      final keeper = gratitudes.firstWhere(
+        (h) => h.isBuiltIn,
+        orElse: () => gratitudes.first,
+      );
+      for (final dup in gratitudes.where((h) => h.id != keeper.id)) {
+        await _repository.deleteHabit(dup.id);
+        _habits.remove(dup);
+      }
+      notifyListeners();
+      return;
+    }
+
+    if (gratitudes.isEmpty) {
       final gratitude = Habit.create(
         name: 'Daily Gratitude',
         category: HabitCategory.gratitude,

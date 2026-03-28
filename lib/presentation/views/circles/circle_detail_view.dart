@@ -24,7 +24,9 @@ class _CircleDetailViewState extends State<CircleDetailView> {
   bool _isLeaving = false;
   List<SOSMessage> _recentSOS = [];
   CircleHeatmap? _heatmap;
+  bool _heatmapFailed = false;
   CollectiveMilestones? _milestones;
+  bool _milestonesFailed = false;
 
   @override
   void initState() {
@@ -58,14 +60,18 @@ class _CircleDetailViewState extends State<CircleDetailView> {
       final heatmap = await context.read<CircleRepository>().getCircleHeatmap(
         widget.circleId, weekCount: isPremium ? 52 : 1);
       if (mounted) setState(() => _heatmap = heatmap);
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) setState(() => _heatmapFailed = true);
+    }
   }
 
   Future<void> _loadMilestones() async {
     try {
       final milestones = await context.read<CircleRepository>().getCircleMilestones(widget.circleId);
       if (mounted) setState(() => _milestones = milestones);
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) setState(() => _milestonesFailed = true);
+    }
   }
 
   Future<void> _leaveCircle() async {
@@ -264,7 +270,10 @@ class _CircleDetailViewState extends State<CircleDetailView> {
           style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45), height: 1.4),
         ),
         const SizedBox(height: 12),
-        if (heatmap == null)
+        if (_heatmapFailed)
+          Text('Could not load activity data.',
+              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.35)))
+        else if (heatmap == null)
           SizedBox(
             height: 32,
             child: Center(child: SizedBox(width: 16, height: 16,
@@ -295,7 +304,10 @@ class _CircleDetailViewState extends State<CircleDetailView> {
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: TributeColor.softGold)),
         ]),
         const SizedBox(height: 10),
-        if (ms == null)
+        if (_milestonesFailed)
+          Text('Could not load milestones.',
+              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.35)))
+        else if (ms == null)
           SizedBox(
             height: 32,
             child: Center(child: SizedBox(width: 16, height: 16,

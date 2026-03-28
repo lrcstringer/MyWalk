@@ -82,13 +82,13 @@ class _CirclesAuthGateView extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: auth.isLoading ? null : auth.signInWithApple,
+                  onPressed: auth.isLoading ? null : auth.signIn,
                   icon: auth.isLoading
                       ? const SizedBox(width: 18, height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2, color: TributeColor.charcoal))
-                      : const Icon(Icons.apple, size: 20),
-                  label: const Text('Sign in with Apple',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                      : Icon(AuthService.isApplePlatform ? Icons.apple : Icons.g_mobiledata, size: 20),
+                  label: Text(AuthService.isApplePlatform ? 'Sign in with Apple' : 'Sign in with Google',
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: TributeColor.golden,
                     foregroundColor: TributeColor.charcoal,
@@ -224,6 +224,8 @@ class _CirclesListViewState extends State<_CirclesListView> {
             if (_isLoading)
               const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator(color: TributeColor.golden)))
+            else if (_error != null && _circles.isEmpty)
+              SliverFillRemaining(child: _errorState())
             else if (_circles.isEmpty)
               SliverFillRemaining(child: _emptyState())
             else
@@ -257,13 +259,14 @@ class _CirclesListViewState extends State<_CirclesListView> {
                   );
                 }, childCount: _circles.length),
               ),
-            if (_error != null)
+            // Show a subtle refresh-error banner only when circles are already displayed.
+            if (_error != null && _circles.isNotEmpty)
               SliverToBoxAdapter(child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(children: [
                   const Icon(Icons.warning_amber, size: 14, color: TributeColor.warmCoral),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(_error!,
+                  Expanded(child: Text("Couldn't refresh. Check your connection.",
                       style: const TextStyle(fontSize: 12, color: TributeColor.warmCoral))),
                 ]),
               )),
@@ -271,6 +274,24 @@ class _CirclesListViewState extends State<_CirclesListView> {
         ),
       ),
     );
+  }
+
+  Widget _errorState() {
+    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Icon(Icons.wifi_off_rounded, size: 48, color: Colors.white.withValues(alpha: 0.2)),
+      const SizedBox(height: 16),
+      const Text("Couldn't load circles",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: TributeColor.warmWhite)),
+      const SizedBox(height: 8),
+      Text('Check your connection and try again.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.45))),
+      const SizedBox(height: 24),
+      TextButton(
+        onPressed: _loadCircles,
+        child: const Text('Retry', style: TextStyle(fontSize: 14, color: TributeColor.golden)),
+      ),
+    ]);
   }
 
   Widget _emptyState() {

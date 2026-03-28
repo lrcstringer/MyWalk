@@ -63,16 +63,17 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
 
     if (needsLookBack && habits.isNotEmpty) {
       setState(() => _showingLookBack = true);
-    } else if (needsDedication) {
-      if (habits.isEmpty) {
-        setState(() => _showAutoCarryBanner = false);
+    } else if (needsDedication && habits.isNotEmpty) {
+      final dedicated = await wcm.weekDedicatedDate;
+      if (!mounted) return;
+      // Auto-carry: user had a previous dedication but missed Sunday —
+      // silently dedicate and show a one-tap banner instead of the full ceremony.
+      if (dedicated != null && !wcm.isSunday) {
+        await wcm.dedicateCurrentWeek();
+        if (mounted) setState(() => _showAutoCarryBanner = true);
       } else {
-        final dedicated = await wcm.weekDedicatedDate;
-        if (!mounted) return;
-        setState(() {
-          if (dedicated != null) _showAutoCarryBanner = true;
-          _showingDedication = true;
-        });
+        // Sunday, or first-time user — show full dedication ceremony.
+        setState(() => _showingDedication = true);
       }
     }
   }

@@ -230,11 +230,13 @@ class Habit {
 
   Set<int> get activeDaySet {
     if (activeDays.isEmpty) return {1, 2, 3, 4, 5, 6, 7};
-    return activeDays
+    final parsed = activeDays
         .split(',')
         .map((s) => int.tryParse(s.trim()) ?? 0)
         .where((d) => d >= 1 && d <= 7)
         .toSet();
+    // Fallback to all days if activeDays contains only invalid/corrupt data.
+    return parsed.isEmpty ? {1, 2, 3, 4, 5, 6, 7} : parsed;
   }
 
   bool get isActiveToday => isActive(DateTime.now());
@@ -279,48 +281,6 @@ class Habit {
     final daysFromSunday = now.weekday % 7; // Mon=1..Sun=7 → Sun=0..Sat=6
     return DateTime(now.year, now.month, now.day - daysFromSunday);
   }
-
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'category': category.rawValue,
-        'trackingType': trackingType.rawValue,
-        'purposeStatement': purposeStatement,
-        'dailyTarget': dailyTarget,
-        'targetUnit': targetUnit,
-        'isBuiltIn': isBuiltIn ? 1 : 0,
-        'createdAt': createdAt.toIso8601String(),
-        'sortOrder': sortOrder,
-        'activeDays': activeDays,
-        'trigger': trigger,
-        'copingPlan': copingPlan,
-      };
-
-  factory Habit.fromMap(Map<String, dynamic> map,
-      {List<HabitEntry> entries = const [],
-      int? allTimeCompletedCount,
-      double? allTimeTotalValue}) =>
-      Habit(
-        id: map['id'] as String? ?? const Uuid().v4(),
-        name: map['name'] as String? ?? '',
-        category:
-            HabitCategory.fromString(map['category'] as String? ?? ''),
-        trackingType:
-            HabitTrackingType.fromString(map['trackingType'] as String? ?? ''),
-        purposeStatement: map['purposeStatement'] as String? ?? '',
-        dailyTarget: (map['dailyTarget'] as num?)?.toDouble() ?? 1,
-        targetUnit: map['targetUnit'] as String? ?? '',
-        isBuiltIn: ((map['isBuiltIn'] as num?)?.toInt() ?? 0) == 1,
-        createdAt: DateTime.parse(
-            map['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-        sortOrder: (map['sortOrder'] as num?)?.toInt() ?? 0,
-        activeDays: map['activeDays'] as String? ?? '1,2,3,4,5,6,7',
-        trigger: map['trigger'] as String? ?? '',
-        copingPlan: map['copingPlan'] as String? ?? '',
-        entries: entries,
-        allTimeCompletedCount: allTimeCompletedCount,
-        allTimeTotalValue: allTimeTotalValue,
-      );
 
   // ── Firestore ─────────────────────────────────────────────────────────────
 

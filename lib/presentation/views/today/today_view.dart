@@ -212,7 +212,9 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
   Widget _titleSection() {
     final now = DateTime.now();
     final hour = now.hour;
-    final greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    final name = context.read<AuthService>().givenName;
+    final base = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    final greeting = name != null ? '$base, $name' : base;
     return Text(
       greeting,
       style: const TextStyle(
@@ -516,7 +518,17 @@ class _GratitudeCheckInCardState extends State<_GratitudeCheckInCard> {
       gratitudeText: text,
       isAnonymous: isAnonymous,
       displayName: auth.displayName,
-    ).catchError((Object e) { debugPrint('ShareGratitude failed: $e'); });
+    ).catchError((Object e) {
+      debugPrint('ShareGratitude failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Couldn't share. Check your connection."),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    });
   }
 
   @override

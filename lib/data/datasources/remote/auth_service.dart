@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -17,6 +18,8 @@ class AuthService extends ChangeNotifier {
   String? _userId;
   String? _displayName;
   String? _givenName;
+  String? _email;
+  String? _photoURL;
   bool _isLoading = false;
   String? _error;
   // Guards against double-registration of the Firebase auth listener.
@@ -28,6 +31,8 @@ class AuthService extends ChangeNotifier {
   /// First name only — use for personalisation ("What is God working on in your life, Lance?").
   /// Apple provides this directly on first sign-in; Google derives it from displayName.
   String? get givenName => _givenName;
+  String? get email => _email;
+  String? get photoURL => _photoURL;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -38,10 +43,12 @@ class AuthService extends ChangeNotifier {
     if (_initCalled) return;
     _initCalled = true;
 
-    // Restore display name and given name from local storage
+    // Restore profile fields from local storage
     final prefs = await SharedPreferences.getInstance();
     _displayName = prefs.getString('tribute_display_name');
     _givenName = prefs.getString('tribute_given_name');
+    _email = prefs.getString('tribute_email');
+    _photoURL = prefs.getString('tribute_photo_url');
 
     // Listen for Firebase Auth state changes and keep APIService token in sync
     FirebaseAuth.instance.authStateChanges().listen((user) async {
@@ -101,44 +108,52 @@ class AuthService extends ChangeNotifier {
         rawNonce: rawNonce,
       );
 
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(oAuthCredential);
+      UserCredential userCredential;
+      try {
+        userCredential = await FirebaseAuth.instance.signInWithCredential(oAuthCredential);
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'account-exists-with-different-credential' && e.email != null) {
+          await _linkViaGoogle(
+            pendingAppleCredential: oAuthCredential,
+            conflictEmail: e.email!,
+          );
+          _isLoading = false;
+          notifyListeners();
+          return;
+        }
+        rethrow;
+      }
+
       final user = userCredential.user;
       if (user == null) throw StateError('Apple sign-in completed but Firebase returned a null user');
 
       // Apple only provides name on the very first sign-in
-      String? name;
+      String? displayName;
       if (credential.givenName != null) {
-        name = [credential.givenName, credential.familyName]
+        displayName = [credential.givenName, credential.familyName]
             .whereType<String>()
             .join(' ')
             .trim();
-        if (name.isEmpty) name = null;
-      }
-      _displayName = name ?? user.displayName ?? _displayName;
-      // Store given name separately for personalisation
-      if (credential.givenName != null && credential.givenName!.isNotEmpty) {
-        _givenName = credential.givenName;
+        if (displayName.isEmpty) displayName = null;
       }
 
-      final idToken = await user.getIdToken();
-      APIService.shared.setFirebaseToken(idToken, userId: user.uid);
-      _userId = user.uid;
-      _isAuthenticated = true;
+      final givenName = (credential.givenName?.isNotEmpty ?? false)
+          ? credential.givenName
+          : null;
 
-      // Ensure Firestore user doc exists
-      final response = await APIService.shared.ensureProfile(
-        displayName: name,
-        email: credential.email ?? user.email,
+      final email = _isPrivateRelayEmail(credential.email) ? null : credential.email;
+      final photoURL = user.photoURL;
+
+      await _finalizeSignIn(
+        user,
+        displayName: displayName,
+        givenName: givenName,
+        email: email,
+        photoURL: photoURL,
+        providers: ['apple.com'],
       );
-      if (response.displayName != null) _displayName = response.displayName;
-
-      final prefs = await SharedPreferences.getInstance();
-      if (_displayName != null) {
-        await prefs.setString('tribute_display_name', _displayName!);
-      }
-      if (_givenName != null) {
-        await prefs.setString('tribute_given_name', _givenName!);
-      }
+    } on FirebaseAuthException catch (e) {
+      _error = _friendlyAuthError(e);
     } catch (e) {
       _error = e.toString();
     }
@@ -169,35 +184,40 @@ class AuthService extends ChangeNotifier {
         idToken: googleAuth.idToken,
       );
 
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(oAuthCredential);
+      UserCredential userCredential;
+      try {
+        userCredential = await FirebaseAuth.instance.signInWithCredential(oAuthCredential);
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'account-exists-with-different-credential' && e.email != null) {
+          await _linkViaApple(
+            pendingGoogleCredential: oAuthCredential,
+            conflictEmail: e.email!,
+          );
+          _isLoading = false;
+          notifyListeners();
+          return;
+        }
+        rethrow;
+      }
+
       final user = userCredential.user;
       if (user == null) throw StateError('Google sign-in completed but Firebase returned a null user');
 
-      final name = googleUser.displayName;
-      _displayName = name ?? user.displayName ?? _displayName;
-      // Derive given name (first word of display name) for personalisation
-      final first = name?.split(' ').firstOrNull;
-      if (first != null && first.isNotEmpty) _givenName = first;
+      final displayName = googleUser.displayName;
+      final givenName = displayName?.split(' ').firstOrNull;
+      final email = _isPrivateRelayEmail(googleUser.email) ? null : googleUser.email;
+      final photoURL = googleUser.photoUrl;
 
-      final idToken = await user.getIdToken();
-      APIService.shared.setFirebaseToken(idToken, userId: user.uid);
-      _userId = user.uid;
-      _isAuthenticated = true;
-
-      // Ensure Firestore user doc exists
-      final response = await APIService.shared.ensureProfile(
-        displayName: name,
-        email: googleUser.email,
+      await _finalizeSignIn(
+        user,
+        displayName: displayName,
+        givenName: givenName?.isNotEmpty == true ? givenName : null,
+        email: email?.isNotEmpty == true ? email : null,
+        photoURL: photoURL,
+        providers: ['google.com'],
       );
-      if (response.displayName != null) _displayName = response.displayName;
-
-      final prefs = await SharedPreferences.getInstance();
-      if (_displayName != null) {
-        await prefs.setString('tribute_display_name', _displayName!);
-      }
-      if (_givenName != null) {
-        await prefs.setString('tribute_given_name', _givenName!);
-      }
+    } on FirebaseAuthException catch (e) {
+      _error = _friendlyAuthError(e);
     } catch (e) {
       _error = e.toString();
     }
@@ -218,13 +238,189 @@ class AuthService extends ChangeNotifier {
     _isAuthenticated = false;
     _displayName = null;
     _givenName = null;
+    _email = null;
+    _photoURL = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('tribute_display_name');
     await prefs.remove('tribute_given_name');
+    await prefs.remove('tribute_email');
+    await prefs.remove('tribute_photo_url');
     notifyListeners();
   }
 
-  // ── Nonce helpers for Apple Sign In ──────────────────────────────────────
+  // ── Shared post-sign-in finalization ─────────────────────────────────────
+
+  Future<void> _finalizeSignIn(
+    User user, {
+    String? displayName,
+    String? givenName,
+    String? email,
+    String? photoURL,
+    required List<String> providers,
+  }) async {
+    // Merge with existing in-memory values (first sign-in data takes priority for name)
+    _displayName = displayName ?? user.displayName ?? _displayName;
+    if (givenName != null) _givenName = givenName;
+    if (email != null) _email = email;
+    if (photoURL != null) _photoURL = photoURL;
+
+    final idToken = await user.getIdToken();
+    APIService.shared.setFirebaseToken(idToken, userId: user.uid);
+    _userId = user.uid;
+    _isAuthenticated = true;
+
+    final prefs = await SharedPreferences.getInstance();
+    if (_displayName != null) await prefs.setString('tribute_display_name', _displayName!);
+    if (_givenName != null) await prefs.setString('tribute_given_name', _givenName!);
+    if (_email != null) await prefs.setString('tribute_email', _email!);
+    if (_photoURL != null) await prefs.setString('tribute_photo_url', _photoURL!);
+
+    await _saveProfileToFirestore(
+      uid: user.uid,
+      email: email,
+      photoURL: photoURL,
+      displayName: displayName ?? user.displayName,
+      providers: providers,
+      createdAt: user.metadata.creationTime ?? DateTime.now(),
+    );
+  }
+
+  // ── Firestore profile save ────────────────────────────────────────────────
+
+  Future<void> _saveProfileToFirestore({
+    required String uid,
+    String? email,
+    String? photoURL,
+    String? displayName,
+    required List<String> providers,
+    required DateTime createdAt,
+  }) async {
+    try {
+      final data = <String, dynamic>{
+        'createdAt': Timestamp.fromDate(createdAt),
+        'providers': FieldValue.arrayUnion(providers),
+        'lastSignInAt': FieldValue.serverTimestamp(),
+        if (email != null) 'email': email,
+        if (photoURL != null) 'photoURL': photoURL,
+        if (displayName != null) 'displayName': displayName,
+      };
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .set(data, SetOptions(merge: true));
+    } catch (_) {
+      // Non-fatal — profile data will be saved on next sign-in
+    }
+  }
+
+  // ── Cross-provider account linking ───────────────────────────────────────
+
+  /// Called when Apple sign-in fails because the email already has a Google account.
+  /// Signs in via Google then links the pending Apple credential to the same UID.
+  Future<void> _linkViaGoogle({
+    required OAuthCredential pendingAppleCredential,
+    required String conflictEmail,
+  }) async {
+    final googleUser = await GoogleSignIn().signIn();
+    if (googleUser == null) {
+      _error = 'Sign-in was cancelled.';
+      return;
+    }
+
+    final googleAuth = await googleUser.authentication;
+    final googleCredential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final userCredential = await FirebaseAuth.instance.signInWithCredential(googleCredential);
+    final user = userCredential.user;
+    if (user == null) return;
+
+    // Link Apple credential to the existing Google account
+    await user.linkWithCredential(pendingAppleCredential);
+
+    final displayName = googleUser.displayName;
+    final givenName = displayName?.split(' ').firstOrNull;
+    final email = _isPrivateRelayEmail(googleUser.email) ? null : googleUser.email;
+
+    await _finalizeSignIn(
+      user,
+      displayName: displayName,
+      givenName: givenName?.isNotEmpty == true ? givenName : null,
+      email: email?.isNotEmpty == true ? email : null,
+      photoURL: googleUser.photoUrl,
+      providers: ['google.com', 'apple.com'],
+    );
+  }
+
+  /// Called when Google sign-in fails because the email already has an Apple account.
+  /// Signs in via Apple then links the pending Google credential to the same UID.
+  Future<void> _linkViaApple({
+    required OAuthCredential pendingGoogleCredential,
+    required String conflictEmail,
+  }) async {
+    final rawNonce = _generateNonce();
+    final nonce = _sha256OfString(rawNonce);
+
+    final credential = await SignInWithApple.getAppleIDCredential(
+      scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+      nonce: nonce,
+    );
+
+    final appleCredential = OAuthProvider('apple.com').credential(
+      idToken: credential.identityToken,
+      rawNonce: rawNonce,
+    );
+
+    final userCredential = await FirebaseAuth.instance.signInWithCredential(appleCredential);
+    final user = userCredential.user;
+    if (user == null) return;
+
+    // Link Google credential to the existing Apple account
+    await user.linkWithCredential(pendingGoogleCredential);
+
+    String? displayName;
+    if (credential.givenName != null) {
+      displayName = [credential.givenName, credential.familyName]
+          .whereType<String>()
+          .join(' ')
+          .trim();
+      if (displayName.isEmpty) displayName = null;
+    }
+
+    final givenName = (credential.givenName?.isNotEmpty ?? false) ? credential.givenName : null;
+    final email = _isPrivateRelayEmail(credential.email) ? null : credential.email;
+
+    await _finalizeSignIn(
+      user,
+      displayName: displayName,
+      givenName: givenName,
+      email: email,
+      photoURL: user.photoURL,
+      providers: ['apple.com', 'google.com'],
+    );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  bool _isPrivateRelayEmail(String? email) =>
+      email != null && email.endsWith('@privaterelay.appleid.com');
+
+  String _friendlyAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      case 'network-request-failed':
+        return 'No internet connection. Please try again.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a moment and try again.';
+      case 'operation-not-allowed':
+        return 'Sign-in is not available right now. Please try again later.';
+      default:
+        return e.message ?? 'Sign-in failed. Please try again.';
+    }
+  }
 
   String _generateNonce([int length = 32]) {
     const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';

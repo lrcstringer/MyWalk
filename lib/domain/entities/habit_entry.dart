@@ -56,24 +56,6 @@ class HabitEntry {
         habitId: habitId,
       );
 
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'date': date.toIso8601String(),
-        'value': value,
-        'isCompleted': isCompleted ? 1 : 0,
-        'gratitudeNote': gratitudeNote,
-        'habitId': habitId,
-      };
-
-  factory HabitEntry.fromMap(Map<String, dynamic> map) => HabitEntry(
-        id: map['id'] as String? ?? (throw StateError('HabitEntry.fromMap: row missing id — data may be corrupted: $map')),
-        date: DateTime.tryParse((map['date'] as String?) ?? '') ?? DateTime(2000, 1, 1),
-        value: (map['value'] as num?)?.toDouble() ?? 0,
-        isCompleted: ((map['isCompleted'] as num?)?.toInt() ?? 0) == 1,
-        gratitudeNote: map['gratitudeNote'] as String?,
-        habitId: map['habitId'] as String? ?? '',
-      );
-
   // ── Firestore ─────────────────────────────────────────────────────────────
 
   /// Date key used as the Firestore document ID (e.g. "2024-03-27").

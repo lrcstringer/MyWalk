@@ -178,11 +178,14 @@ class StoreProvider extends ChangeNotifier {
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
           // Complete the transaction on the store side first.
-          if (purchase.pendingCompletePurchase) {
-            await _iap.completePurchase(purchase);
+          try {
+            if (purchase.pendingCompletePurchase) {
+              await _iap.completePurchase(purchase);
+            }
+            await _validateWithServer(purchase);
+          } finally {
+            isPurchasing = false;
           }
-          await _validateWithServer(purchase);
-          isPurchasing = false;
           notifyListeners();
 
         case PurchaseStatus.error:

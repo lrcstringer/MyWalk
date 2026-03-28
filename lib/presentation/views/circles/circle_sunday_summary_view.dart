@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../data/datasources/remote/api_service.dart';
+import 'package:provider/provider.dart';
+import '../../../domain/entities/circle.dart';
+import '../../../domain/repositories/circle_repository.dart';
 import '../../theme/app_theme.dart';
 
 class CircleSundaySummaryView extends StatefulWidget {
@@ -13,7 +15,7 @@ class CircleSundaySummaryView extends StatefulWidget {
 }
 
 class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
-  SundaySummaryResponse? _summary;
+  CircleWeeklySummary? _summary;
   bool _isLoading = true;
   String? _error;
   int _gratitudeWeekCount = 0;
@@ -28,7 +30,7 @@ class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
   Future<void> _loadSummary() async {
     setState(() { _isLoading = true; _error = null; });
     try {
-      final summary = await APIService.shared.getSundaySummary(widget.circleId);
+      final summary = await context.read<CircleRepository>().getSundaySummary(widget.circleId);
       if (mounted) setState(() { _summary = summary; _isLoading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
@@ -37,8 +39,8 @@ class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
 
   Future<void> _loadGratitudeCount() async {
     try {
-      final r = await APIService.shared.getGratitudeWeekCount(widget.circleId);
-      if (mounted) setState(() => _gratitudeWeekCount = r.weekCount);
+      final count = await context.read<CircleRepository>().getGratitudeWeekCount(widget.circleId);
+      if (mounted) setState(() => _gratitudeWeekCount = count);
     } catch (_) {}
   }
 
@@ -92,7 +94,7 @@ class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
     return _summaryContent(_summary!);
   }
 
-  Widget _summaryContent(SundaySummaryResponse s) {
+  Widget _summaryContent(CircleWeeklySummary s) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
       child: Column(children: [
@@ -126,9 +128,9 @@ class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
           const SizedBox(height: 20),
           _faithfulnessBar(s.averageScore),
         ],
-        if (s.topStreaks.isNotEmpty) ...[
+        if (s.topMembers.isNotEmpty) ...[
           const SizedBox(height: 20),
-          _topStreaksSection(s.topStreaks),
+          _topMembersSection(s.topMembers),
         ],
         if (_gratitudeWeekCount > 0) ...[
           const SizedBox(height: 20),
@@ -207,7 +209,7 @@ class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
     );
   }
 
-  Widget _topStreaksSection(List<TopStreak> streaks) {
+  Widget _topMembersSection(List<CircleWeeklyTopMember> streaks) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

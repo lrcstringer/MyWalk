@@ -1,14 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'presentation/providers/habit_provider.dart';
 import 'presentation/providers/store_provider.dart';
 import 'data/datasources/remote/api_service.dart';
 import 'data/datasources/remote/auth_service.dart';
 import 'data/datasources/local/notification_service.dart';
-import 'data/datasources/local/shared_preferences_repository.dart';
+import 'data/repositories/firestore_user_preferences_repository.dart';
 import 'data/repositories/firestore_habit_repository.dart';
 import 'data/repositories/firestore_user_repository.dart';
 import 'data/repositories/circle_repository_impl.dart';
@@ -36,7 +38,17 @@ void main() async {
 
   final habitRepository = FirestoreHabitRepository();
   final userRepository = FirestoreUserRepository();
-  final userPrefs = SharedPreferencesRepository();
+  final sharedPrefs = await SharedPreferences.getInstance();
+  final userPrefs = FirestoreUserPreferencesRepository(
+    db: FirebaseFirestore.instance,
+    auth: FirebaseAuth.instance,
+    cache: sharedPrefs,
+  );
+  await userPrefs.init();
+  // Re-sync on every sign-in (handles reinstall and new-device flows).
+  AuthService.shared.addListener(() {
+    if (AuthService.shared.isAuthenticated) userPrefs.init();
+  });
 
   final storeProvider = StoreProvider();
 

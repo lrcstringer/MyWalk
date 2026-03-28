@@ -21,6 +21,7 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
 
   bool _microActionCompleted = false;
   bool _showPrayerCircleMessage = false;
+  bool _circleLoadFailed = false;
   bool _isLoadingCircles = false;
 
   late final AnimationController _pulseController;
@@ -132,7 +133,7 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
       thresholds.where((t) => t > current).firstOrNull;
 
   Future<void> _loadCirclesAndShow() async {
-    setState(() => _isLoadingCircles = true);
+    setState(() { _isLoadingCircles = true; _circleLoadFailed = false; });
     try {
       final circles = await context.read<CircleRepository>().listCircles();
       if (!mounted) return;
@@ -147,7 +148,7 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
         );
       }
     } catch (_) {
-      if (mounted) setState(() => _showPrayerCircleMessage = true);
+      if (mounted) setState(() => _circleLoadFailed = true);
     }
     if (mounted) setState(() => _isLoadingCircles = false);
   }
@@ -350,24 +351,41 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
     final auth = context.watch<AuthService>();
     return Column(children: [
       if (auth.isAuthenticated)
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _isLoadingCircles ? null : _loadCirclesAndShow,
-            icon: _isLoadingCircles
-                ? const SizedBox(width: 16, height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: TributeColor.warmCoral))
-                : const Icon(Icons.bolt_rounded, size: 16, color: TributeColor.warmCoral),
-            label: const Text('Send SOS prayer request',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: TributeColor.warmCoral)),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              side: BorderSide(color: TributeColor.warmCoral.withValues(alpha: 0.3), width: 0.5),
-              backgroundColor: TributeColor.warmCoral.withValues(alpha: 0.08),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        Column(children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _isLoadingCircles ? null : _loadCirclesAndShow,
+              icon: _isLoadingCircles
+                  ? const SizedBox(width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: TributeColor.warmCoral))
+                  : const Icon(Icons.bolt_rounded, size: 16, color: TributeColor.warmCoral),
+              label: const Text('Send SOS prayer request',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: TributeColor.warmCoral)),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                side: BorderSide(color: TributeColor.warmCoral.withValues(alpha: 0.3), width: 0.5),
+                backgroundColor: TributeColor.warmCoral.withValues(alpha: 0.08),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
             ),
           ),
-        )
+          if (_circleLoadFailed) ...[
+            const SizedBox(height: 10),
+            Text(
+              "Couldn't connect. Check your connection and try again.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5)),
+            ),
+          ] else if (_showPrayerCircleMessage) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Join or create a Prayer Circle first to send SOS requests.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5)),
+            ),
+          ],
+        ])
       else ...[
         SizedBox(
           width: double.infinity,

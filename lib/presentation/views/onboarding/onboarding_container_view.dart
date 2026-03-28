@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/datasources/remote/auth_service.dart';
-import '../../../data/repositories/firestore_user_repository.dart';
+import '../../../domain/repositories/user_repository.dart';
 import '../../../domain/entities/habit.dart';
 import '../../providers/habit_provider.dart';
 import '../../theme/app_theme.dart';
@@ -225,7 +225,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
     // Persist name + identity selections to Firestore.
     final auth = context.read<AuthService>();
     if (auth.userId != null) {
-      final repo = FirestoreUserRepository();
+      final repo = context.read<UserRepository>();
       await repo.updateFields({
         'name': name.isNotEmpty ? name : null,
         'identitySelections': selections,
@@ -237,7 +237,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
   void _createGratitudeHabit(String? note) {
     final provider = context.read<HabitProvider>();
     final hasGratitude = provider.habits.any(
-        (h) => h.isBuiltIn && h.category == HabitCategory.gratitude);
+        (h) => h.category == HabitCategory.gratitude);
     if (hasGratitude) return;
     provider.addHabit(
       name: 'Daily Gratitude',
