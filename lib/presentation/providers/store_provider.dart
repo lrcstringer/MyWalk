@@ -1,29 +1,48 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import '../../domain/repositories/iap_repository.dart';
 
-/// Product IDs — must match App Store Connect / Google Play Console exactly.
+/// Product IDs — must match Google Play Console / App Store Connect exactly.
 class TributeProducts {
-  static const monthly = 'tribute_premium_monthly';
-  static const annual = 'tribute_premium_annual';
-  static const lifetime = 'tribute_premium_lifetime';
+  static const monthly = 'monthlysub';
+  static const annual = 'annualsub';
+  static const lifetime = 'lifetimeonetime';
   static const all = {monthly, annual, lifetime};
 }
 
+/// Presentation-layer ChangeNotifier that owns the in-app purchase flow.
+///
+/// Clean Architecture: this class depends on [IAPRepository] (domain interface)
+/// for all Firestore / server-validation calls. The [InAppPurchase] store API
+/// and [FirebaseAuth] (for obfuscated account ID) are injected for testability.
+///
+/// Race-condition safety:
+///   - [init] is idempotent: guarded by [_initialized].
+///   - [purchase] is idempotent while a purchase is in flight: guarded by
+///     [isPurchasing].
+///   - [_onPurchaseUpdates] runs sequentially on the purchase stream — no
+///     concurrent handler invocations are possible from a single stream.
+///   - [_syncPremiumStatus] is a pure read and is safe to call concurrently;
+///     the last writer wins, which is correct since all calls read the same
+///     Firestore document.
 class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
-  final FirebaseFirestore _db;
+  final IAPRepository _iapRepository;
   final InAppPurchase _iap;
+  final FirebaseAuth _auth;
 
   StoreProvider({
-    FirebaseFirestore? db,
+    required IAPRepository iapRepository,
     InAppPurchase? iap,
-  })  : _db = db ?? FirebaseFirestore.instance,
-        _iap = iap ?? InAppPurchase.instance;
+    FirebaseAuth? auth,
+  })  : _iapRepository = iapRepository,
+        _iap = iap ?? InAppPurchase.instance,
+        _auth = auth ?? FirebaseAuth.instance;
 
+  bool _initialized = false;
   Map<String, ProductDetails> _products = {};
   bool isPremium = false;
   bool isLoading = false;
@@ -38,21 +57,27 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
   ProductDetails? get annualProduct => _products[TributeProducts.annual];
   ProductDetails? get lifetimeProduct => _products[TributeProducts.lifetime];
 
+  /// Returns e.g. "Save 33%" when annual is cheaper than 12× monthly.
+  /// Returns null when either product is unavailable or there is no savings.
   String? get monthlySavingsText {
     final monthly = monthlyProduct;
     final annual = annualProduct;
     if (monthly == null || annual == null) return null;
-    final monthlyTotal = monthly.rawPrice * 12;
-    final annualPrice = annual.rawPrice;
-    if (monthlyTotal <= annualPrice) return null;
-    final savings = ((monthlyTotal - annualPrice) / monthlyTotal * 100).round();
+    final monthlyAnnualised = monthly.rawPrice * 12;
+    if (monthlyAnnualised <= annual.rawPrice) return null;
+    final savings =
+        ((monthlyAnnualised - annual.rawPrice) / monthlyAnnualised * 100)
+            .round();
     return 'Save $savings%';
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-  /// Call once after the provider is created (and the user may be authenticated).
+  /// Initialises the store. Safe to call multiple times — only runs once.
   Future<void> init() async {
+    if (_initialized) return;
+    _initialized = true;
+
     WidgetsBinding.instance.addObserver(this);
     isLoading = true;
     notifyListeners();
@@ -74,7 +99,7 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     await Future.wait([
       _loadProducts(),
-      _syncPremiumFromFirestore(),
+      _syncPremiumStatus(),
     ]);
 
     isLoading = false;
@@ -88,12 +113,12 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// Re-sync premium status from Firestore whenever the app returns to the
-  /// foreground — catches subscription lapses that occurred while it was closed.
+  /// Re-syncs premium status from Firestore whenever the app returns to the
+  /// foreground — catches subscription lapses that occurred while backgrounded.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _syncPremiumFromFirestore().then((_) => notifyListeners());
+      _syncPremiumStatus().then((_) => notifyListeners());
     }
   }
 
@@ -110,53 +135,45 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   // ── Premium status ────────────────────────────────────────────────────────
 
-  /// Reads premium status from Firestore (source of truth after server validation).
-  Future<void> _syncPremiumFromFirestore() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      isPremium = false;
-      return;
-    }
-    try {
-      final snap = await _db
-          .collection('users')
-          .doc(uid)
-          .collection('subscription')
-          .doc('status')
-          .get();
-
-      if (!snap.exists || snap.data() == null) {
-        isPremium = false;
-        return;
-      }
-      final data = snap.data()!;
-      final status = data['status'] as String?;
-      if (status != 'active') {
-        isPremium = false;
-        return;
-      }
-      final expiresAt = data['expiresAt'];
-      if (expiresAt == null) {
-        isPremium = true; // lifetime
-        return;
-      }
-      final expiry = expiresAt is Timestamp ? expiresAt.toDate() : null;
-      isPremium = expiry != null && expiry.isAfter(DateTime.now());
-    } catch (_) {
-      // Network error — leave isPremium unchanged (optimistic for existing users).
+  /// Reads premium status from Firestore (authoritative source after server
+  /// validation). A null return from the repository means a transient error —
+  /// we leave [isPremium] unchanged to remain optimistic for existing users.
+  Future<void> _syncPremiumStatus() async {
+    final status = await _iapRepository.getPremiumStatus();
+    if (status != null) {
+      isPremium = status;
     }
   }
 
   // ── Purchase flow ─────────────────────────────────────────────────────────
 
+  /// Initiates a purchase. No-ops if a purchase is already in flight.
+  ///
+  /// Google Play recommends passing a one-way hash of the Firebase UID as
+  /// [applicationUserName] to link purchases to accounts for fraud detection.
   Future<void> purchase(ProductDetails product) async {
+    if (isPurchasing) return; // Race-condition guard.
     isPurchasing = true;
     error = null;
     notifyListeners();
+
     try {
-      final param = PurchaseParam(productDetails: product);
-      await _iap.buyNonConsumable(purchaseParam: param);
-      // Actual delivery happens in _onPurchaseUpdates.
+      final uid = _auth.currentUser?.uid;
+      final param = PurchaseParam(
+        productDetails: product,
+        applicationUserName: uid != null
+            ? sha256.convert(utf8.encode(uid)).toString()
+            : null,
+      );
+      final launched = await _iap.buyNonConsumable(purchaseParam: param);
+      if (!launched) {
+        // Store refused to start the purchase (e.g. another purchase is already
+        // pending). Clear the flag so the user can try again.
+        error = 'Could not start purchase. Please try again.';
+        isPurchasing = false;
+        notifyListeners();
+      }
+      // On success, delivery and validation happen in _onPurchaseUpdates.
     } catch (e) {
       error = e.toString();
       isPurchasing = false;
@@ -180,31 +197,42 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   // ── Purchase stream handler ───────────────────────────────────────────────
 
+  /// Handles purchase updates emitted by the store.
+  ///
+  /// The stream delivers a list; we process each update sequentially so that
+  /// completePurchase + validateReceipt are always atomic per purchase event.
   Future<void> _onPurchaseUpdates(List<PurchaseDetails> purchases) async {
+    // ignore: avoid_print
+    print('[StoreProvider] purchaseStream: ${purchases.length} events: '
+        '${purchases.map((p) => '${p.productID}/${p.status}').join(', ')}');
     for (final purchase in purchases) {
       switch (purchase.status) {
         case PurchaseStatus.pending:
-          // Nothing to do — UI already shows spinner.
+          // No state change — UI already shows the spinner via isPurchasing.
           break;
 
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          // Complete the transaction on the store side first.
           try {
+            // Acknowledge the transaction on the store side before validating.
+            // On Android this must happen within 3 days or Google auto-refunds.
             if (purchase.pendingCompletePurchase) {
               await _iap.completePurchase(purchase);
             }
             await _validateWithServer(purchase);
+          } catch (e) {
+            error = e.toString();
           } finally {
+            // Always clear the purchasing flag and notify, even if
+            // completePurchase throws — prevents a stuck spinner.
             isPurchasing = false;
+            notifyListeners();
           }
-          notifyListeners();
 
         case PurchaseStatus.error:
-          final msg = purchase.error?.message ?? 'Purchase failed';
-          // Ignore user-cancelled (code 2 on iOS, userCancelled on Android).
+          // Ignore user-cancellation; only surface genuine errors.
           if (!_isCancelledError(purchase.error)) {
-            error = msg;
+            error = purchase.error?.message ?? 'Purchase failed';
           }
           isPurchasing = false;
           notifyListeners();
@@ -218,38 +246,33 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   bool _isCancelledError(IAPError? err) {
     if (err == null) return false;
-    if (Platform.isIOS && err.code == 'storekit_duplicate_product_object') return false;
-    // iOS cancel code is 2 (SKErrorPaymentCancelled)
-    return err.message.toLowerCase().contains('cancel') ||
+    final msg = err.message.toLowerCase();
+    // iOS cancel: SKErrorPaymentCancelled (code 2)
+    // Android cancel: BillingResponse.userCanceled
+    return msg.contains('cancel') ||
         err.code == 'BillingResponse.userCanceled' ||
         err.code == '2';
   }
 
   // ── Server validation ─────────────────────────────────────────────────────
 
-  /// Calls the `validateReceipt` Firebase callable Function to verify the
-  /// purchase server-side and write subscription status to Firestore.
+  /// Derives the platform from the purchase's verification data source rather
+  /// than dart:io's Platform — making this deterministic in tests regardless
+  /// of the host OS.
   Future<void> _validateWithServer(PurchaseDetails purchase) async {
-    if (FirebaseAuth.instance.currentUser == null) return;
-
+    final isIos = purchase.verificationData.source == 'app_store';
     try {
-      final payload = <String, dynamic>{
-        'platform': Platform.isIOS ? 'ios' : 'android',
-        'productId': purchase.productID,
-      };
-
-      if (Platform.isIOS) {
-        // localVerificationData is the base64-encoded App Store receipt.
-        payload['receiptData'] = purchase.verificationData.localVerificationData;
-      } else {
-        // serverVerificationData is the Google Play purchase token.
-        payload['purchaseToken'] = purchase.verificationData.serverVerificationData;
-      }
-
-      final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
-          .httpsCallable('validateReceipt');
-      final result = await callable.call<Map<String, dynamic>>(payload);
-      isPremium = result.data['isPremium'] as bool? ?? false;
+      final validated = await _iapRepository.validateReceipt(
+        platform: isIos ? 'ios' : 'android',
+        productId: purchase.productID,
+        purchaseToken: !isIos
+            ? purchase.verificationData.serverVerificationData
+            : null,
+        receiptData: isIos
+            ? purchase.verificationData.localVerificationData
+            : null,
+      );
+      isPremium = validated;
     } catch (e) {
       error = 'Receipt validation failed: ${e.toString()}';
     }

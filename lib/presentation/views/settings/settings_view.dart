@@ -339,14 +339,21 @@ class _SettingsViewState extends State<SettingsView> {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: TributeDecorations.card,
-          child: Row(children: [
-            const Icon(Icons.refresh_rounded, size: 16, color: TributeColor.softGold),
-            const SizedBox(width: 10),
-            Text('Restore Purchases', style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.6))),
-            const Spacer(),
-            if (store.isLoading)
-              const SizedBox(width: 16, height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: TributeColor.golden)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              const Icon(Icons.refresh_rounded, size: 16, color: TributeColor.softGold),
+              const SizedBox(width: 10),
+              Text('Restore Purchases', style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.6))),
+              const Spacer(),
+              if (store.isLoading)
+                const SizedBox(width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: TributeColor.golden)),
+            ]),
+            if (store.error != null) ...[
+              const SizedBox(height: 6),
+              Text(store.error!,
+                  style: const TextStyle(fontSize: 11, color: TributeColor.warmCoral)),
+            ],
           ]),
         ),
       ),

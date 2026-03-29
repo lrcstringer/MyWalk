@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 
+enum _Plan { monthly, annual, lifetime }
+
 class PaywallScreen extends StatefulWidget {
   final VoidCallback onNext;
   const PaywallScreen({super.key, required this.onNext});
@@ -12,10 +14,9 @@ class PaywallScreen extends StatefulWidget {
 }
 
 class _PaywallScreenState extends State<PaywallScreen> {
-  bool _yearlySelected = true;
+  _Plan _selectedPlan = _Plan.annual;
   bool _showContent = false;
   bool _showFeatures = false;
-  bool _purchaseStarted = false;
   StoreProvider? _store;
 
   static const _freeFeatures = [
@@ -59,19 +60,29 @@ class _PaywallScreenState extends State<PaywallScreen> {
   void _onStoreChanged() {
     final store = _store;
     if (store == null || !mounted) return;
-    if (_purchaseStarted && store.isPremium && !store.isPurchasing) {
-      _purchaseStarted = false;
+    // Fire onNext when premium is gained via either a new purchase or a restore.
+    if (store.isPremium && !store.isPurchasing) {
       widget.onNext();
     }
   }
 
+  String get _ctaLabel => switch (_selectedPlan) {
+        _Plan.monthly => 'Subscribe Monthly',
+        _Plan.annual => 'Start Free Trial',
+        _Plan.lifetime => 'Buy Lifetime Access',
+      };
+
   Future<void> _purchase(StoreProvider store) async {
-    final product = _yearlySelected ? store.annualProduct : store.monthlyProduct;
+    final product = switch (_selectedPlan) {
+      _Plan.monthly => store.monthlyProduct,
+      _Plan.annual => store.annualProduct,
+      _Plan.lifetime => store.lifetimeProduct,
+    };
     if (product != null) {
-      _purchaseStarted = true;
       await store.purchase(product);
-      // Navigation handled by _onStoreChanged when isPremium becomes true.
+      // Navigation is handled by _onStoreChanged when isPremium becomes true.
     } else {
+      // Product unavailable (store unreachable) — let user continue on free.
       widget.onNext();
     }
   }
@@ -91,13 +102,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 const Text(
                   'Go deeper with\nTribute Pro',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: TributeColor.warmWhite, height: 1.3),
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: TributeColor.warmWhite,
+                      height: 1.3),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   'Everything you need to build lasting habits rooted in faith.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.5)),
+                  style: TextStyle(
+                      fontSize: 15, color: Colors.white.withValues(alpha: 0.5)),
                 ),
               ]),
             ),
@@ -108,11 +124,21 @@ class _PaywallScreenState extends State<PaywallScreen> {
               child: AnimatedSlide(
                 offset: _showFeatures ? Offset.zero : const Offset(0, 0.15),
                 duration: const Duration(milliseconds: 500),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(child: _featureColumn(label: 'FREE', isGold: false, features: _freeFeatures)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _featureColumn(label: 'PRO', isGold: true, features: _proFeatures)),
-                ]),
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                          child: _featureColumn(
+                              label: 'FREE',
+                              isGold: false,
+                              features: _freeFeatures)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: _featureColumn(
+                              label: 'PRO',
+                              isGold: true,
+                              features: _proFeatures)),
+                    ]),
               ),
             ),
             const SizedBox(height: 20),
@@ -132,16 +158,21 @@ class _PaywallScreenState extends State<PaywallScreen> {
             child: ElevatedButton.icon(
               onPressed: store.isPurchasing ? null : () => _purchase(store),
               icon: store.isPurchasing
-                  ? const SizedBox(width: 18, height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: TributeColor.charcoal))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: TributeColor.charcoal))
                   : const Icon(Icons.workspace_premium_rounded, size: 18),
-              label: Text(_yearlySelected ? 'Start Free Trial' : 'Subscribe',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+              label: Text(_ctaLabel,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 16)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: TributeColor.golden,
                 foregroundColor: TributeColor.charcoal,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ),
@@ -150,13 +181,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
             TextButton(
               onPressed: store.isLoading ? null : () => store.restore(),
               child: Text('Restore',
-                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5))),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.5))),
             ),
             const SizedBox(width: 16),
             TextButton(
               onPressed: widget.onNext,
               child: Text('Continue with Free',
-                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5))),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.5))),
             ),
           ]),
           if (store.error != null)
@@ -164,7 +199,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
               padding: const EdgeInsets.only(top: 8),
               child: Text(store.error!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, color: TributeColor.warmCoral)),
+                  style: const TextStyle(
+                      fontSize: 12, color: TributeColor.warmCoral)),
             ),
         ]),
       ),
@@ -179,10 +215,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isGold ? TributeColor.golden.withValues(alpha: 0.06) : TributeColor.cardBackground,
+        color: isGold
+            ? TributeColor.golden.withValues(alpha: 0.06)
+            : TributeColor.cardBackground,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isGold ? TributeColor.golden.withValues(alpha: 0.2) : TributeColor.cardBorder,
+          color: isGold
+              ? TributeColor.golden.withValues(alpha: 0.2)
+              : TributeColor.cardBorder,
           width: 0.5,
         ),
       ),
@@ -190,33 +230,43 @@ class _PaywallScreenState extends State<PaywallScreen> {
         Row(children: [
           Text(label,
               style: TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5,
-                color: isGold ? TributeColor.golden : Colors.white.withValues(alpha: 0.5),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.5,
+                color: isGold
+                    ? TributeColor.golden
+                    : Colors.white.withValues(alpha: 0.5),
               )),
           if (isGold) ...[
             const SizedBox(width: 6),
-            const Icon(Icons.workspace_premium_rounded, size: 10, color: TributeColor.golden),
+            const Icon(Icons.workspace_premium_rounded,
+                size: 10, color: TributeColor.golden),
           ],
         ]),
         const SizedBox(height: 14),
         ...features.map((f) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(children: [
-            SizedBox(
-              width: 18,
-              child: Icon(f.$1, size: 13,
-                  color: isGold ? TributeColor.golden : TributeColor.softGold.withValues(alpha: 0.5)),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(f.$2,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isGold ? TributeColor.warmWhite : Colors.white.withValues(alpha: 0.5),
-                  )),
-            ),
-          ]),
-        )),
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(children: [
+                SizedBox(
+                  width: 18,
+                  child: Icon(f.$1,
+                      size: 13,
+                      color: isGold
+                          ? TributeColor.golden
+                          : TributeColor.softGold.withValues(alpha: 0.5)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(f.$2,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isGold
+                            ? TributeColor.warmWhite
+                            : Colors.white.withValues(alpha: 0.5),
+                      )),
+                ),
+              ]),
+            )),
       ]),
     );
   }
@@ -224,34 +274,56 @@ class _PaywallScreenState extends State<PaywallScreen> {
   Widget _planSelector(StoreProvider store) {
     final monthly = store.monthlyProduct;
     final annual = store.annualProduct;
+    final lifetime = store.lifetimeProduct;
 
-    if (monthly == null && annual == null) {
+    if (monthly == null && annual == null && lifetime == null) {
       return Text('Loading plans\u2026',
-          style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)));
+          style:
+              TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)));
     }
 
-    return Row(children: [
-      if (monthly != null) ...[
-        Expanded(child: _planOption(
-          title: 'Monthly',
-          price: monthly.price,
-          detail: 'per month',
-          isSelected: !_yearlySelected,
-          badge: null,
-          onTap: () => setState(() => _yearlySelected = false),
-        )),
-        const SizedBox(width: 12),
+    return Column(children: [
+      // Subscription row: monthly + annual side by side.
+      if (monthly != null || annual != null)
+        Row(children: [
+          if (monthly != null) ...[
+            Expanded(
+                child: _planOption(
+              title: 'Monthly',
+              price: monthly.price,
+              detail: 'per month',
+              trialText: null,
+              isSelected: _selectedPlan == _Plan.monthly,
+              badge: null,
+              onTap: () => setState(() => _selectedPlan = _Plan.monthly),
+            )),
+            const SizedBox(width: 12),
+          ],
+          if (annual != null)
+            Expanded(
+                child: _planOption(
+              title: 'Yearly',
+              price: annual.price,
+              detail: '\$${(annual.rawPrice / 365).toStringAsFixed(2)}/day',
+              trialText: '7-day free trial',
+              isSelected: _selectedPlan == _Plan.annual,
+              badge: store.monthlySavingsText,
+              onTap: () => setState(() => _selectedPlan = _Plan.annual),
+            )),
+        ]),
+      // Lifetime: full-width card below.
+      if (lifetime != null) ...[
+        if (monthly != null || annual != null) const SizedBox(height: 12),
+        _planOption(
+          title: 'Lifetime',
+          price: lifetime.price,
+          detail: 'one-time purchase · never expires',
+          trialText: null,
+          isSelected: _selectedPlan == _Plan.lifetime,
+          badge: 'Best Deal',
+          onTap: () => setState(() => _selectedPlan = _Plan.lifetime),
+        ),
       ],
-      if (annual != null)
-        Expanded(child: _planOption(
-          title: 'Yearly',
-          price: annual.price,
-          detail: '\$${(annual.rawPrice / 365).toStringAsFixed(2)}/day',
-          trialText: '7-day free trial',
-          isSelected: _yearlySelected,
-          badge: store.monthlySavingsText,
-          onTap: () => setState(() => _yearlySelected = true),
-        )),
     ]);
   }
 
@@ -259,7 +331,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     required String title,
     required String price,
     required String detail,
-    String? trialText,
+    required String? trialText,
     required bool isSelected,
     required String? badge,
     required VoidCallback onTap,
@@ -269,10 +341,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? TributeColor.golden.withValues(alpha: 0.08) : TributeColor.cardBackground,
+          color: isSelected
+              ? TributeColor.golden.withValues(alpha: 0.08)
+              : TributeColor.cardBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? TributeColor.golden.withValues(alpha: 0.4) : TributeColor.cardBorder,
+            color: isSelected
+                ? TributeColor.golden.withValues(alpha: 0.4)
+                : TributeColor.cardBorder,
             width: isSelected ? 1.5 : 0.5,
           ),
         ),
@@ -280,34 +356,49 @@ class _PaywallScreenState extends State<PaywallScreen> {
           if (badge != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(color: TributeColor.golden, borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(
+                  color: TributeColor.golden,
+                  borderRadius: BorderRadius.circular(20)),
               child: Text(badge,
-                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: TributeColor.charcoal)),
+                  style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: TributeColor.charcoal)),
             )
           else
             const SizedBox(height: 17),
           const SizedBox(height: 4),
           Text(title,
               style: TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5,
-                color: isSelected ? TributeColor.golden : Colors.white.withValues(alpha: 0.5),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+                color: isSelected
+                    ? TributeColor.golden
+                    : Colors.white.withValues(alpha: 0.5),
               )),
           const SizedBox(height: 4),
           Text(price,
               style: TextStyle(
-                fontSize: 15, fontWeight: FontWeight.w700,
-                color: isSelected ? TributeColor.warmWhite : Colors.white.withValues(alpha: 0.5),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: isSelected
+                    ? TributeColor.warmWhite
+                    : Colors.white.withValues(alpha: 0.5),
               )),
           const SizedBox(height: 2),
           Text(detail,
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
+              style:
+                  TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
           if (trialText != null) ...[
             const SizedBox(height: 4),
             Text(trialText,
                 style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? TributeColor.sage : Colors.white.withValues(alpha: 0.3))),
+                    color: isSelected
+                        ? TributeColor.sage
+                        : Colors.white.withValues(alpha: 0.3))),
           ],
         ]),
       ),

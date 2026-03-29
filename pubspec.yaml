@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 2.0.0+2
 
 environment:
   sdk: ^3.11.1
@@ -82,6 +82,16 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # Integration test runner (E2E tests)
+  integration_test:
+    sdk: flutter
+
+  # Mocking framework — use mocktail, not mockito
+  mocktail: ^1.0.4
+
+  # In-memory Firestore for data-layer unit tests (cloud_firestore classes are sealed)
+  fake_cloud_firestore: ^3.1.0
 
   flutter_lints: ^6.0.0
 
