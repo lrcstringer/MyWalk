@@ -58,6 +58,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ─── purchaseTokens ───────────────────────────────────────────────────
+    // Reverse-lookup index mapping Google Play purchase tokens → Firebase UIDs.
+    // Written exclusively by validateReceipt / googleNotification via Admin SDK.
+    // No client access permitted — this mapping is sensitive.
+    match /purchaseTokens/{tokenId} {
+      allow read, write: if false;
+    }
+
     // ─── collectionGroup: members ─────────────────────────────────────────
     // Allows listCircles() to query collectionGroup('members').where('userId', ==, uid).
     // Rule must check the userId FIELD (not the document ID) so Firestore can validate
