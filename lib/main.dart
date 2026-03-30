@@ -22,6 +22,13 @@ import 'domain/repositories/circle_repository.dart';
 import 'domain/repositories/user_repository.dart';
 import 'domain/services/week_cycle_manager.dart';
 import 'domain/services/engagement_service.dart';
+import 'presentation/providers/prayer_list_provider.dart';
+import 'presentation/providers/scripture_focus_provider.dart';
+import 'presentation/providers/circle_habits_provider.dart';
+import 'presentation/providers/encouragement_provider.dart';
+import 'presentation/providers/milestone_share_provider.dart';
+import 'presentation/providers/weekly_pulse_provider.dart';
+import 'presentation/providers/circle_events_provider.dart';
 import 'app.dart';
 
 void main() async {
@@ -77,6 +84,27 @@ void main() async {
         ),
         ChangeNotifierProvider<StoreProvider>.value(value: storeProvider),
         ChangeNotifierProvider.value(value: AuthService.shared),
+        ChangeNotifierProvider<PrayerListProvider>(
+          create: (context) => PrayerListProvider(context.read<CircleRepository>()),
+        ),
+        ChangeNotifierProvider<ScriptureFocusProvider>(
+          create: (context) => ScriptureFocusProvider(context.read<CircleRepository>()),
+        ),
+        ChangeNotifierProvider<CircleHabitsProvider>(
+          create: (context) => CircleHabitsProvider(context.read<CircleRepository>()),
+        ),
+        ChangeNotifierProvider<EncouragementProvider>(
+          create: (context) => EncouragementProvider(context.read<CircleRepository>()),
+        ),
+        ChangeNotifierProvider<MilestoneShareProvider>(
+          create: (context) => MilestoneShareProvider(context.read<CircleRepository>()),
+        ),
+        ChangeNotifierProvider<WeeklyPulseProvider>(
+          create: (context) => WeeklyPulseProvider(context.read<CircleRepository>()),
+        ),
+        ChangeNotifierProvider<CircleEventsProvider>(
+          create: (context) => CircleEventsProvider(context.read<CircleRepository>()),
+        ),
       ],
       child: const TributeApp(),
     ),

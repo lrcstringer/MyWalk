@@ -1,9 +1,16 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../../data/datasources/remote/auth_service.dart';
 import '../../providers/store_provider.dart';
+import '../../providers/prayer_list_provider.dart';
+import '../../providers/scripture_focus_provider.dart';
+import '../../providers/circle_habits_provider.dart';
+import '../../providers/encouragement_provider.dart';
+import '../../providers/milestone_share_provider.dart';
+import '../../providers/weekly_pulse_provider.dart';
+import '../../providers/circle_events_provider.dart';
 import '../../../domain/repositories/circle_repository.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
@@ -11,6 +18,12 @@ import 'circle_sunday_summary_view.dart';
 import 'gratitude_wall_view.dart' show GratitudeWallWidget;
 import 'sos_prayer_request_view.dart';
 import '../shared/tribute_paywall_view.dart';
+import 'prayer_list_tab.dart';
+import 'scripture_focus_tab.dart';
+import 'circle_habits_tab.dart';
+import 'activity_tab.dart';
+import 'events_tab.dart';
+import 'circle_settings_view.dart';
 
 class CircleDetailView extends StatefulWidget {
   final String circleId;
@@ -20,24 +33,53 @@ class CircleDetailView extends StatefulWidget {
   State<CircleDetailView> createState() => _CircleDetailViewState();
 }
 
-class _CircleDetailViewState extends State<CircleDetailView> {
+class _CircleDetailViewState extends State<CircleDetailView>
+    with SingleTickerProviderStateMixin {
   CircleDetails? _detail;
   bool _isLoading = true;
   String? _error;
   bool _isLeaving = false;
-  List<SOSMessage> _recentSOS = [];
   CircleHeatmap? _heatmap;
   bool _heatmapFailed = false;
   CollectiveMilestones? _milestones;
   bool _milestonesFailed = false;
 
+  late final TabController _tabController;
+
+  static final _tabs = [
+    ('Overview', Icons.home_rounded),
+    ('Prayer', Icons.volunteer_activism_rounded),
+    ('Scripture', Icons.menu_book_rounded),
+    ('Habits', Icons.check_circle_outline_rounded),
+    ('Activity', Icons.people_rounded),
+    ('Events', Icons.event_rounded),
+  ];
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
     _loadDetail();
-    _loadRecentSOS();
     _loadHeatmap();
     _loadMilestones();
+    _loadProviders();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _loadProviders() {
+    final uid = AuthService.shared.userId ?? '';
+    context.read<PrayerListProvider>().load(widget.circleId);
+    context.read<ScriptureFocusProvider>().load(widget.circleId, uid);
+    context.read<CircleHabitsProvider>().load(widget.circleId);
+    context.read<EncouragementProvider>().load(widget.circleId);
+    context.read<MilestoneShareProvider>().load(widget.circleId);
+    context.read<WeeklyPulseProvider>().load(widget.circleId, uid);
+    context.read<CircleEventsProvider>().load(widget.circleId);
   }
 
   Future<void> _loadDetail() async {
@@ -48,13 +90,6 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
     }
-  }
-
-  Future<void> _loadRecentSOS() async {
-    try {
-      final sos = await context.read<CircleRepository>().getRecentSOS(circleId: widget.circleId, limit: 5);
-      if (mounted) setState(() => _recentSOS = sos);
-    } catch (_) {}
   }
 
   Future<void> _loadHeatmap() async {
@@ -87,17 +122,6 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     }
   }
 
-  String _relativeTime(String dateString) {
-    final date = DateTime.tryParse(dateString);
-    if (date == null) return '';
-    final diff = DateTime.now().difference(date);
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
-    if (diff.inDays < 1) return '${diff.inHours}h ago';
-    if (diff.inDays == 1) return 'Yesterday';
-    return '${diff.inDays}d ago';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,143 +141,221 @@ class _CircleDetailViewState extends State<CircleDetailView> {
           const SizedBox(height: 12),
           Text(_error ?? 'Failed to load', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
           const SizedBox(height: 16),
-          TextButton(
-            onPressed: _loadDetail,
-            child: const Text('Retry', style: TextStyle(color: TributeColor.golden)),
-          ),
+          TextButton(onPressed: _loadDetail,
+              child: const Text('Retry', style: TextStyle(color: TributeColor.golden))),
         ]),
       );
     }
-    return _circleContent(_detail!);
+    return _buildTabView(_detail!);
   }
 
-  Widget _circleContent(CircleDetails detail) {
-    return CustomScrollView(
-      slivers: [
+  Widget _buildTabView(CircleDetails detail) {
+    return NestedScrollView(
+      headerSliverBuilder: (context, _) => [
         SliverAppBar(
           backgroundColor: TributeColor.charcoal,
-          title: Text(detail.name,
-              style: const TextStyle(color: TributeColor.warmWhite, fontSize: 20, fontWeight: FontWeight.w700)),
-          floating: true, snap: true,
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              if (detail.description.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(detail.description, style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.6))),
-              ],
-              const SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.group, size: 13, color: Colors.white.withValues(alpha: 0.4)),
-                const SizedBox(width: 6),
-                Text('${detail.memberCount} members',
-                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4))),
+          title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(detail.name,
+                style: const TextStyle(color: TributeColor.warmWhite, fontSize: 18, fontWeight: FontWeight.w700)),
+            Text('${detail.memberCount} members',
+                style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
+          ]),
+          actions: [
+            if (detail.members.any((m) => m.userId == AuthService.shared.userId && m.isAdmin))
+              IconButton(
+                icon: const Icon(Icons.settings_rounded, size: 20, color: TributeColor.softGold),
+                onPressed: () => _openSettings(detail),
+              ),
+            IconButton(
+              icon: const Icon(Icons.link_rounded, size: 20, color: TributeColor.golden),
+              onPressed: () => _shareInvite(detail),
+            ),
+          ],
+          floating: true,
+          snap: true,
+          bottom: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            labelColor: TributeColor.golden,
+            unselectedLabelColor: TributeColor.softGold,
+            indicatorColor: TributeColor.golden,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            unselectedLabelStyle: const TextStyle(fontSize: 12),
+            tabs: _tabs.map((t) => Tab(
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(t.$2, size: 14),
+                const SizedBox(width: 5),
+                Text(t.$1),
               ]),
-              const SizedBox(height: 20),
-              // Collaborative heatmap
-              _collaborativeHeatmapSection(detail),
-              const SizedBox(height: 20),
-              // Collective milestones
-              _collectiveMilestonesSection(detail),
-              const SizedBox(height: 20),
-              // Gratitude Wall
-              GratitudeWallWidget(circleId: widget.circleId),
-              const SizedBox(height: 20),
-              // Actions section
-              _sectionHeader('Actions'),
-              const SizedBox(height: 8),
-              _actionRow(
-                icon: Icons.bolt_rounded, iconColor: TributeColor.warmCoral,
-                iconBg: TributeColor.warmCoral.withValues(alpha: 0.12),
-                title: 'SOS Prayer Request', subtitle: 'Ask up to 20 people to pray for you',
-                onTap: () => _showSOSRequest(detail),
-              ),
-              const SizedBox(height: 8),
-              _actionRow(
-                icon: Icons.wb_sunny_rounded, iconColor: TributeColor.golden,
-                iconBg: TributeColor.golden.withValues(alpha: 0.12),
-                title: 'Weekly Summary', subtitle: "See your circle's faithfulness this week",
-                onTap: () => _showSundaySummary(detail),
-              ),
-              if (_recentSOS.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                _sectionHeader('Recent Prayer Requests'),
-                const SizedBox(height: 8),
-                ..._recentSOS.take(5).map((sos) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _sosItem(sos),
-                    )),
-              ],
-              const SizedBox(height: 20),
-              _sectionHeader('Invite'),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: TributeDecorations.card,
-                child: Column(children: [
-                  Row(children: [
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Invite Code',
-                            style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
-                        Text(detail.inviteCode,
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
-                                color: TributeColor.golden, fontFamily: 'monospace')),
-                      ]),
-                    ),
-                    GestureDetector(
-                      onTap: () => Clipboard.setData(ClipboardData(text: detail.inviteCode)),
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: TributeColor.golden.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.copy_rounded, size: 18, color: TributeColor.golden),
-                      ),
-                    ),
-                  ]),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: () => _shareInvite(detail),
-                    child: Row(children: [
-                      const Icon(Icons.share_rounded, size: 14, color: TributeColor.golden),
-                      const SizedBox(width: 8),
-                      Text('Share Invite Link',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: TributeColor.golden)),
-                    ]),
-                  ),
-                ]),
-              ),
-              const SizedBox(height: 20),
-              _sectionHeader('Members (${detail.members.length})'),
-              const SizedBox(height: 8),
-              ...detail.members.map((m) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _memberRow(m),
-                  )),
-              const SizedBox(height: 20),
-              _leaveButton(),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Row(children: [
-                  const Icon(Icons.warning_amber, size: 14, color: TributeColor.warmCoral),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(_error!, style: const TextStyle(fontSize: 12, color: TributeColor.warmCoral))),
-                ]),
-              ],
-            ]),
+            )).toList(),
           ),
         ),
+      ],
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _OverviewTab(
+            circleId: widget.circleId,
+            detail: detail,
+            heatmap: _heatmap,
+            heatmapFailed: _heatmapFailed,
+            milestones: _milestones,
+            milestonesFailed: _milestonesFailed,
+            onSOSTap: () => _showSOSRequest(detail),
+            onSummaryTap: () => _showSundaySummary(detail),
+            onLeaveTap: _confirmLeave,
+            isLeaving: _isLeaving,
+          ),
+          PrayerListTab(circleId: widget.circleId),
+          ScriptureFocusTab(circleId: widget.circleId, settings: detail.settings),
+          CircleHabitsTab(circleId: widget.circleId, isAdmin: detail.members.any(
+              (m) => m.userId == AuthService.shared.userId && m.isAdmin)),
+          ActivityTab(circleId: widget.circleId, members: detail.members),
+          EventsTab(circleId: widget.circleId, isAdmin: detail.members.any(
+              (m) => m.userId == AuthService.shared.userId && m.isAdmin)),
+        ],
+      ),
+    );
+  }
+
+  void _showSOSRequest(CircleDetails detail) {
+    final isPremium = context.read<StoreProvider>().isPremium;
+    if (!isPremium) {
+      showModalBottomSheet(
+        context: context, isScrollControlled: true, useSafeArea: true,
+        backgroundColor: TributeColor.charcoal,
+        builder: (_) => const TributePaywallView(
+          contextTitle: 'SOS Support',
+          contextMessage: "Tough moment? The SOS feature can help — it'll remind you why you started and connect you with your circle.",
+        ),
+      );
+      return;
+    }
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, useSafeArea: true,
+      backgroundColor: TributeColor.charcoal,
+      builder: (_) => SOSPrayerRequestView(circleId: widget.circleId, members: detail.members),
+    );
+  }
+
+  void _showSundaySummary(CircleDetails detail) {
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, useSafeArea: true,
+      backgroundColor: TributeColor.charcoal,
+      builder: (_) => CircleSundaySummaryView(circleId: widget.circleId, circleName: detail.name),
+    );
+  }
+
+  void _shareInvite(CircleDetails detail) {
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, useSafeArea: true,
+      backgroundColor: TributeColor.charcoal,
+      builder: (_) => _ShareInviteSheet(
+        circleName: detail.name, inviteCode: detail.inviteCode),
+    );
+  }
+
+  void _openSettings(CircleDetails detail) {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => CircleSettingsView(circleId: widget.circleId, settings: detail.settings),
+    ));
+  }
+
+  void _confirmLeave() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: TributeColor.cardBackground,
+        title: const Text('Leave Circle', style: TextStyle(color: TributeColor.warmWhite)),
+        content: Text(
+          "You'll no longer receive prayer requests or see this circle's progress.",
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+          ),
+          TextButton(
+            onPressed: () { Navigator.pop(context); _leaveCircle(); },
+            child: const Text('Leave', style: TextStyle(color: TributeColor.warmCoral)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Overview Tab ─────────────────────────────────────────────────────────────
+
+class _OverviewTab extends StatelessWidget {
+  final String circleId;
+  final CircleDetails detail;
+  final CircleHeatmap? heatmap;
+  final bool heatmapFailed;
+  final CollectiveMilestones? milestones;
+  final bool milestonesFailed;
+  final VoidCallback onSOSTap;
+  final VoidCallback onSummaryTap;
+  final VoidCallback onLeaveTap;
+  final bool isLeaving;
+
+  const _OverviewTab({
+    required this.circleId,
+    required this.detail,
+    required this.heatmap,
+    required this.heatmapFailed,
+    required this.milestones,
+    required this.milestonesFailed,
+    required this.onSOSTap,
+    required this.onSummaryTap,
+    required this.onLeaveTap,
+    required this.isLeaving,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isPremium = context.watch<StoreProvider>().isPremium;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+      children: [
+        _collaborativeHeatmapSection(isPremium),
+        const SizedBox(height: 16),
+        _collectiveMilestonesSection(),
+        const SizedBox(height: 16),
+        GratitudeWallWidget(circleId: circleId),
+        const SizedBox(height: 16),
+        _sectionHeader('Actions'),
+        const SizedBox(height: 8),
+        _actionRow(
+          icon: Icons.bolt_rounded, iconColor: TributeColor.warmCoral,
+          iconBg: TributeColor.warmCoral.withValues(alpha: 0.12),
+          title: 'SOS Prayer Request', subtitle: 'Ask your circle to pray for you now',
+          onTap: onSOSTap,
+        ),
+        const SizedBox(height: 8),
+        _actionRow(
+          icon: Icons.wb_sunny_rounded, iconColor: TributeColor.golden,
+          iconBg: TributeColor.golden.withValues(alpha: 0.12),
+          title: 'Weekly Summary', subtitle: "See your circle's faithfulness this week",
+          onTap: onSummaryTap,
+        ),
+        const SizedBox(height: 16),
+        _sectionHeader('Members (${detail.members.length})'),
+        const SizedBox(height: 8),
+        ...detail.members.map((m) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _memberRow(m),
+        )),
+        const SizedBox(height: 16),
+        _leaveButton(),
       ],
     );
   }
 
-  Widget _collaborativeHeatmapSection(CircleDetails detail) {
-    final isPremium = context.watch<StoreProvider>().isPremium;
-    final heatmap = _heatmap;
+  Widget _collaborativeHeatmapSection(bool isPremium) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: TributeDecorations.card,
@@ -273,18 +375,15 @@ class _CircleDetailViewState extends State<CircleDetailView> {
           style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45), height: 1.4),
         ),
         const SizedBox(height: 12),
-        if (_heatmapFailed)
+        if (heatmapFailed)
           Text('Could not load activity data.',
               style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.35)))
         else if (heatmap == null)
-          SizedBox(
-            height: 32,
+          const SizedBox(height: 32,
             child: Center(child: SizedBox(width: 16, height: 16,
-                child: CircularProgressIndicator(strokeWidth: 1.5,
-                    color: TributeColor.golden.withValues(alpha: 0.4)))),
-          )
+              child: CircularProgressIndicator(strokeWidth: 1.5, color: TributeColor.golden))))
         else
-          _CircleHeatmapGrid(heatmap: heatmap, isPremium: isPremium),
+          _CircleHeatmapGrid(heatmap: heatmap!, isPremium: isPremium),
         if (!isPremium) ...[
           const SizedBox(height: 8),
           Text('Upgrade to see your full 52-week circle history.',
@@ -294,8 +393,8 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     );
   }
 
-  Widget _collectiveMilestonesSection(CircleDetails detail) {
-    final ms = _milestones;
+  Widget _collectiveMilestonesSection() {
+    final ms = milestones;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: TributeDecorations.card,
@@ -307,32 +406,25 @@ class _CircleDetailViewState extends State<CircleDetailView> {
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: TributeColor.softGold)),
         ]),
         const SizedBox(height: 10),
-        if (_milestonesFailed)
+        if (milestonesFailed)
           Text('Could not load milestones.',
               style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.35)))
         else if (ms == null)
-          SizedBox(
-            height: 32,
+          const SizedBox(height: 32,
             child: Center(child: SizedBox(width: 16, height: 16,
-                child: CircularProgressIndicator(strokeWidth: 1.5,
-                    color: TributeColor.golden.withValues(alpha: 0.4)))),
-          )
+              child: CircularProgressIndicator(strokeWidth: 1.5, color: TributeColor.golden))))
         else ...[
-          // Running totals
           if (ms.totalGivingDays > 0 || ms.totalHours > 0 || ms.totalGratitudeDays > 0)
             _milestoneTotalsRow(ms),
           const SizedBox(height: 10),
-          // Milestone cards
           if (ms.milestones.isEmpty)
-            Text(
-              'Keep going — your first circle milestone is on its way.',
-              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4), height: 1.4),
-            )
+            Text('Keep going — your first circle milestone is on its way.',
+                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4), height: 1.4))
           else
             ...ms.milestones.take(3).map((m) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _milestoneTile(m),
-                )),
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _milestoneTile(m),
+            )),
         ],
       ]),
     );
@@ -400,11 +492,9 @@ class _CircleDetailViewState extends State<CircleDetailView> {
           border: Border.all(color: iconColor.withValues(alpha: 0.12), width: 0.5),
         ),
         child: Row(children: [
-          Container(
-            width: 40, height: 40,
+          Container(width: 40, height: 40,
             decoration: BoxDecoration(shape: BoxShape.circle, color: iconBg),
-            child: Icon(icon, size: 18, color: iconColor),
-          ),
+            child: Icon(icon, size: 18, color: iconColor)),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: TributeColor.warmWhite)),
@@ -416,43 +506,16 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     );
   }
 
-  Widget _sosItem(SOSMessage sos) {
-    final isMine = sos.isMine;
-    final color = isMine ? TributeColor.golden : TributeColor.warmCoral;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: TributeDecorations.card,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Icon(isMine ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-              size: 13, color: color),
-          const SizedBox(width: 6),
-          Text(isMine ? 'You requested prayer' : 'Prayer requested',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
-          const Spacer(),
-          Text(_relativeTime(sos.createdAt),
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
-        ]),
-        const SizedBox(height: 6),
-        Text(sos.message,
-            maxLines: 2, overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 14, color: TributeColor.warmWhite)),
-      ]),
-    );
-  }
-
   Widget _memberRow(CircleMember m) {
-    final isAdmin = m.role == 'admin';
+    final isAdmin = m.isAdmin;
     final color = isAdmin ? TributeColor.golden : TributeColor.sage;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: TributeDecorations.card,
       child: Row(children: [
-        Container(
-          width: 36, height: 36,
+        Container(width: 36, height: 36,
           decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.12)),
-          child: Icon(Icons.person_rounded, size: 14, color: color),
-        ),
+          child: Icon(Icons.person_rounded, size: 14, color: color)),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Member', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: TributeColor.warmWhite)),
@@ -465,7 +528,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
 
   Widget _leaveButton() {
     return GestureDetector(
-      onTap: _isLeaving ? null : _confirmLeave,
+      onTap: isLeaving ? null : onLeaveTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -478,71 +541,16 @@ class _CircleDetailViewState extends State<CircleDetailView> {
           const SizedBox(width: 10),
           const Expanded(child: Text('Leave Circle',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: TributeColor.warmCoral))),
-          if (_isLeaving)
+          if (isLeaving)
             const SizedBox(width: 16, height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: TributeColor.warmCoral)),
+              child: CircularProgressIndicator(strokeWidth: 2, color: TributeColor.warmCoral)),
         ]),
       ),
     );
   }
-
-  void _showSOSRequest(CircleDetails detail) {
-    final isPremium = context.read<StoreProvider>().isPremium;
-    if (!isPremium && !kDebugMode) {
-      showModalBottomSheet(
-        context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: TributeColor.charcoal,
-        builder: (_) => const TributePaywallView(
-          contextTitle: 'SOS Support',
-          contextMessage: 'Tough moment? The SOS feature can help — it\'ll remind you why you started and connect you with your circle.',
-        ),
-      );
-      return;
-    }
-    showModalBottomSheet(
-      context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: TributeColor.charcoal,
-      builder: (_) => SOSPrayerRequestView(circleId: widget.circleId, members: detail.members),
-    );
-  }
-
-  void _showSundaySummary(CircleDetails detail) {
-    showModalBottomSheet(
-      context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: TributeColor.charcoal,
-      builder: (_) => CircleSundaySummaryView(circleId: widget.circleId, circleName: detail.name),
-    );
-  }
-
-  void _shareInvite(CircleDetails detail) {
-    showModalBottomSheet(
-      context: context, isScrollControlled: true, useSafeArea: true, backgroundColor: TributeColor.charcoal,
-      builder: (_) => _ShareInviteSheet(
-        circleName: detail.name, inviteCode: detail.inviteCode),
-    );
-  }
-
-  void _confirmLeave() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: TributeColor.cardBackground,
-        title: const Text('Leave Circle', style: TextStyle(color: TributeColor.warmWhite)),
-        content: Text(
-          "You'll no longer receive prayer requests or see this circle's progress.",
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
-          ),
-          TextButton(
-            onPressed: () { Navigator.pop(context); _leaveCircle(); },
-            child: const Text('Leave', style: TextStyle(color: TributeColor.warmCoral)),
-          ),
-        ],
-      ),
-    );
-  }
 }
+
+// ─── Share invite sheet ───────────────────────────────────────────────────────
 
 class _ShareInviteSheet extends StatelessWidget {
   final String circleName;
@@ -568,14 +576,10 @@ class _ShareInviteSheet extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(children: [
-            Container(
-              width: 64, height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: TributeColor.golden.withValues(alpha: 0.1),
-              ),
-              child: const Icon(Icons.link_rounded, size: 28, color: TributeColor.golden),
-            ),
+            Container(width: 64, height: 64,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                  color: TributeColor.golden.withValues(alpha: 0.1)),
+              child: const Icon(Icons.link_rounded, size: 28, color: TributeColor.golden)),
             const SizedBox(height: 12),
             Text('Invite to $circleName',
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: TributeColor.warmWhite)),
@@ -584,7 +588,9 @@ class _ShareInviteSheet extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  final text = 'Join my Prayer Circle "$circleName" on Tribute!\n\nTap to join: https://tribute.app/join?code=$inviteCode\n\nOr enter invite code "$inviteCode" manually in the app.';
+                  final text = 'Join my Prayer Circle "$circleName" on Tribute!\n\n'
+                    'Tap to join: https://tribute.app/join?code=$inviteCode\n\n'
+                    'Or enter invite code "$inviteCode" manually in the app.';
                   Share.share(text);
                 },
                 icon: const Icon(Icons.share_rounded, size: 18),
@@ -619,7 +625,7 @@ class _ShareInviteSheet extends StatelessWidget {
   }
 }
 
-// ─── Supporting data class ────────────────────────────────────────────────────
+// ─── Supporting types ─────────────────────────────────────────────────────────
 
 class _TotalItem {
   final String value;
@@ -635,9 +641,18 @@ class _CircleHeatmapGrid extends StatelessWidget {
 
   const _CircleHeatmapGrid({required this.heatmap, required this.isPremium});
 
-  Map<String, double> _intensityMap() {
-    return {for (final d in heatmap.days) d.date: d.intensity};
-  }
+  static const _tileSize = 10.0;
+  static const _gap = 2.0;
+  static const _stride = _tileSize + _gap;
+  static const _dayLabelWidth = 14.0;
+  static const _monthRowHeight = 13.0;
+  static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  static const _monthAbbrs = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  Map<String, double> _intensityMap() => {for (final d in heatmap.days) d.date: d.intensity};
 
   List<List<DateTime>> _buildWeeks() {
     final weekCount = isPremium ? 52 : 1;
@@ -645,12 +660,10 @@ class _CircleHeatmapGrid extends StatelessWidget {
     final todayStart = DateTime(today.year, today.month, today.day);
     final daysSinceSunday = today.weekday % 7;
     final currentWeekStart = todayStart.subtract(Duration(days: daysSinceSunday));
-    final result = <List<DateTime>>[];
-    for (int w = -(weekCount - 1); w <= 0; w++) {
-      final weekStart = currentWeekStart.add(Duration(days: w * 7));
-      result.add(List.generate(7, (d) => weekStart.add(Duration(days: d))));
-    }
-    return result;
+    return List.generate(weekCount, (i) {
+      final weekStart = currentWeekStart.add(Duration(days: (i - (weekCount - 1)) * 7));
+      return List.generate(7, (d) => weekStart.add(Duration(days: d)));
+    });
   }
 
   Color _cellColor(double intensity) {
@@ -660,57 +673,102 @@ class _CircleHeatmapGrid extends StatelessWidget {
     return TributeColor.golden.withValues(alpha: 0.85);
   }
 
-  List<BoxShadow>? _cellGlow(double intensity) {
-    if (intensity > 0.65) {
-      return [BoxShadow(color: TributeColor.golden.withValues(alpha: 0.35), blurRadius: 3)];
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final weeks = _buildWeeks();
     final map = _intensityMap();
-    final tileSpacing = isPremium ? 2.0 : 3.0;
-    final cornerRadius = isPremium ? 2.0 : 3.0;
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(
-        children: ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((l) => Expanded(
-          child: Text(l, textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 9, color: Colors.white.withValues(alpha: 0.35))),
-        )).toList(),
-      ),
-      const SizedBox(height: 6),
-      Column(
-        children: weeks.map((week) => Padding(
-          padding: EdgeInsets.only(bottom: tileSpacing),
-          child: Row(
-            children: week.map((date) {
-              final isFuture = date.isAfter(todayStart);
-              final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-              final intensity = isFuture ? 0.0 : (map[key] ?? 0.0);
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: tileSpacing / 2),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isFuture ? Colors.white.withValues(alpha: 0.02) : _cellColor(intensity),
-                        borderRadius: BorderRadius.circular(cornerRadius),
-                        boxShadow: isFuture ? null : _cellGlow(intensity),
-                      ),
-                    ),
+    if (weeks.length == 1) {
+      return Row(
+        children: weeks.first.map((date) {
+          final isFuture = date.isAfter(todayStart);
+          final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          final intensity = isFuture ? 0.0 : (map[key] ?? 0.0);
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 1.5),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isFuture ? Colors.white.withValues(alpha: 0.02) : _cellColor(intensity),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: _monthRowHeight + 1),
+          child: Column(
+            children: List.generate(7, (i) => SizedBox(
+              width: _dayLabelWidth, height: _stride,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(_dayLabels[i],
+                    style: TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.35))),
+              ),
+            )),
           ),
-        )).toList(),
-      ),
-    ]);
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            reverse: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: _monthRowHeight,
+                  child: Row(
+                    children: List.generate(weeks.length, (i) {
+                      final sunday = weeks[i].first;
+                      final showMonth = i == 0 || sunday.month != weeks[i - 1].first.month;
+                      return SizedBox(
+                        width: _stride,
+                        child: showMonth
+                            ? Text(_monthAbbrs[sunday.month - 1],
+                                style: TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.4)))
+                            : null,
+                      );
+                    }),
+                  ),
+                ),
+                ...List.generate(7, (dayIndex) => Row(
+                  children: weeks.map((week) {
+                    final date = week[dayIndex];
+                    final isFuture = date.isAfter(todayStart);
+                    final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                    final intensity = isFuture ? 0.0 : (map[key] ?? 0.0);
+                    return Padding(
+                      padding: const EdgeInsets.only(right: _gap, bottom: _gap),
+                      child: Container(
+                        width: _tileSize, height: _tileSize,
+                        decoration: BoxDecoration(
+                          color: isFuture ? Colors.white.withValues(alpha: 0.02) : _cellColor(intensity),
+                          borderRadius: BorderRadius.circular(2),
+                          boxShadow: !isFuture && intensity > 0.65
+                              ? [BoxShadow(color: TributeColor.golden.withValues(alpha: 0.35), blurRadius: 3)]
+                              : null,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                )),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

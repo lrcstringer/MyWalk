@@ -73,6 +73,9 @@ dependencies:
   # System share sheet (invite links)
   share_plus: ^10.1.4
 
+  # Add-to-calendar (circle events)
+  add_2_calendar: ^3.0.0
+
   # Deep link handling (App Links / Universal Links / custom URL scheme)
   app_links: ^6.3.0
 

@@ -3,6 +3,11 @@ import '../../../domain/entities/habit.dart';
 import '../../../domain/services/daily_score_service.dart';
 import '../../theme/app_theme.dart';
 
+/// Single-habit heatmap.
+///
+/// Layout: 7 fixed rows (Sun–Sat) × weekCount scrollable columns (weeks).
+/// Oldest week is on the left; newest is on the right and visible by default.
+/// For weekCount == 1 a simple 7-tile row is used instead.
 class HeatmapView extends StatelessWidget {
   final Habit habit;
   final int weekCount;
@@ -11,86 +16,151 @@ class HeatmapView extends StatelessWidget {
 
   static final _scoreService = DailyScoreService.instance;
 
+  static const _tileSize = 10.0;
+  static const _gap = 2.0;
+  static const _stride = _tileSize + _gap;
+  static const _dayLabelWidth = 14.0;
+  static const _monthRowHeight = 13.0;
+  static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  static const _monthAbbrs = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
   List<List<_HeatmapDay>> _buildWeeks() {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
-
-    // Find Sunday of current week
-    int weekday = today.weekday; // Mon=1..Sun=7
-    final daysSinceSunday = weekday % 7; // Sun=0, Mon=1, ..., Sat=6
+    final daysSinceSunday = today.weekday % 7;
     final currentWeekStart = todayStart.subtract(Duration(days: daysSinceSunday));
 
-    final result = <List<_HeatmapDay>>[];
-    for (int w = -(weekCount - 1); w <= 0; w++) {
-      final weekStart = currentWeekStart.add(Duration(days: w * 7));
-      final week = <_HeatmapDay>[];
-      for (int d = 0; d < 7; d++) {
+    return List.generate(weekCount, (i) {
+      final weekStart = currentWeekStart.add(Duration(days: (i - (weekCount - 1)) * 7));
+      return List.generate(7, (d) {
         final date = weekStart.add(Duration(days: d));
         final isFuture = date.isAfter(todayStart);
         final score = isFuture ? 0.0 : _scoreService.habitScore(habit, date);
-        final tier = isFuture ? DayTier.nothing : _scoreService.tierForScore(score < 0 ? 0 : score);
-        week.add(_HeatmapDay(date: date, isFuture: isFuture, tier: tier));
-      }
-      result.add(week);
-    }
-    return result;
+        final tier = isFuture
+            ? DayTier.nothing
+            : _scoreService.tierForScore(score < 0 ? 0 : score);
+        return _HeatmapDay(date: date, isFuture: isFuture, tier: tier);
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final weeks = _buildWeeks();
-    final tileSpacing = weekCount > 4 ? 2.0 : 3.0;
-    final cornerRadius = weekCount > 12 ? 2.0 : 3.0;
     final isAbstain = habit.trackingType == HabitTrackingType.abstain;
-    final accentColor = isAbstain ? TributeColor.sage : TributeColor.golden;
+    final accent = isAbstain ? TributeColor.sage : TributeColor.golden;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (weekCount > 1) ...[
-          Row(
-            children: ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label) => Expanded(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withValues(alpha: 0.4),
+    // Single week: render as a plain horizontal row.
+    if (weeks.length == 1) {
+      return Row(
+        children: weeks.first.map((day) => Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 1.5),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                decoration: BoxDecoration(
+                  color: _tileFill(day, accent),
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
-            )).toList(),
+            ),
           ),
-          const SizedBox(height: 8),
-        ],
-        Column(
-          children: weeks.map((week) => Padding(
-            padding: EdgeInsets.only(bottom: tileSpacing),
-            child: Row(
-              children: week.map((day) => Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: tileSpacing / 2),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      decoration: BoxDecoration(
-                        color: _tileFill(day, accentColor),
-                        borderRadius: BorderRadius.circular(cornerRadius),
-                        border: day.tier == DayTier.partial && !day.isFuture
-                            ? Border.all(color: accentColor.withValues(alpha: 0.5), width: 1)
-                            : null,
-                        boxShadow: day.tier == DayTier.full && !day.isFuture
-                            ? [BoxShadow(color: accentColor.withValues(alpha: 0.35), blurRadius: 3)]
-                            : null,
-                      ),
-                    ),
+        )).toList(),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Fixed day labels — not scrollable.
+        Padding(
+          padding: const EdgeInsets.only(top: _monthRowHeight + 1),
+          child: Column(
+            children: List.generate(7, (i) => SizedBox(
+              width: _dayLabelWidth,
+              height: _stride,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _dayLabels[i],
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: Colors.white.withValues(alpha: 0.35),
                   ),
                 ),
-              )).toList(),
+              ),
+            )),
+          ),
+        ),
+        // Scrollable grid — starts scrolled to the newest (rightmost) week.
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            reverse: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Month markers row.
+                SizedBox(
+                  height: _monthRowHeight,
+                  child: Row(
+                    children: List.generate(weeks.length, (i) {
+                      final sunday = weeks[i].first.date;
+                      final showMonth = i == 0 ||
+                          sunday.month != weeks[i - 1].first.date.month;
+                      return SizedBox(
+                        width: _stride,
+                        child: showMonth
+                            ? Text(
+                                _monthAbbrs[sunday.month - 1],
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                ),
+                              )
+                            : null,
+                      );
+                    }),
+                  ),
+                ),
+                // 7 day rows.
+                ...List.generate(7, (dayIndex) => Row(
+                  children: weeks.map((week) {
+                    final day = week[dayIndex];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: _gap, bottom: _gap),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        width: _tileSize,
+                        height: _tileSize,
+                        decoration: BoxDecoration(
+                          color: _tileFill(day, accent),
+                          borderRadius: BorderRadius.circular(2),
+                          border: day.tier == DayTier.partial && !day.isFuture
+                              ? Border.all(
+                                  color: accent.withValues(alpha: 0.5),
+                                  width: 0.5)
+                              : null,
+                          boxShadow: day.tier == DayTier.full && !day.isFuture
+                              ? [BoxShadow(
+                                  color: accent.withValues(alpha: 0.35),
+                                  blurRadius: 3)]
+                              : null,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                )),
+              ],
             ),
-          )).toList(),
+          ),
         ),
       ],
     );

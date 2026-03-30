@@ -132,6 +132,83 @@ service cloud.firestore {
         allow read: if isCircleMember(circleId);
         allow write: if isOwner(userId) && isCircleMember(circleId);
       }
+
+      // prayer_requests — any member can read; all writes via callable (Admin SDK)
+      match /prayer_requests/{requestId} {
+        allow read: if isCircleMember(circleId);
+        allow write: if false;
+      }
+
+      // scripture_focus — any member can read; all writes via callable
+      match /scripture_focus/{weekId} {
+        allow read: if isCircleMember(circleId);
+        allow write: if false;
+
+        // reflections subcollection — any member can read; writes via callable
+        match /reflections/{reflectionId} {
+          allow read: if isCircleMember(circleId);
+          allow write: if false;
+        }
+      }
+
+      // circle_habits — any member can read; create/deactivate via callable
+      match /circle_habits/{habitId} {
+        allow read: if isCircleMember(circleId);
+        allow write: if false;
+
+        // completions — members write their own; any member reads (for aggregation trigger)
+        match /completions/{completionId} {
+          allow read: if isCircleMember(circleId);
+          // Completion ID is deterministic: {userId}_{date}. Client writes their own only.
+          allow create: if isCircleMember(circleId) &&
+                          request.resource.data.userId == request.auth.uid;
+          allow update, delete: if false;
+        }
+
+        // daily_summary — any member can read; trigger writes via Admin SDK
+        match /daily_summary/{summaryId} {
+          allow read: if isCircleMember(circleId);
+          allow write: if false;
+        }
+      }
+
+      // encouragements — recipient reads via callable (privacy masking); writes via callable
+      match /encouragements/{encouragementId} {
+        allow read: if false; // Always fetched through circleGetEncouragements callable
+        allow write: if false;
+      }
+
+      // milestone_shares — any member can read; writes via callable
+      match /milestone_shares/{shareId} {
+        allow read: if isCircleMember(circleId);
+        allow write: if false;
+      }
+
+      // weekly_pulse — any member can read; writes via callable
+      match /weekly_pulse/{weekId} {
+        allow read: if isCircleMember(circleId);
+        allow write: if false;
+
+        // pulse responses — any member reads via callable (privacy masking); writes via callable
+        match /responses/{responseId} {
+          allow read: if false; // Always fetched through circleGetPulseResponses callable
+          allow write: if false;
+        }
+      }
+
+      // events — any member can read; create/delete via callable
+      match /events/{eventId} {
+        allow read: if isCircleMember(circleId);
+        allow write: if false;
+      }
+    }
+
+    // ─── bible_passage_cache ───────────────────────────────────────────────
+    // Populated by circleFetchBiblePassage callable. Read-only for all
+    // authenticated users (public scripture text, no PII).
+    match /bible_passage_cache/{cacheKey} {
+      allow read: if isSignedIn();
+      allow write: if false;
     }
   }
 }

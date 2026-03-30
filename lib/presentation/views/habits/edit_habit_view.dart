@@ -144,10 +144,71 @@ class _EditHabitViewState extends State<EditHabitView> {
           _dayOfWeekSection(isAbstain),
           const SizedBox(height: 20),
           if (isAbstain) _copingSection() else _triggerSection(),
+          if (!widget.habit.isBuiltIn) ...[
+            const SizedBox(height: 40),
+            _deleteSection(),
+          ],
           const SizedBox(height: 40),
         ]),
       ),
     );
+  }
+
+  Widget _deleteSection() {
+    return GestureDetector(
+      onTap: _confirmDelete,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: TributeColor.warmCoral.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: TributeColor.warmCoral.withValues(alpha: 0.25), width: 0.5),
+        ),
+        child: const Center(
+          child: Text(
+            'Delete Habit',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: TributeColor.warmCoral),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete() async {
+    final checkIns = widget.habit.totalCompletedDays();
+    final habitName = widget.habit.name;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: TributeColor.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Delete habit?',
+          style: TextStyle(color: TributeColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          checkIns == 0
+              ? '"$habitName" has no check-ins. Deleting it is permanent and cannot be undone.'
+              : '"$habitName" has $checkIns ${checkIns == 1 ? 'check-in' : 'check-ins'}. Deleting it will permanently remove all your data for this habit and cannot be undone.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: TributeColor.softGold)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: TributeColor.warmCoral, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await context.read<HabitProvider>().deleteHabit(widget.habit);
+      if (mounted) Navigator.pop(context);
+    }
   }
 
   Widget _headerSection() {

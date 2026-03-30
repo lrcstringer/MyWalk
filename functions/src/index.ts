@@ -10,7 +10,45 @@ export {
   circleShareGratitude,
   circleDeleteGratitude,
   circleSubmitHeatmapData,
+  circleUpdateSettings,
 } from './callables/circles';
+export {
+  prayerRequestCreate,
+  prayerPrayFor,
+  prayerRequestMarkAnswered,
+  expirePrayerRequests,
+} from './callables/prayer';
+export {
+  circleFetchBiblePassage,
+  circleSetScriptureFocus,
+  circleSubmitReflection,
+} from './callables/scripture';
+export {
+  circleCreateHabit,
+  circleDeactivateHabit,
+  circleCompleteHabitAggregation,
+} from './callables/circle_habits';
+export {
+  circleSendEncouragement,
+  circleGetEncouragements,
+  circleMarkEncouragementRead,
+  sendEncouragementPrompts,
+} from './callables/encouragement';
+export {
+  circleShareMilestone,
+  circleCelebrateMilestone,
+  batchCelebrationNotifications,
+} from './callables/milestone_shares';
+export {
+  circleSubmitPulseResponse,
+  circleGetPulseResponses,
+  sendPulsePrompts,
+} from './callables/pulse';
+export {
+  circleCreateEvent,
+  circleDeleteEvent,
+  sendEventReminders,
+} from './callables/events';
 
 // Convert Firebase's Express-style req/res into a Fetch API Request,
 // run it through the Hono app, and pipe the Response back out.
