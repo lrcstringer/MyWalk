@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/fruit.dart';
+import '../../../domain/services/fruit_service.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/fruit_portfolio_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import '../shared/day_of_week_picker.dart';
+import '../shared/fruit_tag_chip.dart';
 import '../shared/tribute_paywall_view.dart';
 
 class AddHabitView extends StatefulWidget {
@@ -27,6 +31,9 @@ class _AddHabitViewState extends State<AddHabitView> {
   String _trigger = '';
   String _copingPlan = '';
   int _step = 1;
+  List<FruitType> _selectedFruits = [];
+  String _fruitPurposeStatement = '';
+  List<FruitType> _suggestedFruits = [];
 
   static const _selectableCategories = [
     HabitCategory.exercise,
@@ -258,6 +265,10 @@ class _AddHabitViewState extends State<AddHabitView> {
               style: TextStyle(fontSize: 14, color: TributeColor.softGold.withValues(alpha: 0.7)),
             ),
           ),
+        const SizedBox(height: 20),
+
+        // Fruit tags
+        _fruitTagSection(),
         const SizedBox(height: 20),
 
         // Tracking type (not for abstain)
@@ -514,6 +525,74 @@ class _AddHabitViewState extends State<AddHabitView> {
     );
   }
 
+  Widget _fruitTagSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _label('What fruit is this cultivating?'),
+        const SizedBox(height: 4),
+        Text(
+          'Connect this habit to your spiritual growth. (Optional)',
+          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4)),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: FruitType.values.map((fruit) {
+            return FruitTagChip(
+              fruit: fruit,
+              isSelected: _selectedFruits.contains(fruit),
+              isSuggested: !_selectedFruits.contains(fruit) && _suggestedFruits.contains(fruit),
+              onTap: () {
+                setState(() {
+                  if (_selectedFruits.contains(fruit)) {
+                    _selectedFruits = _selectedFruits.where((f) => f != fruit).toList();
+                  } else {
+                    _selectedFruits = [..._selectedFruits, fruit];
+                  }
+                  // Auto-populate fruit purpose statement with default when first fruit selected.
+                  if (_selectedFruits.isNotEmpty && _fruitPurposeStatement.isEmpty) {
+                    _fruitPurposeStatement = FruitPurposeStatements.defaultFor(
+                      _selectedCategory ?? HabitCategory.custom,
+                      _selectedFruits.first,
+                    );
+                  }
+                });
+              },
+            );
+          }).toList(),
+        ),
+        if (_selectedFruits.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _label('Spiritual purpose (optional)'),
+          const SizedBox(height: 6),
+          _textField(
+            hint: 'Why does this habit matter to you spiritually?',
+            value: _fruitPurposeStatement,
+            onChanged: (v) => setState(() => _fruitPurposeStatement = v),
+            maxLines: 2,
+          ),
+        ],
+        if (_selectedFruits.isEmpty) ...[
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: () => setState(() => _suggestedFruits = []),
+            child: Text(
+              "I'll decide later",
+              style: TextStyle(
+                fontSize: 11,
+                color: TributeColor.softGold.withValues(alpha: 0.45),
+                decoration: TextDecoration.underline,
+                decorationColor: TributeColor.softGold.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _label(String text, {bool inline = false}) {
     return Text(
       text,
@@ -558,6 +637,9 @@ class _AddHabitViewState extends State<AddHabitView> {
       _purposeStatement = category.defaultPurpose;
       _targetUnit = _defaultUnit(category);
       _dailyTarget = _defaultTarget(category);
+      _suggestedFruits = FruitSuggestionService.suggest(category);
+      _selectedFruits = [];
+      _fruitPurposeStatement = '';
       _step = 2;
     });
   }
@@ -595,7 +677,14 @@ class _AddHabitViewState extends State<AddHabitView> {
       activeDays: _activeDays,
       trigger: _trigger,
       copingPlan: _copingPlan,
+      fruitTags: _selectedFruits,
+      fruitPurposeStatement: _fruitPurposeStatement.trim().isEmpty
+          ? null
+          : _fruitPurposeStatement.trim(),
     );
+    if (_selectedFruits.isNotEmpty) {
+      context.read<FruitPortfolioProvider>().onHabitTagsChanged([], _selectedFruits);
+    }
     Navigator.pop(context);
   }
 

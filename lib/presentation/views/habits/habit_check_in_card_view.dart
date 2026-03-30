@@ -7,6 +7,7 @@ import '../../providers/store_provider.dart';
 import '../../../domain/services/milestone_service.dart';
 import '../../theme/app_theme.dart';
 import '../circles/sos_view.dart';
+import '../shared/fruit_tag_row.dart';
 import '../shared/golden_pulse_view.dart';
 import '../shared/milestone_celebration_view.dart';
 import '../shared/tribute_paywall_view.dart';
@@ -241,6 +242,13 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                     color: TributeColor.softGold.withValues(alpha: 0.6),
                   ),
                 ),
+              if (_habit.fruitTags.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                FruitTagRow(
+                  fruitTags: _habit.fruitTags,
+                  purposeStatement: _habit.fruitPurposeStatement,
+                ),
+              ],
             ],
           ),
         ),

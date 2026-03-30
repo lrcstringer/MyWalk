@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'habit_entry.dart';
+import 'fruit.dart';
 
 enum HabitTrackingType {
   timed,
@@ -138,6 +139,11 @@ class Habit {
   // When non-null, totalCompletedDays() and totalValue() use these instead of entries.
   final int? allTimeCompletedCount;
   final double? allTimeTotalValue;
+  // Fruit of the Spirit tagging
+  final List<FruitType> fruitTags;
+  final String? fruitPurposeStatement;
+  final String sourceType; // 'user_created' | 'micro_action_library'
+  final String? sourceActionId;
 
   const Habit({
     required this.id,
@@ -156,6 +162,10 @@ class Habit {
     this.entries = const [],
     this.allTimeCompletedCount,
     this.allTimeTotalValue,
+    this.fruitTags = const [],
+    this.fruitPurposeStatement,
+    this.sourceType = 'user_created',
+    this.sourceActionId,
   });
 
   factory Habit.create({
@@ -170,6 +180,10 @@ class Habit {
     Set<int> activeDays = const {1, 2, 3, 4, 5, 6, 7},
     String trigger = '',
     String copingPlan = '',
+    List<FruitType> fruitTags = const [],
+    String? fruitPurposeStatement,
+    String sourceType = 'user_created',
+    String? sourceActionId,
   }) {
     final purpose =
         purposeStatement.isEmpty ? category.defaultPurpose : purposeStatement;
@@ -189,6 +203,10 @@ class Habit {
       trigger: trigger,
       copingPlan: copingPlan,
       entries: const [],
+      fruitTags: fruitTags,
+      fruitPurposeStatement: fruitPurposeStatement,
+      sourceType: sourceType,
+      sourceActionId: sourceActionId,
     );
   }
 
@@ -208,6 +226,10 @@ class Habit {
     List<HabitEntry>? entries,
     int? allTimeCompletedCount,
     double? allTimeTotalValue,
+    List<FruitType>? fruitTags,
+    String? fruitPurposeStatement,
+    String? sourceType,
+    String? sourceActionId,
   }) =>
       Habit(
         id: id,
@@ -226,6 +248,10 @@ class Habit {
         entries: entries ?? this.entries,
         allTimeCompletedCount: allTimeCompletedCount ?? this.allTimeCompletedCount,
         allTimeTotalValue: allTimeTotalValue ?? this.allTimeTotalValue,
+        fruitTags: fruitTags ?? this.fruitTags,
+        fruitPurposeStatement: fruitPurposeStatement ?? this.fruitPurposeStatement,
+        sourceType: sourceType ?? this.sourceType,
+        sourceActionId: sourceActionId ?? this.sourceActionId,
       );
 
   Set<int> get activeDaySet {
@@ -300,6 +326,10 @@ class Habit {
         'copingPlan': copingPlan,
         'allTimeCompletedCount': allTimeCompletedCount ?? 0,
         'allTimeTotalValue': allTimeTotalValue ?? 0.0,
+        'fruitTags': fruitTags.map((f) => f.name).toList(),
+        'fruitPurposeStatement': fruitPurposeStatement,
+        'sourceType': sourceType,
+        'sourceActionId': sourceActionId,
       };
 
   factory Habit.fromFirestore(
@@ -332,6 +362,12 @@ class Habit {
       entries: entries,
       allTimeCompletedCount: (data['allTimeCompletedCount'] as num?)?.toInt(),
       allTimeTotalValue: (data['allTimeTotalValue'] as num?)?.toDouble(),
+      fruitTags: ((data['fruitTags'] as List<dynamic>?) ?? [])
+          .map((e) => FruitType.fromString(e as String))
+          .toList(),
+      fruitPurposeStatement: data['fruitPurposeStatement'] as String?,
+      sourceType: data['sourceType'] as String? ?? 'user_created',
+      sourceActionId: data['sourceActionId'] as String?,
     );
   }
 }

@@ -3,15 +3,23 @@ import 'package:flutter/foundation.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
 import '../../domain/repositories/habit_repository.dart';
+import '../../domain/entities/fruit.dart';
 import '../../domain/repositories/circle_repository.dart';
 import '../../domain/services/daily_score_service.dart';
+import 'fruit_portfolio_provider.dart';
 
 class HabitProvider extends ChangeNotifier {
   final HabitRepository _repository;
   final bool Function() _isAuthenticated;
   final CircleRepository _circleRepository;
+  final FruitPortfolioProvider _fruitPortfolio;
 
-  HabitProvider(this._repository, this._isAuthenticated, this._circleRepository);
+  HabitProvider(
+    this._repository,
+    this._isAuthenticated,
+    this._circleRepository,
+    this._fruitPortfolio,
+  );
 
   List<Habit> _habits = [];
   bool _isLoading = false;
@@ -85,6 +93,10 @@ class HabitProvider extends ChangeNotifier {
     Set<int> activeDays = const {1, 2, 3, 4, 5, 6, 7},
     String trigger = '',
     String copingPlan = '',
+    List<FruitType> fruitTags = const [],
+    String? fruitPurposeStatement,
+    String sourceType = 'user_created',
+    String? sourceActionId,
   }) async {
     final habit = Habit.create(
       name: name,
@@ -97,6 +109,10 @@ class HabitProvider extends ChangeNotifier {
       activeDays: activeDays,
       trigger: trigger,
       copingPlan: copingPlan,
+      fruitTags: fruitTags,
+      fruitPurposeStatement: fruitPurposeStatement,
+      sourceType: sourceType,
+      sourceActionId: sourceActionId,
     );
     await _repository.insertHabit(habit);
     _habits = [..._habits, habit];
@@ -134,6 +150,9 @@ class HabitProvider extends ChangeNotifier {
         value: habit.dailyTarget,
         isCompleted: true);
     if (!retroactive) unawaited(_syncHeatmapToCircles());
+    if (habit.fruitTags.isNotEmpty) {
+      unawaited(_fruitPortfolio.onHabitCompleted(habit.fruitTags));
+    }
     _checkInPulseHabitId = habit.id;
     notifyListeners();
     await Future.delayed(const Duration(milliseconds: 1200));
@@ -147,6 +166,9 @@ class HabitProvider extends ChangeNotifier {
     await _upsertEntry(habit,
         targetDate: target, value: 1, isCompleted: true, gratitudeNote: note);
     unawaited(_syncHeatmapToCircles());
+    if (habit.fruitTags.isNotEmpty) {
+      unawaited(_fruitPortfolio.onHabitCompleted(habit.fruitTags));
+    }
     _checkInPulseHabitId = habit.id;
     notifyListeners();
     await Future.delayed(const Duration(milliseconds: 1200));
@@ -162,6 +184,9 @@ class HabitProvider extends ChangeNotifier {
         targetDate: target, value: minutes, isCompleted: completed);
     if (completed) {
       unawaited(_syncHeatmapToCircles());
+      if (habit.fruitTags.isNotEmpty) {
+        unawaited(_fruitPortfolio.onHabitCompleted(habit.fruitTags));
+      }
       _checkInPulseHabitId = habit.id;
       notifyListeners();
       await Future.delayed(const Duration(milliseconds: 1200));
@@ -178,6 +203,9 @@ class HabitProvider extends ChangeNotifier {
         targetDate: target, value: count, isCompleted: completed);
     if (completed) {
       unawaited(_syncHeatmapToCircles());
+      if (habit.fruitTags.isNotEmpty) {
+        unawaited(_fruitPortfolio.onHabitCompleted(habit.fruitTags));
+      }
       _checkInPulseHabitId = habit.id;
       notifyListeners();
       await Future.delayed(const Duration(milliseconds: 1200));

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/fruit.dart';
+import '../../../domain/services/fruit_service.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/fruit_portfolio_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
+import '../shared/fruit_tag_chip.dart';
 import '../shared/tribute_paywall_view.dart';
 
 class EditHabitView extends StatefulWidget {
@@ -20,9 +24,11 @@ class _EditHabitViewState extends State<EditHabitView> {
   late final TextEditingController _purposeController;
   late final TextEditingController _triggerController;
   late final TextEditingController _copingController;
+  late final TextEditingController _fruitPurposeController;
   late double _dailyTarget;
   late String _targetUnit;
   late Set<int> _activeDays;
+  late List<FruitType> _fruitTags;
 
   static const _copingSuggestions = ['Pray first', 'Call a friend', 'Go for a walk', 'Read my verse', 'Journal it out'];
 
@@ -34,9 +40,11 @@ class _EditHabitViewState extends State<EditHabitView> {
     _purposeController = TextEditingController(text: h.purposeStatement);
     _triggerController = TextEditingController(text: h.trigger);
     _copingController = TextEditingController(text: h.copingPlan);
+    _fruitPurposeController = TextEditingController(text: h.fruitPurposeStatement ?? '');
     _dailyTarget = h.dailyTarget;
     _targetUnit = h.targetUnit;
     _activeDays = h.activeDaySet;
+    _fruitTags = List.from(h.fruitTags);
   }
 
   @override
@@ -45,6 +53,7 @@ class _EditHabitViewState extends State<EditHabitView> {
     _purposeController.dispose();
     _triggerController.dispose();
     _copingController.dispose();
+    _fruitPurposeController.dispose();
     super.dispose();
   }
 
@@ -54,6 +63,7 @@ class _EditHabitViewState extends State<EditHabitView> {
     final trimmed = _nameController.text.trim();
     if (trimmed.isEmpty) return;
     final isPremium = context.read<StoreProvider>().isPremium;
+    final fruitPurpose = _fruitPurposeController.text.trim();
     final updated = widget.habit.copyWith(
       name: !widget.habit.isBuiltIn ? trimmed : null,
       purposeStatement: isPremium ? _purposeController.text : null,
@@ -62,8 +72,15 @@ class _EditHabitViewState extends State<EditHabitView> {
       activeDays: (_activeDays.toList()..sort()).join(','),
       trigger: _triggerController.text,
       copingPlan: _copingController.text,
+      fruitTags: _fruitTags,
+      fruitPurposeStatement: fruitPurpose.isEmpty ? null : fruitPurpose,
     );
     context.read<HabitProvider>().updateHabit(updated);
+    // Update portfolio habit counts for changed tags.
+    context.read<FruitPortfolioProvider>().onHabitTagsChanged(
+      widget.habit.fruitTags,
+      _fruitTags,
+    );
     Navigator.pop(context);
   }
 
@@ -132,6 +149,8 @@ class _EditHabitViewState extends State<EditHabitView> {
           _nameSection(),
           const SizedBox(height: 20),
           _purposeSection(isPremium),
+          const SizedBox(height: 20),
+          _fruitSection(),
           if (widget.habit.trackingType == HabitTrackingType.timed) ...[
             const SizedBox(height: 20),
             _timedTargetSection(),
@@ -151,6 +170,77 @@ class _EditHabitViewState extends State<EditHabitView> {
           const SizedBox(height: 40),
         ]),
       ),
+    );
+  }
+
+  Widget _fruitSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'SPIRITUAL GROWTH',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: TributeColor.softGold.withValues(alpha: 0.5),
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'What fruit is this habit cultivating?',
+          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: FruitType.values.map((fruit) {
+            return FruitTagChip(
+              fruit: fruit,
+              isSelected: _fruitTags.contains(fruit),
+              onTap: () => setState(() {
+                if (_fruitTags.contains(fruit)) {
+                  _fruitTags = _fruitTags.where((f) => f != fruit).toList();
+                } else {
+                  _fruitTags = [..._fruitTags, fruit];
+                  if (_fruitPurposeController.text.isEmpty) {
+                    _fruitPurposeController.text = FruitPurposeStatements.defaultFor(
+                      widget.habit.category,
+                      fruit,
+                    );
+                  }
+                }
+              }),
+            );
+          }).toList(),
+        ),
+        if (_fruitTags.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Spiritual purpose (optional)',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                color: TributeColor.softGold.withValues(alpha: 0.6)),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _fruitPurposeController,
+            maxLines: 3,
+            maxLength: 200,
+            style: const TextStyle(fontSize: 14, color: TributeColor.warmWhite),
+            decoration: InputDecoration(
+              hintText: 'Why does this habit matter to you spiritually?',
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+              filled: true,
+              fillColor: TributeColor.cardBackground,
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.all(12),
+              counterStyle: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 10),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

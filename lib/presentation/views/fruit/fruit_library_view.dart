@@ -1,0 +1,220 @@
+import 'package:flutter/material.dart';
+import '../../../domain/entities/fruit.dart';
+import '../../../domain/entities/habit.dart';
+import '../../../domain/services/fruit_service.dart';
+import '../../theme/app_theme.dart';
+import 'micro_action_detail_sheet.dart';
+
+/// Full-screen micro-action browser, organised by fruit tab.
+class FruitLibraryView extends StatefulWidget {
+  /// Optional initial filter — opens directly to that fruit tab.
+  final FruitType? initialFruit;
+
+  const FruitLibraryView({super.key, this.initialFruit});
+
+  @override
+  State<FruitLibraryView> createState() => _FruitLibraryViewState();
+}
+
+class _FruitLibraryViewState extends State<FruitLibraryView>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialIndex = widget.initialFruit != null
+        ? FruitType.values.indexOf(widget.initialFruit!)
+        : 0;
+    _tabController = TabController(
+      length: FruitType.values.length,
+      vsync: this,
+      initialIndex: initialIndex.clamp(0, FruitType.values.length - 1),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: TributeColor.charcoal,
+      appBar: AppBar(
+        backgroundColor: TributeColor.charcoal,
+        foregroundColor: TributeColor.warmWhite,
+        title: const Text(
+          'Cultivate the Fruit of the Spirit',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: TributeColor.warmWhite),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(44),
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            indicatorColor: TributeColor.golden,
+            indicatorWeight: 2,
+            labelColor: TributeColor.golden,
+            unselectedLabelColor: TributeColor.softGold.withValues(alpha: 0.5),
+            labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            unselectedLabelStyle: const TextStyle(fontSize: 12),
+            tabs: FruitType.values
+                .map((f) => Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(f.icon, size: 13),
+                          const SizedBox(width: 5),
+                          Text(f.label),
+                        ],
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Text(
+              'Small practices that make space for the Spirit.',
+              style: TextStyle(
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+                color: TributeColor.softGold.withValues(alpha: 0.55),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: FruitType.values.map((fruit) => _fruitPage(fruit)).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fruitPage(FruitType fruit) {
+    final actions = MicroActionLibrary.actionsFor(fruit);
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+      itemCount: actions.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
+      itemBuilder: (_, i) => _MicroActionCard(action: actions[i]),
+    );
+  }
+}
+
+class _MicroActionCard extends StatelessWidget {
+  final MicroAction action;
+
+  const _MicroActionCard({required this.action});
+
+  @override
+  Widget build(BuildContext context) {
+    final fruit = action.fruit;
+    return GestureDetector(
+      onTap: () => MicroActionDetailSheet.show(context, action),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: TributeColor.cardBackground,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: TributeColor.cardBorder),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Fruit icon circle
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: fruit.color.withValues(alpha: 0.12),
+              ),
+              child: Icon(fruit.icon, size: 16, color: fruit.color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    action.name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: TributeColor.warmWhite,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    action.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.5),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _trackingBadge(action),
+                      const SizedBox(width: 6),
+                      _freqBadge(action),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.add_circle_outline,
+                size: 20, color: TributeColor.golden.withValues(alpha: 0.7)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _trackingBadge(MicroAction action) {
+    String label;
+    switch (action.trackingType) {
+      case HabitTrackingType.checkIn:
+        label = 'Check-in';
+      case HabitTrackingType.timed:
+        final mins = action.targetValue?.toInt();
+        label = mins != null ? '$mins min' : 'Timed';
+      case HabitTrackingType.count:
+        final t = action.targetValue?.toInt();
+        label = t != null ? '×$t' : 'Count';
+      case HabitTrackingType.abstain:
+        label = 'Abstain';
+    }
+    return _badge(label);
+  }
+
+  Widget _freqBadge(MicroAction action) =>
+      _badge(action.defaultFrequency == 'weekly' ? 'Weekly' : 'Daily');
+
+  Widget _badge(String text) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: TributeColor.surfaceOverlay,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(text,
+            style: TextStyle(fontSize: 10, color: TributeColor.softGold.withValues(alpha: 0.65))),
+      );
+}

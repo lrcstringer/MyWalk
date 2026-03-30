@@ -18,6 +18,8 @@ import 'core_mechanics_screen.dart';
 import 'notification_preferences_screen.dart';
 import 'paywall_screen.dart';
 import 'dedication_ceremony_screen.dart';
+import 'fruit_intro_screen.dart';
+import 'fruit_tagging_screen.dart';
 
 class OnboardingContainerView extends StatefulWidget {
   final VoidCallback onComplete;
@@ -42,9 +44,10 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
   Set<int> _customActiveDays = const {1, 2, 3, 4, 5, 6, 7};
 
   // 0: Welcome  1: SignIn  2: Identity  3: Reframe  4: FirstGratitude
-  // 5: HabitSelection  6: HabitSetup  7: HabitSummary  8: CoreMechanics
-  // 9: NotificationPrefs  10: Paywall  11: DedicationCeremony
-  static const int _totalSteps = 12;
+  // 5: HabitSelection  6: HabitSetup  7: HabitSummary  8: FruitIntro
+  // 9: FruitTagging  10: CoreMechanics  11: NotificationPrefs
+  // 12: Paywall  13: DedicationCeremony
+  static const int _totalSteps = 14;
 
   void _advance() => setState(() => _currentStep++);
 
@@ -54,7 +57,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
 
   @override
   Widget build(BuildContext context) {
-    // Show nav bar for steps 2-10 (between sign-in and dedication).
+    // Show nav bar for steps 2-12 (between sign-in and dedication).
     final showNav = _currentStep >= 2 && _currentStep < _totalSteps - 1;
 
     return Scaffold(
@@ -91,8 +94,8 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
   }
 
   Widget _progressDots() {
-    // Dots for steps 2-10 (9 dots total).
-    const dotSteps = _totalSteps - 3; // steps 2..10 = 9
+    // Dots for steps 2-12 (11 dots total).
+    const dotSteps = _totalSteps - 3; // steps 2..12 = 11
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(dotSteps, (i) {
@@ -189,18 +192,24 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
         );
 
       case 8:
+        return FruitIntroScreen(onNext: _advance);
+
+      case 9:
+        return FruitTaggingScreen(onNext: _advance, onSkip: _advance);
+
+      case 10:
         return CoreMechanicsScreen(
           onNext: _advance,
           givenName: context.read<AuthService>().givenName,
         );
 
-      case 9:
+      case 11:
         return NotificationPreferencesScreen(onNext: _advance);
 
-      case 10:
+      case 12:
         return PaywallScreen(onNext: _advance);
 
-      case 11:
+      case 13:
         return DedicationCeremonyScreen(
           gratitudeNote: _gratitudeNote,
           habitName: _customHabitName,

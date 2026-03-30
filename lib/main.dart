@@ -29,6 +29,8 @@ import 'presentation/providers/encouragement_provider.dart';
 import 'presentation/providers/milestone_share_provider.dart';
 import 'presentation/providers/weekly_pulse_provider.dart';
 import 'presentation/providers/circle_events_provider.dart';
+import 'presentation/providers/fruit_portfolio_provider.dart';
+import 'data/repositories/firestore_fruit_portfolio_repository.dart';
 import 'app.dart';
 
 void main() async {
@@ -75,11 +77,17 @@ void main() async {
         ChangeNotifierProvider<EngagementService>(create: (_) => EngagementService(userPrefs)),
         Provider<CircleRepository>(
             create: (_) => FirestoreCircleRepository()),
+        ChangeNotifierProvider<FruitPortfolioProvider>(
+          create: (_) => FruitPortfolioProvider(
+            FirestoreFruitPortfolioRepository(),
+          )..load(),
+        ),
         ChangeNotifierProvider(
           create: (context) => HabitProvider(
             habitRepository,
             () => AuthService.shared.isAuthenticated,
             context.read<CircleRepository>(),
+            context.read<FruitPortfolioProvider>(),
           )..loadHabits(),
         ),
         ChangeNotifierProvider<StoreProvider>.value(value: storeProvider),

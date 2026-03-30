@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../domain/entities/fruit.dart';
 import '../../../domain/entities/habit.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../../domain/services/milestone_service.dart';
 import '../../../domain/services/week_cycle_manager.dart';
 import '../../theme/app_theme.dart';
+import '../fruit/fruit_library_view.dart';
 import 'tribute_paywall_view.dart';
 
 class WeekLookBackView extends StatefulWidget {
@@ -29,6 +31,7 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
   bool _showTile = false;
   bool _showHabits = false;
   bool _showMilestones = false;
+  bool _showFruitSection = false;
   bool _showMessage = false;
   bool _showButton = false;
   bool _showUpgradePrompt = false;
@@ -58,7 +61,10 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
     Future.delayed(const Duration(milliseconds: 1800), () {
       if (mounted) setState(() => _showMilestones = true);
     });
-    Future.delayed(const Duration(milliseconds: 2200), () {
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) setState(() => _showFruitSection = true);
+    });
+    Future.delayed(const Duration(milliseconds: 2400), () {
       if (mounted) setState(() => _showMessage = true);
     });
     Future.delayed(const Duration(milliseconds: 2700), () {
@@ -163,6 +169,17 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
                         ),
                       ),
                     ],
+
+                    // Fruit summary
+                    AnimatedOpacity(
+                      opacity: _showFruitSection ? 1 : 0,
+                      duration: const Duration(milliseconds: 500),
+                      child: AnimatedSlide(
+                        offset: _showFruitSection ? Offset.zero : const Offset(0, 0.15),
+                        duration: const Duration(milliseconds: 500),
+                        child: _fruitSummarySection(habits.toList(), prevWeekDates),
+                      ),
+                    ),
                     const SizedBox(height: 28),
 
                     // Grace message
@@ -252,6 +269,159 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _fruitSummarySection(List<Habit> habits, List<DateTime> weekDates) {
+    final fruitedHabits = habits.where((h) => h.fruitTags.isNotEmpty).toList();
+
+    // No fruit-tagged habits yet — show an intro nudge.
+    if (fruitedHabits.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: TributeColor.sage.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: TributeColor.sage.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.eco_outlined, size: 16, color: TributeColor.sage.withValues(alpha: 0.7)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Connect your habits to the Fruit of the Spirit to see how you\'re growing.',
+                    style: TextStyle(
+                        fontSize: 13, color: TributeColor.warmWhite.withValues(alpha: 0.75), height: 1.5),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const FruitLibraryView())),
+                    child: Text(
+                      'Learn more →',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: TributeColor.sage,
+                          decoration: TextDecoration.underline,
+                          decorationColor: TributeColor.sage.withValues(alpha: 0.5)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Build completions map.
+    final Map<FruitType, int> completionsByFruit = {};
+    for (final habit in fruitedHabits) {
+      final weekCompletions = habit.entries
+          .where((e) =>
+              weekDates.any((d) =>
+                  d.year == e.date.year && d.month == e.date.month && d.day == e.date.day) &&
+              e.isCompleted)
+          .length;
+      for (final fruit in habit.fruitTags) {
+        completionsByFruit[fruit] = (completionsByFruit[fruit] ?? 0) + weekCompletions;
+      }
+    }
+
+    // Fruits with and without completions this week.
+    final cultivated = completionsByFruit.entries
+        .where((e) => e.value > 0)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final dominant = cultivated.isNotEmpty ? cultivated.first.key : null;
+    final totalMoments = completionsByFruit.values.fold(0, (s, v) => s + v);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: TributeColor.sage.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: TributeColor.sage.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.eco, size: 13, color: TributeColor.sage.withValues(alpha: 0.7)),
+              const SizedBox(width: 6),
+              Text(
+                'THE FRUIT GROWING IN YOU',
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                    color: TributeColor.sage.withValues(alpha: 0.6)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          if (cultivated.isNotEmpty) ...[
+            Row(
+              children: [
+                ...cultivated.take(5).map((e) => Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: e.key.color.withValues(alpha: 0.15),
+                          border: Border.all(color: e.key.color.withValues(alpha: 0.4)),
+                        ),
+                        child: Icon(e.key.icon, size: 14, color: e.key.color),
+                      ),
+                    )),
+                if (cultivated.length > 5)
+                  Text('+${cultivated.length - 5}',
+                      style: TextStyle(
+                          fontSize: 12, color: TributeColor.softGold.withValues(alpha: 0.5))),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (dominant != null)
+              Text(
+                '${dominant.label} was your focus this week. Keep tending that soil.',
+                style: TextStyle(
+                    fontSize: 13,
+                    color: TributeColor.warmWhite.withValues(alpha: 0.8),
+                    height: 1.5),
+              ),
+            const SizedBox(height: 6),
+            Text(
+              '$totalMoments ${totalMoments == 1 ? 'moment' : 'moments'} of intentional practice',
+              style: TextStyle(fontSize: 12, color: TributeColor.softGold.withValues(alpha: 0.55)),
+            ),
+          ] else
+            Text(
+              'No fruit-connected check-ins this week — but the soil is still good.',
+              style: TextStyle(
+                  fontSize: 13, color: TributeColor.warmWhite.withValues(alpha: 0.6), height: 1.5),
+            ),
+
+          const SizedBox(height: 10),
+          Text(
+            "This isn't a score — it's a story of growth. The fruit is forming, even when you can't see it.",
+            style: TextStyle(
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+              color: TributeColor.softGold.withValues(alpha: 0.4),
+              height: 1.5,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -49,6 +49,11 @@ service cloud.firestore {
         allow read:  if isOwner(userId);
         allow write: if false; // All writes come from validateReceipt / webhook Functions
       }
+
+      // ── fruit_portfolio subcollection ──────────────────────────────────────
+      match /fruit_portfolio/{fruitId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ─── inviteCodes ──────────────────────────────────────────────────────

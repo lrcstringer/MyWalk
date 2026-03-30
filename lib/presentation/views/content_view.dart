@@ -10,6 +10,7 @@ import 'circles/circle_invitation_dialog.dart';
 import 'today/today_view.dart';
 import 'week/week_view.dart';
 import 'journey/journey_view.dart';
+import 'fruit/fruit_portfolio_view.dart';
 import 'circles/circles_tab.dart';
 import 'settings/settings_view.dart';
 import 'shared/week_look_back_view.dart';
@@ -142,6 +143,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
               ),
               WeekView(weekCycleManager: wcm),
               const JourneyView(),
+              const FruitPortfolioView(),
               const CirclesTab(),
               const SettingsView(),
             ],
@@ -151,7 +153,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
             onTap: (i) {
               setState(() {
                 _selectedTab = i;
-                if (i == 3) _hasNewGratitudes = false;
+                if (i == 4) _hasNewGratitudes = false;
               });
             },
             items: [
@@ -166,6 +168,11 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
               const BottomNavigationBarItem(
                 icon: Icon(Icons.bar_chart),
                 label: 'Journey',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.eco_outlined),
+                activeIcon: Icon(Icons.eco),
+                label: 'Fruit',
               ),
               BottomNavigationBarItem(
                 icon: _hasNewGratitudes
