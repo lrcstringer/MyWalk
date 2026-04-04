@@ -9,7 +9,9 @@ import '../../providers/store_provider.dart';
 import '../../../data/datasources/remote/auth_service.dart';
 import '../../../domain/services/milestone_service.dart';
 import '../../../data/datasources/local/notification_service.dart';
+import '../../providers/journal_theme_provider.dart';
 import '../../theme/app_theme.dart';
+import '../journal/journal_theme_picker.dart';
 import '../shared/mywalk_paywall_view.dart';
 
 class SettingsView extends StatefulWidget {
@@ -201,6 +203,10 @@ class _SettingsViewState extends State<SettingsView> {
                 _sectionHeader('Reminders'),
                 const SizedBox(height: 8),
                 _remindersSection(),
+                const SizedBox(height: 20),
+                _sectionHeader('Journal'),
+                const SizedBox(height: 8),
+                _journalSection(),
                 const SizedBox(height: 20),
                 _sectionHeader('Your Habits'),
                 const SizedBox(height: 8),
@@ -442,6 +448,55 @@ class _SettingsViewState extends State<SettingsView> {
         ),
       ],
     ]);
+  }
+
+  Widget _journalSection() {
+    final currentTheme = context.watch<JournalThemeProvider>().theme;
+    return GestureDetector(
+      onTap: () => showJournalThemePicker(context),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: MyWalkDecorations.card,
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: MyWalkColor.golden.withValues(alpha: 0.1),
+              ),
+              child: Icon(Icons.palette_outlined,
+                  size: 18, color: MyWalkColor.golden.withValues(alpha: 0.8)),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Journal Theme',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: MyWalkColor.warmWhite)),
+                  Text('Personalise your journal look',
+                      style: TextStyle(fontSize: 12, color: MyWalkColor.softGold)),
+                ],
+              ),
+            ),
+            Text(
+              currentTheme.name,
+              style: TextStyle(
+                  fontSize: 13,
+                  color: MyWalkColor.golden.withValues(alpha: 0.8)),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.chevron_right,
+                size: 16, color: Colors.white.withValues(alpha: 0.3)),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _archivedHabitsSection() {
