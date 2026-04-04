@@ -192,29 +192,10 @@ class _CirclesListViewState extends State<_CirclesListView> {
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Triptych — three equal panels side by side
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: Image.asset(
-                            'assets/circles/circles5.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Expanded(
-                          child: Image.asset(
-                            'assets/circles/circles8.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Expanded(
-                          child: Image.asset(
-                            'assets/circles/circles3.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ],
+                    // Pre-composed triptych
+                    Image.asset(
+                      'assets/circles/groups.png',
+                      fit: BoxFit.cover,
                     ),
                     // Gradient fade to app background
                     Container(
