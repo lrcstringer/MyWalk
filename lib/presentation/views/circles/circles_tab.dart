@@ -179,7 +179,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
   Widget build(BuildContext context) {
     // Scale the header height so the full image width is always visible.
     // groups.png is 2192×549 — aspect ratio ≈ 0.2505.
-    final imageHeight = MediaQuery.of(context).size.width * (549.0 / 2192.0);
+    final imageHeight = MediaQuery.of(context).size.width * (549.0 / 2192.0) * 1.5;
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
@@ -199,7 +199,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
                     // Pre-composed triptych
                     Image.asset(
                       'assets/circles/groups.png',
-                      fit: BoxFit.fitWidth,
+                      fit: BoxFit.cover,
                     ),
                     // Gradient fade to app background
                     Container(
