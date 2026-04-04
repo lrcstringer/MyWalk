@@ -1,0 +1,480 @@
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { FieldValue } from 'firebase-admin/firestore';
+import { db } from '../lib/firestore';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface HabitCategory {
+  id: string;
+  name: string;
+  description: string;
+  iconKey: string;
+  colourHex: string;
+  group: string;
+  groupLabel: string;
+  sortOrder: number;
+  isCustom: boolean;
+  categoryVerse?: string;
+  categoryVerseRef?: string;
+}
+
+interface HabitSubcategory {
+  id: string;
+  categoryId: string;
+  name: string;
+  description: string;
+  iconKey?: string;
+  trackingTypeSuggestion: string;
+  defaultTargetMinutes?: number;
+  sortOrder: number;
+  isCustom: boolean;
+  yourWhy: string;
+  keyVerse?: string;
+  keyVerseRef?: string;
+  examples: string[];
+  supportingVerses: Array<{ text: string; ref: string }>;
+}
+
+// ── Static data ───────────────────────────────────────────────────────────────
+
+const CATEGORIES: HabitCategory[] = [
+  {
+    id: 'loving_the_lord',
+    name: 'Loving the Lord & Spiritual Growth',
+    description: 'Draw near to God and He will draw near to you.',
+    iconKey: 'self_improvement',
+    colourHex: '#7B68EE',
+    group: 'loving_the_lord',
+    groupLabel: 'Loving the Lord & Spiritual Growth',
+    categoryVerse: 'And I am sure of this, that he who began a good work in you will bring it to completion at the day of Jesus Christ.',
+    categoryVerseRef: 'Philippians 1:6',
+    sortOrder: 1,
+    isCustom: false,
+  },
+  {
+    id: 'caring_for_myself',
+    name: 'Caring for Myself & Growing Personally',
+    description: 'Your body is a temple — steward it well.',
+    iconKey: 'favorite',
+    colourHex: '#E8A87C',
+    group: 'caring_for_myself',
+    groupLabel: 'Caring for Myself & Growing Personally',
+    categoryVerse: 'Or do you not know that your body is a temple of the Holy Spirit within you, whom you have from God? You are not your own, for you were bought with a price. So glorify God in your body.',
+    categoryVerseRef: '1 Corinthians 6:19-20',
+    sortOrder: 2,
+    isCustom: false,
+  },
+  {
+    id: 'caring_for_others',
+    name: 'Caring for Others & Connecting with Others',
+    description: 'Love your neighbour as yourself.',
+    iconKey: 'volunteer_activism',
+    colourHex: '#90EE90',
+    group: 'caring_for_others',
+    groupLabel: 'Caring for Others & Connecting with Others',
+    categoryVerse: 'You shall love the Lord your God with all your heart and with all your soul and with all your strength and with all your mind, and your neighbour as yourself.',
+    categoryVerseRef: 'Luke 10:27',
+    sortOrder: 3,
+    isCustom: false,
+  },
+  {
+    id: 'create_my_own',
+    name: 'Create My Own',
+    description: 'Build a habit that is uniquely yours.',
+    iconKey: 'auto_awesome',
+    colourHex: '#DAA520',
+    group: 'create_my_own',
+    groupLabel: 'Create My Own',
+    categoryVerse: 'So, whether you eat or drink, or whatever you do, do all to the glory of God.',
+    categoryVerseRef: '1 Corinthians 10:31',
+    sortOrder: 4,
+    isCustom: true,
+  },
+];
+
+const SUBCATEGORIES: HabitSubcategory[] = [
+  // ── Loving the Lord ──────────────────────────────────────────────────────
+  {
+    id: 'gods_word',
+    categoryId: 'loving_the_lord',
+    name: "God's Word",
+    description: 'Study, reflect, memorize',
+    iconKey: 'menu_book',
+    trackingTypeSuggestion: 'check_in',
+    sortOrder: 1,
+    isCustom: false,
+    yourWhy: 'I feed on Scripture daily because my soul starves without it, and the Word that made the world is remaking me.',
+    keyVerse: 'All Scripture is breathed out by God and profitable for teaching, for reproof, for correction, and for training in righteousness, that the man of God may be complete, equipped for every good work.',
+    keyVerseRef: '2 Timothy 3:16-17',
+    examples: ['Bible Reading Plan', 'Verse Memorization', 'Scripture Journaling', 'Lectio Divina', 'Bible Study'],
+    supportingVerses: [
+      { text: 'Man shall not live by bread alone, but by every word that comes from the mouth of God.', ref: 'Matthew 4:4' },
+      { text: 'For the word of God is living and active, sharper than any two-edged sword, piercing to the division of soul and of spirit, of joints and of marrow, and discerning the thoughts and intentions of the heart.', ref: 'Hebrews 4:12' },
+      { text: 'But be doers of the word, and not hearers only, deceiving yourselves.', ref: 'James 1:22' },
+      { text: 'Heaven and earth will pass away, but my words will not pass away.', ref: 'Matthew 24:35' },
+      { text: 'The grass withers, the flower fades, but the word of our God will stand forever.', ref: 'Isaiah 40:8' },
+    ],
+  },
+  {
+    id: 'prayer',
+    categoryId: 'loving_the_lord',
+    name: 'Prayer',
+    description: 'For self, for others, for God\'s work',
+    iconKey: 'self_improvement',
+    trackingTypeSuggestion: 'timed',
+    defaultTargetMinutes: 15,
+    sortOrder: 2,
+    isCustom: false,
+    yourWhy: 'I pray because I was not made to carry what God is willing to hold — and because the Lord of the universe has asked me to bring everything to Him.',
+    keyVerse: 'Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God.',
+    keyVerseRef: 'Philippians 4:6',
+    examples: ['Morning Prayer', 'Intercessory Prayer', 'Prayer Journal', 'Prayer Walk', 'Praying the Psalms'],
+    supportingVerses: [
+      { text: 'And he told them a parable to the effect that they ought always to pray and not lose heart.', ref: 'Luke 18:1' },
+      { text: 'Rejoice in hope, be patient in tribulation, be constant in prayer.', ref: 'Romans 12:12' },
+      { text: 'Continue steadfastly in prayer, being watchful in it with thanksgiving.', ref: 'Colossians 4:2' },
+      { text: 'First of all, then, I urge that supplications, prayers, intercessions, and thanksgivings be made for all people.', ref: '1 Timothy 2:1' },
+      { text: 'The prayer of a righteous person has great power as it is working.', ref: 'James 5:16' },
+      { text: 'And the smoke of the incense, with the prayers of the saints, rose before God from the hand of the angel.', ref: 'Revelation 8:4' },
+      { text: 'Pray then like this: Our Father in heaven, hallowed be your name. Your kingdom come, your will be done, on earth as it is in heaven.', ref: 'Matthew 6:9-10' },
+    ],
+  },
+  {
+    id: 'church_life',
+    categoryId: 'loving_the_lord',
+    name: 'Church Life',
+    description: 'Attendance, communion, service',
+    iconKey: 'groups',
+    trackingTypeSuggestion: 'check_in',
+    sortOrder: 3,
+    isCustom: false,
+    yourWhy: 'I show up because I am not the whole body — and the part of Christ I need most may be sitting in the next chair.',
+    keyVerse: 'And let us consider how to stir up one another to love and good works, not neglecting to meet together, as is the habit of some, but encouraging one another.',
+    keyVerseRef: 'Hebrews 10:24-25',
+    examples: ['Sunday Service', 'Small Group', 'Taking Communion', 'Serving at Church', 'Church Volunteering'],
+    supportingVerses: [
+      { text: 'For as in one body we have many members, and the members do not all have the same function, so we, though many, are one body in Christ, and individually members one of another.', ref: 'Romans 12:4-5' },
+      { text: 'And they devoted themselves to the apostles\' teaching and the fellowship, to the breaking of bread and the prayers.', ref: 'Acts 2:42' },
+      { text: 'For where two or three are gathered in my name, there am I among them.', ref: 'Matthew 18:20' },
+      { text: 'Therefore encourage one another and build one another up, just as you are doing.', ref: '1 Thessalonians 5:11' },
+      { text: 'As each has received a gift, use it to serve one another, as good stewards of God\'s varied grace.', ref: '1 Peter 4:10' },
+      { text: 'Speaking the truth in love, we are to grow up in every way into him who is the head, into Christ.', ref: 'Ephesians 4:15' },
+    ],
+  },
+  {
+    id: 'evangelism',
+    categoryId: 'loving_the_lord',
+    name: 'Evangelism',
+    description: 'Share the good news of Jesus',
+    iconKey: 'campaign',
+    trackingTypeSuggestion: 'check_in',
+    sortOrder: 4,
+    isCustom: false,
+    yourWhy: 'I share the gospel because someone spoke it to me, and there are people in my world who have never heard the name that can save them.',
+    keyVerse: 'Go therefore and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit, teaching them to observe all that I have commanded you.',
+    keyVerseRef: 'Matthew 28:19-20',
+    examples: ['Share Your Story', 'Invite Someone to Church', 'Gospel Conversation', 'Prayer for Unbelievers', 'Share a Resource'],
+    supportingVerses: [
+      { text: 'But in your hearts honour Christ the Lord as holy, always being prepared to make a defence to anyone who asks you for a reason for the hope that is in you.', ref: '1 Peter 3:15' },
+      { text: 'For I am not ashamed of the gospel, for it is the power of God for salvation to everyone who believes.', ref: 'Romans 1:16' },
+      { text: 'The harvest is plentiful, but the labourers are few; therefore pray earnestly to the Lord of the harvest to send out labourers into his harvest.', ref: 'Matthew 9:37-38' },
+      { text: 'How then will they call on him in whom they have not believed? And how are they to believe in him of whom they have never heard?', ref: 'Romans 10:14' },
+      { text: 'But you will receive power when the Holy Spirit has come upon you, and you will be my witnesses in Jerusalem and in all Judea and Samaria, and to the end of the earth.', ref: 'Acts 1:8' },
+      { text: 'Look, I tell you, lift up your eyes, and see that the fields are white for harvest.', ref: 'John 4:35' },
+    ],
+  },
+  {
+    id: 'worship',
+    categoryId: 'loving_the_lord',
+    name: 'Worship',
+    description: 'Praise and adoration of God',
+    iconKey: 'music_note',
+    trackingTypeSuggestion: 'timed',
+    defaultTargetMinutes: 15,
+    sortOrder: 5,
+    isCustom: false,
+    yourWhy: 'I worship because my heart was made for God, and praise is the truest thing I can do with the life He gave me.',
+    keyVerse: 'Oh come, let us worship and bow down; let us kneel before the Lord, our Maker! For he is our God, and we are the people of his pasture, and the sheep of his hand.',
+    keyVerseRef: 'Psalm 95:6-7',
+    examples: ['Worship Music', 'Singing Hymns', 'Gratitude Journal', 'Praise Walk', 'Morning Devotion'],
+    supportingVerses: [
+      { text: 'Ascribe to the Lord the glory due his name; worship the Lord in the splendour of holiness.', ref: 'Psalm 29:2' },
+      { text: 'Worthy are you, our Lord and God, to receive glory and honour and power, for you created all things, and by your will they existed and were created.', ref: 'Revelation 4:11' },
+      { text: 'Through him then let us continually offer up a sacrifice of praise to God, that is, the fruit of lips that acknowledge his name.', ref: 'Hebrews 13:15' },
+      { text: 'Because your steadfast love is better than life, my lips will praise you. So I will bless you as long as I live; in your name I will lift up my hands.', ref: 'Psalm 63:3-4' },
+      { text: 'God is spirit, and those who worship him must worship in spirit and truth.', ref: 'John 4:24' },
+      { text: 'Let everything that has breath praise the Lord! Praise the Lord!', ref: 'Psalm 150:6' },
+    ],
+  },
+  {
+    id: 'fasting',
+    categoryId: 'loving_the_lord',
+    name: 'Fasting',
+    description: 'Abstain from food to draw closer to God',
+    iconKey: 'no_food',
+    trackingTypeSuggestion: 'check_in',
+    sortOrder: 6,
+    isCustom: false,
+    yourWhy: 'I fast to remind my body who is in charge — and to create space where only God can fill what hunger leaves behind.',
+    keyVerse: 'And when you fast, do not look gloomy like the hypocrites, for they disfigure their faces that their fasting may be seen by others. But when you fast, anoint your head and wash your face, that your fasting may not be seen by others but by your Father who is in secret.',
+    keyVerseRef: 'Matthew 6:16-18',
+    examples: ['One Meal Fast', 'Dawn-to-Dusk Fast', 'Daniel Fast', 'Social Media Fast', 'Weekly Fast'],
+    supportingVerses: [
+      { text: 'Is not this the fast that I choose: to loose the bonds of wickedness, to undo the straps of the yoke, to let the oppressed go free, and to break every yoke?', ref: 'Isaiah 58:6' },
+      { text: 'And Jesus fasted forty days and forty nights, and afterward he was hungry.', ref: 'Matthew 4:2' },
+      { text: 'While they were worshipping the Lord and fasting, the Holy Spirit said, \'Set apart for me Barnabas and Saul for the work to which I have called them.\'', ref: 'Acts 13:2' },
+      { text: 'Then after fasting and praying they laid their hands on them and sent them off.', ref: 'Acts 13:3' },
+    ],
+  },
+  // ── Caring for Myself ─────────────────────────────────────────────────────
+  {
+    id: 'exercise',
+    categoryId: 'caring_for_myself',
+    name: 'Exercise',
+    description: 'Steward the body God gave you',
+    iconKey: 'fitness_center',
+    trackingTypeSuggestion: 'timed',
+    defaultTargetMinutes: 30,
+    sortOrder: 1,
+    isCustom: false,
+    yourWhy: 'I train my body because it belongs to God — a strong, healthy body is an act of worship and a better vessel for His work.',
+    keyVerse: 'For while bodily training is of some value, godliness is of value in every way, as it holds promise for the present life and also for the life to come.',
+    keyVerseRef: '1 Timothy 4:8',
+    examples: ['Cardio', 'Running', 'Cycling', 'Swimming', 'Weights', 'Walking', 'Yoga / Stretching', 'Sports', 'Dance'],
+    supportingVerses: [
+      { text: 'I appeal to you therefore, brothers, by the mercies of God, to present your bodies as a living sacrifice, holy and acceptable to God, which is your spiritual worship.', ref: 'Romans 12:1' },
+      { text: 'Do you not know that in a race all the runners run, but only one receives the prize? So run that you may obtain it.', ref: '1 Corinthians 9:24' },
+      { text: 'For we are his workmanship, created in Christ Jesus for good works, which God prepared beforehand, that we should walk in them.', ref: 'Ephesians 2:10' },
+    ],
+  },
+  {
+    id: 'health_and_nutrition',
+    categoryId: 'caring_for_myself',
+    name: 'Health & Nutrition',
+    description: 'Nourish the body God gave you',
+    iconKey: 'favorite',
+    trackingTypeSuggestion: 'count',
+    sortOrder: 2,
+    isCustom: false,
+    yourWhy: 'My body is God\'s temple. Caring for it is both a responsibility and an act of worship.',
+    keyVerse: 'So, whether you eat or drink, or whatever you do, do all to the glory of God.',
+    keyVerseRef: '1 Corinthians 10:31',
+    examples: ['Hydration', 'Healthy Eating', 'No Sugar', 'No Alcohol', 'Vitamins & Supplements', 'Medication', 'No Smoking', 'Dental Hygiene', 'Doctor Visits'],
+    supportingVerses: [
+      { text: 'Beloved, I pray that all may go well with you and that you may be in good health, as it goes well with your soul.', ref: '3 John 1:2' },
+      { text: 'A joyful heart is good medicine, but a crushed spirit dries up the bones.', ref: 'Proverbs 17:22' },
+      { text: 'He gives power to the faint, and to him who has no might he increases strength.', ref: 'Isaiah 40:29' },
+      { text: 'I can do all things through him who strengthens me.', ref: 'Philippians 4:13' },
+    ],
+  },
+  {
+    id: 'rest_and_renewal',
+    categoryId: 'caring_for_myself',
+    name: 'Rest & Renewal',
+    description: 'Rest is a gift and a command',
+    iconKey: 'bedtime',
+    trackingTypeSuggestion: 'check_in',
+    sortOrder: 3,
+    isCustom: false,
+    yourWhy: 'Rest isn\'t laziness. God commands it because He designed me to need it.',
+    keyVerse: 'Come to me, all who labour and are heavy laden, and I will give you rest. Take my yoke upon you, and learn from me, for I am gentle and lowly in heart, and you will find rest for your souls.',
+    keyVerseRef: 'Matthew 11:28-29',
+    examples: ['Sleep', 'Sabbath', 'Digital Sabbath', 'No Social Media', 'Time in Nature', 'Leisure', 'Unplugging'],
+    supportingVerses: [
+      { text: 'He makes me lie down in green pastures. He leads me beside still waters. He restores my soul.', ref: 'Psalm 23:2-3' },
+      { text: 'In peace I will both lie down and sleep; for you alone, O Lord, make me dwell in safety.', ref: 'Psalm 4:8' },
+      { text: 'It is in vain that you rise up early and go late to rest, eating the bread of anxious toil; for he gives sleep to his beloved.', ref: 'Psalm 127:2' },
+      { text: 'Remember the Sabbath day, to keep it holy. Six days you shall labour, and do all your work, but the seventh day is a Sabbath to the Lord your God.', ref: 'Exodus 20:8-9' },
+    ],
+  },
+  {
+    id: 'reading_and_learning',
+    categoryId: 'caring_for_myself',
+    name: 'Reading & Learning',
+    description: 'Grow your mind as an act of stewardship',
+    iconKey: 'school',
+    trackingTypeSuggestion: 'timed',
+    defaultTargetMinutes: 30,
+    sortOrder: 4,
+    isCustom: false,
+    yourWhy: 'Growing my mind is an act of stewardship — every hour of learning is an investment in the person God is making me.',
+    keyVerse: 'Do not be conformed to this world, but be transformed by the renewal of your mind, that by testing you may discern what is the will of God, what is good and acceptable and perfect.',
+    keyVerseRef: 'Romans 12:2',
+    examples: ['Bible Study', 'Theology', 'Christian Living', 'General Non-fiction', 'Fiction', 'Podcasts', 'Online Courses', 'Language Learning', 'Professional Development'],
+    supportingVerses: [
+      { text: 'An intelligent heart acquires knowledge, and the ear of the wise seeks knowledge.', ref: 'Proverbs 18:15' },
+      { text: 'Buy truth, and do not sell it; buy wisdom, instruction, and understanding.', ref: 'Proverbs 23:23' },
+      { text: 'For the Lord gives wisdom; from his mouth come knowledge and understanding.', ref: 'Proverbs 2:6' },
+      { text: 'Finally, brothers, whatever is true, whatever is honourable, whatever is just, whatever is pure, whatever is lovely, whatever is commendable, if there is any excellence, if there is anything worthy of praise, think about these things.', ref: 'Philippians 4:8' },
+    ],
+  },
+  {
+    id: 'creativity',
+    categoryId: 'caring_for_myself',
+    name: 'Creativity',
+    description: 'Use your God-given gifts',
+    iconKey: 'palette',
+    trackingTypeSuggestion: 'timed',
+    defaultTargetMinutes: 30,
+    sortOrder: 5,
+    isCustom: false,
+    yourWhy: 'I create because I bear the image of a Creator God — and every act of making something is His nature alive in me.',
+    keyVerse: 'In the beginning, God created the heavens and the earth.',
+    keyVerseRef: 'Genesis 1:1',
+    examples: ['Visual Art', 'Photography', 'Writing', 'Music', 'Crafts', 'Cooking & Baking', 'Gardening', 'Design', 'Film / Video', 'Dance'],
+    supportingVerses: [
+      { text: 'See, I have called by name Bezalel... and I have filled him with the Spirit of God, with ability and intelligence, with knowledge and all craftsmanship.', ref: 'Exodus 31:2-3' },
+      { text: 'Whatever you do, work heartily, as for the Lord and not for men.', ref: 'Colossians 3:23' },
+      { text: 'Every good gift and every perfect gift is from above, coming down from the Father of lights.', ref: 'James 1:17' },
+      { text: 'For we are his workmanship, created in Christ Jesus for good works, which God prepared beforehand, that we should walk in them.', ref: 'Ephesians 2:10' },
+    ],
+  },
+  {
+    id: 'stewardship',
+    categoryId: 'caring_for_myself',
+    name: 'Stewardship',
+    description: 'Manage well what God has entrusted to you',
+    iconKey: 'account_balance_wallet',
+    trackingTypeSuggestion: 'check_in',
+    sortOrder: 6,
+    isCustom: false,
+    yourWhy: 'Everything I have was entrusted to me — my time, money, gifts, and resources are not mine to waste but God\'s to multiply.',
+    keyVerse: 'Moreover, it is required of stewards that they be found faithful.',
+    keyVerseRef: '1 Corinthians 4:2',
+    examples: ['Budgeting', 'Saving', 'Debt Reduction', 'No Impulse Buying', 'Time Planning', 'Decluttering', 'Home Maintenance', 'Tithing'],
+    supportingVerses: [
+      { text: 'His master said to him, \'Well done, good and faithful servant. You have been faithful over a little; I will set you over much. Enter into the joy of your master.\'', ref: 'Matthew 25:23' },
+      { text: 'Honour the Lord with your wealth and with the firstfruits of all your produce.', ref: 'Proverbs 3:9' },
+      { text: 'The earth is the Lord\'s and the fullness thereof, the world and those who dwell therein.', ref: 'Psalm 24:1' },
+      { text: 'One gives freely, yet grows all the richer; another withholds what he should give, and only suffers want.', ref: 'Proverbs 11:24' },
+      { text: 'As each has received a gift, use it to serve one another, as good stewards of God\'s varied grace.', ref: '1 Peter 4:10' },
+    ],
+  },
+  {
+    id: 'breaking_habits',
+    categoryId: 'caring_for_myself',
+    name: 'Breaking Habits',
+    description: 'Break free with God\'s help',
+    iconKey: 'shield',
+    trackingTypeSuggestion: 'abstain',
+    sortOrder: 7,
+    isCustom: false,
+    yourWhy: 'God made and redeemed me for freedom — and breaking this habit is how I walk in the liberty He already purchased.',
+    keyVerse: 'For freedom Christ has set us free; stand firm therefore, and do not submit again to a yoke of slavery.',
+    keyVerseRef: 'Galatians 5:1',
+    examples: ['No Negative Self-talk', 'No Overworking', 'No Complaining', 'No Social Media', 'No Gossip', 'No Alcohol', 'No Pornography', 'No Smoking', 'No Gambling'],
+    supportingVerses: [
+      { text: 'No temptation has overtaken you that is not common to man. God is faithful, and he will not let you be tempted beyond your ability, but with the temptation he will also provide the way of escape.', ref: '1 Corinthians 10:13' },
+      { text: 'Submit yourselves therefore to God. Resist the devil, and he will flee from you.', ref: 'James 4:7' },
+      { text: 'I can do all things through him who strengthens me.', ref: 'Philippians 4:13' },
+      { text: 'A man without self-control is like a city broken into and left without walls.', ref: 'Proverbs 25:28' },
+      { text: 'For God gave us a spirit not of fear but of power and love and self-control.', ref: '2 Timothy 1:7' },
+      { text: 'But I say, walk by the Spirit, and you will not gratify the desires of the flesh.', ref: 'Galatians 5:16' },
+      { text: 'So I do not run aimlessly; I do not box as one beating the air. But I discipline my body and keep it under control.', ref: '1 Corinthians 9:26-27' },
+    ],
+  },
+  // ── Caring for Others ─────────────────────────────────────────────────────
+  {
+    id: 'service_and_generosity',
+    categoryId: 'caring_for_others',
+    name: 'Service & Generosity',
+    description: 'Serving others is serving God',
+    iconKey: 'volunteer_activism',
+    trackingTypeSuggestion: 'check_in',
+    sortOrder: 1,
+    isCustom: false,
+    yourWhy: 'I serve and give because I have received more than I deserve — and generosity is the clearest sign that grace has actually changed me.',
+    keyVerse: 'As each of you has received a gift, use it to serve one another, as good stewards of God\'s grace in its various forms.',
+    keyVerseRef: '1 Peter 4:10',
+    examples: ['Volunteering', 'Acts of Kindness', 'Charitable Giving', 'Serving at Church', 'Advocacy', 'Meals for Others', 'Visiting the Lonely'],
+    supportingVerses: [
+      { text: 'For even the Son of Man came not to be served but to serve, and to give his life as a ransom for many.', ref: 'Mark 10:45' },
+      { text: 'It is more blessed to give than to receive.', ref: 'Acts 20:35' },
+      { text: 'Do not neglect to do good and to share what you have, for such sacrifices are pleasing to God.', ref: 'Hebrews 13:16' },
+      { text: 'And the King will answer them, \'Truly, I say to you, as you did it to one of the least of these my brothers, you did it to me.\'', ref: 'Matthew 25:40' },
+      { text: 'Give, and it will be given to you. Good measure, pressed down, shaken together, running over, will be put into your lap.', ref: 'Luke 6:38' },
+      { text: 'Each one must give as he has decided in his heart, not reluctantly or under compulsion, for God loves a cheerful giver.', ref: '2 Corinthians 9:7' },
+      { text: 'Religion that is pure and undefiled before God the Father is this: to visit orphans and widows in their affliction, and to keep oneself unstained from the world.', ref: 'James 1:27' },
+    ],
+  },
+  {
+    id: 'connection_and_community',
+    categoryId: 'caring_for_others',
+    name: 'Connection & Community',
+    description: 'You were made for community',
+    iconKey: 'people',
+    trackingTypeSuggestion: 'check_in',
+    sortOrder: 2,
+    isCustom: false,
+    yourWhy: 'I invest in people because I was never meant to walk alone — and the relationships God has placed around me are part of how He loves me and how I love Him back.',
+    keyVerse: 'Two are better than one, because they have a good reward for their toil. For if they fall, one will lift up his fellow. But woe to him who is alone when he falls and has not another to lift him up!',
+    keyVerseRef: 'Ecclesiastes 4:9-10',
+    examples: ['Quality Time with Family', 'Marriage Investment', 'Parenting', 'Friendship', 'Mentorship', 'Discipleship', 'Accountability', 'Hospitality'],
+    supportingVerses: [
+      { text: 'Iron sharpens iron, and one man sharpens another.', ref: 'Proverbs 27:17' },
+      { text: 'Bear one another\'s burdens, and so fulfil the law of Christ.', ref: 'Galatians 6:2' },
+      { text: 'Therefore encourage one another and build one another up, just as you are doing.', ref: '1 Thessalonians 5:11' },
+      { text: 'A friend loves at all times, and a brother is born for a time of adversity.', ref: 'Proverbs 17:17' },
+      { text: 'Show hospitality to one another without grumbling.', ref: '1 Peter 4:9' },
+      { text: 'Let love be genuine. Abhor what is evil; hold fast to what is good. Love one another with brotherly affection. Outdo one another in showing honour.', ref: 'Romans 12:9-10' },
+      { text: 'And let us consider how to stir up one another to love and good works, not neglecting to meet together, as is the habit of some, but encouraging one another.', ref: 'Hebrews 10:24-25' },
+    ],
+  },
+];
+
+// ── seedHabitCategories ───────────────────────────────────────────────────────
+// Admin-only callable. Writes all categories and subcategories to Firestore
+// root collections habit_categories and habit_subcategories.
+// Idempotent: skips if data already exists unless force=true is passed.
+
+export const seedHabitCategories = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be authenticated.');
+    }
+
+    const force = (request.data as { force?: boolean })?.force ?? false;
+
+    if (!force) {
+      const existing = await db.collection('habit_categories').limit(1).get();
+      if (!existing.empty) {
+        return { status: 'already_seeded', count: 0 };
+      }
+    }
+
+    const BATCH_SIZE = 499;
+    let batch = db.batch();
+    let ops = 0;
+
+    const flush = async () => {
+      if (ops > 0) {
+        await batch.commit();
+        batch = db.batch();
+        ops = 0;
+      }
+    };
+
+    for (const cat of CATEGORIES) {
+      const ref = db.collection('habit_categories').doc(cat.id);
+      batch.set(ref, { ...cat, seededAt: FieldValue.serverTimestamp() });
+      ops++;
+      if (ops >= BATCH_SIZE) await flush();
+    }
+
+    for (const sub of SUBCATEGORIES) {
+      const ref = db.collection('habit_subcategories').doc(sub.id);
+      batch.set(ref, { ...sub, seededAt: FieldValue.serverTimestamp() });
+      ops++;
+      if (ops >= BATCH_SIZE) await flush();
+    }
+
+    await flush();
+
+    return {
+      status: 'seeded',
+      categoriesWritten: CATEGORIES.length,
+      subcategoriesWritten: SUBCATEGORIES.length,
+    };
+  }
+);

@@ -146,6 +146,23 @@ class FirestoreHabitRepository implements HabitRepository {
     await batch.commit();
   }
 
+  @override
+  Future<void> batchUpdateCategoryFields(
+      Map<String, Map<String, String?>> updates) async {
+    if (updates.isEmpty) return;
+    // Chunk into 499-item batches to stay within Firestore's 500-op limit.
+    const chunkSize = 499;
+    final entries = updates.entries.toList();
+    for (var i = 0; i < entries.length; i += chunkSize) {
+      final chunk = entries.sublist(i, (i + chunkSize).clamp(0, entries.length));
+      final batch = _db.batch();
+      for (final entry in chunk) {
+        batch.update(_habitsRef.doc(entry.key), entry.value);
+      }
+      await batch.commit();
+    }
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   /// Deletes all documents in a subcollection in batches of 100.

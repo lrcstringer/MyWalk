@@ -31,8 +31,10 @@ import 'presentation/providers/circle_habit_milestone_provider.dart';
 import 'presentation/providers/weekly_pulse_provider.dart';
 import 'presentation/providers/circle_events_provider.dart';
 import 'presentation/providers/fruit_portfolio_provider.dart';
+import 'presentation/providers/habit_category_provider.dart';
 import 'presentation/providers/journal_provider.dart';
 import 'data/repositories/firestore_fruit_portfolio_repository.dart';
+import 'data/repositories/local_habit_category_repository.dart';
 import 'data/repositories/firestore_journal_repository.dart';
 import 'data/services/media_upload_service.dart';
 import 'app.dart';
@@ -84,6 +86,10 @@ void main() async {
         ChangeNotifierProvider<EngagementService>(create: (_) => EngagementService(userPrefs)),
         Provider<CircleRepository>(
             create: (_) => FirestoreCircleRepository()),
+        ChangeNotifierProvider<HabitCategoryProvider>(
+          create: (_) => HabitCategoryProvider(LocalHabitCategoryRepository())
+            ..loadCategories(),
+        ),
         ChangeNotifierProvider<FruitPortfolioProvider>(
           create: (_) => FruitPortfolioProvider(
             FirestoreFruitPortfolioRepository(),

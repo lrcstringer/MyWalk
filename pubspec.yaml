@@ -92,7 +92,7 @@ dependencies:
   image_picker: ^1.1.2
 
   # Media: audio recording
-  record: ^5.2.0
+  record: ^6.2.0
 
   # Media: audio playback
   audioplayers: ^6.1.0
@@ -176,6 +176,7 @@ flutter:
 
   assets:
     - assets/
+    - assets/data/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

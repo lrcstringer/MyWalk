@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/habit_category_model.dart';
 import '../../../domain/entities/fruit.dart';
 import '../../../domain/services/fruit_service.dart';
+import '../../utils/category_icons.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/habit_category_provider.dart';
 import '../../providers/fruit_portfolio_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
@@ -21,7 +24,21 @@ class AddHabitView extends StatefulWidget {
 }
 
 class _AddHabitViewState extends State<AddHabitView> {
-  HabitCategory? _selectedCategory;
+  // Step: 1=category grid, 2=subcategory picker, 3=set it up
+  int _step = 1;
+
+  // New two-level category selection
+  HabitCategoryModel? _selectedCategoryModel;
+  HabitSubcategoryModel? _selectedSubcategoryModel;
+  String? _categoryId;
+  String? _subcategoryId;
+  String? _categoryName;
+  String? _subcategoryName;
+
+  // Legacy enum kept for backward-compat with trigger chips / purpose defaults
+  HabitCategory _selectedCategory = HabitCategory.custom;
+
+  // Habit form fields
   String _habitName = '';
   String _purposeStatement = '';
   HabitTrackingType _trackingType = HabitTrackingType.checkIn;
@@ -30,80 +47,104 @@ class _AddHabitViewState extends State<AddHabitView> {
   Set<int> _activeDays = {1, 2, 3, 4, 5, 6, 7};
   String _trigger = '';
   String _copingPlan = '';
-  int _step = 1;
   List<FruitType> _selectedFruits = [];
   String _fruitPurposeStatement = '';
   List<FruitType> _suggestedFruits = [];
 
-  static const _selectableCategories = [
-    HabitCategory.exercise,
-    HabitCategory.scripture,
-    HabitCategory.rest,
-    HabitCategory.fasting,
-    HabitCategory.study,
-    HabitCategory.service,
-    HabitCategory.connection,
-    HabitCategory.health,
-  ];
+  // ── App bar ──────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final isPremium = context.watch<StoreProvider>().isPremium;
 
+    String title;
+    Widget leading;
+
+    if (_step == 1) {
+      title = 'Choose a Habit';
+      leading = IconButton(
+        icon: const Icon(Icons.close, color: MyWalkColor.warmWhite),
+        onPressed: () => Navigator.pop(context),
+      );
+    } else if (_step == 2) {
+      title = _selectedCategoryModel?.name ?? '';
+      leading = IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: MyWalkColor.warmWhite, size: 18),
+        onPressed: () => setState(() => _step = 1),
+      );
+    } else {
+      title = 'Set It Up';
+      leading = IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: MyWalkColor.warmWhite, size: 18),
+        onPressed: () => setState(() {
+          _step = (_selectedCategoryModel?.isCustom ?? true) ? 1 : 2;
+        }),
+      );
+    }
+
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
+        leading: leading,
         title: Text(
-          _step == 1 ? 'Choose a Habit' : 'Set It Up',
-          style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600),
+          title,
+          style: const TextStyle(
+              color: MyWalkColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600),
         ),
-        leading: _step == 2
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: MyWalkColor.warmWhite, size: 18),
-                onPressed: () => setState(() => _step = 1),
-              )
-            : IconButton(
-                icon: const Icon(Icons.close, color: MyWalkColor.warmWhite),
-                onPressed: () => Navigator.pop(context),
-              ),
         actions: [
           if (_step == 1)
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: MyWalkColor.softGold.withValues(alpha: 0.8))),
+              child: Text('Cancel',
+                  style: TextStyle(color: MyWalkColor.softGold.withValues(alpha: 0.8))),
             ),
         ],
       ),
       body: SingleChildScrollView(
         controller: widget.scrollController,
         padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
-        child: _step == 1 ? _categorySelection() : _habitDetails(isPremium),
+        child: _step == 1
+            ? _categoryGrid()
+            : _step == 2
+                ? _subcategoryPicker()
+                : _habitDetails(isPremium),
       ),
     );
   }
 
-  Widget _categorySelection() {
+  // ── Step 1: Category grid ────────────────────────────────────────────────
+
+  Widget _categoryGrid() {
+    final categories = context.watch<HabitCategoryProvider>().categories;
+
+    // Build ordered group map
+    final groups = <String, List<HabitCategoryModel>>{};
+    final groupOrder = <String>[];
+    for (final cat in categories) {
+      if (!groups.containsKey(cat.groupLabel)) {
+        groups[cat.groupLabel] = [];
+        groupOrder.add(cat.groupLabel);
+      }
+      groups[cat.groupLabel]!.add(cat);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'What do you want to give to God this season?',
-          style: TextStyle(fontSize: 18, color: MyWalkColor.warmWhite, height: 1.4),
-        ),
-        const SizedBox(height: 20),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.4,
-          children: _selectableCategories.map((category) {
-            return GestureDetector(
-              onTap: () => _selectCategory(category),
+        for (final label in groupOrder) ...[
+          _groupDivider(label),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.2,
+            children: groups[label]!.map((cat) => GestureDetector(
+              onTap: () => _selectCategoryModel(cat),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 20),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 decoration: BoxDecoration(
                   color: MyWalkColor.cardBackground,
                   borderRadius: BorderRadius.circular(14),
@@ -112,100 +153,151 @@ class _AddHabitViewState extends State<AddHabitView> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(_categoryIcon(category), color: MyWalkColor.golden, size: 24),
+                    Icon(iconForKey(cat.iconKey), size: 24, color: MyWalkColor.golden),
                     const SizedBox(height: 8),
                     Text(
-                      _categoryLabel(category),
+                      cat.name,
                       textAlign: TextAlign.center,
                       maxLines: 2,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: MyWalkColor.warmWhite),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: MyWalkColor.warmWhite,
+                      ),
                     ),
                   ],
                 ),
               ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 12),
-        _specialCategoryTile(
-          icon: Icons.shield_rounded,
-          iconColor: MyWalkColor.warmCoral,
-          title: "I'm letting go of something",
-          subtitle: "Break a bad habit with God's help",
-          borderColor: MyWalkColor.warmCoral.withValues(alpha: 0.2),
-          onTap: () => _selectCategory(HabitCategory.abstain),
-        ),
-        const SizedBox(height: 12),
-        _specialCategoryTile(
-          icon: Icons.auto_awesome,
-          iconColor: MyWalkColor.golden,
-          title: 'Something else entirely',
-          subtitle: 'Create a fully custom habit',
-          borderColor: MyWalkColor.golden.withValues(alpha: 0.15),
-          onTap: () => _selectCategory(HabitCategory.custom),
-        ),
+            )).toList(),
+          ),
+          const SizedBox(height: 16),
+        ],
       ],
     );
   }
 
-  Widget _specialCategoryTile({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required Color borderColor,
-    required VoidCallback onTap,
-  }) {
+  Widget _groupDivider(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Divider(color: MyWalkColor.golden.withValues(alpha: 0.2), thickness: 0.5),
+          const SizedBox(height: 6),
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 1.4,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withValues(alpha: 0.35),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  // ── Step 2: Subcategory picker ───────────────────────────────────────────
+
+  Widget _subcategoryPicker() {
+    final subcategories = context
+        .read<HabitCategoryProvider>()
+        .subcategoriesFor(_selectedCategoryModel!.id);
+
+    return Column(
+      children: subcategories.map((sub) => _subcategoryCard(sub)).toList(),
+    );
+  }
+
+  Widget _subcategoryCard(HabitSubcategoryModel sub) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => _selectSubcategory(sub),
       child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: MyWalkColor.cardBackground,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: borderColor, width: 0.5),
+          border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 20, color: iconColor),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // Title row
+            Row(
+              children: [
+                Icon(iconForKey(sub.iconKey), size: 20, color: MyWalkColor.golden),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    sub.name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: MyWalkColor.warmWhite,
+                    ),
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios,
+                    size: 12, color: Colors.white.withValues(alpha: 0.3)),
+              ],
+            ),
+            if (sub.yourWhy.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                sub.yourWhy,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.white.withValues(alpha: 0.5),
+                  height: 1.4,
+                ),
+              ),
+            ],
+            if (sub.keyVerseRef != null) ...[
+              const SizedBox(height: 8),
+              Row(
                 children: [
-                  Text(title,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.warmWhite)),
-                  Text(subtitle,
-                      style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45))),
+                  Icon(Icons.format_quote, size: 12,
+                      color: MyWalkColor.golden.withValues(alpha: 0.6)),
+                  const SizedBox(width: 4),
+                  Text(
+                    sub.keyVerseRef!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: MyWalkColor.golden.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
-            ),
-            Icon(Icons.chevron_right, size: 16, color: Colors.white.withValues(alpha: 0.3)),
+            ],
           ],
         ),
       ),
     );
   }
 
+  // ── Step 3: Set It Up ────────────────────────────────────────────────────
+
   Widget _habitDetails(bool isPremium) {
-    final isAbstain = _selectedCategory == HabitCategory.abstain;
+    final isAbstain = _subcategoryId == 'breaking_habits' ||
+        _selectedCategory == HabitCategory.abstain;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_selectedCategory != null) ...[
-          Row(
-            children: [
-              Icon(_categoryIcon(_selectedCategory!), size: 18, color: MyWalkColor.golden),
-              const SizedBox(width: 8),
-              Text(
-                _categoryLabel(_selectedCategory!),
-                style: TextStyle(fontSize: 14, color: MyWalkColor.softGold.withValues(alpha: 0.7)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-        ],
+        // Category/subcategory chips
+        _categoryChipsRow(),
+        const SizedBox(height: 20),
+
+        // Subcategory content card (Key Verse, Your Why, Examples, Supporting Verses)
+        if (_selectedSubcategoryModel != null && !(_selectedCategoryModel?.isCustom ?? true))
+          _subcategoryContentCard(_selectedSubcategoryModel!),
 
         // Name
         _label('Habit Name'),
@@ -236,7 +328,10 @@ class _AddHabitViewState extends State<AddHabitView> {
                       Icon(Icons.workspace_premium, size: 10, color: MyWalkColor.golden),
                       const SizedBox(width: 3),
                       Text('Customise',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: MyWalkColor.golden)),
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: MyWalkColor.golden)),
                     ],
                   ),
                 ),
@@ -262,7 +357,8 @@ class _AddHabitViewState extends State<AddHabitView> {
             ),
             child: Text(
               _purposeStatement,
-              style: TextStyle(fontSize: 14, color: MyWalkColor.softGold.withValues(alpha: 0.7)),
+              style:
+                  TextStyle(fontSize: 14, color: MyWalkColor.softGold.withValues(alpha: 0.7)),
             ),
           ),
         const SizedBox(height: 20),
@@ -276,7 +372,11 @@ class _AddHabitViewState extends State<AddHabitView> {
           _label('Tracking Type'),
           const SizedBox(height: 8),
           Row(
-            children: [HabitTrackingType.checkIn, HabitTrackingType.timed, HabitTrackingType.count].map((type) {
+            children: [
+              HabitTrackingType.checkIn,
+              HabitTrackingType.timed,
+              HabitTrackingType.count,
+            ].map((type) {
               final selected = _trackingType == type;
               return Expanded(
                 child: Padding(
@@ -360,12 +460,16 @@ class _AddHabitViewState extends State<AddHabitView> {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: _dailyTarget > 1 ? () => setState(() => _dailyTarget--) : null,
+                      onPressed:
+                          _dailyTarget > 1 ? () => setState(() => _dailyTarget--) : null,
                       icon: const Icon(Icons.remove, size: 18, color: MyWalkColor.softGold),
                     ),
                     Text(
                       '${_dailyTarget.toInt()}',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: MyWalkColor.golden),
+                      style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: MyWalkColor.golden),
                     ),
                     IconButton(
                       onPressed: () => setState(() => _dailyTarget++),
@@ -394,14 +498,23 @@ class _AddHabitViewState extends State<AddHabitView> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: ['No alcohol', 'No porn', 'No doom-scrolling', 'No junk food', 'No smoking'].map((preset) {
+            children: [
+              'No alcohol',
+              'No porn',
+              'No doom-scrolling',
+              'No junk food',
+              'No smoking',
+            ].map((preset) {
               final selected = _habitName == preset;
               return GestureDetector(
                 onTap: () => setState(() => _habitName = preset),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: selected ? MyWalkColor.warmCoral : MyWalkColor.surfaceOverlay,
+                    color: selected
+                        ? MyWalkColor.warmCoral
+                        : MyWalkColor.surfaceOverlay,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -443,12 +556,475 @@ class _AddHabitViewState extends State<AddHabitView> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            child: const Text('Set this habit', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            child: const Text('Set this habit',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
           ),
         ),
       ],
     );
   }
+
+  // ── Subcategory content card (Step 3) ────────────────────────────────────
+
+  Widget _subcategoryContentCard(HabitSubcategoryModel sub) {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            color: MyWalkColor.surfaceOverlay,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: MyWalkColor.golden.withValues(alpha: 0.15), width: 0.5),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Key Verse
+              if (sub.keyVerse != null && sub.keyVerseRef != null) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.format_quote,
+                        size: 16, color: MyWalkColor.golden.withValues(alpha: 0.7)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            sub.keyVerse!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontStyle: FontStyle.italic,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '— ${sub.keyVerseRef!}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: MyWalkColor.golden.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Divider(
+                    color: MyWalkColor.golden.withValues(alpha: 0.12), thickness: 0.5),
+                const SizedBox(height: 12),
+              ],
+
+              // Your Why
+              if (sub.yourWhy.isNotEmpty) ...[
+                Text(
+                  'YOUR WHY',
+                  style: TextStyle(
+                    fontSize: 9,
+                    letterSpacing: 1.4,
+                    fontWeight: FontWeight.w600,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.5),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  sub.yourWhy,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.withValues(alpha: 0.75),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Examples
+              if (sub.examples.isNotEmpty) ...[
+                Divider(
+                    color: MyWalkColor.golden.withValues(alpha: 0.12), thickness: 0.5),
+                const SizedBox(height: 12),
+                Text(
+                  'EXAMPLES',
+                  style: TextStyle(
+                    fontSize: 9,
+                    letterSpacing: 1.4,
+                    fontWeight: FontWeight.w600,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.5),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: sub.examples.map((ex) => GestureDetector(
+                    onTap: () => setState(() => _habitName = ex),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _habitName == ex
+                            ? MyWalkColor.golden.withValues(alpha: 0.2)
+                            : MyWalkColor.cardBackground,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: _habitName == ex
+                              ? MyWalkColor.golden.withValues(alpha: 0.5)
+                              : Colors.white.withValues(alpha: 0.08),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        ex,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _habitName == ex
+                              ? MyWalkColor.golden
+                              : Colors.white.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ),
+                  )).toList(),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Supporting Verses link
+              if (sub.supportingVerses.isNotEmpty) ...[
+                Divider(
+                    color: MyWalkColor.golden.withValues(alpha: 0.12), thickness: 0.5),
+                const SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () => _showSupportingVerses(sub),
+                  child: Row(
+                    children: [
+                      Icon(Icons.menu_book_outlined,
+                          size: 14, color: MyWalkColor.golden.withValues(alpha: 0.7)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Supporting Verses (${sub.supportingVerses.length})',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: MyWalkColor.golden.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.underline,
+                          decorationColor: MyWalkColor.golden.withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showSupportingVerses(HabitSubcategoryModel sub) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: MyWalkColor.charcoal,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.92,
+        builder: (ctx, scrollCtrl) => Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Icon(Icons.menu_book_outlined,
+                      size: 18, color: MyWalkColor.golden.withValues(alpha: 0.8)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${sub.name} — Supporting Verses',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: MyWalkColor.warmWhite,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Divider(color: MyWalkColor.golden.withValues(alpha: 0.15), height: 1),
+            Expanded(
+              child: ListView.separated(
+                controller: scrollCtrl,
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                itemCount: sub.supportingVerses.length,
+                separatorBuilder: (_, _) => Divider(
+                    color: Colors.white.withValues(alpha: 0.07), height: 24),
+                itemBuilder: (_, i) {
+                  final v = sub.supportingVerses[i];
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        v.text,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          height: 1.6,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '— ${v.ref}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: MyWalkColor.golden.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _categoryChipsRow() {
+    if (_categoryId == null) return const SizedBox.shrink();
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (_categoryName != null)
+          _categoryChip(
+            label: _categoryName!,
+            onTap: () => setState(() => _step = 1),
+          ),
+        if (_subcategoryName != null && _subcategoryName!.isNotEmpty)
+          _categoryChip(
+            label: _subcategoryName!,
+            onTap: () => setState(() => _step = 2),
+          ),
+      ],
+    );
+  }
+
+  Widget _categoryChip({required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: MyWalkColor.cardBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.5), width: 0.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label,
+                style: TextStyle(
+                    fontSize: 12, color: MyWalkColor.golden.withValues(alpha: 0.9))),
+            const SizedBox(width: 4),
+            Icon(Icons.edit_outlined,
+                size: 11, color: MyWalkColor.golden.withValues(alpha: 0.6)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Selection handlers ───────────────────────────────────────────────────
+
+  void _selectCategoryModel(HabitCategoryModel cat) {
+    final legacyEnum = _toOldEnum(cat.id, null);
+    if (cat.isCustom) {
+      // Skip subcategory step for "Create My Own"
+      setState(() {
+        _selectedCategoryModel = cat;
+        _selectedSubcategoryModel = null;
+        _selectedCategory = legacyEnum;
+        _categoryId = cat.id;
+        _subcategoryId = 'custom';
+        _categoryName = cat.name;
+        _subcategoryName = '';
+        _trackingType = HabitTrackingType.checkIn;
+        _habitName = '';
+        _purposeStatement = legacyEnum.defaultPurpose;
+        _dailyTarget = 1;
+        _targetUnit = '';
+        _suggestedFruits = FruitSuggestionService.suggest(legacyEnum);
+        _selectedFruits = [];
+        _fruitPurposeStatement = '';
+        _step = 3;
+      });
+    } else {
+      setState(() {
+        _selectedCategoryModel = cat;
+        _selectedCategory = legacyEnum;
+        _step = 2;
+      });
+    }
+  }
+
+  void _selectSubcategory(HabitSubcategoryModel sub) {
+    final legacyEnum = _toOldEnum(_selectedCategoryModel!.id, sub.id);
+    final trackingType = _trackingTypeFromSuggestion(sub.trackingTypeSuggestion);
+    final isCustomSub = sub.isCustom;
+
+    setState(() {
+      _selectedSubcategoryModel = sub;
+      _categoryId = _selectedCategoryModel!.id;
+      _subcategoryId = sub.id;
+      _categoryName = _selectedCategoryModel!.name;
+      _subcategoryName = isCustomSub ? '' : sub.name;
+
+      _trackingType = trackingType;
+      _dailyTarget = sub.defaultTargetMinutes?.toDouble() ?? _defaultTarget(legacyEnum);
+      _targetUnit = trackingType == HabitTrackingType.timed ? 'minutes' : '';
+      _habitName = isCustomSub ? '' : sub.name;
+      _purposeStatement = sub.yourWhy.isNotEmpty ? sub.yourWhy : legacyEnum.defaultPurpose;
+      _suggestedFruits = FruitSuggestionService.suggestForSubcategory(sub.id);
+      if (_suggestedFruits.isEmpty) {
+        _suggestedFruits = FruitSuggestionService.suggest(legacyEnum);
+      }
+      _selectedFruits = [];
+      _fruitPurposeStatement = '';
+      _step = 3;
+    });
+  }
+
+  void _saveHabit() {
+    final trimmed = _habitName.trim();
+    if (trimmed.isEmpty) return;
+    final isPremium = context.read<StoreProvider>().isPremium;
+    final purpose = isPremium ? _purposeStatement : _selectedCategory.defaultPurpose;
+    context.read<HabitProvider>().addHabit(
+      name: trimmed,
+      category: _selectedCategory,
+      trackingType: _trackingType,
+      purpose: purpose,
+      dailyTarget: _dailyTarget,
+      targetUnit: _targetUnit,
+      activeDays: _activeDays,
+      trigger: _trigger,
+      copingPlan: _copingPlan,
+      fruitTags: _selectedFruits,
+      fruitPurposeStatement:
+          _fruitPurposeStatement.trim().isEmpty ? null : _fruitPurposeStatement.trim(),
+      categoryId: _categoryId,
+      subcategoryId: _subcategoryId,
+      categoryName: _categoryName,
+      subcategoryName: _subcategoryName?.trim().isEmpty ?? true
+          ? null
+          : _subcategoryName,
+    );
+    if (_selectedFruits.isNotEmpty) {
+      context.read<FruitPortfolioProvider>().onHabitTagsChanged([], _selectedFruits);
+    }
+    Navigator.pop(context);
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  HabitCategory _toOldEnum(String categoryId, String? subcategoryId) {
+    // Subcategory-level precision first
+    if (subcategoryId != null) {
+      return switch (subcategoryId) {
+        'gods_word'     => HabitCategory.scripture,
+        'prayer'        => HabitCategory.scripture,
+        'church_life'   => HabitCategory.scripture,
+        'evangelism'    => HabitCategory.scripture,
+        'worship'       => HabitCategory.gratitude,
+        'fasting'       => HabitCategory.fasting,
+        'exercise'      => HabitCategory.exercise,
+        'health_and_nutrition' => HabitCategory.health,
+        'rest_and_renewal'     => HabitCategory.rest,
+        'reading_and_learning' => HabitCategory.study,
+        'creativity'    => HabitCategory.custom,
+        'stewardship'   => HabitCategory.custom,
+        'breaking_habits'      => HabitCategory.abstain,
+        'service_and_generosity'   => HabitCategory.service,
+        'connection_and_community' => HabitCategory.connection,
+        _               => HabitCategory.custom,
+      };
+    }
+    // Category-level fallback
+    return switch (categoryId) {
+      'loving_the_lord'   => HabitCategory.scripture,
+      'caring_for_myself' => HabitCategory.health,
+      'caring_for_others' => HabitCategory.service,
+      _                   => HabitCategory.custom,
+    };
+  }
+
+  HabitTrackingType _trackingTypeFromSuggestion(String suggestion) {
+    return switch (suggestion) {
+      'timed'   => HabitTrackingType.timed,
+      'count'   => HabitTrackingType.count,
+      'abstain' => HabitTrackingType.abstain,
+      _         => HabitTrackingType.checkIn,
+    };
+  }
+
+  void _setTrackingType(HabitTrackingType type) {
+    setState(() {
+      _trackingType = type;
+      if (type == HabitTrackingType.timed) {
+        _dailyTarget = 30;
+        _targetUnit = 'minutes';
+      } else if (type == HabitTrackingType.count) {
+        _dailyTarget = 8;
+        _targetUnit = '';
+      } else {
+        _dailyTarget = 1;
+        _targetUnit = '';
+      }
+    });
+  }
+
+  double _defaultTarget(HabitCategory category) {
+    switch (category) {
+      case HabitCategory.exercise:
+        return 30;
+      case HabitCategory.scripture:
+        return 15;
+      case HabitCategory.study:
+        return 30;
+      case HabitCategory.health:
+        return 8;
+      default:
+        return 1;
+    }
+  }
+
+  // ── Anchoring section ────────────────────────────────────────────────────
 
   Widget _anchoringSection(bool isAbstain) {
     if (isAbstain) {
@@ -460,7 +1036,8 @@ class _AddHabitViewState extends State<AddHabitView> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['Pray first', 'Call a friend', 'Go for a walk', 'Read my verse', 'Journal it out']
+              children: ['Pray first', 'Call a friend', 'Go for a walk', 'Read my verse',
+                      'Journal it out']
                   .map((s) => _chipButton(s, _copingPlan == s, MyWalkColor.warmCoral,
                       () => setState(() => _copingPlan = s)))
                   .toList(),
@@ -476,7 +1053,7 @@ class _AddHabitViewState extends State<AddHabitView> {
       );
     }
 
-    final chips = _triggerChips(_selectedCategory ?? HabitCategory.custom);
+    final chips = _triggerChips(_selectedCategory);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -486,8 +1063,8 @@ class _AddHabitViewState extends State<AddHabitView> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: chips
-                .map((s) => _chipButton(s, _trigger == s, MyWalkColor.golden,
-                    () => setState(() => _trigger = s)))
+                .map((s) => _chipButton(
+                    s, _trigger == s, MyWalkColor.golden, () => setState(() => _trigger = s)))
                 .toList(),
           ),
         ),
@@ -501,29 +1078,7 @@ class _AddHabitViewState extends State<AddHabitView> {
     );
   }
 
-  Widget _chipButton(String label, bool selected, Color activeColor, VoidCallback onTap) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? activeColor : MyWalkColor.surfaceOverlay,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: selected ? MyWalkColor.charcoal : MyWalkColor.softGold,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // ── Fruit tag section ────────────────────────────────────────────────────
 
   Widget _fruitTagSection() {
     return Column(
@@ -543,18 +1098,19 @@ class _AddHabitViewState extends State<AddHabitView> {
             return FruitTagChip(
               fruit: fruit,
               isSelected: _selectedFruits.contains(fruit),
-              isSuggested: !_selectedFruits.contains(fruit) && _suggestedFruits.contains(fruit),
+              isSuggested:
+                  !_selectedFruits.contains(fruit) && _suggestedFruits.contains(fruit),
               onTap: () {
                 setState(() {
                   if (_selectedFruits.contains(fruit)) {
-                    _selectedFruits = _selectedFruits.where((f) => f != fruit).toList();
+                    _selectedFruits =
+                        _selectedFruits.where((f) => f != fruit).toList();
                   } else {
                     _selectedFruits = [..._selectedFruits, fruit];
                   }
-                  // Auto-populate fruit purpose statement with default when first fruit selected.
                   if (_selectedFruits.isNotEmpty && _fruitPurposeStatement.isEmpty) {
                     _fruitPurposeStatement = FruitPurposeStatements.defaultFor(
-                      _selectedCategory ?? HabitCategory.custom,
+                      _selectedCategory,
                       _selectedFruits.first,
                     );
                   }
@@ -593,6 +1149,8 @@ class _AddHabitViewState extends State<AddHabitView> {
     );
   }
 
+  // ── Small widgets ────────────────────────────────────────────────────────
+
   Widget _label(String text, {bool inline = false}) {
     return Text(
       text,
@@ -611,13 +1169,15 @@ class _AddHabitViewState extends State<AddHabitView> {
     int maxLines = 1,
   }) {
     return TextField(
-      controller: TextEditingController(text: value)..selection = TextSelection.collapsed(offset: value.length),
+      controller: TextEditingController(text: value)
+        ..selection = TextSelection.collapsed(offset: value.length),
       onChanged: onChanged,
       maxLines: maxLines,
       style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
+        hintStyle:
+            TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
         filled: true,
         fillColor: MyWalkColor.surfaceOverlay,
         border: OutlineInputBorder(
@@ -629,63 +1189,29 @@ class _AddHabitViewState extends State<AddHabitView> {
     );
   }
 
-  void _selectCategory(HabitCategory category) {
-    setState(() {
-      _selectedCategory = category;
-      _trackingType = category.suggestedTrackingType;
-      _habitName = _defaultName(category);
-      _purposeStatement = category.defaultPurpose;
-      _targetUnit = _defaultUnit(category);
-      _dailyTarget = _defaultTarget(category);
-      _suggestedFruits = FruitSuggestionService.suggest(category);
-      _selectedFruits = [];
-      _fruitPurposeStatement = '';
-      _step = 2;
-    });
-  }
-
-  void _setTrackingType(HabitTrackingType type) {
-    setState(() {
-      _trackingType = type;
-      if (type == HabitTrackingType.timed) {
-        _dailyTarget = 30;
-        _targetUnit = 'minutes';
-      } else if (type == HabitTrackingType.count) {
-        _dailyTarget = 8;
-        _targetUnit = '';
-      } else {
-        _dailyTarget = 1;
-        _targetUnit = '';
-      }
-    });
-  }
-
-  void _saveHabit() {
-    final category = _selectedCategory;
-    if (category == null) return;
-    final trimmed = _habitName.trim();
-    if (trimmed.isEmpty) return;
-    final isPremium = context.read<StoreProvider>().isPremium;
-    final purpose = isPremium ? _purposeStatement : category.defaultPurpose;
-    context.read<HabitProvider>().addHabit(
-      name: trimmed,
-      category: category,
-      trackingType: _trackingType,
-      purpose: purpose,
-      dailyTarget: _dailyTarget,
-      targetUnit: _targetUnit,
-      activeDays: _activeDays,
-      trigger: _trigger,
-      copingPlan: _copingPlan,
-      fruitTags: _selectedFruits,
-      fruitPurposeStatement: _fruitPurposeStatement.trim().isEmpty
-          ? null
-          : _fruitPurposeStatement.trim(),
+  Widget _chipButton(
+      String label, bool selected, Color activeColor, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? activeColor : MyWalkColor.surfaceOverlay,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: selected ? MyWalkColor.charcoal : MyWalkColor.softGold,
+            ),
+          ),
+        ),
+      ),
     );
-    if (_selectedFruits.isNotEmpty) {
-      context.read<FruitPortfolioProvider>().onHabitTagsChanged([], _selectedFruits);
-    }
-    Navigator.pop(context);
   }
 
   void _showPaywall(BuildContext context) {
@@ -700,91 +1226,37 @@ class _AddHabitViewState extends State<AddHabitView> {
 
   String _trackingTypeLabel(HabitTrackingType type) {
     switch (type) {
-      case HabitTrackingType.checkIn: return 'Yes/No';
-      case HabitTrackingType.timed: return 'Timed';
-      case HabitTrackingType.count: return 'Count';
-      case HabitTrackingType.abstain: return 'Abstain';
-    }
-  }
-
-  String _defaultName(HabitCategory category) {
-    switch (category) {
-      case HabitCategory.exercise: return 'Exercise';
-      case HabitCategory.scripture: return 'Bible Reading';
-      case HabitCategory.rest: return 'Sleep';
-      case HabitCategory.fasting: return 'Fasting';
-      case HabitCategory.study: return 'Study';
-      case HabitCategory.service: return 'Serve Someone';
-      case HabitCategory.connection: return 'Call a Friend';
-      case HabitCategory.health: return 'Drink Water';
-      default: return '';
-    }
-  }
-
-  double _defaultTarget(HabitCategory category) {
-    switch (category) {
-      case HabitCategory.exercise: return 30;
-      case HabitCategory.scripture: return 15;
-      case HabitCategory.study: return 30;
-      case HabitCategory.health: return 8;
-      default: return 1;
-    }
-  }
-
-  String _defaultUnit(HabitCategory category) {
-    switch (category) {
-      case HabitCategory.exercise:
-      case HabitCategory.scripture:
-      case HabitCategory.study: return 'minutes';
-      case HabitCategory.service: return 'acts';
-      case HabitCategory.health: return 'glasses';
-      default: return '';
+      case HabitTrackingType.checkIn:
+        return 'Yes/No';
+      case HabitTrackingType.timed:
+        return 'Timed';
+      case HabitTrackingType.count:
+        return 'Count';
+      case HabitTrackingType.abstain:
+        return 'Abstain';
     }
   }
 
   List<String> _triggerChips(HabitCategory category) {
     switch (category) {
-      case HabitCategory.exercise: return ['After my morning coffee', 'Before work', 'During lunch break', 'After dinner'];
-      case HabitCategory.scripture: return ['First thing in the morning', 'Before bed', 'During lunch', 'After prayer'];
-      case HabitCategory.rest: return ['At 10pm', 'After dinner', 'When I feel tired'];
-      case HabitCategory.fasting: return ['After morning prayer', 'On Wednesdays', 'Weekly'];
-      case HabitCategory.study: return ['After dinner', 'Morning routine', 'Lunch break'];
-      case HabitCategory.service: return ['After church', 'On weekends', 'When I see a need'];
-      case HabitCategory.connection: return ['Sunday afternoon', 'After dinner', 'During commute'];
-      case HabitCategory.health: return ['With every meal', 'First thing in the morning', 'After exercise', 'Before bed'];
-      default: return ['In the morning', 'After lunch', 'Before bed'];
-    }
-  }
-
-  IconData _categoryIcon(HabitCategory category) {
-    switch (category) {
-      case HabitCategory.exercise: return Icons.fitness_center;
-      case HabitCategory.scripture: return Icons.menu_book;
-      case HabitCategory.rest: return Icons.bedtime;
-      case HabitCategory.fasting: return Icons.no_food;
-      case HabitCategory.study: return Icons.school;
-      case HabitCategory.service: return Icons.volunteer_activism;
-      case HabitCategory.connection: return Icons.people;
-      case HabitCategory.health: return Icons.favorite;
-      case HabitCategory.abstain: return Icons.shield_rounded;
-      case HabitCategory.custom: return Icons.auto_awesome;
-      case HabitCategory.gratitude: return Icons.auto_awesome;
-    }
-  }
-
-  String _categoryLabel(HabitCategory category) {
-    switch (category) {
-      case HabitCategory.exercise: return 'Exercise';
-      case HabitCategory.scripture: return 'Scripture';
-      case HabitCategory.rest: return 'Rest';
-      case HabitCategory.fasting: return 'Fasting';
-      case HabitCategory.study: return 'Study';
-      case HabitCategory.service: return 'Service';
-      case HabitCategory.connection: return 'Connection';
-      case HabitCategory.health: return 'Health';
-      case HabitCategory.abstain: return 'Abstain';
-      case HabitCategory.custom: return 'Custom';
-      case HabitCategory.gratitude: return 'Gratitude';
+      case HabitCategory.exercise:
+        return ['After my morning coffee', 'Before work', 'During lunch break', 'After dinner'];
+      case HabitCategory.scripture:
+        return ['First thing in the morning', 'Before bed', 'During lunch', 'After prayer'];
+      case HabitCategory.rest:
+        return ['At 10pm', 'After dinner', 'When I feel tired'];
+      case HabitCategory.fasting:
+        return ['After morning prayer', 'On Wednesdays', 'Weekly'];
+      case HabitCategory.study:
+        return ['After dinner', 'Morning routine', 'Lunch break'];
+      case HabitCategory.service:
+        return ['After church', 'On weekends', 'When I see a need'];
+      case HabitCategory.connection:
+        return ['Sunday afternoon', 'After dinner', 'During commute'];
+      case HabitCategory.health:
+        return ['With every meal', 'First thing in the morning', 'After exercise', 'Before bed'];
+      default:
+        return ['In the morning', 'After lunch', 'Before bed'];
     }
   }
 }

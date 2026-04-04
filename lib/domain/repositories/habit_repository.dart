@@ -15,4 +15,7 @@ abstract class HabitRepository {
   /// Deletes all entries for [habitId] and resets its lifetime aggregates to zero.
   /// The habit document itself is preserved.
   Future<void> clearHabitEntries(String habitId);
+  /// Atomically writes category fields for multiple habits in a single batch.
+  /// [updates] maps habitId → field map (categoryId, subcategoryId, etc.).
+  Future<void> batchUpdateCategoryFields(Map<String, Map<String, String?>> updates);
 }

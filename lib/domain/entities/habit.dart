@@ -145,6 +145,11 @@ class Habit {
   final String? fruitPurposeStatement;
   final String sourceType; // 'user_created' | 'micro_action_library'
   final String? sourceActionId;
+  // Two-level category hierarchy (new system)
+  final String? categoryId;
+  final String? subcategoryId;
+  final String? categoryName;
+  final String? subcategoryName;
 
   const Habit({
     required this.id,
@@ -168,6 +173,10 @@ class Habit {
     this.fruitPurposeStatement,
     this.sourceType = 'user_created',
     this.sourceActionId,
+    this.categoryId,
+    this.subcategoryId,
+    this.categoryName,
+    this.subcategoryName,
   });
 
   factory Habit.create({
@@ -233,6 +242,10 @@ class Habit {
     String? fruitPurposeStatement,
     String? sourceType,
     String? sourceActionId,
+    String? categoryId,
+    String? subcategoryId,
+    String? categoryName,
+    String? subcategoryName,
   }) =>
       Habit(
         id: id,
@@ -256,6 +269,10 @@ class Habit {
         fruitPurposeStatement: fruitPurposeStatement ?? this.fruitPurposeStatement,
         sourceType: sourceType ?? this.sourceType,
         sourceActionId: sourceActionId ?? this.sourceActionId,
+        categoryId: categoryId ?? this.categoryId,
+        subcategoryId: subcategoryId ?? this.subcategoryId,
+        categoryName: categoryName ?? this.categoryName,
+        subcategoryName: subcategoryName ?? this.subcategoryName,
       );
 
   Set<int> get activeDaySet {
@@ -335,6 +352,10 @@ class Habit {
         'fruitPurposeStatement': fruitPurposeStatement,
         'sourceType': sourceType,
         'sourceActionId': sourceActionId,
+        'categoryId': categoryId,
+        'subcategoryId': subcategoryId,
+        'categoryName': categoryName,
+        'subcategoryName': subcategoryName,
       };
 
   factory Habit.fromFirestore(
@@ -374,6 +395,10 @@ class Habit {
       fruitPurposeStatement: data['fruitPurposeStatement'] as String?,
       sourceType: data['sourceType'] as String? ?? 'user_created',
       sourceActionId: data['sourceActionId'] as String?,
+      categoryId: data['categoryId'] as String?,
+      subcategoryId: data['subcategoryId'] as String?,
+      categoryName: data['categoryName'] as String?,
+      subcategoryName: data['subcategoryName'] as String?,
     );
   }
 }

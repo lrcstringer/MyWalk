@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/habit_category_model.dart';
 import '../../../domain/entities/fruit.dart';
 import '../../../domain/services/fruit_service.dart';
+import '../../utils/category_icons.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/habit_category_provider.dart';
 import '../../providers/fruit_portfolio_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
@@ -29,6 +32,10 @@ class _EditHabitViewState extends State<EditHabitView> {
   late String _targetUnit;
   late Set<int> _activeDays;
   late List<FruitType> _fruitTags;
+  String? _categoryId;
+  String? _subcategoryId;
+  String? _categoryName;
+  String? _subcategoryName;
 
   static const _copingSuggestions = ['Pray first', 'Call a friend', 'Go for a walk', 'Read my verse', 'Journal it out'];
 
@@ -45,6 +52,10 @@ class _EditHabitViewState extends State<EditHabitView> {
     _targetUnit = h.targetUnit;
     _activeDays = h.activeDaySet;
     _fruitTags = List.from(h.fruitTags);
+    _categoryId = h.categoryId;
+    _subcategoryId = h.subcategoryId;
+    _categoryName = h.categoryName;
+    _subcategoryName = h.subcategoryName;
   }
 
   @override
@@ -74,6 +85,10 @@ class _EditHabitViewState extends State<EditHabitView> {
       copingPlan: _copingController.text,
       fruitTags: _fruitTags,
       fruitPurposeStatement: fruitPurpose.isEmpty ? null : fruitPurpose,
+      categoryId: _categoryId,
+      subcategoryId: _subcategoryId,
+      categoryName: _categoryName,
+      subcategoryName: _subcategoryName,
     );
     context.read<HabitProvider>().updateHabit(updated);
     // Update portfolio habit counts for changed tags.
@@ -145,6 +160,10 @@ class _EditHabitViewState extends State<EditHabitView> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _headerSection(),
+          if (_categoryId != null) ...[
+            const SizedBox(height: 16),
+            _categoryChipsRow(),
+          ],
           const SizedBox(height: 20),
           _nameSection(),
           const SizedBox(height: 20),
@@ -662,6 +681,76 @@ class _EditHabitViewState extends State<EditHabitView> {
     ]);
   }
 
+  Widget _categoryChipsRow() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (_categoryName != null)
+          _editChip(
+            label: _categoryName!,
+            onTap: () => _openSubcategoryPicker(startOnCategories: true),
+          ),
+        if (_subcategoryName != null && _subcategoryName!.isNotEmpty)
+          _editChip(
+            label: _subcategoryName!,
+            onTap: () => _openSubcategoryPicker(startOnCategories: false),
+          ),
+      ],
+    );
+  }
+
+  Widget _editChip({required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: MyWalkColor.cardBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.5), width: 0.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, color: MyWalkColor.golden.withValues(alpha: 0.9)),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.edit_outlined, size: 11, color: MyWalkColor.golden.withValues(alpha: 0.6)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSubcategoryPicker({required bool startOnCategories}) async {
+    final catProvider = context.read<HabitCategoryProvider>();
+    final result = await showModalBottomSheet<
+        ({String categoryId, String subcategoryId, String categoryName, String subcategoryName})>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: MyWalkColor.charcoal,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SubcategoryPickerSheet(
+        initialCategoryId: startOnCategories ? null : _categoryId,
+        catProvider: catProvider,
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _categoryId = result.categoryId;
+        _subcategoryId = result.subcategoryId;
+        _categoryName = result.categoryName;
+        _subcategoryName = result.subcategoryName;
+      });
+    }
+  }
+
   Widget _copingSection() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('When I feel tempted, I will\u2026',
@@ -709,5 +798,293 @@ class _EditHabitViewState extends State<EditHabitView> {
         ),
       ),
     ]);
+  }
+}
+
+// ── SubcategoryPickerSheet ────────────────────────────────────────────────────
+
+typedef _CategoryResult = ({
+  String categoryId,
+  String subcategoryId,
+  String categoryName,
+  String subcategoryName
+});
+
+class SubcategoryPickerSheet extends StatefulWidget {
+  final String? initialCategoryId;
+  final HabitCategoryProvider catProvider;
+
+  const SubcategoryPickerSheet({
+    super.key,
+    required this.initialCategoryId,
+    required this.catProvider,
+  });
+
+  @override
+  State<SubcategoryPickerSheet> createState() => _SubcategoryPickerSheetState();
+}
+
+class _SubcategoryPickerSheetState extends State<SubcategoryPickerSheet> {
+  HabitCategoryModel? _selectedCategory;
+  // 1 = category grid, 2 = subcategory grid
+  late int _step;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialCategoryId != null) {
+      final cat = widget.catProvider.categoryById(widget.initialCategoryId!);
+      if (cat != null) {
+        _selectedCategory = cat;
+        _step = 2;
+      } else {
+        _step = 1;
+      }
+    } else {
+      _step = 1;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      expand: false,
+      builder: (ctx, sc) => Column(
+        children: [
+          _sheetHandle(),
+          _sheetAppBar(),
+          Expanded(
+            child: SingleChildScrollView(
+              controller: sc,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+              child: _step == 1 ? _categoryGrid() : _subcategoryGrid(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sheetHandle() {
+    return Container(
+      margin: const EdgeInsets.only(top: 10, bottom: 4),
+      width: 36,
+      height: 4,
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  Widget _sheetAppBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        children: [
+          if (_step == 2)
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios, size: 18, color: MyWalkColor.warmWhite),
+              onPressed: () => setState(() => _step = 1),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.close, color: MyWalkColor.warmWhite),
+              onPressed: () => Navigator.pop(context),
+            ),
+          Expanded(
+            child: Text(
+              _step == 1 ? 'Choose a Category' : (_selectedCategory?.name ?? ''),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: MyWalkColor.warmWhite,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _categoryGrid() {
+    final categories = widget.catProvider.categories;
+    final groups = <String, List<HabitCategoryModel>>{};
+    final groupOrder = <String>[];
+    for (final cat in categories) {
+      if (!groups.containsKey(cat.groupLabel)) {
+        groups[cat.groupLabel] = [];
+        groupOrder.add(cat.groupLabel);
+      }
+      groups[cat.groupLabel]!.add(cat);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final label in groupOrder) ...[
+          _groupDivider(label),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.2,
+            children: groups[label]!.map((cat) => GestureDetector(
+              onTap: () {
+                if (cat.isCustom) {
+                  Navigator.pop<_CategoryResult>(context, (
+                    categoryId: cat.id,
+                    subcategoryId: 'custom',
+                    categoryName: cat.name,
+                    subcategoryName: '',
+                  ));
+                } else {
+                  setState(() {
+                    _selectedCategory = cat;
+                    _step = 2;
+                  });
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.cardBackground,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(iconForKey(cat.iconKey), size: 24, color: MyWalkColor.golden),
+                    const SizedBox(height: 8),
+                    Text(
+                      cat.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: MyWalkColor.warmWhite,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )).toList(),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+
+  Widget _groupDivider(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Divider(color: MyWalkColor.golden.withValues(alpha: 0.2), thickness: 0.5),
+          const SizedBox(height: 6),
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 1.4,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withValues(alpha: 0.35),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _subcategoryGrid() {
+    final cat = _selectedCategory!;
+    final subcategories = widget.catProvider.subcategoriesFor(cat.id);
+
+    return Column(
+      children: subcategories.map((sub) {
+        return GestureDetector(
+          onTap: () => Navigator.pop<_CategoryResult>(context, (
+            categoryId: cat.id,
+            subcategoryId: sub.id,
+            categoryName: cat.name,
+            subcategoryName: sub.isCustom ? '' : sub.name,
+          )),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: MyWalkColor.cardBackground,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(iconForKey(sub.iconKey), size: 20, color: MyWalkColor.golden),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        sub.name,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: MyWalkColor.warmWhite,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios,
+                        size: 12, color: Colors.white.withValues(alpha: 0.3)),
+                  ],
+                ),
+                if (sub.yourWhy.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    sub.yourWhy,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.white.withValues(alpha: 0.5),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+                if (sub.keyVerseRef != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.format_quote,
+                          size: 12, color: MyWalkColor.golden.withValues(alpha: 0.6)),
+                      const SizedBox(width: 4),
+                      Text(
+                        sub.keyVerseRef!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: MyWalkColor.golden.withValues(alpha: 0.7),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 }

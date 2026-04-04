@@ -36,6 +36,29 @@ class MicroAction {
 class FruitSuggestionService {
   const FruitSuggestionService._();
 
+  /// Suggests fruits based on a subcategory ID (new system).
+  /// Falls back to [suggest] via legacy enum if subcategoryId is unrecognised.
+  static List<FruitType> suggestForSubcategory(String? subcategoryId) {
+    return switch (subcategoryId) {
+      'gods_word'               => [FruitType.faithfulness, FruitType.peace, FruitType.joy],
+      'prayer'                  => [FruitType.peace, FruitType.faithfulness, FruitType.joy],
+      'church_life'             => [FruitType.love, FruitType.kindness, FruitType.faithfulness],
+      'evangelism'              => [FruitType.love, FruitType.goodness, FruitType.faithfulness],
+      'worship'                 => [FruitType.joy, FruitType.love, FruitType.peace],
+      'fasting'                 => [FruitType.selfControl, FruitType.patience, FruitType.faithfulness],
+      'exercise'                => [FruitType.selfControl, FruitType.patience],
+      'health_and_nutrition'    => [FruitType.selfControl, FruitType.patience],
+      'rest_and_renewal'        => [FruitType.peace, FruitType.selfControl],
+      'reading_and_learning'    => [FruitType.faithfulness, FruitType.patience],
+      'creativity'              => [FruitType.joy, FruitType.goodness],
+      'stewardship'             => [FruitType.faithfulness, FruitType.goodness],
+      'breaking_habits'         => [FruitType.selfControl, FruitType.faithfulness],
+      'service_and_generosity'  => [FruitType.love, FruitType.kindness, FruitType.goodness],
+      'connection_and_community'=> [FruitType.love, FruitType.kindness, FruitType.gentleness],
+      _                         => [],
+    };
+  }
+
   static List<FruitType> suggest(HabitCategory category) {
     switch (category) {
       case HabitCategory.exercise:

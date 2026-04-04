@@ -226,5 +226,17 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if false;
     }
+
+    // ─── habit_categories / habit_subcategories ────────────────────────────
+    // Static data seeded by seedHabitCategories Cloud Function (admin-only).
+    // Read-only for authenticated users; no client writes permitted.
+    match /habit_categories/{docId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /habit_subcategories/{docId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
   }
 }

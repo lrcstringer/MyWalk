@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
 import '../../domain/repositories/habit_repository.dart';
@@ -45,6 +47,116 @@ class HabitProvider extends ChangeNotifier {
     await ensureGratitudeHabit();
     notifyListeners();
     _loadInProgress = false;
+    // Run one-time migration to populate the new category fields.
+    unawaited(migrateCategories());
+  }
+
+  /// One-time migration: assigns categoryId/subcategoryId to habits that
+  /// still use the legacy [HabitCategory] enum only.
+  /// Guarded by a per-user SharedPreferences flag so it runs at most once per
+  /// user per device. Skipped entirely when not authenticated.
+  Future<void> migrateCategories() async {
+    // Skip if not signed in — habits haven't loaded from Firestore yet anyway.
+    if (!_isAuthenticated()) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final flagKey = 'habitCategoryMigrationComplete_$uid';
+    if (prefs.getBool(flagKey) == true) return;
+
+    final unmigrated = _habits.where((h) => h.categoryId == null).toList();
+    if (unmigrated.isEmpty) {
+      await prefs.setBool(flagKey, true);
+      return;
+    }
+
+    final updates = <String, Map<String, String?>>{};
+    for (final habit in unmigrated) {
+      final (catId, subId, catName, subName) = _mapLegacyCategory(habit);
+      updates[habit.id] = {
+        'categoryId': catId,
+        'subcategoryId': subId,
+        'categoryName': catName,
+        'subcategoryName': subName,
+      };
+    }
+
+    await _repository.batchUpdateCategoryFields(updates);
+    await prefs.setBool(flagKey, true);
+
+    // Reload so _habits reflects the new fields (includes gratitude dedup).
+    _habits = await _repository.loadHabits();
+    await ensureGratitudeHabit();
+    notifyListeners();
+  }
+
+  /// Maps a legacy [HabitCategory] enum value to the new two-level IDs + names.
+  static (String, String, String, String) _mapLegacyCategory(Habit habit) {
+    return switch (habit.category) {
+      HabitCategory.exercise => (
+          'caring_for_myself',
+          'exercise',
+          'Caring for Myself & Growing Personally',
+          'Exercise'
+        ),
+      HabitCategory.scripture => (
+          'loving_the_lord',
+          'gods_word',
+          'Loving the Lord & Spiritual Growth',
+          "God's Word"
+        ),
+      HabitCategory.rest => (
+          'caring_for_myself',
+          'rest_and_renewal',
+          'Caring for Myself & Growing Personally',
+          'Rest & Renewal'
+        ),
+      HabitCategory.fasting => (
+          'loving_the_lord',
+          'fasting',
+          'Loving the Lord & Spiritual Growth',
+          'Fasting'
+        ),
+      HabitCategory.study => (
+          'caring_for_myself',
+          'reading_and_learning',
+          'Caring for Myself & Growing Personally',
+          'Reading & Learning'
+        ),
+      HabitCategory.service => (
+          'caring_for_others',
+          'service_and_generosity',
+          'Caring for Others & Connecting with Others',
+          'Service & Generosity'
+        ),
+      HabitCategory.connection => (
+          'caring_for_others',
+          'connection_and_community',
+          'Caring for Others & Connecting with Others',
+          'Connection & Community'
+        ),
+      HabitCategory.health => (
+          'caring_for_myself',
+          'health_and_nutrition',
+          'Caring for Myself & Growing Personally',
+          'Health & Nutrition'
+        ),
+      HabitCategory.abstain => (
+          'caring_for_myself',
+          'breaking_habits',
+          'Caring for Myself & Growing Personally',
+          'Breaking Habits'
+        ),
+      HabitCategory.gratitude => (
+          'loving_the_lord',
+          'worship',
+          'Loving the Lord & Spiritual Growth',
+          'Worship'
+        ),
+      HabitCategory.custom =>
+        ('create_my_own', 'custom', 'Create My Own', habit.name),
+    };
   }
 
   Future<void> ensureGratitudeHabit() async {
@@ -97,8 +209,12 @@ class HabitProvider extends ChangeNotifier {
     String? fruitPurposeStatement,
     String sourceType = 'user_created',
     String? sourceActionId,
+    String? categoryId,
+    String? subcategoryId,
+    String? categoryName,
+    String? subcategoryName,
   }) async {
-    final habit = Habit.create(
+    final created = Habit.create(
       name: name,
       category: category,
       trackingType: trackingType,
@@ -114,6 +230,14 @@ class HabitProvider extends ChangeNotifier {
       sourceType: sourceType,
       sourceActionId: sourceActionId,
     );
+    final habit = (categoryId != null)
+        ? created.copyWith(
+            categoryId: categoryId,
+            subcategoryId: subcategoryId,
+            categoryName: categoryName,
+            subcategoryName: subcategoryName,
+          )
+        : created;
     await _repository.insertHabit(habit);
     _habits = [..._habits, habit];
     notifyListeners();

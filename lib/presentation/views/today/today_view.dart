@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../domain/entities/habit.dart';
 import '../../../domain/entities/scripture.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/habit_category_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../../domain/repositories/circle_repository.dart';
@@ -19,6 +20,7 @@ import '../shared/engagement_banner_view.dart';
 import '../shared/golden_pulse_view.dart';
 import '../shared/mywalk_paywall_view.dart';
 import '../week/week_strip_view.dart';
+import 'widgets/category_group_header.dart';
 
 class TodayView extends StatefulWidget {
   final WeekCycleManager weekCycleManager;
@@ -98,6 +100,7 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final habitProvider = context.watch<HabitProvider>();
     final store = context.watch<StoreProvider>();
+    final catProvider = context.watch<HabitCategoryProvider>();
     final habits = habitProvider.sortedHabits;
     final isPremium = store.isPremium;
 
@@ -188,15 +191,11 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                       if (habits.any((h) => h.isBuiltIn && h.category == HabitCategory.gratitude))
                         _gratitudeCard(gratitudeHabit),
 
-                      // User habits
-                      ...userHabits.map((habit) => Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                        child: HabitCheckInCardView(
-                          habit: habit,
-                          targetDate: _selectedDate,
-                          isRetroactive: _isRetroactive,
-                        ),
-                      )),
+                      // User habits (grouped by category)
+                      ..._buildGroupedHabitList(
+                        userHabits,
+                        catProvider,
+                      ),
 
                       // Add habit / limit section
                       _addHabitSection(userHabits.length, atLimit, isPremium),
@@ -369,6 +368,39 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
   String _dayName(DateTime date) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[date.weekday - 1];
+  }
+
+  List<Widget> _buildGroupedHabitList(
+    List<Habit> habits,
+    HabitCategoryProvider catProvider,
+  ) {
+    final sorted = List<Habit>.from(habits)
+      ..sort((a, b) {
+        final oA = catProvider.categoryById(a.categoryId ?? '')?.sortOrder ?? 99;
+        final oB = catProvider.categoryById(b.categoryId ?? '')?.sortOrder ?? 99;
+        if (oA != oB) return oA.compareTo(oB);
+        return a.createdAt.compareTo(b.createdAt);
+      });
+
+    final widgets = <Widget>[];
+    String? lastCategoryId;
+
+    for (final habit in sorted) {
+      if (habit.categoryId != null && habit.categoryId != lastCategoryId) {
+        final name = catProvider.categoryById(habit.categoryId!)?.name ?? '';
+        if (name.isNotEmpty) widgets.add(CategoryGroupHeader(categoryName: name));
+        lastCategoryId = habit.categoryId;
+      }
+      widgets.add(Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: HabitCheckInCardView(
+          habit: habit,
+          targetDate: _selectedDate,
+          isRetroactive: _isRetroactive,
+        ),
+      ));
+    }
+    return widgets;
   }
 
   void _showAddHabit(BuildContext context) {

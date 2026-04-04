@@ -233,6 +233,16 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                     color: MyWalkColor.sage,
                   ),
                 )
+              else if (_habit.subcategoryName != null && _habit.subcategoryName!.isNotEmpty)
+                Text(
+                  _habit.subcategoryName!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
+                )
               else
                 Text(
                   _habit.purposeStatement,
