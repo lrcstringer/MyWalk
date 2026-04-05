@@ -18,6 +18,8 @@ import '../../theme/app_theme.dart';
 import 'doodle_canvas_screen.dart';
 
 const _kMaxRecordSeconds = 180; // 3 minutes
+const _kMaxImagesPerEntry = 3;
+const _kMaxImageBytes = 10 * 1024 * 1024; // 10 MB
 
 class JournalEntryComposer extends StatefulWidget {
   /// If provided, the composer opens in edit mode.
@@ -120,8 +122,8 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
   // ── Image picking ───────────────────────────────────────────────────────
 
   Future<void> _pickImage(ImageSource source) async {
-    if (_totalImageCount >= 5) {
-      _showSnack('Maximum 5 images per entry');
+    if (_totalImageCount >= _kMaxImagesPerEntry) {
+      _showSnack('Maximum $_kMaxImagesPerEntry images per entry');
       return;
     }
 
@@ -138,7 +140,12 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
         source: source, imageQuality: 80);
     if (xfile == null || !mounted) return;
 
-    if (5 - _totalImageCount <= 0) return;
+    if (File(xfile.path).lengthSync() > _kMaxImageBytes) {
+      _showSnack('Image is too large (max 10 MB). Please choose a smaller photo.');
+      return;
+    }
+
+    if (_kMaxImagesPerEntry - _totalImageCount <= 0) return;
     setState(() => _newImagePaths.add(xfile.path));
   }
 
@@ -606,7 +613,7 @@ class _ImagesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showAddButton = totalCount < 5;
+    final showAddButton = totalCount < _kMaxImagesPerEntry;
     if (totalCount == 0 && !showAddButton) return const SizedBox.shrink();
 
     return Column(
