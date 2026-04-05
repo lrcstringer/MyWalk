@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -41,7 +43,8 @@ class JournalEntryComposer extends StatefulWidget {
 }
 
 class _JournalEntryComposerState extends State<JournalEntryComposer> {
-  late final TextEditingController _textCtrl;
+  late final QuillController _textController;
+  late final FocusNode _editorFocusNode;
   final _imagePicker = ImagePicker();
   final _recorder = AudioRecorder();
   final _player = AudioPlayer();
@@ -72,10 +75,27 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
   void initState() {
     super.initState();
     final e = widget.initialEntry;
-    _textCtrl = TextEditingController(text: e?.text ?? '');
+    _editorFocusNode = FocusNode();
+    if (e?.text != null && e!.text!.isNotEmpty) {
+      try {
+        _textController = QuillController(
+          document: Document.fromJson(jsonDecode(e.text!) as List),
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+      } catch (_) {
+        _textController = QuillController.basic();
+      }
+    } else {
+      _textController = QuillController.basic();
+    }
     if (e != null) {
       _existingImageUrls.addAll(e.imageUrls);
       _existingVoiceUrl = e.voiceUrl;
+    }
+    if (!_isEditMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _editorFocusNode.requestFocus();
+      });
     }
 
     _player.onPlayerStateChanged.listen((state) {
@@ -87,7 +107,8 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
 
   @override
   void dispose() {
-    _textCtrl.dispose();
+    _textController.dispose();
+    _editorFocusNode.dispose();
     _recorder.dispose();
     _player.dispose();
     if (_tmpVoicePath != null) {
@@ -222,8 +243,8 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
       if (!mounted) return;
     }
 
-    final text = _textCtrl.text.trim();
-    final hasContent = text.isNotEmpty ||
+    final plainText = _textController.document.toPlainText().trim();
+    final hasContent = plainText.isNotEmpty ||
         _newImagePaths.isNotEmpty ||
         _newVoicePath != null ||
         _existingImageUrls.isNotEmpty ||
@@ -237,12 +258,15 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
     setState(() => _isSaving = true);
 
     try {
+      final deltaJson = plainText.isNotEmpty
+          ? jsonEncode(_textController.document.toDelta().toJson())
+          : null;
       final provider = context.read<JournalProvider>();
       if (_isEditMode) {
         await provider.updateEntry(
           widget.initialEntry!,
-          text: text.isNotEmpty ? text : null,
-          clearText: text.isEmpty,
+          text: deltaJson,
+          clearText: deltaJson == null,
           newImageLocalPaths: _newImagePaths,
           newVoiceLocalPath: _newVoicePath,
           removedImageUrls:
@@ -251,7 +275,7 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
         );
       } else {
         await provider.saveEntry(
-          text: text.isNotEmpty ? text : null,
+          text: deltaJson,
           imageLocalPaths: _newImagePaths,
           voiceLocalPath: _newVoicePath,
           habitId: widget.habitId,
@@ -429,26 +453,29 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
                 sourceType: sourceType,
                 theme: theme),
 
-          // Text field
-          TextField(
-            controller: _textCtrl,
-            maxLines: null,
-            minLines: 6,
-            autofocus: !_isEditMode,
-            style: TextStyle(
+          // Toolbar
+          QuillSimpleToolbar(
+            controller: _textController,
+            config: const QuillSimpleToolbarConfig(),
+          ),
+          const SizedBox(height: 4),
+
+          // Rich-text editor
+          DefaultTextStyle(
+            style: DefaultTextStyle.of(context).style.copyWith(
               color: theme.textPrimary,
               fontSize: 16,
               height: 1.6,
             ),
-            decoration: InputDecoration(
-              hintText: 'Write something...',
-              hintStyle: TextStyle(
-                color: theme.textSecondary,
-                fontSize: 16,
+            child: QuillEditor.basic(
+              controller: _textController,
+              focusNode: _editorFocusNode,
+              config: QuillEditorConfig(
+                placeholder: 'Write something...',
+                minHeight: 150,
+                scrollable: false,
+                padding: EdgeInsets.zero,
               ),
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
             ),
           ),
 

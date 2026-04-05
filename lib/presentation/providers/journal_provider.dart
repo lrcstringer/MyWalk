@@ -56,7 +56,7 @@ class JournalProvider extends ChangeNotifier {
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       result = result.where((e) {
-        final textMatch = e.text?.toLowerCase().contains(q) ?? false;
+        final textMatch = JournalEntry.extractPlainText(e.text).toLowerCase().contains(q);
         final habitMatch = e.habitName?.toLowerCase().contains(q) ?? false;
         final fruitMatch = e.fruitTag?.label.toLowerCase().contains(q) ?? false;
         return textMatch || habitMatch || fruitMatch;

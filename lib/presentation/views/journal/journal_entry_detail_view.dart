@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/fruit.dart';
 import '../../../domain/entities/journal_entry.dart';
@@ -25,11 +27,15 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
   Duration _duration = Duration.zero;
 
   late JournalEntry _entry;
+  QuillController? _textController;
+  String? _lastSeenText;
 
   @override
   void initState() {
     super.initState();
     _entry = widget.entry;
+    _lastSeenText = _entry.text;
+    _rebuildTextController(_entry.text);
 
     _player.onPlayerStateChanged.listen((state) {
       if (mounted) setState(() => _isPlaying = state == PlayerState.playing);
@@ -46,9 +52,48 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final fresh = context.read<JournalProvider>().getEntry(widget.entry.id);
+    final latest = fresh ?? _entry;
+    if (latest.text != _lastSeenText) {
+      _rebuildTextController(latest.text);
+      _lastSeenText = latest.text;
+      // No setState — widget is already rebuilding due to the dependency change.
+      if (fresh != null) _entry = fresh;
+    }
+  }
+
+  @override
   void dispose() {
+    _textController?.dispose();
     _player.dispose();
     super.dispose();
+  }
+
+  void _rebuildTextController(String? text) {
+    // Save old reference BEFORE clearing — State.dispose() will handle the new
+    // _textController, so we must defer disposal of the OLD one separately.
+    final oldController = _textController;
+    _textController = null;
+    if (text != null && text.isNotEmpty) {
+      try {
+        _textController = QuillController(
+          document: Document.fromJson(jsonDecode(text) as List),
+          selection: const TextSelection.collapsed(offset: 0),
+          readOnly: true,
+        );
+      } catch (_) {
+        // Corrupt Delta JSON — leave controller null so text section is hidden.
+      }
+    }
+    // Defer disposal: QuillRawEditor.didUpdateWidget calls
+    // oldWidget.controller.removeListener(...) during the next rebuild.
+    // Disposing the old controller before that runs triggers a
+    // debugAssertNotDisposed assertion crash in debug mode.
+    if (oldController != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => oldController.dispose());
+    }
   }
 
   // ── Actions ──────────────────────────────────────────────────────────────
@@ -192,14 +237,20 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
           _SourceChipRow(entry: entry, theme: theme),
 
           // Body text
-          if (entry.text != null && entry.text!.isNotEmpty) ...[
+          if (_textController != null) ...[
             const SizedBox(height: 12),
-            Text(
-              entry.text!,
-              style: TextStyle(
+            DefaultTextStyle(
+              style: DefaultTextStyle.of(context).style.copyWith(
                 color: theme.textPrimary,
                 fontSize: 16,
                 height: 1.7,
+              ),
+              child: QuillEditor.basic(
+                controller: _textController!,
+                config: const QuillEditorConfig(
+                  scrollable: false,
+                  padding: EdgeInsets.zero,
+                ),
               ),
             ),
           ],

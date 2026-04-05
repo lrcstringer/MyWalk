@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'fruit.dart';
@@ -125,6 +126,25 @@ class JournalEntry {
           : null,
       sourceType: data['sourceType'] as String? ?? 'free',
     );
+  }
+
+  /// Extracts plain text from a Delta JSON string produced by flutter_quill.
+  /// Returns an empty string if [deltaJson] is null, empty, or unparseable.
+  static String extractPlainText(String? deltaJson) {
+    if (deltaJson == null || deltaJson.isEmpty) return '';
+    try {
+      final ops = jsonDecode(deltaJson) as List;
+      final buffer = StringBuffer();
+      for (final op in ops) {
+        if (op is Map) {
+          final insert = op['insert'];
+          if (insert is String) buffer.write(insert);
+        }
+      }
+      return buffer.toString().trim();
+    } catch (_) {
+      return '';
+    }
   }
 
   static DateTime _parseDate(dynamic raw) {
