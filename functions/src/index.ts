@@ -1,6 +1,8 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { IncomingMessage, ServerResponse } from 'http';
+import * as admin from 'firebase-admin';
 import app from './hono';
 export { validateReceipt, appleNotification, googleNotification } from './iap';
 export {
@@ -54,6 +56,26 @@ export {
 } from './callables/events';
 export { resetWeeklyFruitPortfolio } from './callables/fruit';
 export { seedHabitCategories } from './callables/habit_categories';
+
+// ── TEMP: Grant premium to all new users (remove before production launch) ──
+
+export const grantTestPremium = onDocumentCreated(
+  { document: 'users/{uid}', region: 'us-central1' },
+  async (event) => {
+    const uid = event.params.uid;
+    await admin.firestore()
+      .collection('users').doc(uid)
+      .collection('subscription').doc('status')
+      .set({
+        productId: 'lifetimeonetime',
+        platform: 'android',
+        purchaseId: 'test_grant',
+        status: 'active',
+        expiresAt: null,
+        validatedAt: admin.firestore.Timestamp.now(),
+      });
+  }
+);
 
 // ── Scheduled: purge expired notifications ─────────────────────────────────
 import { db, Timestamp } from './lib/firestore';

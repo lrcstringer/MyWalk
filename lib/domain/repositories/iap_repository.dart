@@ -13,6 +13,13 @@ abstract class IAPRepository {
   ///             current [isPremium] value unchanged (optimistic for existing users).
   Future<bool?> getPremiumStatus();
 
+  /// A real-time stream of premium status from Firestore.
+  ///
+  /// Emits whenever the subscription document is created, updated, or deleted.
+  /// Completes immediately (empty) when the user is not authenticated.
+  /// Errors are swallowed — the stream terminates gracefully without propagating.
+  Stream<bool> watchPremiumStatus();
+
   /// Sends a purchase receipt or token to the server-side validation function,
   /// which writes the authoritative [SubscriptionStatus] to Firestore and
   /// returns whether the purchase grants premium access.

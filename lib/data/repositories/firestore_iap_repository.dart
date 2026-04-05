@@ -69,6 +69,39 @@ class FirestoreIAPRepository implements IAPRepository {
     }
   }
 
+  /// Real-time stream of premium status for the current user.
+  ///
+  /// Emits on every Firestore document change. Completes immediately if the
+  /// user is unauthenticated. Errors are swallowed so the stream terminates
+  /// gracefully rather than propagating to the subscriber.
+  @override
+  Stream<bool> watchPremiumStatus() {
+    final uid = _getUid();
+    if (uid == null) return const Stream.empty();
+
+    return _db
+        .collection('users')
+        .doc(uid)
+        .collection('subscription')
+        .doc('status')
+        .snapshots()
+        .map(_parsePremiumSnapshot)
+        .handleError((Object _) {});
+  }
+
+  bool _parsePremiumSnapshot(DocumentSnapshot<Map<String, dynamic>> snap) {
+    if (!snap.exists) return false;
+    final data = snap.data();
+    if (data == null) return false;
+    final status = data['status'] as String?;
+    if (status != 'active') return false;
+    final expiresAt = data['expiresAt'];
+    if (expiresAt == null) return true;
+    final expiry = expiresAt is Timestamp ? expiresAt.toDate() : null;
+    if (expiry == null) return false;
+    return expiry.isAfter(DateTime.now());
+  }
+
   /// Calls the `validateReceipt` Firebase callable function.
   ///
   /// Throws [StateError] if the user is not authenticated.

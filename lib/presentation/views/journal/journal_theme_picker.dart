@@ -70,22 +70,23 @@ class _JournalThemePickerSheet extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Theme cards
-              Row(
+              // Theme grid — 3 columns
+              GridView.count(
+                crossAxisCount: 3,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 0.95,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 children: JournalTheme.all.map((theme) {
                   final isSelected = theme.id == current.id;
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: _ThemeCard(
-                        theme: theme,
-                        isSelected: isSelected,
-                        onTap: () {
-                          provider.setTheme(theme);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ),
+                  return _ThemeCard(
+                    theme: theme,
+                    isSelected: isSelected,
+                    onTap: () {
+                      provider.setTheme(theme);
+                      Navigator.pop(context);
+                    },
                   );
                 }).toList(),
               ),
@@ -133,32 +134,37 @@ class _ThemeCard extends StatelessWidget {
                 ]
               : null,
         ),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Mini preview: inner card + swatches
-            Container(
-              height: 52,
-              decoration: BoxDecoration(
-                color: theme.bgCard,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                    color: theme.textSecondary.withValues(alpha: 0.12)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _Swatch(color: theme.textPrimary),
-                  const SizedBox(width: 5),
-                  _Swatch(color: theme.textSecondary),
-                  const SizedBox(width: 5),
-                  _Swatch(color: theme.accentAction),
-                ],
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.bgCard,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: theme.textSecondary.withValues(alpha: 0.12)),
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _Swatch(color: theme.textPrimary),
+                      const SizedBox(width: 4),
+                      _Swatch(color: theme.accentAction),
+                      if (theme.accentPop != null) ...[
+                        const SizedBox(width: 4),
+                        _Swatch(color: theme.accentPop!),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
             // Name row
             Row(
@@ -168,14 +174,16 @@ class _ThemeCard extends StatelessWidget {
                     theme.name,
                     style: TextStyle(
                       color: theme.textPrimary,
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 if (isSelected)
                   Icon(Icons.check_circle_rounded,
-                      size: 16, color: theme.accentAction),
+                      size: 14, color: theme.accentAction),
               ],
             ),
           ],
@@ -193,8 +201,8 @@ class _Swatch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 14,
-      height: 14,
+      width: 12,
+      height: 12,
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,

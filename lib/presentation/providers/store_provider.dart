@@ -50,6 +50,7 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
   String? error;
 
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
+  StreamSubscription<bool>? _premiumSub;
 
   // ── Getters ───────────────────────────────────────────────────────────────
 
@@ -102,6 +103,16 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
       _syncPremiumStatus(),
     ]);
 
+    // Start real-time listener so any server-side document writes (e.g. the
+    // grantTestPremium onCreate function) update isPremium without requiring
+    // a background/foreground cycle.
+    _premiumSub = _iapRepository.watchPremiumStatus().listen((status) {
+      if (isPremium != status) {
+        isPremium = status;
+        notifyListeners();
+      }
+    });
+
     isLoading = false;
     notifyListeners();
   }
@@ -110,6 +121,7 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _purchaseSub?.cancel();
+    _premiumSub?.cancel();
     super.dispose();
   }
 
