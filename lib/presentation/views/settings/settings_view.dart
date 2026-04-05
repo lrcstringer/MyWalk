@@ -13,6 +13,7 @@ import '../../providers/journal_theme_provider.dart';
 import '../../theme/app_theme.dart';
 import '../journal/journal_theme_picker.dart';
 import '../shared/mywalk_paywall_view.dart';
+import 'profile_edit_view.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -232,10 +233,6 @@ class _SettingsViewState extends State<SettingsView> {
                 _sectionHeader('Journal'),
                 const SizedBox(height: 8),
                 _journalSection(),
-                const SizedBox(height: 20),
-                _sectionHeader('Your Habits'),
-                const SizedBox(height: 8),
-                _habitsSection(habits.toList()),
                 if (_archivedHabits.isNotEmpty) ...[
                   const SizedBox(height: 20),
                   _sectionHeader('Archived Habits'),
@@ -273,24 +270,27 @@ class _SettingsViewState extends State<SettingsView> {
   Widget _accountSection(AuthService auth) {
     if (auth.isAuthenticated) {
       return Column(children: [
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: MyWalkDecorations.card,
-          child: Row(children: [
-            Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: MyWalkColor.sage.withValues(alpha: 0.15)),
-              child: const Icon(Icons.person_rounded, size: 18, color: MyWalkColor.sage),
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(auth.displayName ?? 'Signed In',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
-              Text(AuthService.isApplePlatform ? 'Apple Account' : 'Google Account',
-                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4))),
-            ])),
-            const Icon(Icons.check_circle_rounded, color: MyWalkColor.sage, size: 18),
-          ]),
+        GestureDetector(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileEditView())),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: MyWalkDecorations.card,
+            child: Row(children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: MyWalkColor.sage.withValues(alpha: 0.15)),
+                child: const Icon(Icons.person_rounded, size: 18, color: MyWalkColor.sage),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(auth.displayName ?? 'Signed In',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
+                Text(AuthService.isApplePlatform ? 'Apple Account' : 'Google Account',
+                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4))),
+              ])),
+              Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.3), size: 18),
+            ]),
+          ),
         ),
         const SizedBox(height: 8),
         GestureDetector(
@@ -572,60 +572,6 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
-  Widget _habitsSection(List<Habit> habits) {
-    if (habits.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: MyWalkDecorations.card,
-        child: Center(
-          child: Text('No habits yet',
-              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4))),
-        ),
-      );
-    }
-    return Column(
-      children: habits.map((habit) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: MyWalkDecorations.card,
-          child: Row(children: [
-            Icon(_habitIcon(habit), size: 16,
-                color: habit.isBuiltIn ? MyWalkColor.golden : MyWalkColor.sage),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text(habit.name,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.warmWhite)),
-                if (habit.isBuiltIn) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: MyWalkColor.golden.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text('Built-in',
-                        style: TextStyle(fontSize: 10, color: MyWalkColor.golden)),
-                  ),
-                ],
-              ]),
-              Row(children: [
-                Text(habit.trackingType.name,
-                    style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
-                Text(' \u00B7 ', style: TextStyle(color: Colors.white.withValues(alpha: 0.2))),
-                Text('${_milestoneService.habitAge(habit)} days',
-                    style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
-              ]),
-            ])),
-            Text(_milestoneService.lifetimeStat(habit).primaryValue,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.6))),
-          ]),
-        ),
-      )).toList(),
-    );
-  }
 
   Widget _statsSection(int checkIns, double minutes, int cleanDays, double count, int milestones, int habitCount) {
     final hours = minutes ~/ 60;

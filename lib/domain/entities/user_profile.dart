@@ -9,6 +9,9 @@ class UserProfile {
   final DateTime createdAt;
   final DateTime? weekDedicatedAt;
   final DateTime? onboardingDate;
+  final String? firstName;
+  final String? surname;
+  final String? phone;
 
   const UserProfile({
     required this.uid,
@@ -19,6 +22,9 @@ class UserProfile {
     required this.createdAt,
     this.weekDedicatedAt,
     this.onboardingDate,
+    this.firstName,
+    this.surname,
+    this.phone,
   });
 
   UserProfile copyWith({
@@ -28,6 +34,9 @@ class UserProfile {
     List<String>? identitySelections,
     DateTime? weekDedicatedAt,
     DateTime? onboardingDate,
+    String? firstName,
+    String? surname,
+    String? phone,
   }) =>
       UserProfile(
         uid: uid,
@@ -38,6 +47,9 @@ class UserProfile {
         createdAt: createdAt,
         weekDedicatedAt: weekDedicatedAt ?? this.weekDedicatedAt,
         onboardingDate: onboardingDate ?? this.onboardingDate,
+        firstName: firstName ?? this.firstName,
+        surname: surname ?? this.surname,
+        phone: phone ?? this.phone,
       );
 
   Map<String, dynamic> toFirestore() => {
@@ -48,6 +60,9 @@ class UserProfile {
         if (photoURL != null) 'photoURL': photoURL,
         if (weekDedicatedAt != null) 'weekDedicatedAt': Timestamp.fromDate(weekDedicatedAt!),
         if (onboardingDate != null) 'onboardingDate': Timestamp.fromDate(onboardingDate!),
+        if (firstName != null) 'firstName': firstName,
+        if (surname != null) 'surname': surname,
+        if (phone != null) 'phone': phone,
       };
 
   factory UserProfile.fromFirestore(String uid, Map<String, dynamic> data) {
@@ -76,6 +91,9 @@ class UserProfile {
       createdAt: parseTimestamp(data['createdAt']),
       weekDedicatedAt: parseOptionalTimestamp(data['weekDedicatedAt']),
       onboardingDate: parseOptionalTimestamp(data['onboardingDate']),
+      firstName: data['firstName'] as String?,
+      surname: data['surname'] as String?,
+      phone: data['phone'] as String?,
     );
   }
 }

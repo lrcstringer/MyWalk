@@ -20,6 +20,8 @@ class AuthService extends ChangeNotifier {
   String? _givenName;
   String? _email;
   String? _photoURL;
+  String? _surname;
+  String? _phone;
   bool _isLoading = false;
   String? _error;
   // Guards against double-registration of the Firebase auth listener.
@@ -33,6 +35,8 @@ class AuthService extends ChangeNotifier {
   String? get givenName => _givenName;
   String? get email => _email;
   String? get photoURL => _photoURL;
+  String? get surname => _surname;
+  String? get phone => _phone;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -49,6 +53,8 @@ class AuthService extends ChangeNotifier {
     _givenName = prefs.getString('tribute_given_name');
     _email = prefs.getString('tribute_email');
     _photoURL = prefs.getString('tribute_photo_url');
+    _surname = prefs.getString('tribute_surname');
+    _phone = prefs.getString('tribute_phone');
 
     // On reinstall the SharedPreferences cache is empty but FirebaseAuth
     // still has the session (stored in the platform keychain/keystore).
@@ -254,11 +260,65 @@ class AuthService extends ChangeNotifier {
     _givenName = null;
     _email = null;
     _photoURL = null;
+    _surname = null;
+    _phone = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('tribute_display_name');
     await prefs.remove('tribute_given_name');
     await prefs.remove('tribute_email');
     await prefs.remove('tribute_photo_url');
+    await prefs.remove('tribute_surname');
+    await prefs.remove('tribute_phone');
+    notifyListeners();
+  }
+
+  // ── Profile update ────────────────────────────────────────────────────────
+
+  Future<void> updateProfile({
+    String? firstName,
+    String? surname,
+    String? displayName,
+    String? email,
+    String? phone,
+  }) async {
+    if (firstName != null && firstName.isNotEmpty) _givenName = firstName;
+    if (surname != null) _surname = surname;
+    if (displayName != null && displayName.isNotEmpty) _displayName = displayName;
+    if (email != null) _email = email.isEmpty ? null : email;
+    if (phone != null) _phone = phone.isEmpty ? null : phone;
+
+    final prefs = await SharedPreferences.getInstance();
+    if (_givenName != null) await prefs.setString('tribute_given_name', _givenName!);
+    if (_surname != null) {
+      await prefs.setString('tribute_surname', _surname!);
+    } else {
+      await prefs.remove('tribute_surname');
+    }
+    if (_displayName != null) await prefs.setString('tribute_display_name', _displayName!);
+    if (_email != null) {
+      await prefs.setString('tribute_email', _email!);
+    } else {
+      await prefs.remove('tribute_email');
+    }
+    if (_phone != null) {
+      await prefs.setString('tribute_phone', _phone!);
+    } else {
+      await prefs.remove('tribute_phone');
+    }
+
+    final uid = _userId;
+    if (uid != null) {
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(uid).set(<String, dynamic>{
+          if (_givenName != null) 'firstName': _givenName,
+          if (_surname != null) 'surname': _surname,
+          if (_displayName != null) 'displayName': _displayName,
+          if (_email != null) 'email': _email,
+          'phone': _phone,
+        }, SetOptions(merge: true));
+      } catch (_) {}
+    }
+
     notifyListeners();
   }
 
@@ -314,9 +374,9 @@ class AuthService extends ChangeNotifier {
         'createdAt': Timestamp.fromDate(createdAt),
         'providers': FieldValue.arrayUnion(providers),
         'lastSignInAt': FieldValue.serverTimestamp(),
-        if (email != null) 'email': email,
-        if (photoURL != null) 'photoURL': photoURL,
-        if (displayName != null) 'displayName': displayName,
+        'email': ?email,
+        'photoURL': ?photoURL,
+        'displayName': ?displayName,
       };
       await FirebaseFirestore.instance
           .collection('users')
