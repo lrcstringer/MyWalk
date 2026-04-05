@@ -92,6 +92,9 @@ class _StubIAPRepository implements IAPRepository {
   Future<bool?> getPremiumStatus() async => _premiumStatus;
 
   @override
+  Stream<bool> watchPremiumStatus() => const Stream.empty();
+
+  @override
   Future<bool> validateReceipt({
     required String platform,
     required String productId,

@@ -13,6 +13,7 @@ import '../../theme/app_theme.dart';
 import '../shared/mywalk_paywall_view.dart';
 import 'edit_habit_view.dart';
 import 'heatmap_view.dart';
+import '../bible/bible_browser_view.dart';
 
 class HabitDetailView extends StatefulWidget {
   final Habit habit;
@@ -121,6 +122,14 @@ class _HabitDetailViewState extends State<HabitDetailView> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.menu_book_outlined, color: MyWalkColor.softGold.withValues(alpha: 0.8)),
+            onPressed: () => Navigator.push<void>(
+              context,
+              MaterialPageRoute(builder: (_) => const BibleBrowserView()),
+            ),
+            tooltip: 'Bible',
+          ),
           IconButton(
             icon: Icon(Icons.edit_outlined, color: MyWalkColor.softGold.withValues(alpha: 0.8)),
             onPressed: () => _showEdit(context),
@@ -717,26 +726,42 @@ class _HabitDetailViewState extends State<HabitDetailView> {
   }
 
   Widget _verseSection(Scripture verse) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Column(
-        children: [
-          Text(
-            '\u201C${verse.text}\u201D',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              fontStyle: FontStyle.italic,
-              color: MyWalkColor.softGold.withValues(alpha: 0.6),
-              height: 1.6,
+    return GestureDetector(
+      onTap: () => Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BibleBrowserView(initialReference: verse.reference),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Column(
+          children: [
+            Text(
+              '\u201C${verse.text}\u201D',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+                color: MyWalkColor.softGold.withValues(alpha: 0.6),
+                height: 1.6,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            verse.reference,
-            style: TextStyle(fontSize: 11, color: MyWalkColor.golden.withValues(alpha: 0.5)),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  verse.reference,
+                  style: TextStyle(fontSize: 11, color: MyWalkColor.golden.withValues(alpha: 0.5)),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.menu_book_outlined,
+                    size: 10, color: MyWalkColor.golden.withValues(alpha: 0.4)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

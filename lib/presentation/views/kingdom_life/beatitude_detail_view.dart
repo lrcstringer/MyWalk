@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entities/beatitude.dart';
 import '../../theme/app_theme.dart';
+import '../bible/bible_browser_view.dart';
 import '../journal/journal_entry_composer.dart';
 import 'beatitude_practices_view.dart';
 
@@ -23,6 +24,16 @@ class BeatitudeDetailView extends StatelessWidget {
             foregroundColor: MyWalkColor.warmWhite,
             expandedHeight: 220,
             pinned: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.menu_book_outlined, color: MyWalkColor.softGold),
+                onPressed: () => Navigator.push<void>(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BibleBrowserView()),
+                ),
+                tooltip: 'Bible',
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
               background: Stack(
@@ -112,37 +123,54 @@ class BeatitudeDetailView extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Verse quote
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                    decoration: BoxDecoration(
-                      color: _kAccent.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border(
-                        left: BorderSide(color: _kAccent.withValues(alpha: 0.5), width: 3),
+                  // Verse quote — tappable → opens Bible browser
+                  GestureDetector(
+                    onTap: () => Navigator.push<void>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            BibleBrowserView(initialReference: beatitude.verseRef),
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '\u201c${beatitude.verse}\u201d',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
-                            color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
-                            height: 1.65,
-                          ),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                      decoration: BoxDecoration(
+                        color: _kAccent.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border(
+                          left: BorderSide(color: _kAccent.withValues(alpha: 0.5), width: 3),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '\u2014 ${beatitude.verseRef}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: _kAccent.withValues(alpha: 0.6),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '\u201c${beatitude.verse}\u201d',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontStyle: FontStyle.italic,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
+                              height: 1.65,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Text(
+                                '\u2014 ${beatitude.verseRef}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _kAccent.withValues(alpha: 0.6),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Icon(Icons.menu_book_outlined,
+                                  size: 11,
+                                  color: _kAccent.withValues(alpha: 0.4)),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 28),

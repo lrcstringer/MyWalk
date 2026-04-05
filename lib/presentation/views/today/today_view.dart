@@ -23,6 +23,7 @@ import '../shared/golden_pulse_view.dart';
 import '../shared/mywalk_paywall_view.dart';
 import '../week/week_strip_view.dart';
 import 'widgets/category_group_header.dart';
+import '../bible/bible_browser_view.dart';
 
 class TodayView extends StatefulWidget {
   final WeekCycleManager weekCycleManager;
@@ -138,6 +139,17 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                   automaticallyImplyLeading: false,
                   actions: [
                     const NotificationBell(),
+                    IconButton(
+                      icon: Icon(
+                        Icons.menu_book_outlined,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                      ),
+                      onPressed: () => Navigator.push<void>(
+                        context,
+                        MaterialPageRoute(builder: (_) => const BibleBrowserView()),
+                      ),
+                      tooltip: 'Bible',
+                    ),
                     IconButton(
                       icon: Icon(
                         Icons.settings_outlined,

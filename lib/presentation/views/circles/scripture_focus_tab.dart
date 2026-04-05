@@ -4,6 +4,7 @@ import '../../../data/datasources/remote/auth_service.dart';
 import '../../providers/scripture_focus_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
+import '../bible/bible_browser_view.dart';
 
 class ScriptureFocusTab extends StatelessWidget {
   final String circleId;
@@ -138,7 +139,14 @@ class _FocusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: () => Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BibleBrowserView(initialReference: focus.reference),
+        ),
+      ),
+      child: Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: MyWalkColor.golden.withValues(alpha: 0.06),
@@ -181,6 +189,7 @@ class _FocusCard extends StatelessWidget {
           ),
         ],
       ]),
+      ),
     );
   }
 }

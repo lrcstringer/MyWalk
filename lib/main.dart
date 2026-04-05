@@ -43,6 +43,12 @@ import 'data/services/pending_action_queue_service.dart';
 import 'data/repositories/firestore_notification_repository.dart';
 import 'domain/repositories/notification_repository.dart';
 import 'presentation/providers/circle_notification_provider.dart';
+import 'data/datasources/local/bible_database.dart';
+import 'data/repositories/local_bible_repository.dart';
+import 'data/repositories/firestore_bookmark_repository.dart';
+import 'domain/repositories/bible_repository.dart';
+import 'domain/repositories/bookmark_repository.dart';
+import 'presentation/providers/bible_provider.dart';
 import 'app.dart';
 
 /// Top-level handler for background/terminated FCM messages.
@@ -123,6 +129,9 @@ void main() async {
   final pendingActionQueue = PendingActionQueueService(sharedPrefs);
   final notificationRepository = FirestoreNotificationRepository(pendingActionQueue);
 
+  final bibleRepository = LocalBibleRepository(BibleDatabase.instance);
+  final bookmarkRepository = FirestoreBookmarkRepository();
+
   runApp(
     MultiProvider(
       providers: [
@@ -187,6 +196,11 @@ void main() async {
         Provider<NotificationRepository>.value(value: notificationRepository),
         ChangeNotifierProvider<CircleNotificationProvider>(
           create: (_) => CircleNotificationProvider(notificationRepository),
+        ),
+        Provider<BibleRepository>.value(value: bibleRepository),
+        Provider<BookmarkRepository>.value(value: bookmarkRepository),
+        ChangeNotifierProvider<BibleProvider>(
+          create: (_) => BibleProvider(bibleRepository, bookmarkRepository),
         ),
       ],
       child: const MyWalkApp(),
