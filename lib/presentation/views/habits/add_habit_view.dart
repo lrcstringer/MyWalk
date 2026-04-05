@@ -823,11 +823,23 @@ class _AddHabitViewState extends State<AddHabitView> {
               child: ListView.separated(
                 controller: scrollCtrl,
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                itemCount: sub.supportingVerses.length,
-                separatorBuilder: (_, _) => Divider(
-                    color: Colors.white.withValues(alpha: 0.07), height: 24),
+                itemCount: sub.supportingVerses.length + 1,
+                separatorBuilder: (_, i) => i == 0
+                    ? const SizedBox(height: 16)
+                    : Divider(color: Colors.white.withValues(alpha: 0.07), height: 24),
                 itemBuilder: (_, i) {
-                  final v = sub.supportingVerses[i];
+                  if (i == 0) {
+                    return Text(
+                      'These verses are to spur your thinking, but it\'s good practice to always read a verse within its context and not isolated from its surrounding Scripture.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.55,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.white.withValues(alpha: 0.45),
+                      ),
+                    );
+                  }
+                  final v = sub.supportingVerses[i - 1];
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

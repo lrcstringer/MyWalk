@@ -1,4 +1,5 @@
 import { onRequest } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { IncomingMessage, ServerResponse } from 'http';
 import app from './hono';
 export { validateReceipt, appleNotification, googleNotification } from './iap';
@@ -53,6 +54,28 @@ export {
 } from './callables/events';
 export { resetWeeklyFruitPortfolio } from './callables/fruit';
 export { seedHabitCategories } from './callables/habit_categories';
+
+// ── Scheduled: purge expired notifications ─────────────────────────────────
+import { db, Timestamp } from './lib/firestore';
+
+export const expireNotifications = onSchedule(
+  { schedule: 'every 24 hours', region: 'us-central1', memory: '256MiB' },
+  async () => {
+    const now = Timestamp.now();
+    // collectionGroup query across all users' notification subcollections
+    const expired = await db
+      .collectionGroup('notifications')
+      .where('expiresAt', '<=', now)
+      .limit(500)
+      .get();
+
+    if (expired.empty) return;
+
+    const batch = db.batch();
+    expired.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+  }
+);
 
 // Convert Firebase's Express-style req/res into a Fetch API Request,
 // run it through the Hono app, and pipe the Response back out.

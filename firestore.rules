@@ -59,6 +59,19 @@ service cloud.firestore {
       match /journal/{entryId} {
         allow read, write: if isOwner(userId);
       }
+
+      // ── notifications subcollection ───────────────────────────────────────
+      // Written exclusively by Cloud Functions (Admin SDK / tRPC server).
+      // Owner may read and update isRead / actionTaken — no creates or deletes.
+      match /notifications/{notifId} {
+        allow read: if isOwner(userId);
+        // Allow only isRead and actionTaken to be updated by the owner.
+        allow update: if isOwner(userId)
+                      && request.resource.data.diff(resource.data)
+                           .affectedKeys()
+                           .hasOnly(['isRead', 'actionTaken']);
+        allow create, delete: if false; // Admin SDK only
+      }
     }
 
     // ─── inviteCodes ──────────────────────────────────────────────────────

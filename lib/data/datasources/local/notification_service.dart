@@ -36,6 +36,21 @@ class NotificationService {
     (365, 'A full year', "365 days of giving this to God. Whatever this year looked like — the strong weeks and the quiet ones — He was in all of it."),
   ];
 
+  // Android notification channels
+  static const _channelCircles = AndroidNotificationChannel(
+    'circles',
+    'Circle Notifications',
+    description: 'Announcements and prayer requests from your circles',
+    importance: Importance.high,
+  );
+  static const _channelSOS = AndroidNotificationChannel(
+    'sos',
+    'SOS Alerts',
+    description: 'Urgent SOS requests from circle members',
+    importance: Importance.max,
+    playSound: true,
+  );
+
   Future<void> init() async {
     tz_data.initializeTimeZones();
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -45,7 +60,38 @@ class NotificationService {
       requestSoundPermission: false,
     );
     await _plugin.initialize(const InitializationSettings(android: androidSettings, iOS: iosSettings));
+    // Create Android notification channels
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.createNotificationChannel(_channelCircles);
+    await androidPlugin?.createNotificationChannel(_channelSOS);
     await checkAuthorization();
+  }
+
+  /// Show a foreground notification for an incoming circle notification (FCM
+  /// messages that arrive while the app is in the foreground are silent by
+  /// default — this makes them visible).
+  Future<void> showCircleNotification({
+    required String id,
+    required String title,
+    required String body,
+    required bool isSOS,
+  }) async {
+    final notifId = id.hashCode & 0x7fffffff;
+    await _plugin.show(
+      notifId,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          isSOS ? 'sos' : 'circles',
+          isSOS ? 'SOS Alerts' : 'Circle Notifications',
+          importance: isSOS ? Importance.max : Importance.high,
+          priority: isSOS ? Priority.max : Priority.high,
+          playSound: true,
+        ),
+        iOS: const DarwinNotificationDetails(presentAlert: true, presentSound: true),
+      ),
+    );
   }
 
   Future<void> checkAuthorization() async {

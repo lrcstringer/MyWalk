@@ -175,16 +175,62 @@ class _CirclesListViewState extends State<_CirclesListView> {
     ),
   );
 
+  void _showAddSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: MyWalkColor.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(width: 36, height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: MyWalkColor.golden.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.add_circle_outline, color: MyWalkColor.golden, size: 20),
+              ),
+              title: const Text('Create Circle', style: TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w600)),
+              subtitle: Text('Start a new prayer circle', style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12)),
+              onTap: () { Navigator.pop(context); _openCreate(); },
+            ),
+            ListTile(
+              leading: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: MyWalkColor.golden.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.group_add_outlined, color: MyWalkColor.golden, size: 20),
+              ),
+              title: const Text('Join Circle', style: TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w600)),
+              subtitle: Text('Enter an invite code', style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12)),
+              onTap: () { Navigator.pop(context); _openJoin(); },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Scale the header height so the full image width is always visible.
-    // groups.png is 2192×549 — aspect ratio ≈ 0.2505.
-    final imageHeight = MediaQuery.of(context).size.width * (549.0 / 2192.0) * 1.5;
+    // Derive header height from the actual image dimensions (2192×824).
+    final imageHeight = MediaQuery.of(context).size.width * (824.0 / 2192.0);
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: SafeArea(
-        child: CustomScrollView(
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: MyWalkColor.golden,
+        foregroundColor: MyWalkColor.charcoal,
+        onPressed: () => _showAddSheet(context),
+        child: const Icon(Icons.add),
+      ),
+      body: CustomScrollView(
           slivers: [
             SliverAppBar(
               backgroundColor: MyWalkColor.charcoal,
@@ -216,40 +262,47 @@ class _CirclesListViewState extends State<_CirclesListView> {
                         ),
                       ),
                     ),
-                    // Screen title
                     const Positioned(
                       left: 20,
                       right: 20,
                       bottom: 14,
-                      child: Text(
-                        'Circles',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: MyWalkColor.warmWhite,
-                          height: 1.1,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Circles',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              color: MyWalkColor.warmWhite,
+                              height: 1.1,
+                            ),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            '\u2018\u2026spur one another on toward love and good deeds, not giving up meeting together, \u2026 encouraging one another\u2019',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              color: MyWalkColor.softGold,
+                              height: 1.45,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Hebrews 10:24\u201325',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: MyWalkColor.golden,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              actions: [
-                if (_circles.isNotEmpty)
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.add, color: MyWalkColor.golden),
-                    color: MyWalkColor.cardBackground,
-                    onSelected: (v) => v == 'create' ? _openCreate() : _openJoin(),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'create',
-                          child: Text('Create Circle',
-                              style: TextStyle(color: MyWalkColor.warmWhite))),
-                      PopupMenuItem(value: 'join',
-                          child: Text('Join Circle',
-                              style: TextStyle(color: MyWalkColor.warmWhite))),
-                    ],
-                  ),
-              ],
             ),
             if (_isLoading)
               const SliverFillRemaining(
@@ -259,36 +312,22 @@ class _CirclesListViewState extends State<_CirclesListView> {
             else if (_circles.isEmpty)
               SliverFillRemaining(child: _emptyState())
             else
-              SliverList(
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                sliver: SliverList(
                 delegate: SliverChildBuilderDelegate((context, i) {
                   final circle = _circles[i];
-                  return ListTile(
-                    contentPadding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                    leading: Container(
-                      width: 44, height: 44,
-                      decoration: BoxDecoration(shape: BoxShape.circle,
-                          color: MyWalkColor.golden.withValues(alpha: 0.1)),
-                      child: Center(child: Text(
-                        circle.name.isNotEmpty ? circle.name[0].toUpperCase() : '?',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: MyWalkColor.golden),
-                      )),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _CircleCard(
+                      circle: circle,
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => CircleDetailView(circleId: circle.id))),
                     ),
-                    title: Text(circle.name,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
-                    subtitle: Row(children: [
-                      Icon(Icons.group, size: 12, color: Colors.white.withValues(alpha: 0.4)),
-                      const SizedBox(width: 4),
-                      Text('${circle.memberCount} members',
-                          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4))),
-                    ]),
-                    trailing: circle.role == 'admin'
-                        ? Icon(Icons.workspace_premium, size: 14, color: MyWalkColor.golden.withValues(alpha: 0.5))
-                        : null,
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => CircleDetailView(circleId: circle.id))),
                   );
                 }, childCount: _circles.length),
               ),
+            ),
             // Show a subtle refresh-error banner only when circles are already displayed.
             if (_error != null && _circles.isNotEmpty)
               SliverToBoxAdapter(child: Padding(
@@ -302,7 +341,6 @@ class _CirclesListViewState extends State<_CirclesListView> {
               )),
           ],
         ),
-      ),
     );
   }
 
@@ -363,5 +401,90 @@ class _CirclesListViewState extends State<_CirclesListView> {
         ]),
       ),
     ]);
+  }
+}
+
+// ─── Circle card ─────────────────────────────────────────────────────────────
+
+class _CircleCard extends StatelessWidget {
+  final Circle circle;
+  final VoidCallback onTap;
+
+  const _CircleCard({required this.circle, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isAdmin = circle.role == 'admin';
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        decoration: BoxDecoration(
+          color: MyWalkColor.cardBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isAdmin
+                ? MyWalkColor.golden.withValues(alpha: 0.25)
+                : MyWalkColor.cardBorder,
+            width: isAdmin ? 1.0 : 0.5,
+          ),
+        ),
+        child: Row(children: [
+          // Avatar
+          Container(
+            width: 52, height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: MyWalkColor.golden.withValues(alpha: 0.1),
+              border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.2), width: 1),
+            ),
+            child: Center(child: Text(
+              circle.name.isNotEmpty ? circle.name[0].toUpperCase() : '?',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: MyWalkColor.golden),
+            )),
+          ),
+          const SizedBox(width: 14),
+          // Name + meta
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(circle.name,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
+            const SizedBox(height: 5),
+            Row(children: [
+              Icon(Icons.group_rounded, size: 13, color: Colors.white.withValues(alpha: 0.4)),
+              const SizedBox(width: 4),
+              Text('${circle.memberCount} member${circle.memberCount == 1 ? '' : 's'}',
+                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45))),
+              if (isAdmin) ...[
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: MyWalkColor.golden.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.25), width: 0.5),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.workspace_premium, size: 10, color: MyWalkColor.golden.withValues(alpha: 0.8)),
+                    const SizedBox(width: 3),
+                    Text('Admin', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                        color: MyWalkColor.golden.withValues(alpha: 0.8))),
+                  ]),
+                ),
+              ],
+            ]),
+          ])),
+          // Tap indicator
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: MyWalkColor.golden.withValues(alpha: 0.08),
+            ),
+            child: Icon(Icons.chevron_right_rounded, size: 18,
+                color: MyWalkColor.golden.withValues(alpha: 0.6)),
+          ),
+        ]),
+      ),
+    );
   }
 }

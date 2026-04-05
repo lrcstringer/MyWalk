@@ -60,6 +60,7 @@ dependencies:
 
   # Push notifications
   flutter_local_notifications: ^18.0.1
+  firebase_messaging: ^15.1.6
 
   # Date formatting
   intl: ^0.20.2
@@ -105,6 +106,9 @@ dependencies:
 
   # Local file paths for offline media storage
   path_provider: ^2.1.5
+
+  # Smooth freehand stroke rendering (journal doodle)
+  perfect_freehand: ^2.0.1
 
 dev_dependencies:
   flutter_test:
@@ -179,6 +183,7 @@ flutter:
     - assets/data/
     - assets/beatitudes_golden_etched_separate/
     - assets/circles/
+    - assets/parables/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

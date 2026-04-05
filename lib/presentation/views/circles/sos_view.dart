@@ -23,6 +23,7 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
   bool _showPrayerCircleMessage = false;
   bool _circleLoadFailed = false;
   bool _isLoadingCircles = false;
+  bool _disclaimerAcknowledged = false;
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnim;
@@ -158,7 +159,8 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: SingleChildScrollView(
+      body: SafeArea(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
         child: Column(children: [
           _shieldHeader(),
@@ -176,6 +178,7 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
           _prayerCircleSection(),
           const SizedBox(height: 20),
         ]),
+        ),
       ),
     );
   }
@@ -351,22 +354,90 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
   Widget _prayerCircleSection() {
     final auth = context.watch<AuthService>();
     return Column(children: [
+      // Disclaimer
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: MyWalkColor.warmCoral.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: MyWalkColor.warmCoral.withValues(alpha: 0.15), width: 0.5),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(
+            'SOS notifications are delivered via push notification and may not be seen immediately. '
+            'This feature is not a substitute for emergency services. If you or someone else is in '
+            'immediate danger, please contact emergency services or a crisis helpline.',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.5,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (_disclaimerAcknowledged)
+            Row(children: [
+              const Icon(Icons.check_circle_rounded, size: 16, color: MyWalkColor.sage),
+              const SizedBox(width: 6),
+              Text(
+                'Acknowledged',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: MyWalkColor.sage.withValues(alpha: 0.8),
+                ),
+              ),
+            ])
+          else
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => setState(() => _disclaimerAcknowledged = true),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  side: BorderSide(color: MyWalkColor.warmCoral.withValues(alpha: 0.4), width: 0.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text(
+                  'I understand',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: MyWalkColor.warmCoral),
+                ),
+              ),
+            ),
+        ]),
+      ),
+      const SizedBox(height: 14),
       if (auth.isAuthenticated)
         Column(children: [
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: _isLoadingCircles ? null : _loadCirclesAndShow,
+              onPressed: (_isLoadingCircles || !_disclaimerAcknowledged) ? null : _loadCirclesAndShow,
               icon: _isLoadingCircles
                   ? const SizedBox(width: 16, height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.warmCoral))
-                  : const Icon(Icons.bolt_rounded, size: 16, color: MyWalkColor.warmCoral),
-              label: const Text('Send SOS prayer request',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.warmCoral)),
+                  : Icon(Icons.bolt_rounded, size: 16,
+                      color: _disclaimerAcknowledged
+                          ? MyWalkColor.warmCoral
+                          : MyWalkColor.warmCoral.withValues(alpha: 0.3)),
+              label: Text('Send SOS prayer request',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: _disclaimerAcknowledged
+                        ? MyWalkColor.warmCoral
+                        : MyWalkColor.warmCoral.withValues(alpha: 0.3),
+                  )),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                side: BorderSide(color: MyWalkColor.warmCoral.withValues(alpha: 0.3), width: 0.5),
-                backgroundColor: MyWalkColor.warmCoral.withValues(alpha: 0.08),
+                side: BorderSide(
+                  color: _disclaimerAcknowledged
+                      ? MyWalkColor.warmCoral.withValues(alpha: 0.3)
+                      : MyWalkColor.warmCoral.withValues(alpha: 0.1),
+                  width: 0.5,
+                ),
+                backgroundColor: _disclaimerAcknowledged
+                    ? MyWalkColor.warmCoral.withValues(alpha: 0.08)
+                    : Colors.transparent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -391,10 +462,21 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => setState(() => _showPrayerCircleMessage = true),
-            icon: const Icon(Icons.group_rounded, size: 16, color: MyWalkColor.softGold),
-            label: const Text('Send a prayer request',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.softGold)),
+            onPressed: _disclaimerAcknowledged
+                ? () => setState(() => _showPrayerCircleMessage = true)
+                : null,
+            icon: Icon(Icons.group_rounded, size: 16,
+                color: _disclaimerAcknowledged
+                    ? MyWalkColor.softGold
+                    : MyWalkColor.softGold.withValues(alpha: 0.3)),
+            label: Text('Send a prayer request',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: _disclaimerAcknowledged
+                      ? MyWalkColor.softGold
+                      : MyWalkColor.softGold.withValues(alpha: 0.3),
+                )),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
               side: BorderSide(color: MyWalkColor.cardBorder, width: 0.5),

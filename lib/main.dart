@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -38,7 +39,26 @@ import 'data/repositories/firestore_fruit_portfolio_repository.dart';
 import 'data/repositories/local_habit_category_repository.dart';
 import 'data/repositories/firestore_journal_repository.dart';
 import 'data/services/media_upload_service.dart';
+import 'data/services/pending_action_queue_service.dart';
+import 'data/repositories/firestore_notification_repository.dart';
+import 'domain/repositories/notification_repository.dart';
+import 'presentation/providers/circle_notification_provider.dart';
 import 'app.dart';
+
+/// Top-level handler for background/terminated FCM messages.
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Firebase must be initialised again in the background isolate.
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService.shared.init();
+  final isSOS = message.data['type'] == 'sos';
+  await NotificationService.shared.showCircleNotification(
+    id: message.messageId ?? message.data['notifId'] ?? 'bg',
+    title: message.notification?.title ?? (isSOS ? 'SOS Alert' : 'Circle Notification'),
+    body: message.notification?.body ?? '',
+    isSOS: isSOS,
+  );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,9 +71,33 @@ void main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   await APIService.shared.init();
   await AuthService.shared.init();
   await NotificationService.shared.init();
+
+  // Request FCM permission and register token.
+  final fcm = FirebaseMessaging.instance;
+  await fcm.requestPermission(alert: true, badge: true, sound: true);
+  final fcmToken = await fcm.getToken();
+  if (fcmToken != null) {
+    APIService.shared.registerPushToken(fcmToken).catchError((_) {});
+  }
+  fcm.onTokenRefresh.listen((token) {
+    APIService.shared.registerPushToken(token).catchError((_) {});
+  });
+
+  // Show foreground notifications for circle messages.
+  FirebaseMessaging.onMessage.listen((message) {
+    final isSOS = message.data['type'] == 'sos';
+    NotificationService.shared.showCircleNotification(
+      id: message.messageId ?? message.data['notifId'] ?? 'fg',
+      title: message.notification?.title ?? (isSOS ? 'SOS Alert' : 'Circle Notification'),
+      body: message.notification?.body ?? '',
+      isSOS: isSOS,
+    );
+  });
 
   final habitRepository = FirestoreHabitRepository();
   final userRepository = FirestoreUserRepository();
@@ -75,6 +119,9 @@ void main() async {
 
   final journalRepository = FirestoreJournalRepository();
   await MediaUploadService.instance.init(sharedPrefs, journalRepository);
+
+  final pendingActionQueue = PendingActionQueueService(sharedPrefs);
+  final notificationRepository = FirestoreNotificationRepository(pendingActionQueue);
 
   runApp(
     MultiProvider(
@@ -135,6 +182,11 @@ void main() async {
         ),
         ChangeNotifierProvider<JournalThemeProvider>(
           create: (_) => JournalThemeProvider()..load(),
+        ),
+        Provider<PendingActionQueueService>.value(value: pendingActionQueue),
+        Provider<NotificationRepository>.value(value: notificationRepository),
+        ChangeNotifierProvider<CircleNotificationProvider>(
+          create: (_) => CircleNotificationProvider(notificationRepository),
         ),
       ],
       child: const MyWalkApp(),

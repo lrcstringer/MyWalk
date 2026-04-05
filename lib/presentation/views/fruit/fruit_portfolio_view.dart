@@ -399,22 +399,22 @@ class _FruitTile extends StatelessWidget {
     final isActive = entry.habitCount > 0 && entry.weeklyCompletions > 0;
     final isDormant = entry.habitCount > 0 && entry.weeklyCompletions == 0;
 
-    Color bgColor;
-    BoxBorder border;
-    double iconOpacity;
+    final Color bgColor;
+    final BoxBorder border;
+    final double fgOpacity;
 
     if (isActive) {
-      bgColor = fruit.color.withValues(alpha: 0.60);
+      bgColor = fruit.color.withValues(alpha: 0.72);
       border = Border.all(color: fruit.color, width: 1.5);
-      iconOpacity = 1.0;
+      fgOpacity = 1.0;
     } else if (isDormant) {
-      bgColor = fruit.color.withValues(alpha: 0.38);
-      border = Border.all(color: fruit.color.withValues(alpha: 0.85));
-      iconOpacity = 1.0;
+      bgColor = fruit.color.withValues(alpha: 0.45);
+      border = Border.all(color: fruit.color.withValues(alpha: 0.7));
+      fgOpacity = 0.90;
     } else {
-      bgColor = fruit.color.withValues(alpha: 0.22);
-      border = Border.all(color: fruit.color.withValues(alpha: 0.60));
-      iconOpacity = 0.80;
+      bgColor = fruit.color.withValues(alpha: 0.28);
+      border = Border.all(color: fruit.color.withValues(alpha: 0.45));
+      fgOpacity = 0.65;
     }
 
     return GestureDetector(
@@ -430,10 +430,8 @@ class _FruitTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Opacity(
-              opacity: iconOpacity,
-              child: Icon(fruit.icon, size: 24, color: fruit.color),
-            ),
+            Icon(fruit.icon, size: 26,
+                color: Colors.white.withValues(alpha: fgOpacity)),
             const SizedBox(height: 6),
             Text(
               fruit.label,
@@ -442,8 +440,8 @@ class _FruitTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: fruit.color.withValues(alpha: iconOpacity),
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                color: Colors.white.withValues(alpha: fgOpacity),
               ),
             ),
             if (entry.weeklyCompletions > 0) ...[
@@ -452,7 +450,7 @@ class _FruitTile extends StatelessWidget {
                 '${entry.weeklyCompletions}\u00d7',
                 style: TextStyle(
                   fontSize: 9,
-                  color: fruit.color.withValues(alpha: 0.7),
+                  color: Colors.white.withValues(alpha: 0.75),
                 ),
               ),
             ],

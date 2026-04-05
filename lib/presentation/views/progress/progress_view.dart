@@ -63,20 +63,82 @@ class ProgressView extends StatelessWidget {
         .expand((h) => _milestoneService.milestones(h).where((m) => m.isReached))
         .length;
 
+    final imageHeight = MediaQuery.of(context).size.width * (2.0 / 3.0);
+
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: SafeArea(
-        child: CustomScrollView(
+      body: CustomScrollView(
           slivers: [
             SliverAppBar(
               backgroundColor: MyWalkColor.charcoal,
-              title: const Text('Progress',
-                  style: TextStyle(
-                      color: MyWalkColor.warmWhite,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700)),
-              floating: true,
-              snap: true,
+              foregroundColor: MyWalkColor.warmWhite,
+              expandedHeight: imageHeight,
+              pinned: true,
+              automaticallyImplyLeading: false,
+              flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.parallax,
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(
+                      'assets/progress.png',
+                      fit: BoxFit.cover,
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            MyWalkColor.charcoal.withValues(alpha: 0.5),
+                            MyWalkColor.charcoal,
+                          ],
+                          stops: const [0.0, 0.55, 1.0],
+                        ),
+                      ),
+                    ),
+                    const Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: 14,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Progress',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              color: MyWalkColor.warmWhite,
+                              height: 1.1,
+                            ),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            '\u2018\u2026being confident of this, that he who began a good work in you will carry it on to completion\u2019',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              color: MyWalkColor.softGold,
+                              height: 1.45,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Philippians 1:6',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: MyWalkColor.golden,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
@@ -109,7 +171,6 @@ class ProgressView extends StatelessWidget {
               ),
             ),
           ],
-        ),
       ),
     );
   }
@@ -130,19 +191,6 @@ class ProgressView extends StatelessWidget {
     return Column(
       children: [
         const SizedBox(height: 8),
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(colors: [
-              MyWalkColor.golden.withValues(alpha: 0.25),
-              MyWalkColor.golden.withValues(alpha: 0.04),
-            ]),
-          ),
-          child: const Icon(Icons.local_fire_department, size: 32, color: MyWalkColor.golden),
-        ),
-        const SizedBox(height: 12),
         Text('$days',
             style: const TextStyle(
                 fontSize: 56, fontWeight: FontWeight.w800, color: MyWalkColor.golden, height: 1.0)),

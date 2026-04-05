@@ -238,6 +238,28 @@ class CircleMilestonesResponse {
   );
 }
 
+class CircleNotificationItem {
+  final String id;
+  final String type;
+  final String circleId;
+  final String circleName;
+  final String senderUid;
+  final String senderName;
+  final String message;
+  final String createdAt;
+  final bool isRead;
+  final String? actionTaken;
+  final bool suppressActions;
+  CircleNotificationItem({required this.id, required this.type, required this.circleId, required this.circleName, required this.senderUid, required this.senderName, required this.message, required this.createdAt, required this.isRead, this.actionTaken, required this.suppressActions});
+  factory CircleNotificationItem.fromJson(Map<String, dynamic> j) => CircleNotificationItem(
+    id: j['id'] as String, type: j['type'] as String, circleId: j['circleId'] as String,
+    circleName: j['circleName'] as String, senderUid: j['senderUid'] as String,
+    senderName: j['senderName'] as String, message: j['message'] as String,
+    createdAt: j['createdAt'] as String, isRead: j['isRead'] as bool? ?? false,
+    actionTaken: j['actionTaken'] as String?, suppressActions: j['suppressActions'] as bool? ?? false,
+  );
+}
+
 // Errors
 
 class APIError implements Exception {
@@ -360,6 +382,23 @@ class APIService {
 
   Future<void> submitHeatmapData(String circleId, List<Map<String, dynamic>> weekData) =>
       _postMutation<Map<String, dynamic>>('circles.submitHeatmapData', body: {'circleId': circleId, 'weekData': weekData}, fromJson: (j) => j);
+
+  // ── Notifications ──────────────────────────────────────────────────────────
+
+  Future<List<CircleNotificationItem>> getNotificationInbox({int limit = 50, bool onlyUnread = false}) =>
+      _getQuery('notifications.getInbox', input: {'limit': limit, 'onlyUnread': onlyUnread}, fromJson: (j) => (j as List<dynamic>).map((e) => CircleNotificationItem.fromJson(e as Map<String, dynamic>)).toList());
+
+  Future<void> markNotificationRead(String notifId) =>
+      _postMutation<Map<String, dynamic>>('notifications.markRead', body: {'notifId': notifId}, fromJson: (j) => j);
+
+  Future<void> recordNotificationAction(String notifId, String action) =>
+      _postMutation<Map<String, dynamic>>('notifications.recordAction', body: {'notifId': notifId, 'action': action}, fromJson: (j) => j);
+
+  Future<void> sendAnnouncement({required String circleId, required String message}) =>
+      _postMutation<Map<String, dynamic>>('notifications.sendAnnouncement', body: {'circleId': circleId, 'message': message}, fromJson: (j) => j);
+
+  Future<void> sendPrayerRequest({required String circleId, required String message, required List<String> recipientIds}) =>
+      _postMutation<Map<String, dynamic>>('notifications.sendPrayerRequest', body: {'circleId': circleId, 'message': message, 'recipientIds': recipientIds}, fromJson: (j) => j);
 
   // Private HTTP helpers
 

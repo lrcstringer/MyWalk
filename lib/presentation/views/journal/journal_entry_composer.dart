@@ -13,6 +13,7 @@ import '../../../domain/entities/journal_theme.dart';
 import '../../providers/journal_provider.dart';
 import '../../providers/journal_theme_provider.dart';
 import '../../theme/app_theme.dart';
+import 'doodle_canvas_screen.dart';
 
 const _kMaxRecordSeconds = 180; // 3 minutes
 
@@ -341,10 +342,33 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
                 _pickImage(ImageSource.gallery);
               },
             ),
+            ListTile(
+              leading: Icon(Icons.draw_outlined, color: theme.textSecondary),
+              title: Text('Draw a doodle',
+                  style: TextStyle(color: theme.textPrimary)),
+              onTap: () {
+                Navigator.pop(context);
+                _openDoodleCanvas(theme);
+              },
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _openDoodleCanvas(JournalTheme theme) async {
+    final path = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) =>
+            DoodleCanvasScreen(accentColor: theme.accentAction),
+      ),
+    );
+    if (path != null && mounted) {
+      setState(() => _newImagePaths.add(path));
+    }
   }
 
   // ── Build ────────────────────────────────────────────────────────────────

@@ -24,6 +24,7 @@ class ContentView extends StatefulWidget {
 
 class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
   int _selectedTab = 0;
+  late final PageController _pageController;
   bool _showingLookBack = false;
   bool _showingDedication = false;
   bool _showAutoCarryBanner = false;
@@ -35,6 +36,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _selectedTab);
     _prevAuthenticated = AuthService.shared.isAuthenticated;
     AuthService.shared.addListener(_onAuthChanged);
     WidgetsBinding.instance.addObserver(this);
@@ -51,6 +53,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _pageController.dispose();
     AuthService.shared.removeListener(_onAuthChanged);
     _inviteSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -147,18 +150,22 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
     return Stack(
       children: [
         Scaffold(
-          body: IndexedStack(
-            index: _selectedTab,
+          body: PageView(
+            controller: _pageController,
+            onPageChanged: (i) => setState(() {
+              _selectedTab = i;
+              if (i == 4) _hasNewGratitudes = false;
+            }),
             children: [
-              TodayView(
+              _KeepAlivePage(child: TodayView(
                 weekCycleManager: wcm,
                 showAutoCarryBanner: _showAutoCarryBanner,
                 onDismissAutoCarry: () => setState(() => _showAutoCarryBanner = false),
-              ),
-              ProgressView(weekCycleManager: wcm),
-              const JournalTab(),
-              const KingdomLifeView(),
-              const CirclesTab(),
+              )),
+              _KeepAlivePage(child: ProgressView(weekCycleManager: wcm)),
+              const _KeepAlivePage(child: JournalTab()),
+              const _KeepAlivePage(child: KingdomLifeView()),
+              const _KeepAlivePage(child: CirclesTab()),
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
@@ -168,6 +175,11 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
                 _selectedTab = i;
                 if (i == 4) _hasNewGratitudes = false;
               });
+              _pageController.animateToPage(
+                i,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
             },
             items: [
               const BottomNavigationBarItem(
@@ -218,5 +230,25 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
           ),
       ],
     );
+  }
+}
+
+class _KeepAlivePage extends StatefulWidget {
+  final Widget child;
+  const _KeepAlivePage({required this.child});
+
+  @override
+  State<_KeepAlivePage> createState() => _KeepAlivePageState();
+}
+
+class _KeepAlivePageState extends State<_KeepAlivePage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

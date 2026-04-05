@@ -42,6 +42,10 @@ export const eventsCol = (circleId: string) =>
 export const circleHabitMilestonesCol = (circleId: string) =>
   db.collection(`circles/${circleId}/circle_habit_milestones`);
 
+// ── User notifications ────────────────────────────────────────────────────────
+export const userNotificationsCol = (uid: string) =>
+  db.collection(`users/${uid}/notifications`);
+
 // ── Week ID helper (Sun-based, YYYY-WW, matches Dart WeekIdService) ───────────
 export function weekId(dt: Date = new Date()): string {
   const day = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());

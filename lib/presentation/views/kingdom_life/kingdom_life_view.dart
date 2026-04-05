@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../fruit/fruit_portfolio_view.dart';
 import '../kingdom_life/beatitudes_view.dart';
+import '../kingdom_life/parables_view.dart';
 import '../../theme/app_theme.dart';
 
 class KingdomLifeView extends StatelessWidget {
@@ -10,82 +11,131 @@ class KingdomLifeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Kingdom Life',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: MyWalkColor.warmWhite,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Grow in character. Live the kingdom way.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.45),
-                ),
-              ),
-              const SizedBox(height: 32),
-              Row(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: MyWalkColor.charcoal,
+            foregroundColor: MyWalkColor.warmWhite,
+            expandedHeight: 240,
+            pinned: true,
+            automaticallyImplyLeading: false,
+            flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.parallax,
+              background: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Expanded(
-                    child: _KingdomCard(
-                      icon: Icons.eco,
-                      title: 'Fruit of\nthe Spirit',
-                      subtitle: 'Galatians 5:22-23',
-                      colour: const Color(0xFF66CDAA),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const FruitPortfolioView(),
-                        ),
+                  Image.asset(
+                    'assets/Kingdom2.png',
+                    fit: BoxFit.cover,
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          MyWalkColor.charcoal.withValues(alpha: 0.45),
+                          MyWalkColor.charcoal,
+                        ],
+                        stops: const [0.0, 0.6, 1.0],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _KingdomCard(
-                      icon: Icons.self_improvement,
-                      title: 'The\nBeatitudes',
-                      subtitle: 'Matthew 5:3-12',
-                      colour: MyWalkColor.golden,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const BeatitudesView(),
+                  const Positioned(
+                    left: 20,
+                    right: 20,
+                    bottom: 14,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Kingdom Life',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: MyWalkColor.warmWhite,
+                            height: 1.1,
+                          ),
                         ),
-                      ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Grow in character. Live the Kingdom Way.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: MyWalkColor.softGold,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+            sliver: SliverToBoxAdapter(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final cardWidth = (constraints.maxWidth - 12) / 2;
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(
+                        width: cardWidth,
+                        child: _KingdomCard(
+                          imagePath: 'assets/TheFruit.png',
+                          title: 'Fruit of the Spirit',
+                          subtitle: 'Galatians 5:22-23',
+                          onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const FruitPortfolioView())),
+                        ),
+                      ),
+                      SizedBox(
+                        width: cardWidth,
+                        child: _KingdomCard(
+                          imagePath: 'assets/beatitudes_golden_etched_separate/Beatitudes.jpg',
+                          title: 'The Beatitudes',
+                          subtitle: 'Matthew 5:3-12',
+                          onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const BeatitudesView())),
+                        ),
+                      ),
+                      SizedBox(
+                        width: cardWidth,
+                        child: _KingdomCard(
+                          imagePath: 'assets/parables/The return of the prodigal son.jpg',
+                          title: 'The Parables of Jesus',
+                          subtitle: 'Mark 4:30',
+                          onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const ParablesView())),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _KingdomCard extends StatelessWidget {
-  final IconData icon;
+  final String imagePath;
   final String title;
   final String subtitle;
-  final Color colour;
   final VoidCallback onTap;
 
   const _KingdomCard({
-    required this.icon,
+    required this.imagePath,
     required this.title,
     required this.subtitle,
-    required this.colour,
     required this.onTap,
   });
 
@@ -93,48 +143,61 @@ class _KingdomCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: MyWalkColor.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: colour.withValues(alpha: 0.3),
-            width: 0.5,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: AspectRatio(
+          aspectRatio: 0.85,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Background image
+              Image.asset(imagePath, fit: BoxFit.cover),
+              // Dark gradient over bottom half
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Color(0xCC1A1A2E),
+                      Color(0xF01A1A2E),
+                    ],
+                    stops: [0.35, 0.70, 1.0],
+                  ),
+                ),
+              ),
+              // Text at bottom
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 14,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: MyWalkColor.warmWhite,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: MyWalkColor.softGold.withValues(alpha: 0.85),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: colour.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, size: 22, color: colour),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: MyWalkColor.warmWhite,
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 11,
-                color: colour.withValues(alpha: 0.8),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
         ),
       ),
     );

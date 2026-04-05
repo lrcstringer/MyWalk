@@ -50,15 +50,15 @@ extension FruitTypeX on FruitType {
 
   Color get color {
     switch (this) {
-      case FruitType.love:          return const Color(0xFFC62828);
-      case FruitType.joy:           return const Color(0xFFF9A825);
-      case FruitType.peace:         return const Color(0xFF29B6F6);
-      case FruitType.patience:      return const Color(0xFF8D6E63);
-      case FruitType.kindness:      return const Color(0xFFFF7043);
-      case FruitType.goodness:      return const Color(0xFF2E7D32);
-      case FruitType.faithfulness:  return const Color(0xFF283593);
-      case FruitType.gentleness:    return const Color(0xFFAB47BC);
-      case FruitType.selfControl:   return const Color(0xFF00695C);
+      case FruitType.love:          return const Color(0xFFB84040); // warm brick rose
+      case FruitType.joy:           return const Color(0xFFC89020); // deep honey amber
+      case FruitType.peace:         return const Color(0xFF4878A0); // dusty steel blue
+      case FruitType.patience:      return const Color(0xFFA07855); // warm sienna clay
+      case FruitType.kindness:      return const Color(0xFFC86038); // burnt terracotta
+      case FruitType.goodness:      return const Color(0xFF587838); // warm olive
+      case FruitType.faithfulness:  return const Color(0xFF485098); // warm lapis indigo
+      case FruitType.gentleness:    return const Color(0xFF906898); // dusty mauve
+      case FruitType.selfControl:   return const Color(0xFF386858); // warm sage teal
     }
   }
 

@@ -80,8 +80,11 @@ class _RootViewState extends State<RootView> {
   /// and we haven't yet shown ContentView, re-hydrate the prefs cache from
   /// Firestore and re-evaluate the onboarding flag.
   void _onAuthStateChanged() {
-    if (AuthService.shared.isAuthenticated && _ready && !_onboardingComplete) {
-      _rehydrateAndCheck();
+    if (AuthService.shared.isAuthenticated) {
+      if (_ready && !_onboardingComplete) _rehydrateAndCheck();
+    } else {
+      // User signed out — return to the sign-in / onboarding screen.
+      if (mounted) setState(() => _onboardingComplete = false);
     }
   }
 

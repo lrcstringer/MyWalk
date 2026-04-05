@@ -25,6 +25,8 @@ import 'circle_habits_tab.dart';
 import 'activity_tab.dart';
 import 'events_tab.dart';
 import 'circle_settings_view.dart';
+import 'announcement_compose_view.dart';
+import 'prayer_request_compose_view.dart';
 
 class CircleDetailView extends StatefulWidget {
   final String circleId;
@@ -152,7 +154,9 @@ class _CircleDetailViewState extends State<CircleDetailView>
   }
 
   Widget _buildTabView(CircleDetails detail) {
-    return NestedScrollView(
+    return SafeArea(
+      top: false,
+      child: NestedScrollView(
       headerSliverBuilder: (context, _) => [
         SliverAppBar(
           backgroundColor: MyWalkColor.charcoal,
@@ -163,6 +167,35 @@ class _CircleDetailViewState extends State<CircleDetailView>
                 style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
           ]),
           actions: [
+            if (detail.members.any((m) => m.userId == AuthService.shared.userId && m.isAdmin))
+              IconButton(
+                icon: const Icon(Icons.campaign_rounded, size: 20, color: MyWalkColor.softGold),
+                tooltip: 'Announce',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AnnouncementComposeView(
+                      circleId: widget.circleId,
+                      circleName: detail.name,
+                    ),
+                  ),
+                ),
+              ),
+            IconButton(
+              icon: const Icon(Icons.volunteer_activism_rounded, size: 20, color: MyWalkColor.softGold),
+              tooltip: 'Prayer Request',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PrayerRequestComposeView(
+                    circleId: widget.circleId,
+                    members: detail.members
+                        .where((m) => m.userId != AuthService.shared.userId)
+                        .toList(),
+                  ),
+                ),
+              ),
+            ),
             if (detail.members.any((m) => m.userId == AuthService.shared.userId && m.isAdmin))
               IconButton(
                 icon: const Icon(Icons.settings_rounded, size: 20, color: MyWalkColor.softGold),
@@ -219,6 +252,7 @@ class _CircleDetailViewState extends State<CircleDetailView>
               (m) => m.userId == AuthService.shared.userId && m.isAdmin)),
         ],
       ),
+    ),
     );
   }
 

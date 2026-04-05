@@ -16,7 +16,9 @@ import '../circles/sos_view.dart';
 import '../habits/add_habit_view.dart';
 import '../habits/habit_check_in_card_view.dart';
 import '../settings/settings_view.dart';
+import '../circles/sos_disclaimer_view.dart';
 import '../shared/engagement_banner_view.dart';
+import '../shared/notification_bell.dart';
 import '../shared/golden_pulse_view.dart';
 import '../shared/mywalk_paywall_view.dart';
 import '../week/week_strip_view.dart';
@@ -120,25 +122,26 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
 
     final atLimit = !isPremium && userHabits.length >= _freeHabitLimit;
 
+    final imageHeight = MediaQuery.of(context).size.width * 0.65;
+
     return Stack(
       children: [
         Scaffold(
           backgroundColor: MyWalkColor.charcoal,
-          body: SafeArea(
-            child: CustomScrollView(
+          body: CustomScrollView(
               slivers: [
                 SliverAppBar(
                   backgroundColor: MyWalkColor.charcoal,
-                  floating: true,
-                  snap: true,
-                  pinned: false,
-                  expandedHeight: 0,
-                  title: _titleSection(),
+                  foregroundColor: MyWalkColor.warmWhite,
+                  expandedHeight: imageHeight,
+                  pinned: true,
+                  automaticallyImplyLeading: false,
                   actions: [
+                    const NotificationBell(),
                     IconButton(
                       icon: Icon(
                         Icons.settings_outlined,
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
                       ),
                       onPressed: () => Navigator.push<void>(
                         context,
@@ -147,15 +150,85 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                       tooltip: 'Settings',
                     ),
                   ],
+                  flexibleSpace: FlexibleSpaceBar(
+                    collapseMode: CollapseMode.parallax,
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          'assets/crossfeet.png',
+                          fit: BoxFit.cover,
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                MyWalkColor.charcoal.withValues(alpha: 0.5),
+                                MyWalkColor.charcoal,
+                              ],
+                              stops: const [0.0, 0.55, 1.0],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 20,
+                          right: 20,
+                          bottom: 14,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'MyWalk',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                  color: MyWalkColor.warmWhite,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              const Text(
+                                '\u2018This is the day that the Lord has made; let us rejoice and be glad in it.\u2019',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                  color: MyWalkColor.softGold,
+                                  height: 1.45,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              const Text(
+                                'Psalm 118:24',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: MyWalkColor.golden,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Greeting
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                        child: _titleSection(),
+                      ),
+
                       // Engagement banner
                       if (_showEngagementBanner && _engagementMessage != null)
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                           child: EngagementBannerView(
                             message: _engagementMessage!,
                             onDismiss: () {
@@ -205,18 +278,15 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                   ),
                 ),
               ],
-            ),
           ),
         ),
 
-        // SOS floating button — always visible (spec §4.1)
-        if (!_isRetroactive && habits.isNotEmpty)
+        // SOS floating button — only when the user has at least one Breaking Habits habit.
+        if (!_isRetroactive && abstainHabits.isNotEmpty)
           Positioned(
             bottom: 24,
             right: 20,
-            child: _sosButton(
-              abstainHabits.isNotEmpty ? abstainHabits.first : habits.first,
-            ),
+            child: _sosButton(abstainHabits),
           ),
       ],
     );
@@ -354,9 +424,9 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
     );
   }
 
-  Widget _sosButton(Habit habit) {
+  Widget _sosButton(List<Habit> abstainHabits) {
     return FloatingActionButton.extended(
-      onPressed: () => _showSOS(context, habit),
+      onPressed: () => _showSOS(context, abstainHabits),
       backgroundColor: MyWalkColor.warmCoral.withValues(alpha: 0.15),
       foregroundColor: MyWalkColor.warmCoral,
       elevation: 0,
@@ -432,7 +502,7 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
     );
   }
 
-  void _showSOS(BuildContext context, Habit habit) {
+  void _showSOS(BuildContext context, List<Habit> abstainHabits) {
     final isPremium = context.read<StoreProvider>().isPremium;
     if (!isPremium) {
       showModalBottomSheet(
@@ -447,10 +517,102 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
       );
       return;
     }
+    if (abstainHabits.length == 1) {
+      _openSOSFlow(context, abstainHabits.first);
+      return;
+    }
+    // Multiple breaking habits — ask which one the user is struggling with.
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: MyWalkColor.charcoal,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => _SOSHabitPicker(
+        habits: abstainHabits,
+        onSelected: (habit) {
+          Navigator.of(sheetCtx).pop();
+          _openSOSFlow(context, habit);
+        },
+      ),
+    );
+  }
+
+  void _openSOSFlow(BuildContext context, Habit habit) {
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => SOSView(habit: habit),
+        builder: (_) => SOSDisclaimerView(
+          onContinue: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                fullscreenDialog: true,
+                builder: (_) => SOSView(habit: habit),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ── SOS habit picker ─────────────────────────────────────────────────────────
+
+class _SOSHabitPicker extends StatelessWidget {
+  final List<Habit> habits;
+  final void Function(Habit) onSelected;
+
+  const _SOSHabitPicker({required this.habits, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Which habit are you struggling with?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: MyWalkColor.warmWhite,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...habits.map(
+              (h) => InkWell(
+                onTap: () => onSelected(h),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shield_rounded, size: 20, color: MyWalkColor.warmCoral),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          h.name,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: MyWalkColor.warmWhite,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded,
+                          size: 20,
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

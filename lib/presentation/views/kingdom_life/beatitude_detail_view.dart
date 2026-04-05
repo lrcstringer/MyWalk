@@ -424,13 +424,23 @@ class BeatitudeDetailView extends StatelessWidget {
               child: ListView.separated(
                 controller: controller,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-                itemCount: beatitude.supportingVerses.length,
-                separatorBuilder: (_, _) => Divider(
-                  color: Colors.white.withValues(alpha: 0.07),
-                  height: 28,
-                ),
+                itemCount: beatitude.supportingVerses.length + 1,
+                separatorBuilder: (_, i) => i == 0
+                    ? const SizedBox(height: 16)
+                    : Divider(color: Colors.white.withValues(alpha: 0.07), height: 28),
                 itemBuilder: (_, i) {
-                  final v = beatitude.supportingVerses[i];
+                  if (i == 0) {
+                    return Text(
+                      'These verses are to spur your thinking, but it\'s good practice to always read a verse within its context and not isolated from its surrounding Scripture.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.55,
+                        fontStyle: FontStyle.italic,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
+                      ),
+                    );
+                  }
+                  final v = beatitude.supportingVerses[i - 1];
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

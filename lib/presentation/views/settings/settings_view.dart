@@ -29,12 +29,18 @@ class _SettingsViewState extends State<SettingsView> {
   bool _notifDenied = false;
   List<Habit> _archivedHabits = [];
 
+  // Circle notification preferences
+  bool _circleNotifSOS = true;
+  bool _circleNotifPrayer = true;
+  bool _circleNotifAnnouncement = true;
+
   @override
   void initState() {
     super.initState();
     _loadPrefs();
     _checkNotifStatus();
     _loadArchivedHabits();
+    _loadCircleNotifPrefs();
   }
 
   Future<void> _loadArchivedHabits() async {
@@ -59,6 +65,25 @@ class _SettingsViewState extends State<SettingsView> {
     await NotificationService.shared.checkAuthorization();
     final authorized = NotificationService.shared.isAuthorized;
     if (mounted) setState(() => _notifDenied = !authorized);
+  }
+
+  Future<void> _loadCircleNotifPrefs() async {
+    final prefs = context.read<UserPreferencesRepository>();
+    final sos = await prefs.getBool('circle_notif_sos') ?? true;
+    final prayer = await prefs.getBool('circle_notif_prayer') ?? true;
+    final announcement = await prefs.getBool('circle_notif_announcement') ?? true;
+    if (mounted) {
+      setState(() {
+        _circleNotifSOS = sos;
+        _circleNotifPrayer = prayer;
+        _circleNotifAnnouncement = announcement;
+      });
+    }
+  }
+
+  Future<void> _saveCircleNotifPref(String key, bool value) async {
+    final prefs = context.read<UserPreferencesRepository>();
+    await prefs.setBool(key, value);
   }
 
   Future<void> _savePrefs() async {
@@ -221,6 +246,10 @@ class _SettingsViewState extends State<SettingsView> {
                 _sectionHeader('Lifetime Stats'),
                 const SizedBox(height: 8),
                 _statsSection(totalCheckIns, totalMinutes, totalCleanDays, totalCount, milestoneCount, habits.length),
+                const SizedBox(height: 20),
+                _sectionHeader('Circle Notifications'),
+                const SizedBox(height: 8),
+                _circleNotificationsSection(),
                 const SizedBox(height: 20),
                 _sectionHeader('About'),
                 const SizedBox(height: 8),
@@ -637,6 +666,82 @@ class _SettingsViewState extends State<SettingsView> {
       Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.7)))),
       Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: color)),
     ]);
+  }
+
+  Widget _circleNotificationsSection() {
+    return Container(
+      decoration: MyWalkDecorations.card,
+      child: Column(
+        children: [
+          _circleNotifToggle(
+            label: 'SOS Alerts',
+            subtitle: 'Urgent prayer requests from circle members',
+            value: _circleNotifSOS,
+            onChanged: (val) {
+              setState(() => _circleNotifSOS = val);
+              _saveCircleNotifPref('circle_notif_sos', val);
+            },
+          ),
+          Divider(height: 1, color: MyWalkColor.warmWhite.withValues(alpha: 0.06)),
+          _circleNotifToggle(
+            label: 'Prayer Requests',
+            subtitle: 'Help and prayer requests from members',
+            value: _circleNotifPrayer,
+            onChanged: (val) {
+              setState(() => _circleNotifPrayer = val);
+              _saveCircleNotifPref('circle_notif_prayer', val);
+            },
+          ),
+          Divider(height: 1, color: MyWalkColor.warmWhite.withValues(alpha: 0.06)),
+          _circleNotifToggle(
+            label: 'Announcements',
+            subtitle: 'Admin announcements for your circles',
+            value: _circleNotifAnnouncement,
+            onChanged: (val) {
+              setState(() => _circleNotifAnnouncement = val);
+              _saveCircleNotifPref('circle_notif_announcement', val);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _circleNotifToggle({
+    required String label,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: MyWalkColor.warmWhite)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.45))),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: MyWalkColor.softGold,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _infoRow(String label, String value) {

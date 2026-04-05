@@ -1,7 +1,15 @@
 import * as z from 'zod';
 import { TRPCError } from '@trpc/server';
 import { createTRPCRouter, protectedProcedure } from '../create-context';
-import { db, sosRequestsCol, membersCol, sosContactsDoc, Timestamp } from '../../lib/firestore';
+import {
+  db,
+  sosRequestsCol,
+  membersCol,
+  sosContactsDoc,
+  userNotificationsCol,
+  circlesCol,
+  Timestamp,
+} from '../../lib/firestore';
 import { sendPushToUsers } from '../../lib/fcm';
 
 const MAX_SOS_RECIPIENTS = 20;
@@ -16,23 +24,64 @@ export const sosRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const memberSnap = await membersCol(input.circleId).doc(ctx.userId).get();
+      const [memberSnap, circleDoc, senderDoc, allMemberIds] = await Promise.all([
+        membersCol(input.circleId).doc(ctx.userId).get(),
+        circlesCol().doc(input.circleId).get(),
+        db.collection('users').doc(ctx.userId).get(),
+        membersCol(input.circleId).get().then((s) => s.docs.map((d) => d.id)),
+      ]);
       if (!memberSnap.exists) throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a member' });
 
+      const memberSet = new Set(allMemberIds);
+      const invalidRecipients = input.recipientIds.filter((id) => !memberSet.has(id));
+      if (invalidRecipients.length > 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'One or more recipients are not members of this circle' });
+      }
+
       const sosId = crypto.randomUUID();
-      await sosRequestsCol(input.circleId).doc(sosId).set({
+      const now = Timestamp.now();
+      const expiresAt = Timestamp.fromDate(
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      );
+      const circleName = (circleDoc.data()?.name as string | undefined) ?? 'Your circle';
+      const senderName =
+        (senderDoc.data()?.displayName as string | undefined) ?? 'A circle member';
+
+      // Write the SOS request + all inbox notifications atomically.
+      // Firestore batch limit is 500 ops; MAX_SOS_RECIPIENTS=20, so 1 + 20 = 21 ops max.
+      const batch = db.batch();
+      batch.set(sosRequestsCol(input.circleId).doc(sosId), {
         id: sosId,
         senderId: ctx.userId,
         circleId: input.circleId,
         message: input.message,
         recipientIds: input.recipientIds,
-        createdAt: Timestamp.now(),
+        createdAt: now,
       });
+      for (const uid of input.recipientIds) {
+        batch.set(userNotificationsCol(uid).doc(sosId), {
+          id: sosId,
+          type: 'sos',
+          circleId: input.circleId,
+          circleName,
+          senderUid: ctx.userId,
+          senderName,
+          message: input.message,
+          createdAt: now,
+          expiresAt,
+          isRead: false,
+          actionTaken: null,
+          suppressActions: true,
+        });
+      }
+      await batch.commit();
 
       sendPushToUsers(input.recipientIds, {
-        title: 'SOS Prayer Request',
+        title: `🆘 SOS — ${senderName}`,
         body: input.message,
-        data: { circleId: input.circleId, sosId },
+        data: { circleId: input.circleId, sosId, notifId: sosId, type: 'sos' },
+        channelId: 'sos',
+        sound: 'sos_alert',
       }).catch(() => undefined);
 
       return { id: sosId, recipientCount: input.recipientIds.length };
