@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../fruit/fruit_portfolio_view.dart';
 import '../kingdom_life/beatitudes_view.dart';
 import '../kingdom_life/parables_view.dart';
+import '../kingdom_life/i_am_sayings_view.dart';
+import '../kingdom_life/women_of_valor_view.dart';
 import '../../theme/app_theme.dart';
 
 class KingdomLifeView extends StatelessWidget {
@@ -80,39 +82,115 @@ class KingdomLifeView extends StatelessWidget {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final cardWidth = (constraints.maxWidth - 12) / 2;
-                  return Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        width: cardWidth,
-                        child: _KingdomCard(
-                          imagePath: 'assets/TheFruit.png',
-                          title: 'Fruit of the Spirit',
-                          subtitle: 'Galatians 5:22-23',
-                          onTap: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const FruitPortfolioView())),
+                      // ── Free row ────────────────────────────────────────
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: cardWidth,
+                            child: _KingdomCard(
+                              imagePath: 'assets/fruit/Header.png',
+                              title: 'Fruit of the Spirit',
+                              subtitle: 'Galatians 5:22-23',
+                              imageFit: BoxFit.cover,
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const FruitPortfolioView())),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _KingdomCard(
+                              imagePath: 'assets/Women/womenofvalor.png',
+                              title: 'Women of Valor',
+                              subtitle: 'Proverbs 31:10',
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const WomenOfValorView())),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // ── Premium divider ──────────────────────────────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 0.5,
+                                color: MyWalkColor.golden.withValues(alpha: 0.18),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.star_rounded, size: 11, color: MyWalkColor.golden.withValues(alpha: 0.45)),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'PREMIUM',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: MyWalkColor.golden.withValues(alpha: 0.45),
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Icon(Icons.star_rounded, size: 11, color: MyWalkColor.golden.withValues(alpha: 0.45)),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                height: 0.5,
+                                color: MyWalkColor.golden.withValues(alpha: 0.18),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(
-                        width: cardWidth,
-                        child: _KingdomCard(
-                          imagePath: 'assets/beatitudes_golden_etched_separate/Beatitudes.jpg',
-                          title: 'The Beatitudes',
-                          subtitle: 'Matthew 5:3-12',
-                          onTap: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const BeatitudesView())),
-                        ),
-                      ),
-                      SizedBox(
-                        width: cardWidth,
-                        child: _KingdomCard(
-                          imagePath: 'assets/parables/The return of the prodigal son.jpg',
-                          title: 'The Parables of Jesus',
-                          subtitle: 'Mark 4:30',
-                          onTap: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const ParablesView())),
-                        ),
+
+                      // ── Premium grid ─────────────────────────────────────
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          SizedBox(
+                            width: cardWidth,
+                            child: _KingdomCard(
+                              imagePath: 'assets/beatitudes_golden_etched_separate/Beatitudes.jpg',
+                              title: 'The Beatitudes',
+                              subtitle: 'Matthew 5:3-12',
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const BeatitudesView())),
+                            ),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _KingdomCard(
+                              imagePath: 'assets/parables/Header.png',
+                              title: 'The Parables of Jesus',
+                              subtitle: 'Mark 4:30',
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const ParablesView())),
+                            ),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _KingdomCard(
+                              imagePath: 'assets/I Am/Header.png',
+                              title: 'The \u201cI AM\u201d Sayings of Jesus',
+                              subtitle: 'Gospel of John',
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const IAmSayingsView())),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   );
@@ -131,27 +209,45 @@ class _KingdomCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final BoxFit imageFit;
 
   const _KingdomCard({
     required this.imagePath,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.imageFit = BoxFit.cover,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: AspectRatio(
-          aspectRatio: 0.85,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: MyWalkColor.golden.withValues(alpha: 0.35),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: MyWalkColor.golden.withValues(alpha: 0.12),
+              blurRadius: 12,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: AspectRatio(
+            aspectRatio: 0.85,
           child: Stack(
             fit: StackFit.expand,
             children: [
               // Background image
-              Image.asset(imagePath, fit: BoxFit.cover),
+              Image.asset(imagePath, fit: imageFit, alignment: Alignment.topCenter),
               // Dark gradient over bottom half
               Container(
                 decoration: const BoxDecoration(
@@ -197,6 +293,7 @@ class _KingdomCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),

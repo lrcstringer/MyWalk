@@ -62,6 +62,20 @@ extension FruitTypeX on FruitType {
     }
   }
 
+  String get imagePath {
+    switch (this) {
+      case FruitType.love:          return 'assets/fruit/Love.png';
+      case FruitType.joy:           return 'assets/fruit/Joy.png';
+      case FruitType.peace:         return 'assets/fruit/Peace.png';
+      case FruitType.patience:      return 'assets/fruit/Patience.png';
+      case FruitType.kindness:      return 'assets/fruit/Kindness.png';
+      case FruitType.goodness:      return 'assets/fruit/Goodness.png';
+      case FruitType.faithfulness:  return 'assets/fruit/Faithfullness.png';
+      case FruitType.gentleness:    return 'assets/fruit/Gentleness.png';
+      case FruitType.selfControl:   return 'assets/fruit/SelfControl.png';
+    }
+  }
+
   String get greekWord {
     switch (this) {
       case FruitType.love:          return 'agapē';

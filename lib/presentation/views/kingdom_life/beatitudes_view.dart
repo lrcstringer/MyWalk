@@ -330,9 +330,17 @@ class _BeatitudeCard extends StatelessWidget {
           color: MyWalkColor.cardBackground,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _kAccent.withValues(alpha: 0.18),
-            width: 0.5,
+            color: MyWalkColor.golden.withValues(alpha: 0.35),
+            width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: MyWalkColor.golden.withValues(alpha: 0.12),
+              blurRadius: 12,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),

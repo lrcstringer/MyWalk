@@ -7,6 +7,7 @@ import '../../providers/habit_provider.dart';
 import '../../theme/app_theme.dart';
 import 'fruit_library_view.dart';
 import '../journal/journal_entry_composer.dart';
+import '../bible/bible_browser_view.dart';
 
 class FruitDetailView extends StatelessWidget {
   final FruitType fruit;
@@ -22,16 +23,54 @@ class FruitDetailView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      appBar: AppBar(
-        backgroundColor: MyWalkColor.charcoal,
-        foregroundColor: MyWalkColor.warmWhite,
-        title: Text(fruit.label,
-            style: const TextStyle(
-                fontSize: 17, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 60),
-        child: Column(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: MyWalkColor.charcoal,
+            foregroundColor: MyWalkColor.warmWhite,
+            expandedHeight: 200,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.parallax,
+              titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 14),
+              title: Text(
+                fruit.label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: MyWalkColor.warmWhite,
+                ),
+              ),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    fruit.imagePath,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                  ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          MyWalkColor.charcoal.withValues(alpha: 0.5),
+                          MyWalkColor.charcoal,
+                        ],
+                        stops: const [0.0, 0.65, 1.0],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 60),
+              child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Hero icon + name
@@ -81,9 +120,14 @@ class FruitDetailView extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Key verse — tappable
+            // Key verse — tappable → opens Bible viewer
             GestureDetector(
-              onTap: () => _showSupportingVerses(context),
+              onTap: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BibleBrowserView(initialReference: fruit.keyVerse.reference),
+                ),
+              ),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
                 decoration: BoxDecoration(
@@ -118,20 +162,23 @@ class FruitDetailView extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(Icons.menu_book_outlined, size: 11, color: fruit.color.withValues(alpha: 0.6)),
-                              const SizedBox(width: 4),
-                              Text(
-                                'More scriptures',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: fruit.color.withValues(alpha: 0.7),
+                          GestureDetector(
+                            onTap: () => _showSupportingVerses(context),
+                            child: Row(
+                              children: [
+                                Icon(Icons.menu_book_outlined, size: 11, color: fruit.color.withValues(alpha: 0.6)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'More scriptures',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: fruit.color.withValues(alpha: 0.7),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(Icons.chevron_right, size: 13, color: fruit.color.withValues(alpha: 0.5)),
-                            ],
+                                const SizedBox(width: 2),
+                                Icon(Icons.chevron_right, size: 13, color: fruit.color.withValues(alpha: 0.5)),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -218,7 +265,10 @@ class FruitDetailView extends StatelessWidget {
               ),
             ),
           ],
-        ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -287,27 +337,35 @@ class FruitDetailView extends StatelessWidget {
                     );
                   }
                   final verse = fruit.supportingVerses[i - 1];
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        verse.text,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontStyle: FontStyle.italic,
-                          color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
-                          height: 1.65,
-                        ),
+                  return GestureDetector(
+                    onTap: () => Navigator.push<void>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BibleBrowserView(initialReference: verse.reference),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '\u2014 ${verse.reference}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: fruit.color.withValues(alpha: 0.7),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          verse.text,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                            color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
+                            height: 1.65,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+                        Text(
+                          '\u2014 ${verse.reference}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: fruit.color.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),

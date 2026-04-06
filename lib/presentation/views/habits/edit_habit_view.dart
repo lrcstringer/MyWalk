@@ -31,6 +31,8 @@ class _EditHabitViewState extends State<EditHabitView> {
   late final TextEditingController _copingController;
   late final TextEditingController _fruitPurposeController;
   late final QuillController _notesController;
+  final FocusNode _notesFocusNode = FocusNode();
+  final ScrollController _notesScrollController = ScrollController();
   late final TextEditingController _referenceUrlController;
   late double _dailyTarget;
   late String _targetUnit;
@@ -83,6 +85,8 @@ class _EditHabitViewState extends State<EditHabitView> {
     _copingController.dispose();
     _fruitPurposeController.dispose();
     _notesController.dispose();
+    _notesFocusNode.dispose();
+    _notesScrollController.dispose();
     _referenceUrlController.dispose();
     super.dispose();
   }
@@ -319,26 +323,31 @@ class _EditHabitViewState extends State<EditHabitView> {
         Container(
           decoration: BoxDecoration(
             color: MyWalkColor.cardBackground,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: MyWalkColor.golden.withValues(alpha: 0.18),
+              width: 1,
+            ),
           ),
-          child: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: MyWalkColor.surfaceOverlay,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                ),
-                child: QuillSimpleToolbar(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                QuillSimpleToolbar(
                   controller: _notesController,
                   config: QuillSimpleToolbarConfig(
-                    showBoldButton: true,
-                    showItalicButton: true,
-                    showListBullets: true,
-                    showListNumbers: true,
-                    showUndo: true,
-                    showRedo: true,
+                    color: Colors.transparent,
                     multiRowsDisplay: false,
                     showDividers: false,
+                    showBoldButton: true,
+                    showItalicButton: true,
+                    showUnderLineButton: true,
+                    showListBullets: true,
+                    showListNumbers: true,
+                    showListCheck: false,
+                    showUndo: true,
+                    showRedo: true,
                     showHeaderStyle: false,
                     showColorButton: false,
                     showBackgroundColorButton: false,
@@ -361,20 +370,38 @@ class _EditHabitViewState extends State<EditHabitView> {
                     showQuote: false,
                     showCodeBlock: false,
                     showDirection: false,
+                    iconTheme: QuillIconTheme(
+                      iconButtonUnselectedData: IconButtonData(
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                        iconSize: 18,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      iconButtonSelectedData: IconButtonData(
+                        color: MyWalkColor.golden,
+                        iconSize: 18,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              QuillEditor.basic(
-                controller: _notesController,
-                config: QuillEditorConfig(
-                  placeholder: 'Add personal notes…',
-                  minHeight: 100,
-                  maxHeight: 200,
-                  scrollable: true,
-                  padding: const EdgeInsets.all(12),
+                Divider(
+                  height: 1,
+                  color: MyWalkColor.golden.withValues(alpha: 0.12),
                 ),
-              ),
-            ],
+                QuillEditor.basic(
+                  controller: _notesController,
+                  focusNode: _notesFocusNode,
+                  scrollController: _notesScrollController,
+                  config: QuillEditorConfig(
+                    placeholder: 'Add personal notes…',
+                    minHeight: 100,
+                    maxHeight: 200,
+                    scrollable: true,
+                    padding: const EdgeInsets.all(12),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

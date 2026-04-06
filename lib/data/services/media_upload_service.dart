@@ -67,6 +67,7 @@ class MediaUploadService {
   void Function(String entryId)? _onEntryUpdated;
 
   bool _processing = false;
+  bool _needsRerun = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   Future<void> init(SharedPreferences prefs, JournalRepository repo) async {
@@ -101,8 +102,15 @@ class MediaUploadService {
     // Replace any existing entry for this id (e.g. re-save after edit).
     queue.removeWhere((e) => e.entryId == entryId);
     queue.add(_PendingEntry(entryId: entryId, files: files));
-    _saveQueue(queue);
-    unawaited(processQueue());
+    // Await the write so the queue is on disk before processQueue reads it.
+    await _saveQueue(queue);
+    if (_processing) {
+      // A run is already in progress and has already loaded its queue snapshot.
+      // Flag it to re-run when it finishes so the new entry isn't skipped.
+      _needsRerun = true;
+    } else {
+      unawaited(processQueue());
+    }
   }
 
   /// Process all pending uploads. Safe to call concurrently — only one run at a time.
@@ -123,6 +131,12 @@ class MediaUploadService {
       }
     } finally {
       _processing = false;
+      // If enqueueUploads was called while we were running, process those
+      // entries now rather than waiting for the next connectivity event.
+      if (_needsRerun) {
+        _needsRerun = false;
+        unawaited(processQueue());
+      }
     }
   }
 
@@ -151,8 +165,25 @@ class MediaUploadService {
     }
 
     if (uploaded.isEmpty) {
-      // Nothing uploaded — just sync queue state (e.g. dropped missing files).
-      _commitQueue(queue, pending.entryId, stillPending);
+      if (stillPending.isEmpty) {
+        // All files were missing (dropped above) — no upload is possible or needed.
+        // Clear uploadPending in Firestore so the banner doesn't stick forever,
+        // then remove the entry from the queue.
+        try {
+          final entries = await _repo.loadEntries();
+          final current =
+              entries.where((e) => e.id == pending.entryId).firstOrNull;
+          if (current != null && current.uploadPending) {
+            await _repo.updateEntry(current.copyWith(uploadPending: false));
+          }
+          _onEntryUpdated?.call(pending.entryId);
+        } catch (_) {
+          // Best-effort — if this fails the banner will show until next retry.
+        }
+      }
+      // If stillPending is non-empty, files exist but uploads failed — keep the
+      // queue entry and retry on the next processQueue run.
+      await _commitQueue(queue, pending.entryId, stillPending);
       return;
     }
 
@@ -201,16 +232,16 @@ class MediaUploadService {
     // If not committed, stillPending still holds the uploaded files → will retry,
     // re-uploading to Storage (same filename = overwrite), then retry Firestore.
 
-    _commitQueue(queue, pending.entryId, stillPending);
+    await _commitQueue(queue, pending.entryId, stillPending);
   }
 
-  void _commitQueue(
-      List<_PendingEntry> queue, String entryId, List<PendingMediaFile> remaining) {
+  Future<void> _commitQueue(
+      List<_PendingEntry> queue, String entryId, List<PendingMediaFile> remaining) async {
     queue.removeWhere((e) => e.entryId == entryId);
     if (remaining.isNotEmpty) {
       queue.add(_PendingEntry(entryId: entryId, files: remaining));
     }
-    _saveQueue(queue);
+    await _saveQueue(queue);
   }
 
   List<_PendingEntry> _loadQueue() {
@@ -226,8 +257,8 @@ class MediaUploadService {
     }
   }
 
-  void _saveQueue(List<_PendingEntry> queue) {
-    _prefs.setString(_queueKey, jsonEncode(queue.map((e) => e.toJson()).toList()));
+  Future<void> _saveQueue(List<_PendingEntry> queue) async {
+    await _prefs.setString(_queueKey, jsonEncode(queue.map((e) => e.toJson()).toList()));
   }
 }
 

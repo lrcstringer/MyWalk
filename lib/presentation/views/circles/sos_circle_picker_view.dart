@@ -25,13 +25,14 @@ class _SOSCirclePickerViewState extends State<SOSCirclePickerView> {
       final detail = await circleRepo.getCircleDetail(circle.id);
       if (!mounted) return;
       setState(() => _isLoadingDetail = false);
-      showModalBottomSheet(
+      final sent = await showModalBottomSheet<bool>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: MyWalkColor.charcoal,
         builder: (_) => SOSPrayerRequestView(circleId: detail.id, members: detail.members),
       );
+      if ((sent ?? false) && mounted) Navigator.pop(context, true);
     } catch (_) {
       if (mounted) setState(() { _isLoadingDetail = false; _detailError = "Couldn't connect. Try again."; });
     }

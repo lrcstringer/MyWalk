@@ -346,19 +346,26 @@ class _JournalEntryCard extends StatelessWidget {
             _SourceChip(entry: entry, theme: theme),
 
             // Text preview
-            if (entry.text != null && entry.text!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                entry.text!,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: theme.textPrimary,
-                  height: 1.5,
-                ),
-              ),
-            ],
+            Builder(builder: (context) {
+              final preview = JournalEntry.extractPlainText(entry.text);
+              if (preview.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  Text(
+                    preview,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.textPrimary,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              );
+            }),
           ],
         ),
       ),

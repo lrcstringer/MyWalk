@@ -47,6 +47,7 @@ class JournalEntryComposer extends StatefulWidget {
 class _JournalEntryComposerState extends State<JournalEntryComposer> {
   late final QuillController _textController;
   late final FocusNode _editorFocusNode;
+  late final ScrollController _editorScrollController;
   final _imagePicker = ImagePicker();
   final _recorder = AudioRecorder();
   final _player = AudioPlayer();
@@ -78,6 +79,7 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
     super.initState();
     final e = widget.initialEntry;
     _editorFocusNode = FocusNode();
+    _editorScrollController = ScrollController();
     if (e?.text != null && e!.text!.isNotEmpty) {
       try {
         _textController = QuillController(
@@ -111,6 +113,7 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
   void dispose() {
     _textController.dispose();
     _editorFocusNode.dispose();
+    _editorScrollController.dispose();
     _recorder.dispose();
     _player.dispose();
     if (_tmpVoicePath != null) {
@@ -461,11 +464,67 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
                 theme: theme),
 
           // Toolbar
-          QuillSimpleToolbar(
-            controller: _textController,
-            config: const QuillSimpleToolbarConfig(),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: theme.textSecondary.withValues(alpha: 0.12),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: QuillSimpleToolbar(
+              controller: _textController,
+              config: QuillSimpleToolbarConfig(
+                color: Colors.transparent,
+                multiRowsDisplay: false,
+                showDividers: true,
+                showBoldButton: true,
+                showItalicButton: true,
+                showUnderLineButton: true,
+                showStrikeThrough: false,
+                showInlineCode: false,
+                showColorButton: false,
+                showBackgroundColorButton: false,
+                showClearFormat: false,
+                showSmallButton: false,
+                showFontFamily: false,
+                showFontSize: false,
+                showAlignmentButtons: false,
+                showLeftAlignment: false,
+                showCenterAlignment: false,
+                showRightAlignment: false,
+                showJustifyAlignment: false,
+                showHeaderStyle: false,
+                showListNumbers: true,
+                showListBullets: true,
+                showListCheck: true,
+                showCodeBlock: false,
+                showQuote: false,
+                showIndent: false,
+                showLink: false,
+                showUndo: true,
+                showRedo: true,
+                showDirection: false,
+                showSearchButton: false,
+                showSubscript: false,
+                showSuperscript: false,
+                iconTheme: QuillIconTheme(
+                  iconButtonUnselectedData: IconButtonData(
+                    color: theme.textSecondary,
+                    iconSize: 18,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  iconButtonSelectedData: IconButtonData(
+                    color: theme.accentAction,
+                    iconSize: 18,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
 
           // Rich-text editor
           DefaultTextStyle(
@@ -473,15 +532,32 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
               color: theme.textPrimary,
               fontSize: 16,
               height: 1.6,
+              decoration: TextDecoration.none,
             ),
             child: QuillEditor.basic(
               controller: _textController,
               focusNode: _editorFocusNode,
+              scrollController: _editorScrollController,
               config: QuillEditorConfig(
                 placeholder: 'Write something...',
                 minHeight: 150,
                 scrollable: false,
                 padding: EdgeInsets.zero,
+                customStyles: DefaultStyles(
+                  placeHolder: DefaultTextBlockStyle(
+                    TextStyle(
+                      fontSize: 16,
+                      height: 1.6,
+                      color: theme.textSecondary.withValues(alpha: 0.5),
+                      decoration: TextDecoration.none,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    const HorizontalSpacing(0, 0),
+                    VerticalSpacing.zero,
+                    VerticalSpacing.zero,
+                    null,
+                  ),
+                ),
               ),
             ),
           ),

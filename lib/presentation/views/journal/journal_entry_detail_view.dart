@@ -125,7 +125,15 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
 
     if (mounted) {
       final updated = context.read<JournalProvider>().getEntry(_entry.id);
-      if (updated != null) setState(() => _entry = updated);
+      if (updated != null) {
+        setState(() {
+          if (updated.text != _lastSeenText) {
+            _rebuildTextController(updated.text);
+            _lastSeenText = updated.text;
+          }
+          _entry = updated;
+        });
+      }
     }
   }
 
@@ -179,27 +187,64 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
 
     return Scaffold(
       backgroundColor: theme.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: theme.bgPrimary,
-        foregroundColor: theme.textPrimary,
-        title: Text(dateStr,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            onPressed: _openEdit,
-            tooltip: 'Edit',
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: theme.bgPrimary,
+            foregroundColor: theme.textPrimary,
+            expandedHeight: 200,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.parallax,
+              titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 14),
+              title: Text(
+                dateStr,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    theme.heroImageAsset,
+                    fit: BoxFit.cover,
+                  ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          theme.bgPrimary.withValues(alpha: 0.5),
+                          theme.bgPrimary,
+                        ],
+                        stops: const [0.0, 0.65, 1.0],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: _openEdit,
+                tooltip: 'Edit',
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 20),
+                onPressed: () => _confirmDelete(theme),
+                tooltip: 'Delete',
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20),
-            onPressed: () => _confirmDelete(theme),
-            tooltip: 'Delete',
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 60),
-        children: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 60),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
           // Upload pending banner
           if (entry.uploadPending)
             Container(
@@ -274,6 +319,9 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
               onSeek: (pos) => _player.seek(pos),
             ),
           ],
+              ]),
+            ),
+          ),
         ],
       ),
     );
@@ -354,51 +402,68 @@ class _SourceChipRow extends StatelessWidget {
 
 // ── Network Image Tile ───────────────────────────────────────────────────────
 
-class _NetworkImageTile extends StatelessWidget {
+class _NetworkImageTile extends StatefulWidget {
   final String url;
   final JournalTheme theme;
 
   const _NetworkImageTile({required this.url, required this.theme});
 
   @override
+  State<_NetworkImageTile> createState() => _NetworkImageTileState();
+}
+
+class _NetworkImageTileState extends State<_NetworkImageTile> {
+  bool _expanded = false;
+
+  static const _thumbSize = 88.0;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _showFullscreen(context),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-        child: Image.network(
-          url,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          errorBuilder: (_, _, _) => Container(
-            height: 160,
-            color: theme.bgCard,
-            child: Center(
-              child: Icon(Icons.broken_image_outlined,
-                  color: theme.textSecondary, size: 32),
-            ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topLeft,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: _expanded ? _expandedImage() : _thumbnail(),
           ),
         ),
       ),
     );
   }
 
-  void _showFullscreen(BuildContext context) {
-    Navigator.push<void>(
-      context,
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white),
-          body: Center(
-            child: InteractiveViewer(
-              child: Image.network(url, fit: BoxFit.contain),
-            ),
+  Widget _thumbnail() {
+    return SizedBox(
+      width: _thumbSize,
+      height: _thumbSize,
+      child: Image.network(
+        widget.url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(
+          color: widget.theme.bgCard,
+          child: Icon(Icons.broken_image_outlined,
+              color: widget.theme.textSecondary, size: 28),
+        ),
+      ),
+    );
+  }
+
+  Widget _expandedImage() {
+    return SizedBox(
+      width: double.infinity,
+      child: Image.network(
+        widget.url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(
+          height: 160,
+          color: widget.theme.bgCard,
+          child: Center(
+            child: Icon(Icons.broken_image_outlined,
+                color: widget.theme.textSecondary, size: 32),
           ),
         ),
       ),

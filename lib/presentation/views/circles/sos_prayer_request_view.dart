@@ -60,7 +60,7 @@ class _SOSPrayerRequestViewState extends State<SOSPrayerRequestView> {
         title: Text(_sentSuccessfully ? '' : 'SOS Prayer',
             style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600)),
         leading: TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, _sentSuccessfully),
           child: Text(_sentSuccessfully ? 'Done' : 'Cancel',
               style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
         ),

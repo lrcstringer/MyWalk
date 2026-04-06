@@ -30,7 +30,7 @@ class FruitPortfolioView extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    'assets/TheFruit.png',
+                    'assets/fruit/Header.png',
                     fit: BoxFit.cover,
                   ),
                   Container(
@@ -399,23 +399,10 @@ class _FruitTile extends StatelessWidget {
     final isActive = entry.habitCount > 0 && entry.weeklyCompletions > 0;
     final isDormant = entry.habitCount > 0 && entry.weeklyCompletions == 0;
 
-    final Color bgColor;
-    final BoxBorder border;
-    final double fgOpacity;
-
-    if (isActive) {
-      bgColor = fruit.color.withValues(alpha: 0.72);
-      border = Border.all(color: fruit.color, width: 1.5);
-      fgOpacity = 1.0;
-    } else if (isDormant) {
-      bgColor = fruit.color.withValues(alpha: 0.45);
-      border = Border.all(color: fruit.color.withValues(alpha: 0.7));
-      fgOpacity = 0.90;
-    } else {
-      bgColor = fruit.color.withValues(alpha: 0.28);
-      border = Border.all(color: fruit.color.withValues(alpha: 0.45));
-      fgOpacity = 0.65;
-    }
+    final double imageOpacity = isActive ? 1.0 : isDormant ? 0.7 : 0.45;
+    final double borderWidth = isActive ? 2.0 : 1.5;
+    final double borderOpacity = isActive ? 0.9 : isDormant ? 0.6 : 0.35;
+    final double fgOpacity = isActive ? 1.0 : isDormant ? 0.9 : 0.7;
 
     return GestureDetector(
       onTap: onTap,
@@ -423,38 +410,96 @@ class _FruitTile extends StatelessWidget {
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: bgColor,
           borderRadius: BorderRadius.circular(12),
-          border: border,
+          border: Border.all(
+            color: fruit.color.withValues(alpha: borderOpacity),
+            width: borderWidth,
+          ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(fruit.icon, size: 26,
-                color: Colors.white.withValues(alpha: fgOpacity)),
-            const SizedBox(height: 6),
-            Text(
-              fruit.label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: Colors.white.withValues(alpha: fgOpacity),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Background image
+              Opacity(
+                opacity: imageOpacity,
+                child: Image.asset(fruit.imagePath, fit: BoxFit.cover),
               ),
-            ),
-            if (entry.weeklyCompletions > 0) ...[
-              const SizedBox(height: 2),
-              Text(
-                '${entry.weeklyCompletions}\u00d7',
-                style: TextStyle(
-                  fontSize: 9,
-                  color: Colors.white.withValues(alpha: 0.75),
+              // Gradient scrim for text legibility
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.0),
+                      Colors.black.withValues(alpha: 0.55),
+                    ],
+                    stops: const [0.35, 1.0],
+                  ),
+                ),
+              ),
+              // Icon — top left
+              Positioned(
+                top: 7,
+                left: 8,
+                child: Icon(
+                  fruit.icon,
+                  size: 18,
+                  color: Colors.white.withValues(alpha: fgOpacity),
+                  shadows: const [
+                    Shadow(blurRadius: 4, color: Colors.black45),
+                  ],
+                ),
+              ),
+              // Weekly count badge — top right
+              if (entry.weeklyCompletions > 0)
+                Positioned(
+                  top: 7,
+                  right: 7,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: fruit.color.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${entry.weeklyCompletions}\u00d7',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              // Fruit name — bottom left
+              Positioned(
+                bottom: 7,
+                left: 8,
+                right: 8,
+                child: Text(
+                  fruit.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight:
+                        isActive ? FontWeight.w700 : FontWeight.w600,
+                    color: Colors.white.withValues(alpha: fgOpacity),
+                    shadows: const [
+                      Shadow(
+                          blurRadius: 6,
+                          color: Colors.black54,
+                          offset: Offset(0, 1)),
+                    ],
+                  ),
                 ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );

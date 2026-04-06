@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   cupertino_icons: ^1.0.8
 
@@ -190,7 +192,20 @@ flutter:
     - assets/beatitudes_golden_etched_separate/
     - assets/circles/
     - assets/parables/
+    - 'assets/parables/The Kingdom/'
+    - 'assets/parables/Grace & Forgiveness/'
+    - 'assets/parables/Neighbour Love and Service/'
+    - 'assets/parables/Stewardship and Faithfulness/'
+    - 'assets/parables/Prayer and Persistence/'
+    - 'assets/parables/Readiness and Watchfulness/'
+    - 'assets/parables/Invitation and Response/'
+    - 'assets/parables/Grace & Reward/'
+    - 'assets/parables/Counting the Cost/'
     - assets/bible/
+    - assets/fruit/
+    - 'assets/I Am/'
+    - assets/Women/
+    - assets/journal/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

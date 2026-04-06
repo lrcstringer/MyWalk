@@ -141,13 +141,14 @@ class _SOSViewState extends State<SOSView> with SingleTickerProviderStateMixin {
       if (circles.isEmpty) {
         setState(() => _showPrayerCircleMessage = true);
       } else {
-        showModalBottomSheet(
+        final sent = await showModalBottomSheet<bool>(
           context: context,
           isScrollControlled: true,
           useSafeArea: true,
           backgroundColor: MyWalkColor.charcoal,
           builder: (_) => SOSCirclePickerView(circles: circles),
         );
+        if ((sent ?? false) && mounted) Navigator.of(context).pop();
       }
     } catch (_) {
       if (mounted) setState(() => _circleLoadFailed = true);

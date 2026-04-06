@@ -77,7 +77,7 @@ class JournalTheme {
     textSecondary: Color(0xFF8A96A8),
     accentAction:  Color(0xFF7A9E7E),
     accentMuted:   Color(0xFF2A3828),
-    heroImageAsset: 'assets/Journalling.png',
+    heroImageAsset: 'assets/journal/coldnight.png',
   );
 
   /// 03 — Clean bright linen — minimal, distraction-free writing.
@@ -90,7 +90,7 @@ class JournalTheme {
     textSecondary: Color(0xFF6E6560),
     accentAction:  Color(0xFFD4A843),
     accentMuted:   Color(0xFFEDF2ED),
-    heroImageAsset: 'assets/Journalling.png',
+    heroImageAsset: 'assets/journal/linen.png',
   );
 
   /// 04 — Iron & Ember — charcoal and warm rust tones.
@@ -103,7 +103,7 @@ class JournalTheme {
     textSecondary: Color(0xFFB5A898),
     accentAction:  Color(0xFFC46A2B),
     accentMuted:   Color(0xFF6B3D1A),
-    heroImageAsset: 'assets/Journalling.png',
+    heroImageAsset: 'assets/journal/warmnight.png',
   );
 
   /// 05 — Deep Current — dark ocean with cyan and amber pop.
@@ -117,7 +117,7 @@ class JournalTheme {
     accentAction:  Color(0xFF3AB8C8),
     accentMuted:   Color(0xFF1A4A52),
     accentPop:     Color(0xFFF5A623),
-    heroImageAsset: 'assets/Journalling.png',
+    heroImageAsset: 'assets/journal/seadistantmod.png',
   );
 
   /// 06 — Flint & Field — forest green-grey with steel blue accent.
@@ -130,7 +130,7 @@ class JournalTheme {
     textSecondary: Color(0xFF9A9C80),
     accentAction:  Color(0xFF7A9BB5),
     accentMuted:   Color(0xFF2E4858),
-    heroImageAsset: 'assets/Journalling.png',
+    heroImageAsset: 'assets/journal/foresthike.png',
   );
 
   /// 07 — Solar Edge — bright white with bold orange-red accent.
@@ -143,7 +143,7 @@ class JournalTheme {
     textSecondary: Color(0xFF555555),
     accentAction:  Color(0xFFD4541A),
     accentMuted:   Color(0xFFF0E0D6),
-    heroImageAsset: 'assets/Journalling.png',
+    heroImageAsset: 'assets/journal/space.png',
   );
 
   /// 08 — Wipeout — deep ocean with electric blue and amber pop.
@@ -157,7 +157,7 @@ class JournalTheme {
     accentAction:  Color(0xFF00C2FF),
     accentMuted:   Color(0xFF0D3A50),
     accentPop:     Color(0xFFF5A623),
-    heroImageAsset: 'assets/Journalling.png',
+    heroImageAsset: 'assets/journal/surfboadbeach.png',
   );
 
   /// 09 — Concrete Gospel — near-black with acid yellow-green and red pop.
@@ -171,7 +171,7 @@ class JournalTheme {
     accentAction:  Color(0xFFC8E600),
     accentMuted:   Color(0xFF2A2A2A),
     accentPop:     Color(0xFFFF3C3C),
-    heroImageAsset: 'assets/Journalling.png',
+    heroImageAsset: 'assets/journal/steampunk.png',
   );
 
   /// 10 — Signal Void — near-black with magenta, cyan, and violet.
@@ -186,7 +186,7 @@ class JournalTheme {
     accentMuted:   Color(0xFF1E1A3A),
     accentPop:     Color(0xFF00F5FF),
     accentVolt:    Color(0xFFB44FFF),
-    heroImageAsset: 'assets/Journalling.png',
+    heroImageAsset: 'assets/journal/space2.png',
   );
 
   /// 11 — Static Bloom — near-white with deep violet, hot pink, and cyan.
@@ -201,7 +201,24 @@ class JournalTheme {
     accentMuted:   Color(0xFFEAE6FF),
     accentPop:     Color(0xFF0099CC),
     accentVolt:    Color(0xFF7700CC),
-    heroImageAsset: 'assets/Journalling.png',
+    heroImageAsset: 'assets/journal/firefly.png',
+  );
+
+  /// 12 — Resurrection — void black, bone white, blood red, deep crimson, tarnished gold.
+  /// Death Metal · Christian Metal · Extreme Faith.
+  /// Death is the context; resurrection is the point.
+  static const resurrection = JournalTheme(
+    id: 'resurrection',
+    name: 'Resurrection',
+    bgPrimary:     Color(0xFF080808), // void black
+    bgCard:        Color(0xFF141210),
+    textPrimary:   Color(0xFFEAEAEA), // bone white
+    textSecondary: Color(0xFF9A8F88),
+    accentAction:  Color(0xFFCC2200), // blood red
+    accentMuted:   Color(0xFF1E1A18),
+    accentPop:     Color(0xFF8B0000), // deep crimson
+    accentVolt:    Color(0xFFC0A060), // tarnished gold
+    heroImageAsset: 'assets/journal/metal.png',
   );
 
   static const all = [
@@ -216,5 +233,6 @@ class JournalTheme {
     concreteGospel,
     signalVoid,
     staticBloom,
+    resurrection,
   ];
 }
