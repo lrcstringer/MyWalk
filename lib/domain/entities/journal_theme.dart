@@ -58,10 +58,10 @@ class JournalTheme {
   static const parchment = JournalTheme(
     id: 'parchment',
     name: 'Parchment',
-    bgPrimary:     Color(0xFFF3EDE2),
-    bgCard:        Color(0xFFFBF7F0),
-    textPrimary:   Color(0xFF5B4B3E),
-    textSecondary: Color(0xFF7A6B5D),
+    bgPrimary:     Color(0xFFDFD0A0),
+    bgCard:        Color(0xFFEADCB0),
+    textPrimary:   Color(0xFF3A2A18),
+    textSecondary: Color(0xFF6B5035),
     accentAction:  Color(0xFFD4A843),
     accentMuted:   Color(0xFFDCE3D6),
     heroImageAsset: 'assets/Journalling.png',
@@ -221,6 +221,70 @@ class JournalTheme {
     heroImageAsset: 'assets/journal/metal.png',
   );
 
+  /// 13 — Night City — deep mauve-black with electric cyan, amber, and red neon.
+  /// Neon Rain · Urban Solitude · Digital Witness.
+  static const nightCity = JournalTheme(
+    id: 'night_city',
+    name: 'Night City',
+    bgPrimary:     Color(0xFF1C1518),
+    bgCard:        Color(0xFF261E22),
+    textPrimary:   Color(0xFFDBC8B3),
+    textSecondary: Color(0xFF7A6A72),
+    accentAction:  Color(0xFF1EC8D4),
+    accentMuted:   Color(0xFF0F2D30),
+    accentPop:     Color(0xFFE8863A),
+    accentVolt:    Color(0xFFD42828),
+    heroImageAsset: 'assets/journal/nightpad.png',
+  );
+
+  /// 14 — Iron Scribe — deep night city with electric blue, amber, and candlelight.
+  /// Cyberpunk · Steel & Neon · Deep Night.
+  static const ironScribe = JournalTheme(
+    id: 'iron_scribe',
+    name: 'Iron Scribe',
+    bgPrimary:     Color(0xFF111928),
+    bgCard:        Color(0xFF1A2236),
+    textPrimary:   Color(0xFFDBD3CA),
+    textSecondary: Color(0xFF7A8599),
+    accentAction:  Color(0xFF0BDCEF),
+    accentMuted:   Color(0xFF2A364B),
+    accentPop:     Color(0xFFDA7434),
+    accentVolt:    Color(0xFFEDC6A8),
+    heroImageAsset: 'assets/journal/robot.png',
+  );
+
+  /// 15 — Savanna Scribe — deep tree shadow with golden grass, sunset glow, and sienna earth.
+  /// African Golden Hour · Earth & Fire · Open Sky.
+  static const savannaScribe = JournalTheme(
+    id: 'savanna_scribe',
+    name: 'Savanna Scribe',
+    bgPrimary:     Color(0xFF2A1208),
+    bgCard:        Color(0xFF3D1E0E),
+    textPrimary:   Color(0xFFF3E8D8),
+    textSecondary: Color(0xFFB8956A),
+    accentAction:  Color(0xFFDC7C31),
+    accentMuted:   Color(0xFF5C2E10),
+    accentPop:     Color(0xFFF3AC62),
+    accentVolt:    Color(0xFFB4571A),
+    heroImageAsset: 'assets/journal/oranguatan.png',
+  );
+
+  /// 16 — Codex Prime — near-black void with cross-glow red, orange-gold, and purple neon.
+  /// Cyberpunk Scripture · Ancient and Future · Neon Cross.
+  static const codexPrime = JournalTheme(
+    id: 'codex_prime',
+    name: 'Codex Prime',
+    bgPrimary:     Color(0xFF07080F),
+    bgCard:        Color(0xFF140D18),
+    textPrimary:   Color(0xFFF0E8E0),
+    textSecondary: Color(0xFF7A5E6A),
+    accentAction:  Color(0xFFE2241D),
+    accentMuted:   Color(0xFF381F28),
+    accentPop:     Color(0xFFFAA956),
+    accentVolt:    Color(0xFF9D45B6),
+    heroImageAsset: 'assets/journal/cyberpunk.png',
+  );
+
   static const all = [
     parchment,
     nightGarden,
@@ -234,5 +298,9 @@ class JournalTheme {
     signalVoid,
     staticBloom,
     resurrection,
+    nightCity,
+    ironScribe,
+    savannaScribe,
+    codexPrime,
   ];
 }

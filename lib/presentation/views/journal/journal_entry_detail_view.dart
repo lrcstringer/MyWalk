@@ -230,12 +230,12 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 20),
+                icon: Icon(Icons.edit_outlined, size: 26, color: theme.textPrimary),
                 onPressed: _openEdit,
                 tooltip: 'Edit',
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20),
+                icon: Icon(Icons.delete_outline, size: 26, color: theme.textPrimary),
                 onPressed: () => _confirmDelete(theme),
                 tooltip: 'Delete',
               ),

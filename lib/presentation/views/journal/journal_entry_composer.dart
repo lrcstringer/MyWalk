@@ -376,15 +376,6 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
                 _pickImage(ImageSource.gallery);
               },
             ),
-            ListTile(
-              leading: Icon(Icons.draw_outlined, color: theme.textSecondary),
-              title: Text('Draw a doodle',
-                  style: TextStyle(color: theme.textPrimary)),
-              onTap: () {
-                Navigator.pop(context);
-                _openDoodleCanvas(theme);
-              },
-            ),
           ],
         ),
       ),
@@ -573,6 +564,7 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
             newPaths: _newImagePaths,
             totalCount: _totalImageCount,
             onAddTap: () => _showImageSourceSheet(theme),
+            onDoodleTap: () => _openDoodleCanvas(theme),
             onRemoveExisting: _removeExistingImage,
             onRemoveNew: _removeNewImage,
           ),
@@ -674,6 +666,7 @@ class _ImagesSection extends StatelessWidget {
   final List<String> newPaths;
   final int totalCount;
   final VoidCallback onAddTap;
+  final VoidCallback onDoodleTap;
   final ValueChanged<String> onRemoveExisting;
   final ValueChanged<int> onRemoveNew;
 
@@ -683,6 +676,7 @@ class _ImagesSection extends StatelessWidget {
     required this.newPaths,
     required this.totalCount,
     required this.onAddTap,
+    required this.onDoodleTap,
     required this.onRemoveExisting,
     required this.onRemoveNew,
   });
@@ -728,7 +722,7 @@ class _ImagesSection extends StatelessWidget {
                     theme: theme,
                     onRemove: () => onRemoveNew(i)),
 
-              if (showAddButton)
+              if (showAddButton) ...[
                 GestureDetector(
                   onTap: onAddTap,
                   child: Container(
@@ -759,6 +753,37 @@ class _ImagesSection extends StatelessWidget {
                     ),
                   ),
                 ),
+                GestureDetector(
+                  onTap: onDoodleTap,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: theme.bgCard,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: theme.textSecondary.withValues(alpha: 0.2)),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.draw_outlined,
+                            size: 22, color: theme.textSecondary),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Add\nDoodle',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: theme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

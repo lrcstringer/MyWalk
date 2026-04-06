@@ -154,12 +154,12 @@ class _JournalTabState extends State<JournalTab> {
             actions: [
               IconButton(
                 icon: Icon(Icons.palette_outlined,
-                    size: 22, color: theme.textPrimary),
+                    size: 26, color: theme.textPrimary),
                 onPressed: () => showJournalThemePicker(context),
                 tooltip: 'Theme',
               ),
               IconButton(
-                icon: Icon(Icons.sort, size: 22, color: theme.textPrimary),
+                icon: Icon(Icons.sort, size: 26, color: theme.textPrimary),
                 onPressed: () => _showSortSheet(context, provider, theme),
                 tooltip: 'Sort',
               ),
