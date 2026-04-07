@@ -38,6 +38,7 @@ class _EditHabitViewState extends State<EditHabitView> {
   late String _targetUnit;
   late Set<int> _activeDays;
   late List<FruitType> _fruitTags;
+  late bool _hasPrayerItems;
   String? _categoryId;
   String? _subcategoryId;
   String? _categoryName;
@@ -71,6 +72,7 @@ class _EditHabitViewState extends State<EditHabitView> {
     _targetUnit = h.targetUnit;
     _activeDays = h.activeDaySet;
     _fruitTags = List.from(h.fruitTags);
+    _hasPrayerItems = h.hasPrayerItems;
     _categoryId = h.categoryId;
     _subcategoryId = h.subcategoryId;
     _categoryName = h.categoryName;
@@ -119,6 +121,7 @@ class _EditHabitViewState extends State<EditHabitView> {
       subcategoryName: _subcategoryName,
       notes: notesJson,
       referenceUrl: refUrl,
+      hasPrayerItems: _hasPrayerItems,
     );
     context.read<HabitProvider>().updateHabit(updated);
     // Update portfolio habit counts for changed tags.
@@ -216,6 +219,8 @@ class _EditHabitViewState extends State<EditHabitView> {
           _notesSection(),
           const SizedBox(height: 20),
           _referenceUrlSection(),
+          const SizedBox(height: 20),
+          _prayerListToggle(),
           if (!widget.habit.isBuiltIn) ...[
             const SizedBox(height: 40),
             Row(children: [
@@ -451,6 +456,73 @@ class _EditHabitViewState extends State<EditHabitView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _prayerListToggle() {
+    return GestureDetector(
+      onTap: () => setState(() => _hasPrayerItems = !_hasPrayerItems),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: MyWalkColor.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _hasPrayerItems
+                ? MyWalkColor.golden.withValues(alpha: 0.3)
+                : MyWalkColor.cardBorder,
+            width: 0.5,
+          ),
+        ),
+        child: Row(children: [
+          Icon(Icons.format_list_bulleted_rounded,
+              size: 18,
+              color: _hasPrayerItems
+                  ? MyWalkColor.golden
+                  : Colors.white.withValues(alpha: 0.4)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Prayer List',
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: _hasPrayerItems
+                          ? MyWalkColor.warmWhite
+                          : Colors.white.withValues(alpha: 0.6))),
+              const SizedBox(height: 2),
+              Text('Track up to 10 prayer items with status on the detail screen.',
+                  style: TextStyle(
+                      fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
+            ]),
+          ),
+          const SizedBox(width: 10),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 38,
+            height: 22,
+            decoration: BoxDecoration(
+              color: _hasPrayerItems
+                  ? MyWalkColor.golden
+                  : Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 200),
+              alignment: _hasPrayerItems
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
+              child: Container(
+                margin: const EdgeInsets.all(3),
+                width: 16,
+                height: 16,
+                decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: Colors.white),
+              ),
+            ),
+          ),
+        ]),
+      ),
     );
   }
 

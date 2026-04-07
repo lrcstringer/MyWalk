@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../bible/bible_browser_view.dart';
+import 'bible_project_browser_view.dart';
 
 const _kAccent = Color(0xFF7DAEC8); // celestial blue
 
@@ -305,12 +305,7 @@ class IAmSayingsView extends StatelessWidget {
                 children: [
                   // Verse card — tappable → opens Bible viewer
                   GestureDetector(
-                    onTap: () => Navigator.push<void>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => BibleBrowserView(initialReference: saying.reference),
-                      ),
-                    ),
+                    onTap: () => BibleProjectBrowserView.openOrPrompt(context, reference: saying.reference),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
                       decoration: BoxDecoration(

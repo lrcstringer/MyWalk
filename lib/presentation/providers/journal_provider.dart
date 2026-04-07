@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,13 +17,15 @@ class JournalProvider extends ChangeNotifier {
     // Register upload-completion callback so the UI reflects finished uploads.
     MediaUploadService.instance.registerEntryUpdatedCallback(refreshEntry);
     AuthService.shared.addListener(_onAuthChanged);
+    if (AuthService.shared.isAuthenticated) _subscribeToEntries();
   }
 
   List<JournalEntry> _entries = [];
   bool _isLoading = false;
-  bool _loadInProgress = false;
   String _searchQuery = '';
   JournalSortOrder _sortOrder = JournalSortOrder.newestFirst;
+
+  StreamSubscription<List<JournalEntry>>? _entriesSub;
 
   bool get isLoading => _isLoading;
   String get searchQuery => _searchQuery;
@@ -30,19 +33,38 @@ class JournalProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _entriesSub?.cancel();
     AuthService.shared.removeListener(_onAuthChanged);
     super.dispose();
   }
 
   void _onAuthChanged() {
     if (AuthService.shared.isAuthenticated) {
-      loadEntries();
+      _subscribeToEntries();
     } else {
+      _entriesSub?.cancel();
+      _entriesSub = null;
       _entries = [];
       _isLoading = false;
-      _loadInProgress = false;
       notifyListeners();
     }
+  }
+
+  void _subscribeToEntries() {
+    _entriesSub?.cancel();
+    _isLoading = true;
+    notifyListeners();
+    _entriesSub = _repository.watchEntries().listen(
+      (entries) {
+        _entries = entries;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (_) {
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
   }
 
   /// Returns the entry with [id] from the raw (unfiltered) list, or null.
@@ -82,23 +104,10 @@ class JournalProvider extends ChangeNotifier {
         });
     }
 
-    return result;
-  }
-
-  Future<void> loadEntries() async {
-    if (_loadInProgress) return;
-    _loadInProgress = true;
-    _isLoading = true;
-    notifyListeners();
-    try {
-      _entries = await _repository.loadEntries();
-    } catch (_) {
-      // Leave existing entries in place on error.
-    } finally {
-      _isLoading = false;
-      _loadInProgress = false;
-      notifyListeners();
-    }
+    // Float pinned entries to the top, preserving the selected sort within each group.
+    final pinned = result.where((e) => e.pinned).toList();
+    final unpinned = result.where((e) => !e.pinned).toList();
+    return [...pinned, ...unpinned];
   }
 
   /// Save a new journal entry.
@@ -130,10 +139,8 @@ class JournalProvider extends ChangeNotifier {
     // Copy media to stable local paths before saving.
     final pendingFiles = await _stageMediaFiles(entry.id, imageLocalPaths, voiceLocalPath);
 
-    await _repository.saveEntry(entry);
-
-    _entries = [entry, ..._entries];
-    notifyListeners();
+    // Fire-and-forget: Firestore queues offline; stream reflects update automatically.
+    _repository.saveEntry(entry).ignore();
 
     if (pendingFiles.isNotEmpty) {
       await MediaUploadService.instance.enqueueUploads(entry.id, pendingFiles);
@@ -185,17 +192,14 @@ class JournalProvider extends ChangeNotifier {
       habitName: entry.habitName,
       fruitTag: entry.fruitTag,
       sourceType: entry.sourceType,
+      pinned: entry.pinned,
     );
 
     final pendingFiles =
         await _stageMediaFiles(entry.id, newImageLocalPaths, newVoiceLocalPath);
 
-    await _repository.updateEntry(updated);
-
-    _entries = [
-      for (final e in _entries) e.id == updated.id ? updated : e,
-    ];
-    notifyListeners();
+    // Fire-and-forget: stream reflects update automatically.
+    _repository.updateEntry(updated).ignore();
 
     if (pendingFiles.isNotEmpty) {
       await MediaUploadService.instance.enqueueUploads(entry.id, pendingFiles);
@@ -212,10 +216,8 @@ class JournalProvider extends ChangeNotifier {
       _repository.deleteMedia(entry.voiceUrl!).ignore();
     }
 
-    await _repository.deleteEntry(entry.id);
-
-    _entries = _entries.where((e) => e.id != entry.id).toList();
-    notifyListeners();
+    // Fire-and-forget: stream reflects deletion automatically.
+    _repository.deleteEntry(entry.id).ignore();
   }
 
   void setSearchQuery(String query) {
@@ -223,24 +225,19 @@ class JournalProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> togglePin(JournalEntry entry) async {
+    final updated = entry.copyWith(pinned: !entry.pinned);
+    _repository.updateEntry(updated).ignore();
+  }
+
   void setSortOrder(JournalSortOrder order) {
     _sortOrder = order;
     notifyListeners();
   }
 
-  /// Called by [MediaUploadService] after successful uploads to refresh entry state.
-  Future<void> refreshEntry(String entryId) async {
-    try {
-      final all = await _repository.loadEntries();
-      final refreshed = all.where((e) => e.id == entryId).firstOrNull;
-      if (refreshed != null) {
-        _entries = [
-          for (final e in _entries) e.id == entryId ? refreshed : e,
-        ];
-        notifyListeners();
-      }
-    } catch (_) {}
-  }
+  /// Called by [MediaUploadService] after successful uploads.
+  /// The stream subscription reflects server-side changes automatically.
+  Future<void> refreshEntry(String entryId) async {}
 
   // ── Private helpers ─────────────────────────────────────────────────────────
 

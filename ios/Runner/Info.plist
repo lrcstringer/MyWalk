@@ -87,5 +87,7 @@
 		<string>Add photos from your library to journal entries.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Record voice notes for your journal entries.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>Dictate text into your journal entries using your voice.</string>
 	</dict>
 </plist>

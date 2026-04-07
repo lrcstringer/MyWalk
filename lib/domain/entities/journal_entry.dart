@@ -30,6 +30,9 @@ class JournalEntry {
   /// 'habit' | 'fruit' | 'free'
   final String sourceType;
 
+  /// Whether this entry is pinned to the top of the journal list.
+  final bool pinned;
+
   const JournalEntry({
     required this.id,
     required this.createdAt,
@@ -42,6 +45,7 @@ class JournalEntry {
     this.habitName,
     this.fruitTag,
     required this.sourceType,
+    this.pinned = false,
   });
 
   factory JournalEntry.create({
@@ -80,6 +84,7 @@ class JournalEntry {
     Object? fruitTag = _keep,
     String? sourceType,
     DateTime? updatedAt,
+    bool? pinned,
   }) {
     return JournalEntry(
       id: id,
@@ -93,6 +98,7 @@ class JournalEntry {
       habitName: habitName ?? this.habitName,
       fruitTag: fruitTag == _keep ? this.fruitTag : fruitTag as FruitType?,
       sourceType: sourceType ?? this.sourceType,
+      pinned: pinned ?? this.pinned,
     );
   }
 
@@ -108,6 +114,7 @@ class JournalEntry {
         'habitName': habitName,
         'fruitTag': fruitTag?.name,
         'sourceType': sourceType,
+        'pinned': pinned,
       };
 
   factory JournalEntry.fromFirestore(Map<String, dynamic> data) {
@@ -125,6 +132,7 @@ class JournalEntry {
           ? FruitType.fromString(data['fruitTag'] as String)
           : null,
       sourceType: data['sourceType'] as String? ?? 'free',
+      pinned: (data['pinned'] as bool?) ?? false,
     );
   }
 

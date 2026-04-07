@@ -162,15 +162,23 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      // scripture_focus — any member can read; all writes via callable
-      match /scripture_focus/{weekId} {
+      // scripture_threads — members read/create; admin closes and deletes
+      match /scripture_threads/{threadId} {
         allow read: if isCircleMember(circleId);
-        allow write: if false;
+        allow create: if isCircleMember(circleId);
+        allow update: if isCircleAdmin(circleId); // close (status + closedAt)
+        allow delete: if isCircleAdmin(circleId); // hard-delete via deleteThread batch
 
-        // reflections subcollection — any member can read; writes via callable
-        match /reflections/{reflectionId} {
+        // comments subcollection — members read/create; soft-delete by owner or admin
+        match /comments/{commentId} {
           allow read: if isCircleMember(circleId);
-          allow write: if false;
+          allow create: if isCircleMember(circleId);
+          allow update: if isCircleMember(circleId) &&
+                           (request.auth.uid == resource.data.authorId ||
+                            isCircleAdmin(circleId)) &&
+                           request.resource.data.diff(resource.data)
+                             .affectedKeys().hasOnly(['deletedAt']);
+          allow delete: if isCircleAdmin(circleId); // hard-delete via deleteThread batch
         }
       }
 

@@ -97,6 +97,17 @@ class PrayerListProvider extends ChangeNotifier {
     await load(circleId);
   }
 
+  Future<void> shareGratitude({
+    required String circleId,
+    required String text,
+    required bool isAnonymous,
+  }) =>
+      _repo.shareGratitude(
+        circleIds: [circleId],
+        gratitudeText: text,
+        isAnonymous: isAnonymous,
+      );
+
   void _updateRequest(String circleId, String requestId,
       PrayerRequest Function(PrayerRequest) updater) {
     final active = _activeByCircle[circleId];

@@ -3,6 +3,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import {
   db,
   membersCol,
+  circlesCol,
   eventsCol,
   Timestamp,
 } from '../lib/firestore';
@@ -40,10 +41,19 @@ export const circleCreateEvent = onCall(
 
     const uid = request.auth.uid;
 
-    // Only admins can create events.
-    const memberSnap = await membersCol(circleId).doc(uid).get();
+    // Permission check: admin always allowed; any_member if settings permit.
+    const [memberSnap, circleSnap] = await Promise.all([
+      membersCol(circleId).doc(uid).get(),
+      circlesCol().doc(circleId).get(),
+    ]);
+
     if (!memberSnap.exists) throw new HttpsError('permission-denied', 'Not a member of this circle');
-    if (memberSnap.data()!['role'] !== 'admin') {
+
+    const settings = (circleSnap.data()?.['settings'] as Record<string, unknown>) ?? {};
+    const eventPermission = (settings['eventPermission'] as string) ?? 'admin';
+    const role = memberSnap.data()!['role'] as string;
+
+    if (eventPermission === 'admin' && role !== 'admin') {
       throw new HttpsError('permission-denied', 'Only admins can create circle events');
     }
 
@@ -88,6 +98,66 @@ export const circleCreateEvent = onCall(
     }
 
     return { id: ref.id };
+  }
+);
+
+// ── circleUpdateEvent ─────────────────────────────────────────────────────────
+
+export const circleUpdateEvent = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+
+    const { circleId, eventId, title, eventDateMs, description, location, meetingLink } =
+      request.data as {
+        circleId: string;
+        eventId: string;
+        title: string;
+        eventDateMs: number;
+        description?: string | null;
+        location?: string | null;
+        meetingLink?: string | null;
+      };
+
+    if (!circleId?.trim()) throw new HttpsError('invalid-argument', 'circleId required');
+    if (!eventId?.trim()) throw new HttpsError('invalid-argument', 'eventId required');
+    if (!title?.trim()) throw new HttpsError('invalid-argument', 'title required');
+    if (typeof eventDateMs !== 'number' || eventDateMs <= 0) {
+      throw new HttpsError('invalid-argument', 'eventDateMs must be a positive number (ms since epoch)');
+    }
+
+    const eventDate = new Date(eventDateMs);
+    if (eventDate <= new Date()) {
+      throw new HttpsError('invalid-argument', 'Event date must be in the future');
+    }
+
+    const uid = request.auth.uid;
+
+    const [memberSnap, eventSnap] = await Promise.all([
+      membersCol(circleId).doc(uid).get(),
+      eventsCol(circleId).doc(eventId).get(),
+    ]);
+
+    if (!memberSnap.exists) throw new HttpsError('permission-denied', 'Not a member of this circle');
+    if (!eventSnap.exists) throw new HttpsError('not-found', 'Event not found');
+
+    const role = memberSnap.data()!['role'] as string;
+    const createdById = eventSnap.data()!['createdById'] as string;
+
+    // Admins or the event creator can edit.
+    if (role !== 'admin' && createdById !== uid) {
+      throw new HttpsError('permission-denied', 'Only admins or the event creator can edit events');
+    }
+
+    await eventsCol(circleId).doc(eventId).update({
+      title: title.trim(),
+      description: description?.trim() ?? null,
+      location: location?.trim() ?? null,
+      meetingLink: meetingLink?.trim() ?? null,
+      eventDate: Timestamp.fromDate(eventDate),
+    });
+
+    return { success: true };
   }
 );
 

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/circle.dart';
+import '../../domain/entities/habit.dart' show PrayerItemStatus;
 import '../../domain/repositories/circle_repository.dart';
 import '../../domain/services/week_id_service.dart';
 
@@ -53,11 +54,11 @@ class FirestoreCircleRepository implements CircleRepository {
   CollectionReference _prayerRequests(String circleId) =>
       _circles.doc(circleId).collection('prayer_requests');
 
-  CollectionReference _scriptureFocus(String circleId) =>
-      _circles.doc(circleId).collection('scripture_focus');
+  CollectionReference _scriptureThreads(String circleId) =>
+      _circles.doc(circleId).collection('scripture_threads');
 
-  CollectionReference _reflections(String circleId, String weekId) =>
-      _scriptureFocus(circleId).doc(weekId).collection('reflections');
+  CollectionReference _threadComments(String circleId, String threadId) =>
+      _scriptureThreads(circleId).doc(threadId).collection('comments');
 
   CollectionReference _circleHabits(String circleId) =>
       _circles.doc(circleId).collection('circle_habits');
@@ -82,6 +83,12 @@ class FirestoreCircleRepository implements CircleRepository {
 
   CollectionReference _events(String circleId) =>
       _circles.doc(circleId).collection('events');
+
+  DocumentReference _groupPrayerListMeta(String circleId) =>
+      _circles.doc(circleId).collection('group_prayer_list').doc('meta');
+
+  CollectionReference _groupPrayerItems(String circleId) =>
+      _circles.doc(circleId).collection('group_prayer_items');
 
   // ── Callable helper ───────────────────────────────────────────────────────
 
@@ -505,71 +512,114 @@ class FirestoreCircleRepository implements CircleRepository {
     });
   }
 
-  // ── Feature 2: Scripture Focus ────────────────────────────────────────────
+  // ── Feature 2: Scripture Threads ─────────────────────────────────────────
 
   @override
-  Future<ScriptureFocus?> getCurrentScriptureFocus(String circleId) async {
-    final weekId = WeekIdService.currentWeekId();
-    final snap = await _scriptureFocus(circleId).doc(weekId).get();
-    if (!snap.exists) return null;
-    final data = snap.data() as Map<String, dynamic>;
-    return _parseScriptureFocus(snap.id, data);
+  Stream<List<ScriptureThread>> watchThreads(String circleId,
+      {required bool isAdmin}) {
+    Query query = _scriptureThreads(circleId)
+        .orderBy('createdAt', descending: true);
+    if (!isAdmin) {
+      query = query.where('status', isEqualTo: 'open');
+    }
+    return query.snapshots().map((snap) => snap.docs
+        .map((d) =>
+            _parseScriptureThread(d.id, d.data() as Map<String, dynamic>))
+        .toList());
   }
 
   @override
-  Future<List<ScriptureReflection>> getReflections(
-      String circleId, String weekId) async {
-    final snap = await _reflections(circleId, weekId)
+  Stream<List<ScriptureComment>> watchComments(
+      String circleId, String threadId) {
+    return _threadComments(circleId, threadId)
         .orderBy('createdAt', descending: false)
-        .get();
-    return snap.docs.map((d) {
-      final data = d.data() as Map<String, dynamic>;
-      return ScriptureReflection(
-        id: d.id,
-        authorId: data['authorId'] as String? ?? '',
-        authorDisplayName: data['authorDisplayName'] as String? ?? '',
-        reflectionText: data['reflectionText'] as String? ?? '',
-        createdAt: _tsToIso(data['createdAt']),
-      );
-    }).toList();
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => _parseScriptureComment(
+                d.id, d.data() as Map<String, dynamic>))
+            .toList());
   }
 
   @override
-  Future<void> setScriptureFocus({
+  Future<void> createThread({
     required String circleId,
     required String reference,
-    required String translation,
     required String passageText,
-    String? reflectionPrompt,
+    required String translation,
   }) async {
-    await _call('circleSetScriptureFocus', {
+    final displayName =
+        _auth.currentUser?.displayName ?? 'Circle Member';
+    await _scriptureThreads(circleId).add({
       'circleId': circleId,
+      'createdById': _uid,
+      'createdByDisplayName': displayName,
       'reference': reference,
-      'translation': translation,
       'passageText': passageText,
-      'reflectionPrompt': reflectionPrompt,
+      'translation': translation,
+      'status': 'open',
+      'createdAt': FieldValue.serverTimestamp(),
+      'commentCount': 0,
     });
   }
 
   @override
-  Future<void> submitReflection({
+  Future<void> closeThread(String circleId, String threadId) async {
+    await _scriptureThreads(circleId).doc(threadId).update({
+      'status': 'closed',
+      'closedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  @override
+  Future<void> deleteThread(String circleId, String threadId) async {
+    // Delete all comments first, then the thread document.
+    final comments =
+        await _threadComments(circleId, threadId).get();
+    final batch = _db.batch();
+    for (final doc in comments.docs) {
+      batch.delete(doc.reference);
+    }
+    batch.delete(_scriptureThreads(circleId).doc(threadId));
+    await batch.commit();
+  }
+
+  @override
+  Future<void> addComment({
     required String circleId,
-    required String weekId,
+    required String threadId,
     required String text,
+    String? parentId,
   }) async {
-    await _call('circleSubmitReflection', {
-      'circleId': circleId,
-      'weekId': weekId,
+    final displayName =
+        _auth.currentUser?.displayName ?? 'Circle Member';
+    final batch = _db.batch();
+    final commentRef = _threadComments(circleId, threadId).doc();
+    batch.set(commentRef, {
+      'threadId': threadId,
+      'authorId': _uid,
+      'authorDisplayName': displayName,
       'text': text,
+      'parentId': parentId,
+      'createdAt': FieldValue.serverTimestamp(),
+      'deletedAt': null,
     });
+    batch.update(_scriptureThreads(circleId).doc(threadId), {
+      'commentCount': FieldValue.increment(1),
+    });
+    await batch.commit();
   }
 
   @override
-  Future<String> fetchBiblePassage(
-      String reference, String translation) async {
-    final data = await _call('circleFetchBiblePassage',
-        {'reference': reference, 'translation': translation});
-    return data['text'] as String? ?? '';
+  Future<void> deleteComment(
+      String circleId, String threadId, String commentId) async {
+    final batch = _db.batch();
+    batch.update(_threadComments(circleId, threadId).doc(commentId), {
+      'deletedAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(_scriptureThreads(circleId).doc(threadId), {
+      'commentCount': FieldValue.increment(-1),
+    });
+    await batch.commit();
   }
 
   // ── Feature 3: Circle Habits ──────────────────────────────────────────────
@@ -649,6 +699,39 @@ class FirestoreCircleRepository implements CircleRepository {
       'value': value,
       'completedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  @override
+  Future<void> updateCircleHabit({
+    required String circleId,
+    required String habitId,
+    required String name,
+    required CircleHabitTrackingType trackingType,
+    int? targetValue,
+    required CircleHabitFrequency frequency,
+    List<int>? specificDays,
+    String? anchorVerse,
+    String? purposeStatement,
+    String? description,
+  }) async {
+    await _call('circleUpdateHabit', {
+      'circleId': circleId,
+      'habitId': habitId,
+      'name': name,
+      'trackingType': _circleHabitTrackingTypeToString(trackingType),
+      'targetValue': targetValue,
+      'frequency': _circleHabitFrequencyToString(frequency),
+      'specificDays': specificDays,
+      'anchorVerse': anchorVerse,
+      'purposeStatement': purposeStatement,
+      'description': description,
+    });
+  }
+
+  @override
+  Future<void> deleteCircleHabit(String circleId, String habitId) async {
+    await _call('circleDeleteHabit',
+        {'circleId': circleId, 'habitId': habitId});
   }
 
   @override
@@ -838,6 +921,27 @@ class FirestoreCircleRepository implements CircleRepository {
   }
 
   @override
+  Future<void> updateEvent({
+    required String circleId,
+    required String eventId,
+    required String title,
+    required DateTime eventDate,
+    String? description,
+    String? location,
+    String? meetingLink,
+  }) async {
+    await _call('circleUpdateEvent', {
+      'circleId': circleId,
+      'eventId': eventId,
+      'title': title,
+      'eventDateMs': eventDate.millisecondsSinceEpoch,
+      'description': description,
+      'location': location,
+      'meetingLink': meetingLink,
+    });
+  }
+
+  @override
   Future<void> deleteEvent(String circleId, String eventId) async {
     await _call('circleDeleteEvent',
         {'circleId': circleId, 'eventId': eventId});
@@ -865,19 +969,34 @@ class FirestoreCircleRepository implements CircleRepository {
     );
   }
 
-  static ScriptureFocus _parseScriptureFocus(
+  static ScriptureThread _parseScriptureThread(
       String id, Map<String, dynamic> d) {
-    return ScriptureFocus(
+    return ScriptureThread(
       id: id,
       circleId: d['circleId'] as String? ?? '',
-      setById: d['setById'] as String? ?? '',
-      setByDisplayName: d['setByDisplayName'] as String? ?? '',
+      createdById: d['createdById'] as String? ?? '',
+      createdByDisplayName: d['createdByDisplayName'] as String? ?? '',
       reference: d['reference'] as String? ?? '',
-      text: d['text'] as String? ?? '',
-      translation: d['translation'] as String? ?? '',
-      reflectionPrompt: d['reflectionPrompt'] as String?,
-      weekStartDate: _tsToIso(d['weekStartDate']),
+      passageText: d['passageText'] as String? ?? '',
+      translation: d['translation'] as String? ?? 'WEB',
+      status: d['status'] as String? ?? 'open',
       createdAt: _tsToIso(d['createdAt']),
+      closedAt: d['closedAt'] != null ? _tsToIso(d['closedAt']) : null,
+      commentCount: d['commentCount'] as int? ?? 0,
+    );
+  }
+
+  static ScriptureComment _parseScriptureComment(
+      String id, Map<String, dynamic> d) {
+    return ScriptureComment(
+      id: id,
+      threadId: d['threadId'] as String? ?? '',
+      authorId: d['authorId'] as String? ?? '',
+      authorDisplayName: d['authorDisplayName'] as String? ?? '',
+      text: d['text'] as String? ?? '',
+      parentId: d['parentId'] as String?,
+      createdAt: _tsToIso(d['createdAt']),
+      deletedAt: d['deletedAt'] != null ? _tsToIso(d['deletedAt']) : null,
     );
   }
 
@@ -893,7 +1012,7 @@ class FirestoreCircleRepository implements CircleRepository {
       targetValue: d['targetValue'] as int?,
       frequency: _parseCircleHabitFrequency(d['frequency'] as String?),
       specificDays: (d['specificDays'] as List<dynamic>?)
-          ?.map((e) => e as int)
+          ?.map((e) => (e as num).toInt())
           .toList(),
       anchorVerse: d['anchorVerse'] as String?,
       purposeStatement: d['purposeStatement'] as String?,
@@ -1117,10 +1236,96 @@ class FirestoreCircleRepository implements CircleRepository {
     }
   }
 
+  // ── Group Prayer List ─────────────────────────────────────────────────────
+
+  @override
+  Future<CirclePrayerList?> getGroupPrayerList(String circleId) async {
+    final uid = _uid;
+    final metaSnap = await _groupPrayerListMeta(circleId).get();
+    if (!metaSnap.exists) return null;
+    final meta = metaSnap.data() as Map<String, dynamic>;
+    final visibleIds =
+        ((meta['visibleToMemberIds'] as List<dynamic>?) ?? []).cast<String>();
+    final isAdmin = await _isAdmin(circleId, uid);
+    if (!isAdmin && !visibleIds.contains(uid)) {
+      return CirclePrayerList(
+        circleId: circleId,
+        createdBy: meta['createdBy'] as String?,
+        createdAt: _tsToIso(meta['createdAt']),
+        visibleToMemberIds: visibleIds,
+        items: const [],
+      );
+    }
+    final itemsSnap =
+        await _groupPrayerItems(circleId).orderBy('order').get();
+    final items = itemsSnap.docs.map((d) {
+      final data = d.data() as Map<String, dynamic>;
+      return CirclePrayerItem(
+        id: d.id,
+        text: data['text'] as String? ?? '',
+        status: PrayerItemStatus.fromString(data['status'] as String? ?? ''),
+        memo: data['memo'] as String?,
+        createdAt: _tsToIso(data['createdAt']),
+        answeredAt: data['answeredAt'] != null
+            ? _tsToIso(data['answeredAt'])
+            : null,
+        order: (data['order'] as num?)?.toInt() ?? 0,
+      );
+    }).toList();
+    return CirclePrayerList(
+      circleId: circleId,
+      createdBy: meta['createdBy'] as String?,
+      createdAt: _tsToIso(meta['createdAt']),
+      visibleToMemberIds: visibleIds,
+      items: items,
+    );
+  }
+
+  @override
+  Future<void> saveGroupPrayerList(CirclePrayerList list) async {
+    final data = <String, dynamic>{
+      'createdBy': list.createdBy ?? _uid,
+      'visibleToMemberIds': list.visibleToMemberIds,
+    };
+    // Only stamp createdAt on initial creation; preserve the original on updates.
+    if (list.createdAt == null) {
+      data['createdAt'] = FieldValue.serverTimestamp();
+    }
+    await _groupPrayerListMeta(list.circleId).set(data, SetOptions(merge: true));
+  }
+
+  @override
+  Future<void> upsertGroupPrayerItem(
+      String circleId, CirclePrayerItem item) async {
+    await _groupPrayerItems(circleId).doc(item.id).set({
+      'text': item.text,
+      'status': item.status.rawValue,
+      'memo': item.memo,
+      'createdAt': item.createdAt,
+      'answeredAt': item.answeredAt,
+      'order': item.order,
+    });
+  }
+
+  @override
+  Future<void> deleteGroupPrayerItem(String circleId, String itemId) async {
+    await _groupPrayerItems(circleId).doc(itemId).delete();
+  }
+
+  Future<bool> _isAdmin(String circleId, String uid) async {
+    final snap = await _members(circleId).doc(uid).get();
+    if (!snap.exists) return false;
+    final data = snap.data() as Map<String, dynamic>;
+    return (data['role'] as String?) == 'admin';
+  }
+
   // ── Timestamp helper ──────────────────────────────────────────────────────
 
   static String _tsToIso(dynamic ts) {
     if (ts is Timestamp) return ts.toDate().toIso8601String();
-    return DateTime.now().toIso8601String();
+    // Client-written items store an ISO string directly.
+    if (ts is String && ts.isNotEmpty) return ts;
+    // Missing/malformed — return epoch so downstream sorts are stable.
+    return DateTime.utc(2000).toIso8601String();
   }
 }

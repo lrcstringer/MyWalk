@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entities/beatitude.dart';
 import '../../theme/app_theme.dart';
-import '../bible/bible_browser_view.dart';
+import 'bible_project_browser_view.dart';
 import '../journal/journal_entry_composer.dart';
 import 'beatitude_practices_view.dart';
 
@@ -27,10 +27,7 @@ class BeatitudeDetailView extends StatelessWidget {
             actions: [
               IconButton(
                 icon: const Icon(Icons.menu_book_outlined, color: MyWalkColor.softGold),
-                onPressed: () => Navigator.push<void>(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BibleBrowserView()),
-                ),
+                onPressed: () => BibleProjectBrowserView.openOrPrompt(context),
                 tooltip: 'Bible',
               ),
             ],
@@ -125,13 +122,7 @@ class BeatitudeDetailView extends StatelessWidget {
 
                   // Verse quote — tappable → opens Bible browser
                   GestureDetector(
-                    onTap: () => Navigator.push<void>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            BibleBrowserView(initialReference: beatitude.verseRef),
-                      ),
-                    ),
+                    onTap: () => BibleProjectBrowserView.openOrPrompt(context, reference: beatitude.verseRef),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                       decoration: BoxDecoration(

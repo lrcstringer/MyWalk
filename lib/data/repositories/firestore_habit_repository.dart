@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
 import '../../domain/repositories/habit_repository.dart';
+import '../services/encryption_service.dart';
 
 /// Firestore-backed implementation of [HabitRepository].
 ///
@@ -17,12 +18,14 @@ import '../../domain/repositories/habit_repository.dart';
 /// memory usage bounded; lifetime stats come from the aggregate fields.
 class FirestoreHabitRepository implements HabitRepository {
   final FirebaseFirestore _db;
+  final EncryptionService _enc;
 
   /// How many days of entries to load for display (current week + retroactive window).
   static const int _entryWindowDays = 28;
 
-  FirestoreHabitRepository({FirebaseFirestore? db})
-      : _db = db ?? FirebaseFirestore.instance;
+  FirestoreHabitRepository({FirebaseFirestore? db, EncryptionService? enc})
+      : _db = db ?? FirebaseFirestore.instance,
+        _enc = enc ?? EncryptionService();
 
   String get _uid {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -63,20 +66,27 @@ class FirestoreHabitRepository implements HabitRepository {
 
     return List.generate(habitsSnap.docs.length, (i) {
       final data = habitsSnap.docs[i].data();
+      data['notes'] = _enc.decryptField(data['notes'] as String?, uid);
       return Habit.fromFirestore(data, entries: entriesList[i]);
     }).where((h) => !h.isArchived).toList();
   }
 
   @override
   Future<void> insertHabit(Habit habit) async {
-    await _habitsRef.doc(habit.id).set(habit.toFirestore());
+    final uid = _uid;
+    final data = habit.toFirestore();
+    data['notes'] = _enc.encryptField(data['notes'] as String?, uid);
+    await _habitsRef.doc(habit.id).set(data);
   }
 
   @override
   Future<void> updateHabit(Habit habit) async {
+    final uid = _uid;
+    final data = habit.toFirestore();
+    data['notes'] = _enc.encryptField(data['notes'] as String?, uid);
     // Use merge so we don't accidentally wipe aggregate counters if the caller
     // didn't populate them.
-    await _habitsRef.doc(habit.id).set(habit.toFirestore(), SetOptions(merge: true));
+    await _habitsRef.doc(habit.id).set(data, SetOptions(merge: true));
   }
 
   @override

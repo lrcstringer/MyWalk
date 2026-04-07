@@ -53,8 +53,9 @@ dependencies:
   cloud_firestore: ^5.4.4
   cloud_functions: ^5.1.3
 
-  # Cryptography (nonce for Apple Sign In)
+  # Cryptography (nonce for Apple Sign In + field encryption)
   crypto: ^3.0.3
+  encrypt: ^5.0.3
 
   # Sign in
   sign_in_with_apple: ^6.1.4
@@ -103,11 +104,20 @@ dependencies:
   # Runtime permission requests (camera, mic, photos)
   permission_handler: ^11.3.1
 
+  # Voice dictation into Quill editor
+  speech_to_text: ^7.0.0
+
   # Network connectivity monitoring (offline upload queue)
   connectivity_plus: ^6.1.1
 
   # Local file paths for offline media storage
   path_provider: ^2.1.5
+
+  # Inline video playback (Bible Project videos via Mux)
+  video_player: ^2.9.2
+
+  # In-app web browser (BibleProject Bible viewer)
+  webview_flutter: ^4.10.0
 
   # Local SQLite database (Bible text)
   sqflite: ^2.3.3

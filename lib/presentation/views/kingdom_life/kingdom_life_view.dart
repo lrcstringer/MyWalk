@@ -3,6 +3,7 @@ import '../fruit/fruit_portfolio_view.dart';
 import '../kingdom_life/beatitudes_view.dart';
 import '../kingdom_life/parables_view.dart';
 import '../kingdom_life/i_am_sayings_view.dart';
+import '../kingdom_life/how_to_pray_view.dart';
 import '../kingdom_life/women_of_valor_view.dart';
 import '../../theme/app_theme.dart';
 
@@ -108,6 +109,21 @@ class KingdomLifeView extends StatelessWidget {
                               subtitle: 'Proverbs 31:10',
                               onTap: () => Navigator.push(context,
                                   MaterialPageRoute(builder: (_) => const WomenOfValorView())),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: cardWidth,
+                            child: _KingdomCard(
+                              imagePath: 'assets/praying.png',
+                              title: 'How to Pray',
+                              subtitle: 'Matthew 6:9\u201313',
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const HowToPrayView())),
                             ),
                           ),
                         ],

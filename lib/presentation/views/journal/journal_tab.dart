@@ -250,29 +250,73 @@ class _JournalTabState extends State<JournalTab> {
             )
 
           // ── Entry list ────────────────────────────────────────────────────
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) {
-                    final entry = entries[i];
-                    return _JournalEntryCard(
-                      entry: entry,
-                      theme: theme,
-                      onTap: () => Navigator.push<void>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              JournalEntryDetailView(entry: entry),
-                        ),
+          else ...[
+            Builder(builder: (context) {
+              final pinnedCount = entries.where((e) => e.pinned).length;
+              final unpinnedCount = entries.length - pinnedCount;
+
+              return SliverMainAxisGroup(slivers: [
+                // Pinned section
+                if (pinnedCount > 0) ...[
+                  SliverToBoxAdapter(
+                    child: _SectionLabel(
+                        label: 'PINNED', icon: Icons.push_pin_rounded, theme: theme),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, i) {
+                          final entry = entries[i];
+                          return _JournalEntryCard(
+                            entry: entry,
+                            theme: theme,
+                            onTap: () => Navigator.push<void>(ctx,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        JournalEntryDetailView(entry: entry))),
+                            onLongPress: () =>
+                                _showPinSheet(ctx, entry, provider),
+                          );
+                        },
+                        childCount: pinnedCount,
                       ),
-                    );
-                  },
-                  childCount: entries.length,
-                ),
-              ),
-            ),
+                    ),
+                  ),
+                ],
+
+                // Unpinned section
+                if (unpinnedCount > 0) ...[
+                  if (pinnedCount > 0)
+                    SliverToBoxAdapter(
+                      child: _SectionLabel(
+                          label: 'ENTRIES', icon: null, theme: theme),
+                    ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, i) {
+                          final entry = entries[pinnedCount + i];
+                          return _JournalEntryCard(
+                            entry: entry,
+                            theme: theme,
+                            onTap: () => Navigator.push<void>(ctx,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        JournalEntryDetailView(entry: entry))),
+                            onLongPress: () =>
+                                _showPinSheet(ctx, entry, provider),
+                          );
+                        },
+                        childCount: unpinnedCount,
+                      ),
+                    ),
+                  ),
+                ],
+              ]);
+            }),
+          ],
         ],
       ),
     );
@@ -281,21 +325,103 @@ class _JournalTabState extends State<JournalTab> {
 
 // ── Entry Card ───────────────────────────────────────────────────────────────
 
+// ── Section Label ────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final JournalTheme theme;
+
+  const _SectionLabel({required this.label, required this.icon, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 11, color: theme.accentAction.withValues(alpha: 0.7)),
+            const SizedBox(width: 5),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: theme.textSecondary.withValues(alpha: 0.6),
+              letterSpacing: 1.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Pin sheet ────────────────────────────────────────────────────────────────
+
+void _showPinSheet(BuildContext context, JournalEntry entry, JournalProvider provider) {
+  final theme = context.read<JournalThemeProvider>().theme;
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: theme.bgCard,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (_) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: theme.textSecondary.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          ListTile(
+            leading: Icon(
+              entry.pinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
+              color: theme.accentAction,
+            ),
+            title: Text(
+              entry.pinned ? 'Unpin entry' : 'Pin to top',
+              style: TextStyle(color: theme.textPrimary, fontWeight: FontWeight.w500),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              provider.togglePin(entry);
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
+}
+
+// ── Entry Card ───────────────────────────────────────────────────────────────
+
 class _JournalEntryCard extends StatelessWidget {
   final JournalEntry entry;
   final JournalTheme theme;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   const _JournalEntryCard({
     required this.entry,
     required this.theme,
     required this.onTap,
+    required this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
@@ -311,6 +437,11 @@ class _JournalEntryCard extends StatelessWidget {
             // Top row: date + media indicators
             Row(
               children: [
+                if (entry.pinned) ...[
+                  Icon(Icons.push_pin_rounded,
+                      size: 12, color: theme.accentAction.withValues(alpha: 0.8)),
+                  const SizedBox(width: 4),
+                ],
                 Text(
                   _shortDate(entry.createdAt),
                   style: TextStyle(

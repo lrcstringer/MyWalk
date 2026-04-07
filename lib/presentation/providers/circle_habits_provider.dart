@@ -38,9 +38,16 @@ class CircleHabitsProvider extends ChangeNotifier {
 
       final today = WeekIdService.todayStr();
       // Load today's summary for each active habit concurrently.
+      // Per-future error handling prevents one transient failure from
+      // aborting all other summaries.
       final summaries = await Future.wait(
-        habits.map((h) => _repo.getCircleHabitDailySummary(
-            circleId, h.id, today)),
+        habits.map((h) async {
+          try {
+            return await _repo.getCircleHabitDailySummary(circleId, h.id, today);
+          } catch (_) {
+            return null;
+          }
+        }),
       );
       for (var i = 0; i < habits.length; i++) {
         final summary = summaries[i];
@@ -85,6 +92,18 @@ class CircleHabitsProvider extends ChangeNotifier {
         value: value,
         date: today,
       );
+      // If there was no cached summary, seed one now so the button
+      // disappears and the card reflects the completion immediately.
+      if (existing == null) {
+        _summaries[key] = CircleHabitDailySummary(
+          id: today,
+          habitId: habitId,
+          totalMembers: 0,
+          completedCount: 1,
+          completedUserIds: [uid],
+        );
+        notifyListeners();
+      }
     } catch (_) {
       // Roll back on failure.
       if (existing != null) {
@@ -130,6 +149,45 @@ class CircleHabitsProvider extends ChangeNotifier {
       _creating = false;
       notifyListeners();
     }
+  }
+
+  Future<void> updateHabit({
+    required String circleId,
+    required String habitId,
+    required String name,
+    required CircleHabitTrackingType trackingType,
+    int? targetValue,
+    required CircleHabitFrequency frequency,
+    List<int>? specificDays,
+    String? anchorVerse,
+    String? purposeStatement,
+    String? description,
+  }) async {
+    try {
+      await _repo.updateCircleHabit(
+        circleId: circleId,
+        habitId: habitId,
+        name: name,
+        trackingType: trackingType,
+        targetValue: targetValue,
+        frequency: frequency,
+        specificDays: specificDays,
+        anchorVerse: anchorVerse,
+        purposeStatement: purposeStatement,
+        description: description,
+      );
+      await load(circleId);
+    } catch (e) {
+      error = e.toString();
+      rethrow;
+    }
+  }
+
+  Future<void> deleteHabit(String circleId, String habitId) async {
+    await _repo.deleteCircleHabit(circleId, habitId);
+    _habitsByCircle[circleId] =
+        (_habitsByCircle[circleId] ?? []).where((h) => h.id != habitId).toList();
+    notifyListeners();
   }
 
   Future<void> deactivate(String circleId, String habitId) async {

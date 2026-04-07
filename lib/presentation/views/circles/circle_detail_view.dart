@@ -5,22 +5,20 @@ import 'package:share_plus/share_plus.dart';
 import '../../../data/datasources/remote/auth_service.dart';
 import '../../providers/store_provider.dart';
 import '../../providers/prayer_list_provider.dart';
-import '../../providers/scripture_focus_provider.dart';
 import '../../providers/circle_habits_provider.dart';
 import '../../providers/encouragement_provider.dart';
 import '../../providers/milestone_share_provider.dart';
 import '../../providers/circle_habit_milestone_provider.dart';
 import '../../providers/weekly_pulse_provider.dart';
 import '../../providers/circle_events_provider.dart';
+import '../../providers/group_prayer_list_provider.dart';
 import '../../../domain/repositories/circle_repository.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
 import 'circle_sunday_summary_view.dart';
 import 'gratitude_wall_view.dart' show GratitudeWallWidget;
-import 'sos_prayer_request_view.dart';
-import '../shared/mywalk_paywall_view.dart';
-import 'prayer_list_tab.dart';
-import 'scripture_focus_tab.dart';
+import 'circle_prayer_tab.dart';
+import 'scripture_threads_tab.dart';
 import 'circle_habits_tab.dart';
 import 'activity_tab.dart';
 import 'events_tab.dart';
@@ -77,7 +75,7 @@ class _CircleDetailViewState extends State<CircleDetailView>
   void _loadProviders() {
     final uid = AuthService.shared.userId ?? '';
     context.read<PrayerListProvider>().load(widget.circleId);
-    context.read<ScriptureFocusProvider>().load(widget.circleId, uid);
+    context.read<GroupPrayerListProvider>().load(widget.circleId);
     context.read<CircleHabitsProvider>().load(widget.circleId);
     context.read<EncouragementProvider>().load(widget.circleId);
     context.read<MilestoneShareProvider>().load(widget.circleId);
@@ -237,42 +235,35 @@ class _CircleDetailViewState extends State<CircleDetailView>
             heatmapFailed: _heatmapFailed,
             milestones: _milestones,
             milestonesFailed: _milestonesFailed,
-            onSOSTap: () => _showSOSRequest(detail),
             onSummaryTap: () => _showSundaySummary(detail),
             onLeaveTap: _confirmLeave,
             isLeaving: _isLeaving,
             onRoleChanged: _loadDetail,
           ),
-          PrayerListTab(circleId: widget.circleId),
-          ScriptureFocusTab(circleId: widget.circleId, settings: detail.settings),
+          CirclePrayerTab(
+            circleId: widget.circleId,
+            isAdmin: detail.members.any(
+                (m) => m.userId == AuthService.shared.userId && m.isAdmin),
+            members: detail.members,
+          ),
+          ScriptureThreadsTab(
+            circleId: widget.circleId,
+            settings: detail.settings,
+            isAdmin: detail.members.any(
+                (m) => m.userId == AuthService.shared.userId && m.isAdmin),
+          ),
           CircleHabitsTab(circleId: widget.circleId, isAdmin: detail.members.any(
               (m) => m.userId == AuthService.shared.userId && m.isAdmin)),
           ActivityTab(circleId: widget.circleId, members: detail.members),
-          EventsTab(circleId: widget.circleId, isAdmin: detail.members.any(
-              (m) => m.userId == AuthService.shared.userId && m.isAdmin)),
+          EventsTab(
+            circleId: widget.circleId,
+            isAdmin: detail.members.any(
+                (m) => m.userId == AuthService.shared.userId && m.isAdmin),
+            settings: detail.settings,
+          ),
         ],
       ),
     ),
-    );
-  }
-
-  void _showSOSRequest(CircleDetails detail) {
-    final isPremium = context.read<StoreProvider>().isPremium;
-    if (!isPremium) {
-      showModalBottomSheet(
-        context: context, isScrollControlled: true, useSafeArea: true,
-        backgroundColor: MyWalkColor.charcoal,
-        builder: (_) => const MyWalkPaywallView(
-          contextTitle: 'SOS Support',
-          contextMessage: "Tough moment? The SOS feature can help — it'll remind you why you started and connect you with your circle.",
-        ),
-      );
-      return;
-    }
-    showModalBottomSheet(
-      context: context, isScrollControlled: true, useSafeArea: true,
-      backgroundColor: MyWalkColor.charcoal,
-      builder: (_) => SOSPrayerRequestView(circleId: widget.circleId, members: detail.members),
     );
   }
 
@@ -333,7 +324,6 @@ class _OverviewTab extends StatelessWidget {
   final bool heatmapFailed;
   final CollectiveMilestones? milestones;
   final bool milestonesFailed;
-  final VoidCallback onSOSTap;
   final VoidCallback onSummaryTap;
   final VoidCallback onLeaveTap;
   final bool isLeaving;
@@ -346,7 +336,6 @@ class _OverviewTab extends StatelessWidget {
     required this.heatmapFailed,
     required this.milestones,
     required this.milestonesFailed,
-    required this.onSOSTap,
     required this.onSummaryTap,
     required this.onLeaveTap,
     required this.isLeaving,
@@ -366,13 +355,6 @@ class _OverviewTab extends StatelessWidget {
         GratitudeWallWidget(circleId: circleId),
         const SizedBox(height: 16),
         _sectionHeader('Actions'),
-        const SizedBox(height: 8),
-        _actionRow(
-          icon: Icons.bolt_rounded, iconColor: MyWalkColor.warmCoral,
-          iconBg: MyWalkColor.warmCoral.withValues(alpha: 0.12),
-          title: 'SOS Prayer Request', subtitle: 'Ask your circle to pray for you now',
-          onTap: onSOSTap,
-        ),
         const SizedBox(height: 8),
         _actionRow(
           icon: Icons.wb_sunny_rounded, iconColor: MyWalkColor.golden,

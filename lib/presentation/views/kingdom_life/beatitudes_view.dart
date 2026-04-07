@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../../../domain/entities/beatitude.dart';
 import '../../theme/app_theme.dart';
 import 'beatitude_detail_view.dart';
@@ -91,7 +92,9 @@ class BeatitudesView extends StatelessWidget {
                       height: 1.65,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
+                  const _BibleProjectVideoCard(),
+                  const SizedBox(height: 20),
                   Text(
                     'They move from the inside out: beginning with humility before God, moving through surrender and desire, and flowing outward into mercy, peace and costly faithfulness in the world.',
                     style: TextStyle(
@@ -311,6 +314,172 @@ class BeatitudesView extends StatelessWidget {
           ),
         ),
       );
+}
+
+// ── Bible Project Video Card ──────────────────────────────────────────────────
+
+class _BibleProjectVideoCard extends StatefulWidget {
+  const _BibleProjectVideoCard();
+
+  @override
+  State<_BibleProjectVideoCard> createState() => _BibleProjectVideoCardState();
+}
+
+class _BibleProjectVideoCardState extends State<_BibleProjectVideoCard> {
+  late final VideoPlayerController _controller;
+  bool _initialized = false;
+  bool _hasError = false;
+
+  static const _videoUrl =
+      'https://stream.mux.com/83STGVxtcO01902cUvy00g1SJzT4xju2no7DTh9pCZJvRE/high.mp4';
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(_videoUrl))
+      ..initialize().then((_) {
+        if (mounted) setState(() => _initialized = true);
+      }).catchError((_) {
+        if (mounted) setState(() => _hasError = true);
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.play_circle_outline, size: 14, color: _kAccent),
+            const SizedBox(width: 6),
+            Text(
+              'Watch a 5 min. intro to the Sermon on the Mount',
+              style: TextStyle(
+                fontSize: 12,
+                color: _kAccent.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: MyWalkColor.golden.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: _hasError ? _buildOffline() : (_initialized ? _buildPlayer() : _buildLoading()),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Opacity(
+              opacity: 0.5,
+              child: Image.asset(
+                'assets/BP_logo_wht.png',
+                height: 16,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'BibleProject is the author and owner of this video content. To find more BibleProject resources, visit bibleproject.com.',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOffline() => Container(
+        color: Colors.black,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off_rounded, size: 32, color: Colors.white.withValues(alpha: 0.3)),
+            const SizedBox(height: 10),
+            Text(
+              'Video unavailable offline',
+              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.45)),
+            ),
+          ],
+        ),
+      );
+
+  Widget _buildLoading() => Container(
+        color: Colors.black,
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation(_kAccent),
+            strokeWidth: 2,
+          ),
+        ),
+      );
+
+  Widget _buildPlayer() {
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: _controller,
+      builder: (context, value, _) {
+        return GestureDetector(
+          onTap: () =>
+              value.isPlaying ? _controller.pause() : _controller.play(),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              VideoPlayer(_controller),
+              if (!value.isPlaying)
+                Container(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  child: const Icon(
+                    Icons.play_circle_filled,
+                    size: 64,
+                    color: Colors.white,
+                  ),
+                ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: VideoProgressIndicator(
+                  _controller,
+                  allowScrubbing: true,
+                  colors: VideoProgressColors(
+                    playedColor: _kAccent,
+                    bufferedColor: Colors.white.withValues(alpha: 0.3),
+                    backgroundColor: Colors.black.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 // ── Beatitude Card ────────────────────────────────────────────────────────────

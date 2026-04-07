@@ -251,12 +251,124 @@ class _PrayerRequestCard extends StatelessWidget {
               final note = noteController.text.trim().isEmpty ? null : noteController.text.trim();
               Navigator.pop(dialogContext);
               context.read<PrayerListProvider>().markAnswered(circleId, request.id, answeredNote: note);
+              _promptGratitudeShare(context, note ?? request.requestText);
             },
-            child: const Text('Confirm', style: TextStyle(color: MyWalkColor.golden)),
+            child: const Text('Mark Answered', style: TextStyle(color: MyWalkColor.sage, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    ).whenComplete(noteController.dispose);
+  }
+
+  void _promptGratitudeShare(BuildContext context, String prayerText) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.cardBackground,
+        title: const Text('Praise God!',
+            style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
+        content: Text(
+          'Would you like to share this answered prayer on the Gratitude Wall?',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Not now', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showGratitudeShareSheet(context, prayerText);
+            },
+            child: const Text('Share', style: TextStyle(color: MyWalkColor.sage, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
     );
+  }
+
+  void _showGratitudeShareSheet(BuildContext context, String prayerText) {
+    final textController = TextEditingController(text: 'God answered my prayer: $prayerText');
+    bool anonymous = false;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: MyWalkColor.charcoal,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Center(child: Container(width: 36, height: 4,
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              const Text('Share to Gratitude Wall',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: textController,
+                maxLength: 500,
+                maxLines: 4,
+                style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: MyWalkColor.inputBackground,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  counterStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
+                ),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => setModalState(() => anonymous = !anonymous),
+                child: Row(children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 20, height: 20,
+                    decoration: BoxDecoration(
+                      color: anonymous ? MyWalkColor.golden.withValues(alpha: 0.15) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: anonymous ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.3)),
+                    ),
+                    child: anonymous ? const Icon(Icons.check, size: 14, color: MyWalkColor.golden) : null,
+                  ),
+                  const SizedBox(width: 10),
+                  Text('Share anonymously', style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.7))),
+                ]),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final text = textController.text.trim();
+                    if (text.isEmpty) return;
+                    final provider = context.read<PrayerListProvider>();
+                    final nav = Navigator.of(ctx);
+                    await provider.shareGratitude(
+                      circleId: circleId,
+                      text: text,
+                      isAnonymous: anonymous,
+                    );
+                    nav.pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MyWalkColor.sage,
+                    foregroundColor: MyWalkColor.charcoal,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Share Gratitude', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    ).whenComplete(textController.dispose);
   }
 
   String _relativeTime(String iso) {

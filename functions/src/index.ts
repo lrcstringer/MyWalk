@@ -29,6 +29,8 @@ export {
 } from './callables/scripture';
 export {
   circleCreateHabit,
+  circleUpdateHabit,
+  circleDeleteHabit,
   circleDeactivateHabit,
   circleCompleteHabitAggregation,
   circleHabitMilestoneCheck,
@@ -51,6 +53,7 @@ export {
 } from './callables/pulse';
 export {
   circleCreateEvent,
+  circleUpdateEvent,
   circleDeleteEvent,
   sendEventReminders,
 } from './callables/events';

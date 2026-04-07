@@ -49,6 +49,14 @@ export const circleCreateHabit = onCall(
     if (!['DAILY', 'WEEKLY', 'SPECIFIC_DAYS'].includes(frequency)) {
       throw new HttpsError('invalid-argument', 'Invalid frequency');
     }
+    if (frequency === 'SPECIFIC_DAYS') {
+      if (!Array.isArray(specificDays) || specificDays.length === 0) {
+        throw new HttpsError('invalid-argument', 'specificDays required when frequency is SPECIFIC_DAYS');
+      }
+      if (!specificDays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6)) {
+        throw new HttpsError('invalid-argument', 'specificDays values must be integers 0–6');
+      }
+    }
 
     const uid = request.auth.uid;
 
@@ -70,7 +78,7 @@ export const circleCreateHabit = onCall(
       trackingType,
       targetValue: targetValue ?? null,
       frequency,
-      specificDays: specificDays ?? null,
+      specificDays: specificDays ? [...new Set(specificDays)].sort((a, b) => a - b) : null,
       anchorVerse: anchorVerse?.trim() ?? null,
       purposeStatement: purposeStatement?.trim() ?? null,
       isActive: true,
@@ -94,6 +102,141 @@ export const circleCreateHabit = onCall(
     }
 
     return { id: ref.id };
+  }
+);
+
+// ── circleUpdateHabit ─────────────────────────────────────────────────────────
+
+export const circleUpdateHabit = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+
+    const {
+      circleId,
+      habitId,
+      name,
+      trackingType,
+      targetValue,
+      frequency,
+      specificDays,
+      anchorVerse,
+      purposeStatement,
+      description,
+    } = request.data as {
+      circleId: string;
+      habitId: string;
+      name: string;
+      trackingType: 'CHECK_IN' | 'TIMED' | 'COUNT';
+      targetValue?: number | null;
+      frequency: 'DAILY' | 'WEEKLY' | 'SPECIFIC_DAYS';
+      specificDays?: number[] | null;
+      anchorVerse?: string | null;
+      purposeStatement?: string | null;
+      description?: string | null;
+    };
+
+    if (!circleId?.trim()) throw new HttpsError('invalid-argument', 'circleId required');
+    if (!habitId?.trim()) throw new HttpsError('invalid-argument', 'habitId required');
+    if (!name?.trim()) throw new HttpsError('invalid-argument', 'name required');
+    if (!['CHECK_IN', 'TIMED', 'COUNT'].includes(trackingType)) {
+      throw new HttpsError('invalid-argument', 'Invalid trackingType');
+    }
+    if (!['DAILY', 'WEEKLY', 'SPECIFIC_DAYS'].includes(frequency)) {
+      throw new HttpsError('invalid-argument', 'Invalid frequency');
+    }
+    if (frequency === 'SPECIFIC_DAYS') {
+      if (!Array.isArray(specificDays) || specificDays.length === 0) {
+        throw new HttpsError('invalid-argument', 'specificDays required when frequency is SPECIFIC_DAYS');
+      }
+      if (!specificDays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6)) {
+        throw new HttpsError('invalid-argument', 'specificDays values must be integers 0–6');
+      }
+    }
+
+    const uid = request.auth.uid;
+
+    const [memberSnap, habitSnap] = await Promise.all([
+      membersCol(circleId).doc(uid).get(),
+      circleHabitsCol(circleId).doc(habitId).get(),
+    ]);
+
+    if (!memberSnap.exists) throw new HttpsError('permission-denied', 'Not a member of this circle');
+    if (memberSnap.data()!['role'] !== 'admin') {
+      throw new HttpsError('permission-denied', 'Only admins can edit circle habits');
+    }
+    if (!habitSnap.exists) throw new HttpsError('not-found', 'Circle habit not found');
+
+    await circleHabitsCol(circleId).doc(habitId).update({
+      name: name.trim(),
+      description: description?.trim() ?? null,
+      trackingType,
+      targetValue: targetValue ?? null,
+      frequency,
+      specificDays: specificDays ? [...new Set(specificDays)].sort((a, b) => a - b) : null,
+      anchorVerse: anchorVerse?.trim() ?? null,
+      purposeStatement: purposeStatement?.trim() ?? null,
+    });
+
+    return { success: true };
+  }
+);
+
+// ── circleDeleteHabit ─────────────────────────────────────────────────────────
+
+export const circleDeleteHabit = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+
+    const { circleId, habitId } = request.data as {
+      circleId: string;
+      habitId: string;
+    };
+
+    if (!circleId?.trim()) throw new HttpsError('invalid-argument', 'circleId required');
+    if (!habitId?.trim()) throw new HttpsError('invalid-argument', 'habitId required');
+
+    const uid = request.auth.uid;
+
+    const memberSnap = await membersCol(circleId).doc(uid).get();
+    if (!memberSnap.exists) throw new HttpsError('permission-denied', 'Not a member of this circle');
+    if (memberSnap.data()!['role'] !== 'admin') {
+      throw new HttpsError('permission-denied', 'Only admins can delete circle habits');
+    }
+
+    const habitRef = circleHabitsCol(circleId).doc(habitId);
+    const habitSnap = await habitRef.get();
+    if (!habitSnap.exists) throw new HttpsError('not-found', 'Circle habit not found');
+
+    // Delete sub-collections before the parent document.
+    // Loop in batches of 100 until all documents are gone.
+    const deleteCollection = async (collRef: FirebaseFirestore.CollectionReference) => {
+      let snap = await collRef.limit(100).get();
+      while (!snap.empty) {
+        const batch = db.batch();
+        snap.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+        snap = await collRef.limit(100).get();
+      }
+    };
+
+    await deleteCollection(habitRef.collection('completions'));
+    await deleteCollection(habitRef.collection('daily_summary'));
+
+    // Remove all milestone docs keyed to this habit.
+    const milestoneSnap = await circleHabitMilestonesCol(circleId)
+      .where('habitId', '==', habitId)
+      .get();
+    if (!milestoneSnap.empty) {
+      const batch = db.batch();
+      milestoneSnap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+
+    await habitRef.delete();
+
+    return { success: true };
   }
 );
 

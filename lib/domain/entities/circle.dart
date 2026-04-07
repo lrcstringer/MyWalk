@@ -2,6 +2,9 @@
 /// All JSON parsing lives in the data layer (FirestoreCircleRepository).
 library;
 
+import 'package:uuid/uuid.dart';
+import 'habit.dart' show PrayerItemStatus;
+
 // ── Settings ──────────────────────────────────────────────────────────────────
 
 class CircleSettings {
@@ -277,53 +280,59 @@ class PrayerRequest {
 
 // ── Feature 2: Scripture Focus ────────────────────────────────────────────────
 
-class ScriptureFocus {
-  final String id; // YYYY-WW
+class ScriptureThread {
+  final String id;
   final String circleId;
-  final String setById;
-  final String setByDisplayName;
+  final String createdById;
+  final String createdByDisplayName;
   final String reference;
-  final String text;
+  final String passageText; // Delta JSON
   final String translation;
-  final String? reflectionPrompt;
-  final String weekStartDate;
+  final String status; // 'open' | 'closed'
   final String createdAt;
-  final List<ScriptureReflection> reflections;
+  final String? closedAt;
+  final int commentCount;
 
-  const ScriptureFocus({
+  const ScriptureThread({
     required this.id,
     required this.circleId,
-    required this.setById,
-    required this.setByDisplayName,
+    required this.createdById,
+    required this.createdByDisplayName,
     required this.reference,
-    required this.text,
+    required this.passageText,
     required this.translation,
-    this.reflectionPrompt,
-    required this.weekStartDate,
+    this.status = 'open',
     required this.createdAt,
-    this.reflections = const [],
+    this.closedAt,
+    this.commentCount = 0,
   });
 
-  bool canEdit(String uid, CircleSettings settings) =>
-      uid == setById ||
-      settings.scriptureFocusPermission == 'any_member';
+  bool get isOpen => status == 'open';
 }
 
-class ScriptureReflection {
+class ScriptureComment {
   final String id;
+  final String threadId;
   final String authorId;
   final String authorDisplayName;
-  final String reflectionText;
+  final String text;
+  final String? parentId; // null = top-level; set = reply to a top-level comment
   final String createdAt;
+  final String? deletedAt; // soft-deleted; text replaced with tombstone in UI
 
-  const ScriptureReflection({
+  const ScriptureComment({
     required this.id,
+    required this.threadId,
     required this.authorId,
     required this.authorDisplayName,
-    required this.reflectionText,
+    required this.text,
+    this.parentId,
     required this.createdAt,
+    this.deletedAt,
   });
 
+  bool get isDeleted => deletedAt != null;
+  bool get isReply => parentId != null;
   bool isAuthor(String uid) => authorId == uid;
 }
 
@@ -603,4 +612,83 @@ class CircleEvent {
   DateTime get eventDateTime => DateTime.parse(eventDate);
 
   bool get isUpcoming => eventDateTime.isAfter(DateTime.now());
+}
+
+// ── Group Prayer List ─────────────────────────────────────────────────────────
+
+class CirclePrayerItem {
+  final String id;
+  final String text;
+  final PrayerItemStatus status;
+  final String? memo;
+  final String createdAt;
+  final String? answeredAt;
+  final int order;
+
+  const CirclePrayerItem({
+    required this.id,
+    required this.text,
+    required this.status,
+    this.memo,
+    required this.createdAt,
+    this.answeredAt,
+    required this.order,
+  });
+
+  factory CirclePrayerItem.create(String text, int order) => CirclePrayerItem(
+        id: const Uuid().v4(),
+        text: text,
+        status: PrayerItemStatus.praying,
+        createdAt: DateTime.now().toIso8601String(),
+        order: order,
+      );
+
+  // Sentinel so callers can explicitly pass null to clear memo or answeredAt.
+  static const Object _keep = Object();
+
+  CirclePrayerItem copyWith({
+    String? text,
+    PrayerItemStatus? status,
+    Object? memo = _keep,
+    Object? answeredAt = _keep,
+  }) =>
+      CirclePrayerItem(
+        id: id,
+        text: text ?? this.text,
+        status: status ?? this.status,
+        memo: identical(memo, _keep) ? this.memo : memo as String?,
+        createdAt: createdAt,
+        answeredAt:
+            identical(answeredAt, _keep) ? this.answeredAt : answeredAt as String?,
+        order: order,
+      );
+}
+
+class CirclePrayerList {
+  final String circleId;
+  final String? createdBy;
+  final String? createdAt;
+  final List<String> visibleToMemberIds;
+  final List<CirclePrayerItem> items;
+
+  const CirclePrayerList({
+    required this.circleId,
+    this.createdBy,
+    this.createdAt,
+    this.visibleToMemberIds = const [],
+    this.items = const [],
+  });
+
+  bool canView(String uid, {required bool isAdmin}) =>
+      isAdmin || visibleToMemberIds.contains(uid);
+
+  List<CirclePrayerItem> get activeItems => items
+      .where((i) => i.status != PrayerItemStatus.answered)
+      .toList()
+    ..sort((a, b) => a.order.compareTo(b.order));
+
+  List<CirclePrayerItem> get answeredItems => items
+      .where((i) => i.status == PrayerItemStatus.answered)
+      .toList()
+    ..sort((a, b) => (b.answeredAt ?? '').compareTo(a.answeredAt ?? ''));
 }

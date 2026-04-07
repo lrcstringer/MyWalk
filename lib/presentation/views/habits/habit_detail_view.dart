@@ -13,7 +13,7 @@ import '../../theme/app_theme.dart';
 import '../shared/mywalk_paywall_view.dart';
 import 'edit_habit_view.dart';
 import 'heatmap_view.dart';
-import '../bible/bible_browser_view.dart';
+import '../kingdom_life/bible_project_browser_view.dart';
 
 class HabitDetailView extends StatefulWidget {
   final Habit habit;
@@ -124,10 +124,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
         actions: [
           IconButton(
             icon: Icon(Icons.menu_book_outlined, color: MyWalkColor.softGold.withValues(alpha: 0.8)),
-            onPressed: () => Navigator.push<void>(
-              context,
-              MaterialPageRoute(builder: (_) => const BibleBrowserView()),
-            ),
+            onPressed: () => BibleProjectBrowserView.openOrPrompt(context),
             tooltip: 'Bible',
           ),
           IconButton(
@@ -153,6 +150,10 @@ class _HabitDetailViewState extends State<HabitDetailView> {
             const SizedBox(height: 20),
           ],
           _purposeSection(),
+          if (_habit.hasPrayerItems) ...[
+            const SizedBox(height: 20),
+            _prayerItemsSection(),
+          ],
           if (_notesController != null) ...[
             const SizedBox(height: 20),
             _notesDisplaySection(),
@@ -637,6 +638,207 @@ class _HabitDetailViewState extends State<HabitDetailView> {
     );
   }
 
+  // ── Prayer Items ────────────────────────────────────────────────────────────
+
+  void _savePrayerItems(List<PrayerItem> items) {
+    _habitProvider.updateHabit(_habit.copyWith(prayerItems: items));
+  }
+
+  void _addPrayerItem() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.cardBackground,
+        title: const Text('Add Prayer Item',
+            style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 200,
+          style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'What would you like to pray for?',
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+            filled: true,
+            fillColor: MyWalkColor.inputBackground,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none),
+            counterStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+          ),
+          maxLines: 2,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+          ),
+          TextButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Navigator.pop(ctx);
+              final updated = [..._habit.prayerItems, PrayerItem.create(text)];
+              _savePrayerItems(updated);
+            },
+            child: const Text('Add', style: TextStyle(color: MyWalkColor.golden)),
+          ),
+        ],
+      ),
+    ).whenComplete(controller.dispose);
+  }
+
+  void _cyclePrayerItemStatus(PrayerItem item) {
+    final next = switch (item.status) {
+      PrayerItemStatus.praying => PrayerItemStatus.unanswered,
+      PrayerItemStatus.unanswered => PrayerItemStatus.answered,
+      PrayerItemStatus.answered => PrayerItemStatus.praying,
+    };
+    final answeredAt = next == PrayerItemStatus.answered
+        ? DateTime.now().toIso8601String()
+        : null;
+    final updated = _habit.prayerItems
+        .map((p) => p.id == item.id
+            ? p.copyWith(status: next, answeredAt: answeredAt)
+            : p)
+        .toList();
+    _savePrayerItems(updated);
+  }
+
+  void _deletePrayerItem(String id) {
+    final updated = _habit.prayerItems.where((p) => p.id != id).toList();
+    _savePrayerItems(updated);
+  }
+
+  Widget _prayerItemsSection() {
+    final active = _habit.prayerItems
+        .where((p) => p.status != PrayerItemStatus.answered)
+        .toList();
+    final answered = _habit.prayerItems
+        .where((p) => p.status == PrayerItemStatus.answered)
+        .toList();
+    final canAdd = _habit.prayerItems.length < 10;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: MyWalkDecorations.card,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Text('Prayer List',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: MyWalkColor.softGold)),
+          const Spacer(),
+          if (canAdd)
+            GestureDetector(
+              onTap: _addPrayerItem,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.add_circle_outline_rounded,
+                    size: 16, color: MyWalkColor.golden.withValues(alpha: 0.8)),
+                const SizedBox(width: 4),
+                Text('Add',
+                    style: TextStyle(
+                        fontSize: 12, color: MyWalkColor.golden.withValues(alpha: 0.8))),
+              ]),
+            )
+          else
+            Text('10/10',
+                style: TextStyle(
+                    fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+        ]),
+        if (_habit.prayerItems.isEmpty) ...[
+          const SizedBox(height: 16),
+          Center(
+            child: Text('Tap Add to record your first prayer item.',
+                style: TextStyle(
+                    fontSize: 13, color: Colors.white.withValues(alpha: 0.35))),
+          ),
+        ] else ...[
+          if (active.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ...active.map((item) => _prayerItemRow(item)),
+          ],
+          if (answered.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text('ANSWERED',
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.1,
+                      color: MyWalkColor.sage.withValues(alpha: 0.6))),
+            ),
+            ...answered.map((item) => _prayerItemRow(item)),
+          ],
+        ],
+      ]),
+    );
+  }
+
+  Widget _prayerItemRow(PrayerItem item) {
+    final isAnswered = item.status == PrayerItemStatus.answered;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(item.text,
+                style: TextStyle(
+                    fontSize: 14,
+                    color: isAnswered
+                        ? Colors.white.withValues(alpha: 0.4)
+                        : MyWalkColor.warmWhite,
+                    decoration: isAnswered ? TextDecoration.lineThrough : null,
+                    decorationColor: Colors.white.withValues(alpha: 0.3))),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: () => _cyclePrayerItemStatus(item),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _statusColor(item.status).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: _statusColor(item.status).withValues(alpha: 0.35)),
+                ),
+                child: Text(item.status.label,
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: _statusColor(item.status))),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () => _deletePrayerItem(item.id),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(Icons.close_rounded,
+                size: 16, color: Colors.white.withValues(alpha: 0.25)),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Color _statusColor(PrayerItemStatus status) {
+    switch (status) {
+      case PrayerItemStatus.praying:
+        return MyWalkColor.golden;
+      case PrayerItemStatus.unanswered:
+        return MyWalkColor.warmCoral;
+      case PrayerItemStatus.answered:
+        return MyWalkColor.sage;
+    }
+  }
+
   Widget _notesDisplaySection() {
     return Container(
       width: double.infinity,
@@ -727,12 +929,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
 
   Widget _verseSection(Scripture verse) {
     return GestureDetector(
-      onTap: () => Navigator.push<void>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => BibleBrowserView(initialReference: verse.reference),
-        ),
-      ),
+      onTap: () => BibleProjectBrowserView.openOrPrompt(context, reference: verse.reference),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Column(

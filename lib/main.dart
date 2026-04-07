@@ -24,7 +24,8 @@ import 'domain/repositories/user_repository.dart';
 import 'domain/services/week_cycle_manager.dart';
 import 'domain/services/engagement_service.dart';
 import 'presentation/providers/prayer_list_provider.dart';
-import 'presentation/providers/scripture_focus_provider.dart';
+import 'presentation/providers/group_prayer_list_provider.dart';
+import 'presentation/providers/scripture_thread_provider.dart';
 import 'presentation/providers/circle_habits_provider.dart';
 import 'presentation/providers/encouragement_provider.dart';
 import 'presentation/providers/milestone_share_provider.dart';
@@ -86,10 +87,11 @@ void main() async {
   // Request FCM permission and register token.
   final fcm = FirebaseMessaging.instance;
   await fcm.requestPermission(alert: true, badge: true, sound: true);
-  final fcmToken = await fcm.getToken();
-  if (fcmToken != null) {
-    APIService.shared.registerPushToken(fcmToken).catchError((_) {});
-  }
+  // getToken() requires network and will hang indefinitely when offline.
+  // Fire-and-forget: onTokenRefresh below handles registration once online.
+  fcm.getToken().then((token) {
+    if (token != null) APIService.shared.registerPushToken(token).catchError((_) {});
+  }).catchError((_) {});
   fcm.onTokenRefresh.listen((token) {
     APIService.shared.registerPushToken(token).catchError((_) {});
   });
@@ -165,8 +167,11 @@ void main() async {
         ChangeNotifierProvider<PrayerListProvider>(
           create: (context) => PrayerListProvider(context.read<CircleRepository>()),
         ),
-        ChangeNotifierProvider<ScriptureFocusProvider>(
-          create: (context) => ScriptureFocusProvider(context.read<CircleRepository>()),
+        ChangeNotifierProvider<GroupPrayerListProvider>(
+          create: (context) => GroupPrayerListProvider(context.read<CircleRepository>()),
+        ),
+        ChangeNotifierProvider<ScriptureThreadProvider>(
+          create: (context) => ScriptureThreadProvider(context.read<CircleRepository>()),
         ),
         ChangeNotifierProvider<CircleHabitsProvider>(
           create: (context) => CircleHabitsProvider(context.read<CircleRepository>()),

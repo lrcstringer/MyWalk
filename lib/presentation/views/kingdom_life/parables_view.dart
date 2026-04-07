@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../bible/bible_browser_view.dart';
+import 'bible_project_browser_view.dart';
 
 const _kAccent = Color(0xFFC8A96E); // warm parchment gold
 
@@ -554,12 +554,7 @@ class ParablesView extends StatelessWidget {
                         Row(
                           children: [
                             GestureDetector(
-                              onTap: () => Navigator.push<void>(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => BibleBrowserView(initialReference: p.reference),
-                                ),
-                              ),
+                              onTap: () => BibleProjectBrowserView.openOrPrompt(context, reference: p.reference),
                               child: Text(
                                 p.reference,
                                 style: TextStyle(

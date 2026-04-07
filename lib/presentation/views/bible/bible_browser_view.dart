@@ -17,6 +17,10 @@ class BibleBrowserView extends StatefulWidget {
   /// Human-readable reference like "John 3:16" — takes priority over
   /// [initialBook]/[initialChapter]/[highlightVerse] when provided.
   final String? initialReference;
+  /// When provided, a "Use as Scripture Focus" option appears in the long-press
+  /// verse action sheet. The callback receives the selected verse, then both
+  /// the action sheet and this view are popped.
+  final void Function(BibleVerse)? onVerseSelected;
 
   const BibleBrowserView({
     super.key,
@@ -24,6 +28,7 @@ class BibleBrowserView extends StatefulWidget {
     this.initialChapter,
     this.highlightVerse,
     this.initialReference,
+    this.onVerseSelected,
   });
 
   @override
@@ -372,6 +377,16 @@ class _BibleBrowserViewState extends State<BibleBrowserView> {
                 provider.toggleBookmark(verse);
               },
             ),
+            if (widget.onVerseSelected != null)
+              _ActionTile(
+                icon: Icons.auto_stories_outlined,
+                label: 'Use as Scripture Focus',
+                onTap: () {
+                  Navigator.pop(context); // close action sheet
+                  widget.onVerseSelected!(verse);
+                  Navigator.pop(context); // close BibleBrowserView
+                },
+              ),
             const SizedBox(height: 8),
           ],
         ),

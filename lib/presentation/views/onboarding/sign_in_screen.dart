@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'package:app_settings/app_settings.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +21,8 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   bool _showContent = false;
+  bool _isOffline = false;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   late final TapGestureRecognizer _termsTap;
 
   @override
@@ -28,11 +33,24 @@ class _SignInScreenState extends State<SignInScreen> {
     Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) setState(() => _showContent = true);
     });
+    _initConnectivity();
+  }
+
+  Future<void> _initConnectivity() async {
+    final results = await Connectivity().checkConnectivity();
+    _updateOfflineState(results);
+    _connectivitySub = Connectivity().onConnectivityChanged.listen(_updateOfflineState);
+  }
+
+  void _updateOfflineState(List<ConnectivityResult> results) {
+    final offline = results.every((r) => r == ConnectivityResult.none);
+    if (mounted && offline != _isOffline) setState(() => _isOffline = offline);
   }
 
   @override
   void dispose() {
     _termsTap.dispose();
+    _connectivitySub?.cancel();
     super.dispose();
   }
 
@@ -149,6 +167,36 @@ class _SignInScreenState extends State<SignInScreen> {
         ),
       ),
 
+      // Offline banner
+      if (_isOffline)
+        ColoredBox(
+          color: Colors.orange.withValues(alpha: 0.15),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(children: [
+              const Icon(Icons.wifi_off_rounded, size: 16, color: Colors.orange),
+              const SizedBox(width: 10),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: const TextStyle(fontSize: 13, color: Colors.orange, height: 1.4),
+                    children: [
+                      const TextSpan(text: 'No internet connection. '),
+                      TextSpan(
+                        text: 'Open Settings',
+                        style: const TextStyle(decoration: TextDecoration.underline),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () => AppSettings.openAppSettings(type: AppSettingsType.wifi),
+                      ),
+                      const TextSpan(text: ' to connect.'),
+                    ],
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        ),
+
       // Bottom CTA
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
@@ -156,7 +204,7 @@ class _SignInScreenState extends State<SignInScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: auth.isLoading ? null : () => _handleSignIn(auth),
+              onPressed: auth.isLoading || _isOffline ? null : () => _handleSignIn(auth),
               icon: auth.isLoading
                   ? const SizedBox(
                       width: 18,

@@ -7,7 +7,7 @@ import '../../providers/habit_provider.dart';
 import '../../theme/app_theme.dart';
 import 'fruit_library_view.dart';
 import '../journal/journal_entry_composer.dart';
-import '../bible/bible_browser_view.dart';
+import '../kingdom_life/bible_project_browser_view.dart';
 
 class FruitDetailView extends StatelessWidget {
   final FruitType fruit;
@@ -122,12 +122,7 @@ class FruitDetailView extends StatelessWidget {
 
             // Key verse — tappable → opens Bible viewer
             GestureDetector(
-              onTap: () => Navigator.push<void>(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BibleBrowserView(initialReference: fruit.keyVerse.reference),
-                ),
-              ),
+              onTap: () => BibleProjectBrowserView.openOrPrompt(context, reference: fruit.keyVerse.reference),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
                 decoration: BoxDecoration(
@@ -338,12 +333,7 @@ class FruitDetailView extends StatelessWidget {
                   }
                   final verse = fruit.supportingVerses[i - 1];
                   return GestureDetector(
-                    onTap: () => Navigator.push<void>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => BibleBrowserView(initialReference: verse.reference),
-                      ),
-                    ),
+                    onTap: () => BibleProjectBrowserView.openOrPrompt(context, reference: verse.reference),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

@@ -66,6 +66,32 @@ class CircleEventsProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateEvent({
+    required String circleId,
+    required String eventId,
+    required String title,
+    required DateTime eventDate,
+    String? description,
+    String? location,
+    String? meetingLink,
+  }) async {
+    try {
+      await _repo.updateEvent(
+        circleId: circleId,
+        eventId: eventId,
+        title: title,
+        eventDate: eventDate,
+        description: description,
+        location: location,
+        meetingLink: meetingLink,
+      );
+      await load(circleId);
+    } catch (e) {
+      error = e.toString();
+      rethrow;
+    }
+  }
+
   Future<void> deleteEvent(String circleId, String eventId) async {
     // Optimistic removal.
     final prev = _eventsByCircle[circleId];

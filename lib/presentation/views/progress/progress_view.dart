@@ -62,6 +62,11 @@ class ProgressView extends StatelessWidget {
     final milestoneCount = habits
         .expand((h) => _milestoneService.milestones(h).where((m) => m.isReached))
         .length;
+    final prayersAnswered = habits
+        .where((h) => h.hasPrayerItems)
+        .expand((h) => h.prayerItems)
+        .where((p) => p.status == PrayerItemStatus.answered)
+        .length;
 
     final imageHeight = MediaQuery.of(context).size.width * (2.0 / 3.0);
 
@@ -151,6 +156,10 @@ class ProgressView extends StatelessWidget {
 
                   // ── Journey stat cards ──────────────────────────────────────
                   _statCardsRow(gratitudeDays, totalCheckIns, milestoneCount),
+                  if (prayersAnswered > 0) ...[
+                    const SizedBox(height: 12),
+                    _prayersAnsweredCard(prayersAnswered),
+                  ],
                   const SizedBox(height: 24),
 
                   // ── Week summary ────────────────────────────────────────────
@@ -210,6 +219,32 @@ class ProgressView extends StatelessWidget {
       const SizedBox(width: 12),
       Expanded(child: _statCard(Icons.star_rounded, '$milestones', 'milestones', MyWalkColor.golden)),
     ]);
+  }
+
+  Widget _prayersAnsweredCard(int count) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+      decoration: BoxDecoration(
+        color: MyWalkColor.sage.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: MyWalkColor.sage.withValues(alpha: 0.2), width: 0.5),
+      ),
+      child: Row(children: [
+        Icon(Icons.volunteer_activism_rounded, size: 20, color: MyWalkColor.sage),
+        const SizedBox(width: 14),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('$count',
+              style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
+          Text(count == 1 ? 'prayer answered' : 'prayers answered',
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w500, color: MyWalkColor.sage.withValues(alpha: 0.8))),
+        ]),
+        const Spacer(),
+        Text('Testimony', style: TextStyle(fontSize: 11, color: MyWalkColor.sage.withValues(alpha: 0.5))),
+      ]),
+    );
   }
 
   Widget _statCard(IconData icon, String value, String label, Color color) {

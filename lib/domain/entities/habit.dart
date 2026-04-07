@@ -3,6 +3,88 @@ import 'package:uuid/uuid.dart';
 import 'habit_entry.dart';
 import 'fruit.dart';
 
+// ── Prayer Items ──────────────────────────────────────────────────────────────
+
+enum PrayerItemStatus {
+  praying,
+  unanswered,
+  answered;
+
+  String get rawValue => name;
+
+  static PrayerItemStatus fromString(String value) {
+    return PrayerItemStatus.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => PrayerItemStatus.praying,
+    );
+  }
+
+  String get label {
+    switch (this) {
+      case praying: return 'Praying';
+      case unanswered: return 'Unanswered';
+      case answered: return 'Answered';
+    }
+  }
+}
+
+class PrayerItem {
+  final String id;
+  final String text;
+  final PrayerItemStatus status;
+  final String createdAt;
+  final String? answeredAt;
+
+  const PrayerItem({
+    required this.id,
+    required this.text,
+    required this.status,
+    required this.createdAt,
+    this.answeredAt,
+  });
+
+  factory PrayerItem.create(String text) => PrayerItem(
+        id: const Uuid().v4(),
+        text: text,
+        status: PrayerItemStatus.praying,
+        createdAt: DateTime.now().toIso8601String(),
+      );
+
+  // Sentinel so callers can explicitly pass null to clear answeredAt.
+  static const Object _keep = Object();
+
+  PrayerItem copyWith({
+    String? text,
+    PrayerItemStatus? status,
+    Object? answeredAt = _keep,
+  }) =>
+      PrayerItem(
+        id: id,
+        text: text ?? this.text,
+        status: status ?? this.status,
+        createdAt: createdAt,
+        answeredAt:
+            identical(answeredAt, _keep) ? this.answeredAt : answeredAt as String?,
+      );
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'text': text,
+        'status': status.rawValue,
+        'createdAt': createdAt,
+        'answeredAt': answeredAt,
+      };
+
+  factory PrayerItem.fromMap(Map<String, dynamic> m) => PrayerItem(
+        id: m['id'] as String? ?? const Uuid().v4(),
+        text: m['text'] as String? ?? '',
+        status: PrayerItemStatus.fromString(m['status'] as String? ?? ''),
+        // Fixed epoch fallback keeps sort order stable for malformed documents.
+        createdAt: m['createdAt'] as String? ?? DateTime.utc(2000).toIso8601String(),
+        answeredAt: m['answeredAt'] as String?,
+      );
+}
+
 enum HabitTrackingType {
   timed,
   count,
@@ -154,6 +236,9 @@ class Habit {
   final String notes;
   // Optional reference URL the user can attach to this habit (empty string = none)
   final String referenceUrl;
+  // Prayer list: when true, shows a structured prayer items section in the detail view
+  final bool hasPrayerItems;
+  final List<PrayerItem> prayerItems;
 
   const Habit({
     required this.id,
@@ -183,6 +268,8 @@ class Habit {
     this.subcategoryName,
     this.notes = '',
     this.referenceUrl = '',
+    this.hasPrayerItems = false,
+    this.prayerItems = const [],
   });
 
   factory Habit.create({
@@ -203,6 +290,8 @@ class Habit {
     String? sourceActionId,
     String notes = '',
     String referenceUrl = '',
+    bool hasPrayerItems = false,
+    List<PrayerItem> prayerItems = const [],
   }) {
     final purpose =
         purposeStatement.isEmpty ? category.defaultPurpose : purposeStatement;
@@ -228,6 +317,8 @@ class Habit {
       sourceActionId: sourceActionId,
       notes: notes,
       referenceUrl: referenceUrl,
+      hasPrayerItems: hasPrayerItems,
+      prayerItems: prayerItems,
     );
   }
 
@@ -258,6 +349,8 @@ class Habit {
     String? subcategoryName,
     String? notes,
     String? referenceUrl,
+    bool? hasPrayerItems,
+    List<PrayerItem>? prayerItems,
   }) =>
       Habit(
         id: id,
@@ -287,6 +380,8 @@ class Habit {
         subcategoryName: subcategoryName ?? this.subcategoryName,
         notes: notes ?? this.notes,
         referenceUrl: referenceUrl ?? this.referenceUrl,
+        hasPrayerItems: hasPrayerItems ?? this.hasPrayerItems,
+        prayerItems: prayerItems ?? this.prayerItems,
       );
 
   Set<int> get activeDaySet {
@@ -372,6 +467,8 @@ class Habit {
         'subcategoryName': subcategoryName,
         'notes': notes,
         'referenceUrl': referenceUrl,
+        'hasPrayerItems': hasPrayerItems,
+        'prayerItems': prayerItems.map((p) => p.toMap()).toList(),
       };
 
   factory Habit.fromFirestore(
@@ -417,6 +514,10 @@ class Habit {
       subcategoryName: data['subcategoryName'] as String?,
       notes: data['notes'] as String? ?? '',
       referenceUrl: data['referenceUrl'] as String? ?? '',
+      hasPrayerItems: data['hasPrayerItems'] as bool? ?? false,
+      prayerItems: ((data['prayerItems'] as List<dynamic>?) ?? [])
+          .map((e) => PrayerItem.fromMap(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

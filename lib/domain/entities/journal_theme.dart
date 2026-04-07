@@ -58,12 +58,12 @@ class JournalTheme {
   static const parchment = JournalTheme(
     id: 'parchment',
     name: 'Parchment',
-    bgPrimary:     Color(0xFFDFD0A0),
-    bgCard:        Color(0xFFEADCB0),
+    bgPrimary:     Color(0xFFE8D5B7),
+    bgCard:        Color(0xFFF0DFC5),
     textPrimary:   Color(0xFF3A2A18),
     textSecondary: Color(0xFF6B5035),
-    accentAction:  Color(0xFFD4A843),
-    accentMuted:   Color(0xFFDCE3D6),
+    accentAction:  Color(0xFFC4894A),
+    accentMuted:   Color(0xFFDDD0C0),
     heroImageAsset: 'assets/Journalling.png',
   );
 

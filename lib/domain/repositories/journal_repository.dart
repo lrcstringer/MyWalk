@@ -1,6 +1,11 @@
 import '../entities/journal_entry.dart';
 
 abstract class JournalRepository {
+  /// Stream of all journal entries, newest first.
+  /// Uses Firestore's offline cache — emits immediately even when offline,
+  /// then re-emits with server data when connectivity is restored.
+  Stream<List<JournalEntry>> watchEntries();
+
   /// Load all journal entries for the authenticated user, newest first.
   Future<List<JournalEntry>> loadEntries();
 
