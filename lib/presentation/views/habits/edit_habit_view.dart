@@ -12,6 +12,9 @@ import '../../providers/habit_category_provider.dart';
 import '../../providers/fruit_portfolio_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../../domain/entities/accountability_partnership.dart';
+import '../../providers/accountability_provider.dart';
 import '../shared/fruit_tag_chip.dart';
 import '../shared/mywalk_paywall_view.dart';
 
@@ -216,6 +219,12 @@ class _EditHabitViewState extends State<EditHabitView> {
           const SizedBox(height: 20),
           if (isAbstain) _copingSection() else _triggerSection(),
           const SizedBox(height: 20),
+          if (isAbstain) ...[
+            _partnerSection(),
+            const SizedBox(height: 20),
+            _recoveryPathTeaserCard(),
+            const SizedBox(height: 20),
+          ],
           _notesSection(),
           const SizedBox(height: 20),
           _referenceUrlSection(),
@@ -410,6 +419,232 @@ class _EditHabitViewState extends State<EditHabitView> {
           ),
         ),
       ],
+    );
+  }
+
+  // ── Support/Prayer Partner section ──────────────────────────────────────
+
+  Widget _partnerSection() {
+    final accountability = context.watch<AccountabilityProvider>();
+    final partnership = accountability.partnershipForHabit(widget.habit.id);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'SUPPORT/PRAYER PARTNER',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: MyWalkColor.softGold.withValues(alpha: 0.5),
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Invite someone to walk with you on this habit.',
+          style: TextStyle(
+              fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: MyWalkColor.cardBackground,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.07), width: 0.5),
+          ),
+          child: partnership == null
+              ? _inviteRow(accountability)
+              : _partnershipRow(partnership, accountability),
+        ),
+      ],
+    );
+  }
+
+  Widget _inviteRow(AccountabilityProvider accountability) {
+    return GestureDetector(
+      onTap: accountability.isLoading
+          ? null
+          : () async {
+              try {
+                final url = await accountability.createInvite(
+                  habitId: widget.habit.id,
+                  habitName: widget.habit.name,
+                );
+                if (!mounted) return;
+                // Share the URL via OS share sheet
+                await _sharePartnerLink(url);
+              } catch (_) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('Could not create invite. Try again.')),
+                );
+              }
+            },
+      child: Row(children: [
+        Icon(Icons.person_add_rounded,
+            size: 16,
+            color: MyWalkColor.sage.withValues(alpha: 0.8)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            accountability.isLoading
+                ? 'Creating invite…'
+                : 'Invite a prayer partner',
+            style: TextStyle(
+                fontSize: 14,
+                color: MyWalkColor.sage.withValues(alpha: 0.9),
+                fontWeight: FontWeight.w500),
+          ),
+        ),
+        if (!accountability.isLoading)
+          Icon(Icons.chevron_right_rounded,
+              size: 18,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.25)),
+      ]),
+    );
+  }
+
+  Widget _partnershipRow(
+      AccountabilityPartnership partnership,
+      AccountabilityProvider accountability) {
+    final isPending = partnership.status == PartnershipStatus.pending;
+    final isActive = partnership.status == PartnershipStatus.active;
+    final partnerName = isActive
+        ? (partnership.partnerDisplayName ?? 'Partner')
+        : null;
+
+    return Row(children: [
+      Icon(
+        isActive ? Icons.handshake_rounded : Icons.hourglass_top_rounded,
+        size: 16,
+        color: isActive
+            ? MyWalkColor.sage
+            : MyWalkColor.warmWhite.withValues(alpha: 0.35),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(
+            isActive
+                ? 'Walking with $partnerName'
+                : 'Waiting for partner…',
+            style: TextStyle(
+                fontSize: 14,
+                color: isActive
+                    ? MyWalkColor.warmWhite
+                    : MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                fontWeight: FontWeight.w500),
+          ),
+          if (isPending) ...[
+            const SizedBox(height: 2),
+            GestureDetector(
+              onTap: () async {
+                try {
+                  final url = await accountability.createInvite(
+                    habitId: widget.habit.id,
+                    habitName: widget.habit.name,
+                  );
+                  if (!mounted) return;
+                  await _sharePartnerLink(url);
+                } catch (_) {}
+              },
+              child: Text('Resend invite',
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: MyWalkColor.sage.withValues(alpha: 0.7))),
+            ),
+          ],
+        ]),
+      ),
+      if (isActive || isPending)
+        GestureDetector(
+          onTap: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: MyWalkColor.charcoal,
+                title: Text(
+                    isActive ? 'End partnership?' : 'Cancel invite?',
+                    style: const TextStyle(
+                        color: MyWalkColor.warmWhite, fontSize: 16)),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: const Text('Keep',
+                        style: TextStyle(color: MyWalkColor.softGold)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: Text(isActive ? 'End' : 'Cancel',
+                        style: const TextStyle(color: MyWalkColor.warmCoral)),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed != true || !mounted) return;
+            if (isActive) {
+              await accountability.endPartnership(partnership.id);
+            } else {
+              await accountability.cancelPartnership(partnership.id);
+            }
+          },
+          child: Icon(Icons.close_rounded,
+              size: 16,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.25)),
+        ),
+    ]);
+  }
+
+  Future<void> _sharePartnerLink(String url) async {
+    await Share.share(
+        'Walk with me on MyWalk — tap to become my prayer partner: $url');
+  }
+
+  // ── Recovery Path teaser card ─────────────────────────────────────────────
+
+  Widget _recoveryPathTeaserCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF6B4FA0).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: const Color(0xFF6B4FA0).withValues(alpha: 0.2), width: 0.5),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF6B4FA0).withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.route_rounded,
+              size: 16, color: Color(0xFFB39DDB)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Recovery Path',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFB39DDB))),
+            const SizedBox(height: 3),
+            Text(
+              'A guided programme to understand your patterns, anchor to your values, and build guardrails.',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.5),
+                  height: 1.4),
+            ),
+          ]),
+        ),
+      ]),
     );
   }
 
@@ -649,7 +884,11 @@ class _EditHabitViewState extends State<EditHabitView> {
       Icon(_categoryIcon(), size: 18,
           color: isAbstain ? MyWalkColor.warmCoral : MyWalkColor.golden),
       const SizedBox(width: 10),
-      Text(widget.habit.category.rawValue,
+      Text(widget.habit.subcategoryName?.isNotEmpty == true
+              ? widget.habit.subcategoryName!
+              : (widget.habit.categoryName?.isNotEmpty == true
+                  ? widget.habit.categoryName!
+                  : widget.habit.category.rawValue),
           style: TextStyle(
             fontSize: 15,
             color: MyWalkColor.softGold.withValues(alpha: 0.7),

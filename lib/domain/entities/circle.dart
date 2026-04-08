@@ -116,23 +116,6 @@ class JoinCircleResult {
   });
 }
 
-class SOSMessage {
-  final String id;
-  final String senderId;
-  final String circleId;
-  final String message;
-  final String createdAt;
-  final bool isMine;
-
-  const SOSMessage({
-    required this.id,
-    required this.senderId,
-    required this.circleId,
-    required this.message,
-    required this.createdAt,
-    required this.isMine,
-  });
-}
 
 class GratitudePost {
   final String id;

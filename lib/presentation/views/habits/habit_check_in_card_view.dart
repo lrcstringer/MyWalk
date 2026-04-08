@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../domain/entities/habit.dart';
 import '../../../domain/entities/scripture.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../../domain/services/milestone_service.dart';
 import '../../theme/app_theme.dart';
-import '../circles/sos_view.dart';
+import '../../../domain/entities/accountability_partnership.dart';
+import '../../providers/accountability_provider.dart';
+import '../../providers/recovery_path_provider.dart';
 import '../shared/fruit_tag_row.dart';
 import '../shared/golden_pulse_view.dart';
 import '../shared/milestone_celebration_view.dart';
-import '../shared/mywalk_paywall_view.dart';
 import 'habit_detail_view.dart';
 import '../journal/journal_entry_composer.dart';
 
@@ -51,6 +53,14 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   void initState() {
     super.initState();
     _refreshState();
+    if (_habit.trackingType == HabitTrackingType.abstain &&
+        !widget.isRetroactive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<RecoveryPathProvider>().loadPath(_habit.id);
+        }
+      });
+    }
   }
 
   @override
@@ -162,8 +172,10 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                   _verseSection(),
                 ],
                 if (isAbstain && !widget.isRetroactive) ...[
-                  const SizedBox(height: 10),
-                  _sosLink(),
+                  const SizedBox(height: 8),
+                  _partnerStrip(context),
+                  const SizedBox(height: 4),
+                  _rpStrip(context),
                 ],
               ],
             ),
@@ -332,41 +344,163 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     );
   }
 
-  Widget _sosLink() {
+  Widget _partnerStrip(BuildContext context) {
+    final partnership = context
+        .watch<AccountabilityProvider>()
+        .partnershipForHabit(_habit.id);
+
+    if (partnership == null) {
+      final accountabilityProv = context.watch<AccountabilityProvider>();
+      return GestureDetector(
+        onTap: accountabilityProv.isLoading
+            ? null
+            : () async {
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  final url = await accountabilityProv.createInvite(
+                    habitId: _habit.id,
+                    habitName: _habit.name,
+                  );
+                  if (!mounted) return;
+                  await Share.share(
+                    'Walk with me on MyWalk — tap to become my prayer partner: $url',
+                  );
+                } catch (_) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Could not create invite. Try again.')),
+                  );
+                }
+              },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(children: [
+            Icon(Icons.add_rounded, size: 12,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+            const SizedBox(width: 4),
+            Text(
+              accountabilityProv.isLoading ? 'Creating invite…' : 'Add a prayer partner',
+              style: TextStyle(
+                  fontSize: 10,
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+            ),
+          ]),
+        ),
+      );
+    }
+
+    if (partnership.status == PartnershipStatus.pending) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(children: [
+          Icon(Icons.hourglass_top_rounded, size: 12,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.35)),
+          const SizedBox(width: 4),
+          Text('Waiting for partner…',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.35))),
+        ]),
+      );
+    }
+
+    // Active partnership — navigate to message thread
     return GestureDetector(
-      onTap: () => _launchSOS(context),
+      onTap: () => Navigator.of(context).pushNamed(
+        '/partnership-detail',
+        arguments: partnership,
+      ),
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.shield_rounded, size: 13, color: MyWalkColor.warmCoral.withValues(alpha: 0.65)),
+        child: Row(children: [
+          const Icon(Icons.handshake_rounded, size: 12, color: MyWalkColor.sage),
           const SizedBox(width: 5),
-          Text('SOS — Need help right now?',
-              style: TextStyle(fontSize: 12, color: MyWalkColor.warmCoral.withValues(alpha: 0.65))),
+          Text(
+            'Reach out to ${partnership.partnerDisplayName ?? 'your partner'}',
+            style: TextStyle(
+                fontSize: 11,
+                color: MyWalkColor.sage.withValues(alpha: 0.8)),
+          ),
+          const SizedBox(width: 3),
+          Icon(Icons.chevron_right_rounded,
+              size: 12, color: MyWalkColor.sage.withValues(alpha: 0.5)),
         ]),
       ),
     );
   }
 
-  void _launchSOS(BuildContext context) {
-    final isPremium = context.read<StoreProvider>().isPremium;
-    if (!isPremium) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: MyWalkColor.charcoal,
-        builder: (_) => const MyWalkPaywallView(
-          contextTitle: 'SOS Support',
-          contextMessage: 'Tough moment? The SOS feature can help — it\'ll remind you why you started and connect you with your circle.',
+  Widget _rpStrip(BuildContext context) {
+    final prov = context.watch<RecoveryPathProvider>();
+    final habitId = _habit.id;
+
+    // If the habit has a recovery path that hasn't been loaded yet, trigger
+    // a load so the strip shows the correct active state rather than "Begin".
+    if (_habit.hasRecoveryPath &&
+        prov.pathFor(habitId) == null &&
+        !prov.isLoadingFor(habitId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<RecoveryPathProvider>().loadPath(habitId);
+      });
+    }
+
+    if (prov.isLoadingFor(habitId)) return const SizedBox.shrink();
+
+    final path = prov.pathFor(habitId);
+    const purple = Color(0xFF8B7EC8);
+
+    void openRP() => Navigator.of(context).pushNamed(
+          '/recovery-path',
+          arguments: {'habitId': habitId, 'habitName': _habit.name},
+        );
+
+    // Path hasn't loaded yet but the habit knows one exists — show nothing
+    // rather than the misleading "Begin" label.
+    if (path == null && _habit.hasRecoveryPath) return const SizedBox.shrink();
+
+    if (path == null) {
+      return GestureDetector(
+        onTap: openRP,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(children: [
+            const Icon(Icons.route_rounded, size: 11, color: purple),
+            const SizedBox(width: 4),
+            Text('Recovery Path — Begin ›',
+                style: TextStyle(
+                    fontSize: 10,
+                    color: purple.withValues(alpha: 0.7))),
+          ]),
         ),
       );
-      return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => SOSView(habit: _habit),
+
+    final phase = prov.phaseFor(habitId);
+    final day = prov.dayNumberFor(habitId);
+    final checkInPending = !prov.checkInDoneToday(habitId);
+
+    return GestureDetector(
+      onTap: openRP,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(children: [
+          const Icon(Icons.route_rounded, size: 11, color: purple),
+          const SizedBox(width: 4),
+          Text('Recovery Path · Phase $phase · Day $day',
+              style: TextStyle(fontSize: 10, color: purple.withValues(alpha: 0.7))),
+          if (checkInPending) ...[
+            const SizedBox(width: 5),
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: MyWalkColor.warmCoral,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+        ]),
       ),
     );
   }

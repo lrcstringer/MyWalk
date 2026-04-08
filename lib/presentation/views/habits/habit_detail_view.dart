@@ -123,11 +123,6 @@ class _HabitDetailViewState extends State<HabitDetailView> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.menu_book_outlined, color: MyWalkColor.softGold.withValues(alpha: 0.8)),
-            onPressed: () => BibleProjectBrowserView.openOrPrompt(context),
-            tooltip: 'Bible',
-          ),
-          IconButton(
             icon: Icon(Icons.edit_outlined, color: MyWalkColor.softGold.withValues(alpha: 0.8)),
             onPressed: () => _showEdit(context),
           ),

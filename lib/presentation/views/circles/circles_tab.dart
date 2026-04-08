@@ -26,7 +26,7 @@ class _CirclesAuthGateView extends StatelessWidget {
   const _CirclesAuthGateView();
 
   static const _features = [
-    (Icons.auto_awesome, 'SOS Prayers', 'Request urgent prayer from up to 20 people'),
+    (Icons.auto_awesome, 'Prayer Circles', 'Share gratitude and prayer with your community'),
     (Icons.bar_chart_rounded, 'Shared Progress', "See your circle's collective faithfulness"),
     (Icons.calendar_month, 'Sunday Summary', 'Weekly circle stats and encouragement'),
     (Icons.link, 'Easy Invites', 'Share a link to grow your circle'),

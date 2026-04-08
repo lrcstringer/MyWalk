@@ -40,17 +40,11 @@ class FirestoreCircleRepository implements CircleRepository {
   CollectionReference _milestones(String circleId) =>
       _circles.doc(circleId).collection('milestones');
 
-  CollectionReference _sosRequests(String circleId) =>
-      _circles.doc(circleId).collection('sosRequests');
-
   DocumentReference _meta(String circleId) =>
       _circles.doc(circleId).collection('meta').doc('totals');
 
   DocumentReference _seenDoc(String circleId) =>
       _circles.doc(circleId).collection('userSeenGratitude').doc(_uid);
-
-  DocumentReference _sosContactsDoc(String circleId) =>
-      _circles.doc(circleId).collection('sosContacts').doc(_uid);
 
   // Feature sub-collections
   CollectionReference _prayerRequests(String circleId) =>
@@ -375,27 +369,6 @@ class FirestoreCircleRepository implements CircleRepository {
   }
 
   @override
-  Future<List<SOSMessage>> getRecentSOS(
-      {String? circleId, int limit = 20}) async {
-    final uid = _uid;
-    if (circleId == null) return [];
-    final snap = await _queryWithFallback(_sosRequests(circleId)
-        .orderBy('createdAt', descending: true)
-        .limit(limit));
-    return snap.docs.map((d) {
-      final data = d.data() as Map<String, dynamic>;
-      return SOSMessage(
-        id: data['id'] as String? ?? d.id,
-        senderId: data['senderId'] as String? ?? '',
-        circleId: data['circleId'] as String? ?? '',
-        message: data['message'] as String? ?? '',
-        createdAt: _tsToIso(data['createdAt']),
-        isMine: data['senderId'] == uid,
-      );
-    }).toList();
-  }
-
-  @override
   Future<String> generateShareLink(String circleId) async {
     final snap = await _getWithFallback(_circles.doc(circleId));
     final inviteCode = snap.exists
@@ -408,12 +381,6 @@ class FirestoreCircleRepository implements CircleRepository {
   Future<void> markGratitudesSeen(String circleId) async {
     await _seenDoc(circleId)
         .set({'lastSeenAt': FieldValue.serverTimestamp()});
-  }
-
-  @override
-  Future<void> setSOSContacts(
-      String circleId, List<String> contactUserIds) async {
-    await _sosContactsDoc(circleId).set({'contactUserIds': contactUserIds});
   }
 
   // ── Write operations (Callable Functions) ─────────────────────────────────
@@ -448,16 +415,6 @@ class FirestoreCircleRepository implements CircleRepository {
   Future<void> leaveCircle(String circleId) async {
     await _call('circleLeave', {'circleId': circleId});
   }
-
-  @override
-  Future<void> sendSOS(
-          String circleId, String message, List<String> recipientIds) =>
-      _sendQueue.enqueue({
-        'type': 'sos',
-        'circleId': circleId,
-        'message': message,
-        'recipientIds': recipientIds,
-      });
 
   @override
   Future<void> shareGratitude({

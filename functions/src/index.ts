@@ -9,7 +9,6 @@ export {
   circleCreate,
   circleJoin,
   circleLeave,
-  circleSendSOS,
   circleShareGratitude,
   circleDeleteGratitude,
   circleSubmitHeatmapData,
@@ -60,7 +59,21 @@ export {
 export { resetWeeklyFruitPortfolio } from './callables/fruit';
 export { seedHabitCategories } from './callables/habit_categories';
 export { chunkText, generateTts } from './callables/memorization';
+export {
+  accountabilityCreateInvite,
+  accountabilityAcceptInvite,
+  accountabilityDeclineInvite,
+  accountabilityNotifyParticipant,
+} from './callables/accountability';
 export { scheduleReviewReminder, cancelReviewReminder, sweepDueReminders } from './callables/memorization_notify';
+export {
+  rpDailyCheckInReminder,
+  rpMissed3DaysReminder,
+  rpWeeklyCompassReminder,
+  rpLapseUnlocksM5,
+  rpQuarterlyReviewReminder,
+  rpM2UnlockReminder,
+} from './callables/recovery_path_notify';
 
 // ── TEMP: Grant premium to all new users (remove before production launch) ──
 

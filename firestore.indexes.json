@@ -55,6 +55,63 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "accountability_partnerships",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
+        { "fieldPath": "habitId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "accountability_partnerships",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "participantIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "recovery_sessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sessionType", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "recovery_sessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sessionType", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "partner_messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isRead", "order": "ASCENDING" },
+        { "fieldPath": "senderId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "accountability_partnerships",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "inviteToken", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "recovery_paths",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "module1.dailyCheckInCount", "order": "ASCENDING" },
+        { "fieldPath": "m2NotifSent", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [

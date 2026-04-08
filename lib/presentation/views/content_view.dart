@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../providers/habit_provider.dart';
 import '../../data/datasources/remote/auth_service.dart';
 import '../../data/services/pending_invite_service.dart';
+import '../../data/services/pending_partner_token_service.dart';
 import '../../domain/repositories/circle_repository.dart';
+import 'habits/partner_acceptance_screen.dart';
 import '../../domain/services/week_cycle_manager.dart';
 import 'circles/circle_invitation_dialog.dart';
 import 'today/today_view.dart';
@@ -32,6 +34,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
   bool _checkingGratitudes = false;
   bool _prevAuthenticated = false;
   StreamSubscription<String>? _inviteSub;
+  StreamSubscription<String>? _partnerTokenSub;
 
   @override
   void initState() {
@@ -43,12 +46,17 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _onAppear();
       _consumePendingInvite();
+      _consumePendingPartnerToken();
     });
     // Listen for deep links that arrive while the app is already running.
     _inviteSub = context
         .read<PendingInviteService>()
         .stream
         .listen((code) => _showInviteDialog(code));
+    _partnerTokenSub = context
+        .read<PendingPartnerTokenService>()
+        .stream
+        .listen((token) => _showPartnerAcceptance(token));
   }
 
   @override
@@ -56,6 +64,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
     _pageController.dispose();
     AuthService.shared.removeListener(_onAuthChanged);
     _inviteSub?.cancel();
+    _partnerTokenSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -76,6 +85,19 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
   void _consumePendingInvite() {
     final code = context.read<PendingInviteService>().consume();
     if (code != null) _showInviteDialog(code);
+  }
+
+  void _consumePendingPartnerToken() {
+    final token = context.read<PendingPartnerTokenService>().consume();
+    if (token != null) _showPartnerAcceptance(token);
+  }
+
+  void _showPartnerAcceptance(String token) {
+    if (!mounted) return;
+    Navigator.of(context).push(MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => PartnerAcceptanceScreen(token: token),
+    ));
   }
 
   Future<void> _showInviteDialog(String code) async {

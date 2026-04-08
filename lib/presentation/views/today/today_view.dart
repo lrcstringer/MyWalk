@@ -12,10 +12,8 @@ import '../../../domain/services/engagement_service.dart';
 import '../../../domain/services/week_cycle_manager.dart';
 import '../../theme/app_theme.dart';
 import '../circles/share_gratitude_sheet.dart';
-import '../circles/sos_view.dart';
 import '../habits/add_habit_view.dart';
 import '../habits/habit_check_in_card_view.dart';
-import '../circles/sos_disclaimer_view.dart';
 import '../shared/engagement_banner_view.dart';
 import '../shared/golden_pulse_view.dart';
 import '../shared/mywalk_paywall_view.dart';
@@ -117,7 +115,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
       orElse: () => habits.first,
     );
     final userHabits = habits.where((h) => !h.isBuiltIn).toList();
-    final abstainHabits = userHabits.where((h) => h.trackingType == HabitTrackingType.abstain).toList();
 
     final atLimit = !isPremium && userHabits.length >= _freeHabitLimit;
 
@@ -275,13 +272,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
             child: _addHabitButton(),
           ),
 
-        // SOS floating button — only when the user has at least one Breaking Habits habit.
-        if (!_isRetroactive && abstainHabits.isNotEmpty)
-          Positioned(
-            bottom: 24,
-            right: 20,
-            child: _sosButton(abstainHabits),
-          ),
       ],
     );
   }
@@ -419,17 +409,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
     );
   }
 
-  Widget _sosButton(List<Habit> abstainHabits) {
-    return FloatingActionButton.extended(
-      onPressed: () => _showSOS(context, abstainHabits),
-      backgroundColor: MyWalkColor.warmCoral.withValues(alpha: 0.15),
-      foregroundColor: MyWalkColor.warmCoral,
-      elevation: 0,
-      icon: const Icon(Icons.shield_rounded, size: 18),
-      label: const Text('SOS', style: TextStyle(fontWeight: FontWeight.w700)),
-    );
-  }
-
   String _dayName(DateTime date) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[date.weekday - 1];
@@ -497,120 +476,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
     );
   }
 
-  void _showSOS(BuildContext context, List<Habit> abstainHabits) {
-    final isPremium = context.read<StoreProvider>().isPremium;
-    if (!isPremium) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: MyWalkColor.charcoal,
-        builder: (_) => const MyWalkPaywallView(
-          contextTitle: 'SOS Support',
-          contextMessage: 'Tough moment? The SOS feature can help — it\'ll remind you why you started and connect you with your circle.',
-        ),
-      );
-      return;
-    }
-    if (abstainHabits.length == 1) {
-      _openSOSFlow(context, abstainHabits.first);
-      return;
-    }
-    // Multiple breaking habits — ask which one the user is struggling with.
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: MyWalkColor.charcoal,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetCtx) => _SOSHabitPicker(
-        habits: abstainHabits,
-        onSelected: (habit) {
-          Navigator.of(sheetCtx).pop();
-          _openSOSFlow(context, habit);
-        },
-      ),
-    );
-  }
-
-  void _openSOSFlow(BuildContext context, Habit habit) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => SOSDisclaimerView(
-          onContinue: () {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                fullscreenDialog: true,
-                builder: (_) => SOSView(habit: habit),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-// ── SOS habit picker ─────────────────────────────────────────────────────────
-
-class _SOSHabitPicker extends StatelessWidget {
-  final List<Habit> habits;
-  final void Function(Habit) onSelected;
-
-  const _SOSHabitPicker({required this.habits, required this.onSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Which habit are you struggling with?',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: MyWalkColor.warmWhite,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...habits.map(
-              (h) => InkWell(
-                onTap: () => onSelected(h),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.shield_rounded, size: 20, color: MyWalkColor.warmCoral),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          h.name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: MyWalkColor.warmWhite,
-                          ),
-                        ),
-                      ),
-                      Icon(Icons.chevron_right_rounded,
-                          size: 20,
-                          color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // Inline gratitude check-in card

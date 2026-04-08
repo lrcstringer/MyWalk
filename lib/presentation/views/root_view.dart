@@ -6,6 +6,7 @@ import '../providers/habit_provider.dart';
 import '../../data/datasources/remote/auth_service.dart';
 import '../../data/datasources/local/notification_service.dart'; // used in _loadOnboardingState
 import '../../data/services/pending_invite_service.dart';
+import '../../data/services/pending_partner_token_service.dart';
 import '../../domain/repositories/user_preferences_repository.dart';
 import '../../domain/services/week_cycle_manager.dart';
 import 'content_view.dart';
@@ -52,27 +53,37 @@ class _RootViewState extends State<RootView> {
   Future<void> _initDeepLinks() async {
     final appLinks = AppLinks();
     final inviteService = context.read<PendingInviteService>();
+    final partnerTokenService = context.read<PendingPartnerTokenService>();
 
     // Cold-start / app-not-running link.
     try {
       final initial = await appLinks.getInitialLink();
-      if (initial != null) _handleLink(initial, inviteService);
+      if (initial != null) _handleLink(initial, inviteService, partnerTokenService);
     } catch (_) {}
 
     // Link received while app is foregrounded or in background.
     _linkSub = appLinks.uriLinkStream.listen(
-      (uri) => _handleLink(uri, inviteService),
+      (uri) => _handleLink(uri, inviteService, partnerTokenService),
       onError: (_) {},
     );
   }
 
-  void _handleLink(Uri uri, PendingInviteService inviteService) {
-    // Accepts both:
-    //   mywalk://join?code=XXXX
-    //   https://mywalk.faith/join?code=XXXX
+  void _handleLink(Uri uri, PendingInviteService inviteService,
+      PendingPartnerTokenService partnerTokenService) {
+    // Circle invite:  mywalk://join?code=XXXX  or  https://mywalk.faith/join?code=XXXX
     final code = uri.queryParameters['code'];
     if (code != null && code.isNotEmpty) {
       inviteService.save(code);
+      return;
+    }
+
+    // Partner invite: https://mywalk.faith/accountability/accept/:token
+    final segments = uri.pathSegments;
+    if (segments.length >= 3 &&
+        segments[0] == 'accountability' &&
+        segments[1] == 'accept') {
+      final token = segments[2];
+      if (token.isNotEmpty) partnerTokenService.save(token);
     }
   }
 

@@ -7,12 +7,7 @@ import '../datasources/remote/api_service.dart';
 /// Queues outbound notification sends when the device is offline and flushes
 /// them automatically once connectivity is restored.
 ///
-/// SOS is included — guaranteed eventual delivery is more important than
-/// immediate failure. The queue tries to dispatch immediately; if the device
-/// is offline the item persists to disk and is retried on next connectivity.
-///
 /// Each queued item is a JSON map with a 'type' discriminator:
-///   sos           : { circleId, message, recipientIds }
 ///   announcement  : { circleId, message }
 ///   prayer_request: { circleId, message, recipientIds }
 ///   encouragement : { circleId, recipientId, messageType, presetKey?, customText?, isAnonymous }
@@ -83,12 +78,6 @@ class PendingNotificationSendQueue {
   Future<void> _dispatch(Map<String, dynamic> payload) async {
     final type = payload['type'] as String;
     switch (type) {
-      case 'sos':
-        await APIService.shared.sendSOS(
-          payload['circleId'] as String,
-          payload['message'] as String,
-          List<String>.from(payload['recipientIds'] as List),
-        );
       case 'announcement':
         await APIService.shared.sendAnnouncement(
           circleId: payload['circleId'] as String,

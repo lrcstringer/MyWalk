@@ -8,6 +8,9 @@ export const circlesCol = () => db.collection('circles');
 export const membersCol = (circleId: string) => db.collection(`circles/${circleId}/members`);
 export const gratitudesCol = (circleId: string) => db.collection(`circles/${circleId}/gratitudes`);
 export const sosRequestsCol = (circleId: string) => db.collection(`circles/${circleId}/sosRequests`);
+export const partnershipsCol = () => db.collection('accountability_partnerships');
+export const partnerMessagesCol = (partnershipId: string) =>
+  db.collection(`accountability_partnerships/${partnershipId}/partner_messages`);
 export const heatmapEntriesCol = (circleId: string) => db.collection(`circles/${circleId}/heatmapEntries`);
 export const milestonesCol = (circleId: string) => db.collection(`circles/${circleId}/milestones`);
 export const metaDoc = (circleId: string) => db.doc(`circles/${circleId}/meta/totals`);
@@ -41,6 +44,11 @@ export const eventsCol = (circleId: string) =>
   db.collection(`circles/${circleId}/events`);
 export const circleHabitMilestonesCol = (circleId: string) =>
   db.collection(`circles/${circleId}/circle_habit_milestones`);
+
+// ── Recovery paths ────────────────────────────────────────────────────────────
+export const recoveryPathsCol = () => db.collection('recovery_paths');
+export const recoverySessionsCol = (habitId: string) =>
+  db.collection(`recovery_paths/${habitId}/recovery_sessions`);
 
 // ── User notifications ────────────────────────────────────────────────────────
 export const userNotificationsCol = (uid: string) =>

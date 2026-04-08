@@ -43,11 +43,11 @@ class NotificationService {
     description: 'Announcements and prayer requests from your circles',
     importance: Importance.high,
   );
-  static const _channelSOS = AndroidNotificationChannel(
-    'sos',
-    'SOS Alerts',
-    description: 'Urgent SOS requests from circle members',
-    importance: Importance.max,
+  static const _channelPartnerships = AndroidNotificationChannel(
+    'partnerships',
+    'Partner Messages',
+    description: 'Messages from your support/prayer partner',
+    importance: Importance.high,
     playSound: true,
   );
 
@@ -63,30 +63,33 @@ class NotificationService {
     // Create Android notification channels
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(_channelCircles);
-    await androidPlugin?.createNotificationChannel(_channelSOS);
+    await androidPlugin?.createNotificationChannel(_channelPartnerships);
     await checkAuthorization();
   }
 
-  /// Show a foreground notification for an incoming circle notification (FCM
+  /// Show a foreground notification for an incoming push notification (FCM
   /// messages that arrive while the app is in the foreground are silent by
   /// default — this makes them visible).
+  ///
+  /// [channelId] should be one of: 'circles', 'partnerships'.
   Future<void> showCircleNotification({
     required String id,
     required String title,
     required String body,
-    required bool isSOS,
+    String channelId = 'circles',
   }) async {
     final notifId = id.hashCode & 0x7fffffff;
+    final channelName = channelId == 'partnerships' ? 'Partner Messages' : 'Circle Notifications';
     await _plugin.show(
       notifId,
       title,
       body,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          isSOS ? 'sos' : 'circles',
-          isSOS ? 'SOS Alerts' : 'Circle Notifications',
-          importance: isSOS ? Importance.max : Importance.high,
-          priority: isSOS ? Priority.max : Priority.high,
+          channelId,
+          channelName,
+          importance: Importance.high,
+          priority: Priority.high,
           playSound: true,
         ),
         iOS: const DarwinNotificationDetails(presentAlert: true, presentSound: true),
@@ -159,6 +162,51 @@ class NotificationService {
   Future<void> cancelDailyReminders() async {
     for (int i = 0; i < 7; i++) {
       await _plugin.cancel(100 + i);
+    }
+  }
+
+  // ── Recovery Path daily check-in reminder (ID 200) ────────────────────────
+
+  Future<void> scheduleRecoveryPathReminder({int hour = 9, int minute = 0}) async {
+    await checkAuthorization();
+    if (!isAuthorized) return;
+    await cancelRecoveryPathReminder();
+
+    const messages = [
+      'Your daily check-in is waiting — a few minutes keeps your progress going.',
+      'Take a moment today for your Recovery Path check-in.',
+      'Small daily steps lead to lasting change — check in when you\'re ready.',
+      'Your Recovery Path check-in is here whenever you need it.',
+      'A brief reflection today keeps momentum on your recovery journey.',
+      'Check in with yourself — your Recovery Path is ready.',
+      'Today\'s check-in is a gift to your future self.',
+    ];
+
+    for (int i = 0; i < 7; i++) {
+      await _plugin.zonedSchedule(
+        200 + i,
+        'MyWalk',
+        messages[i % messages.length],
+        _nextWeekday(i + 1, hour, minute),
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'recovery_path_reminder',
+            'Recovery Path Reminders',
+            importance: Importance.defaultImportance,
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      );
+    }
+  }
+
+  Future<void> cancelRecoveryPathReminder() async {
+    for (int i = 0; i < 7; i++) {
+      await _plugin.cancel(200 + i);
     }
   }
 

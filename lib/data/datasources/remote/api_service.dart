@@ -78,29 +78,6 @@ class JoinCircleResponse {
   );
 }
 
-class SOSSendResponse {
-  final String id;
-  final int recipientCount;
-  SOSSendResponse({required this.id, required this.recipientCount});
-  factory SOSSendResponse.fromJson(Map<String, dynamic> j) => SOSSendResponse(
-    id: j['id'] as String, recipientCount: j['recipientCount'] as int? ?? 0,
-  );
-}
-
-class SOSItem {
-  final String id;
-  final String senderId;
-  final String circleId;
-  final String message;
-  final String createdAt;
-  final bool isMine;
-  SOSItem({required this.id, required this.senderId, required this.circleId, required this.message, required this.createdAt, required this.isMine});
-  factory SOSItem.fromJson(Map<String, dynamic> j) => SOSItem(
-    id: j['id'] as String, senderId: j['senderId'] as String, circleId: j['circleId'] as String,
-    message: j['message'] as String, createdAt: j['createdAt'] as String, isMine: j['isMine'] as bool? ?? false,
-  );
-}
-
 class ShareLinkResponse {
   final String shareUrl;
   final String inviteCode;
@@ -174,15 +151,6 @@ class GratitudeWeekCountResponse {
   GratitudeWeekCountResponse({required this.circleId, required this.weekCount});
   factory GratitudeWeekCountResponse.fromJson(Map<String, dynamic> j) => GratitudeWeekCountResponse(
     circleId: j['circleId'] as String, weekCount: j['weekCount'] as int? ?? 0,
-  );
-}
-
-class SOSContactsResponse {
-  final String circleId;
-  final int contactCount;
-  SOSContactsResponse({required this.circleId, required this.contactCount});
-  factory SOSContactsResponse.fromJson(Map<String, dynamic> j) => SOSContactsResponse(
-    circleId: j['circleId'] as String, contactCount: j['contactCount'] as int? ?? 0,
   );
 }
 
@@ -334,20 +302,11 @@ class APIService {
   Future<void> leaveCircle(String circleId) =>
       _postMutation<Map<String, dynamic>>('circles.leave', body: {'circleId': circleId}, fromJson: (j) => j);
 
-  Future<SOSSendResponse> sendSOS(String circleId, String message, List<String> recipientIds) =>
-      _postMutation('sos.send', body: {'circleId': circleId, 'message': message, 'recipientIds': recipientIds}, fromJson: (j) => SOSSendResponse.fromJson(j));
-
-  Future<List<SOSItem>> getRecentSOS({String? circleId, int limit = 20}) =>
-      _getQuery('sos.getRecent', input: {'limit': limit, 'circleId': ?circleId}, fromJson: (j) => (j as List<dynamic>).map((e) => SOSItem.fromJson(e as Map<String, dynamic>)).toList());
-
   Future<ShareLinkResponse> generateShareLink(String circleId) =>
       _postMutation('invite.generateShareLink', body: {'circleId': circleId}, fromJson: (j) => ShareLinkResponse.fromJson(j));
 
   Future<SundaySummaryResponse> getSundaySummary(String circleId) =>
       _getQuery('circles.getSundaySummary', input: {'circleId': circleId}, fromJson: (j) => SundaySummaryResponse.fromJson(j));
-
-  Future<SOSContactsResponse> setSOSContacts(String circleId, List<String> contactUserIds) =>
-      _postMutation('sos.setSOSContacts', body: {'circleId': circleId, 'contactUserIds': contactUserIds}, fromJson: (j) => SOSContactsResponse.fromJson(j));
 
   Future<void> registerPushToken(String token) async {
     if (userId == null) return;

@@ -17,6 +17,10 @@ import 'data/repositories/firestore_user_repository.dart';
 import 'data/repositories/firestore_circle_repository.dart';
 import 'data/repositories/firestore_iap_repository.dart';
 import 'data/services/pending_invite_service.dart';
+import 'data/services/pending_partner_token_service.dart';
+import 'data/repositories/firestore_accountability_repository.dart';
+import 'domain/repositories/accountability_repository.dart';
+import 'presentation/providers/accountability_provider.dart';
 import 'domain/repositories/iap_repository.dart';
 import 'domain/repositories/user_preferences_repository.dart';
 import 'domain/repositories/circle_repository.dart';
@@ -54,6 +58,9 @@ import 'presentation/providers/bible_provider.dart';
 import 'data/repositories/firestore_memorization_repository.dart';
 import 'domain/repositories/memorization_repository.dart';
 import 'presentation/providers/memorization_provider.dart';
+import 'data/repositories/firestore_recovery_path_repository.dart';
+import 'domain/repositories/recovery_path_repository.dart';
+import 'presentation/providers/recovery_path_provider.dart';
 import 'app.dart';
 
 /// Top-level handler for background/terminated FCM messages.
@@ -91,14 +98,14 @@ void main() async {
     APIService.shared.registerPushToken(token).catchError((_) {});
   });
 
-  // Show foreground notifications for circle messages.
+  // Show foreground notifications for incoming FCM messages.
   FirebaseMessaging.onMessage.listen((message) {
-    final isSOS = message.data['type'] == 'sos';
+    final channelId = message.data['channel'] as String? ?? 'circles';
     NotificationService.shared.showCircleNotification(
       id: message.messageId ?? message.data['notifId'] ?? 'fg',
-      title: message.notification?.title ?? (isSOS ? 'SOS Alert' : 'Circle Notification'),
+      title: message.notification?.title ?? 'Circle Notification',
       body: message.notification?.body ?? '',
-      isSOS: isSOS,
+      channelId: channelId,
     );
   });
 
@@ -119,6 +126,8 @@ void main() async {
   final iapRepository = FirestoreIAPRepository();
   final storeProvider = StoreProvider(iapRepository: iapRepository);
   final pendingInviteService = PendingInviteService(sharedPrefs);
+  final pendingPartnerTokenService = PendingPartnerTokenService(sharedPrefs);
+  final accountabilityRepository = FirestoreAccountabilityRepository();
 
   final journalRepository = FirestoreJournalRepository();
   await MediaUploadService.instance.init(sharedPrefs, journalRepository);
@@ -130,11 +139,17 @@ void main() async {
   final bibleRepository = LocalBibleRepository(BibleDatabase.instance);
   final bookmarkRepository = FirestoreBookmarkRepository();
   final memorizationRepository = FirestoreMemorizationRepository();
+  final recoveryPathRepository = FirestoreRecoveryPathRepository();
 
   runApp(
     MultiProvider(
       providers: [
         Provider<PendingInviteService>.value(value: pendingInviteService),
+        Provider<PendingPartnerTokenService>.value(value: pendingPartnerTokenService),
+        Provider<AccountabilityRepository>.value(value: accountabilityRepository),
+        ChangeNotifierProvider<AccountabilityProvider>(
+          create: (_) => AccountabilityProvider(accountabilityRepository),
+        ),
         Provider<IAPRepository>.value(value: iapRepository),
         Provider<UserPreferencesRepository>.value(value: userPrefs),
         Provider<UserRepository>.value(value: userRepository),
@@ -210,6 +225,10 @@ void main() async {
             memorizationRepository,
             () => context.read<EngagementService>().isPremium,
           ),
+        ),
+        Provider<RecoveryPathRepository>.value(value: recoveryPathRepository),
+        ChangeNotifierProvider<RecoveryPathProvider>(
+          create: (_) => RecoveryPathProvider(recoveryPathRepository),
         ),
       ],
       child: const MyWalkApp(),

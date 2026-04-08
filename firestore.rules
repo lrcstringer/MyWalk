@@ -127,12 +127,6 @@ service cloud.firestore {
         allow write: if isOwner(userId) && isCircleMember(circleId);
       }
 
-      // sosRequests subcollection — backend writes only
-      match /sosRequests/{sosId} {
-        allow read: if isCircleMember(circleId);
-        allow write: if false;
-      }
-
       // milestones — backend Admin SDK writes only
       match /milestones/{milestoneId} {
         allow read: if isCircleMember(circleId);
@@ -148,12 +142,6 @@ service cloud.firestore {
       // userSeenGratitude — owner read/write
       match /userSeenGratitude/{userId} {
         allow read, write: if isOwner(userId) && isCircleMember(circleId);
-      }
-
-      // sosContacts — owner write, members read
-      match /sosContacts/{userId} {
-        allow read: if isCircleMember(circleId);
-        allow write: if isOwner(userId) && isCircleMember(circleId);
       }
 
       // prayer_requests — any member can read; all writes via callable (Admin SDK)
@@ -281,6 +269,58 @@ service cloud.firestore {
     match /bible_passage_cache/{cacheKey} {
       allow read: if isSignedIn();
       allow write: if false;
+    }
+
+    // ─── accountability_partnerships ──────────────────────────────────────
+    match /accountability_partnerships/{partnershipId} {
+      // Participants can always read; non-participants can read pending invites
+      // so the accepting partner can load the doc by token before partnerId is set.
+      allow read: if isSignedIn() && (
+        request.auth.uid in resource.data.participantIds ||
+        resource.data.status == 'pending'
+      );
+      allow create: if false; // Cloud Function (Admin SDK) only
+      // Participants may only update: status (cancel/end) or lastMessage fields (sendMessage).
+      allow update: if isSignedIn() &&
+        request.auth.uid in resource.data.participantIds &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'lastMessagePreview', 'lastMessageAt']);
+      allow delete: if false;
+
+      // partner_messages subcollection
+      match /partner_messages/{messageId} {
+        // Only participants of the parent partnership can read messages.
+        allow read: if isSignedIn() &&
+          request.auth.uid in get(/databases/$(database)/documents/accountability_partnerships/$(partnershipId)).data.participantIds;
+        // Participants may create messages as themselves.
+        allow create: if isSignedIn() &&
+          request.resource.data.senderId == request.auth.uid &&
+          request.auth.uid in get(/databases/$(database)/documents/accountability_partnerships/$(partnershipId)).data.participantIds;
+        // Participants may mark messages read (isRead only).
+        allow update: if isSignedIn() &&
+          request.auth.uid in get(/databases/$(database)/documents/accountability_partnerships/$(partnershipId)).data.participantIds &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+        allow delete: if false;
+      }
+    }
+
+    // ─── recovery_paths ───────────────────────────────────────────────────
+    // Doc ID = habitId. Only the habit owner can read/write their path.
+    match /recovery_paths/{habitId} {
+      allow read: if isSignedIn() &&
+        (resource == null || resource.data.userId == request.auth.uid);
+      allow update: if isSignedIn() &&
+        resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid;
+      allow delete: if false;
+
+      // recovery_sessions subcollection — owner only; no delete.
+      match /recovery_sessions/{sessionId} {
+        allow read, create, update: if isSignedIn() &&
+          get(/databases/$(database)/documents/recovery_paths/$(habitId)).data.userId == request.auth.uid;
+        allow delete: if false;
+      }
     }
 
     // ─── habit_categories / habit_subcategories ────────────────────────────

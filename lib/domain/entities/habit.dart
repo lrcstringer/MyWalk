@@ -239,6 +239,10 @@ class Habit {
   // Prayer list: when true, shows a structured prayer items section in the detail view
   final bool hasPrayerItems;
   final List<PrayerItem> prayerItems;
+  // Accountability / Recovery Path
+  final String? accountabilityPartnerId;
+  final String? recoveryPathId;
+  final bool hasRecoveryPath;
 
   const Habit({
     required this.id,
@@ -270,6 +274,9 @@ class Habit {
     this.referenceUrl = '',
     this.hasPrayerItems = false,
     this.prayerItems = const [],
+    this.accountabilityPartnerId,
+    this.recoveryPathId,
+    this.hasRecoveryPath = false,
   });
 
   factory Habit.create({
@@ -322,6 +329,8 @@ class Habit {
     );
   }
 
+  static const Object _keep = Object();
+
   Habit copyWith({
     String? name,
     HabitCategory? category,
@@ -351,6 +360,9 @@ class Habit {
     String? referenceUrl,
     bool? hasPrayerItems,
     List<PrayerItem>? prayerItems,
+    Object? accountabilityPartnerId = _keep,
+    Object? recoveryPathId = _keep,
+    bool? hasRecoveryPath,
   }) =>
       Habit(
         id: id,
@@ -382,6 +394,13 @@ class Habit {
         referenceUrl: referenceUrl ?? this.referenceUrl,
         hasPrayerItems: hasPrayerItems ?? this.hasPrayerItems,
         prayerItems: prayerItems ?? this.prayerItems,
+        accountabilityPartnerId: identical(accountabilityPartnerId, _keep)
+            ? this.accountabilityPartnerId
+            : accountabilityPartnerId as String?,
+        recoveryPathId: identical(recoveryPathId, _keep)
+            ? this.recoveryPathId
+            : recoveryPathId as String?,
+        hasRecoveryPath: hasRecoveryPath ?? this.hasRecoveryPath,
       );
 
   Set<int> get activeDaySet {
@@ -469,6 +488,9 @@ class Habit {
         'referenceUrl': referenceUrl,
         'hasPrayerItems': hasPrayerItems,
         'prayerItems': prayerItems.map((p) => p.toMap()).toList(),
+        if (accountabilityPartnerId != null) 'accountabilityPartnerId': accountabilityPartnerId,
+        if (recoveryPathId != null) 'recoveryPathId': recoveryPathId,
+        'hasRecoveryPath': hasRecoveryPath,
       };
 
   factory Habit.fromFirestore(
@@ -518,6 +540,9 @@ class Habit {
       prayerItems: ((data['prayerItems'] as List<dynamic>?) ?? [])
           .map((e) => PrayerItem.fromMap(e as Map<String, dynamic>))
           .toList(),
+      accountabilityPartnerId: data['accountabilityPartnerId'] as String?,
+      recoveryPathId: data['recoveryPathId'] as String?,
+      hasRecoveryPath: data['hasRecoveryPath'] as bool? ?? false,
     );
   }
 }

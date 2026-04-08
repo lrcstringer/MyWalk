@@ -7,11 +7,8 @@ abstract class CircleRepository {
   Future<Circle> createCircle(String name, {String description});
   Future<JoinCircleResult> joinCircle(String inviteCode);
   Future<void> leaveCircle(String circleId);
-  Future<void> sendSOS(String circleId, String message, List<String> recipientIds);
-  Future<List<SOSMessage>> getRecentSOS({String? circleId, int limit});
   Future<String> generateShareLink(String circleId);
   Future<CircleWeeklySummary> getSundaySummary(String circleId);
-  Future<void> setSOSContacts(String circleId, List<String> contactUserIds);
   Future<GratitudeWall> getGratitudeWall(String circleId, {int weeksBack});
   Future<void> shareGratitude({
     required List<String> circleIds,
