@@ -59,6 +59,8 @@ export {
 } from './callables/events';
 export { resetWeeklyFruitPortfolio } from './callables/fruit';
 export { seedHabitCategories } from './callables/habit_categories';
+export { chunkText, generateTts } from './callables/memorization';
+export { scheduleReviewReminder, cancelReviewReminder, sweepDueReminders } from './callables/memorization_notify';
 
 // ── TEMP: Grant premium to all new users (remove before production launch) ──
 

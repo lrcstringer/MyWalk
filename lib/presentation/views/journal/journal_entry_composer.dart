@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:audioplayers/audioplayers.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,7 +13,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../../../domain/entities/fruit.dart';
 import '../../../domain/entities/journal_entry.dart';
+import '../../../domain/entities/habit.dart';
 import '../../../domain/entities/journal_theme.dart';
+import '../../providers/habit_provider.dart';
 import '../../providers/journal_provider.dart';
 import '../../providers/journal_theme_provider.dart';
 import '../../theme/app_theme.dart';
@@ -71,6 +74,8 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
   String? _tmpVoicePath;
 
   bool _isSaving = false;
+
+  Habit? _linkedHabit;
 
   // Dictation
   final _speech = SpeechToText();
@@ -145,6 +150,20 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
       return;
     }
     if (!_speechAvailable) return;
+
+    // Android speech recognition uses Google's network API — guard offline.
+    if (Platform.isAndroid) {
+      final results = await Connectivity().checkConnectivity();
+      if (results.every((r) => r == ConnectivityResult.none)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Voice dictation requires an internet connection on Android.'),
+            duration: Duration(seconds: 3),
+          ));
+        }
+        return;
+      }
+    }
 
     _editorFocusNode.requestFocus();
     final sel = _textController.selection;
@@ -349,10 +368,10 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
           text: deltaJson,
           imageLocalPaths: _newImagePaths,
           voiceLocalPath: _newVoicePath,
-          habitId: widget.habitId,
-          habitName: widget.habitName,
-          fruitTag: widget.fruitTag,
-          sourceType: widget.sourceType,
+          habitId: _linkedHabit?.id ?? widget.habitId,
+          habitName: _linkedHabit?.name ?? widget.habitName,
+          fruitTag: _linkedHabit?.fruitTags.firstOrNull ?? widget.fruitTag,
+          sourceType: _linkedHabit != null ? 'linked' : widget.sourceType,
         );
       }
       if (mounted) Navigator.pop(context);
@@ -457,15 +476,73 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
     }
   }
 
+  // ── Habit picker ────────────────────────────────────────────────────────
+
+  void _showHabitPicker(JournalTheme theme) {
+    final habits = context.read<HabitProvider>().habits;
+    if (habits.isEmpty) {
+      _showSnack('No habits found');
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: theme.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Link to a Habit',
+                style: TextStyle(
+                  color: theme.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            Divider(color: theme.textSecondary.withValues(alpha: 0.15), height: 1),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 320),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final habit in habits)
+                    ListTile(
+                      leading: Icon(Icons.repeat,
+                          color: MyWalkColor.golden, size: 20),
+                      title: Text(
+                        habit.name,
+                        style: TextStyle(
+                            color: theme.textPrimary, fontSize: 15),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        setState(() => _linkedHabit = habit);
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<JournalThemeProvider>().theme;
 
-    final fruitTag = widget.initialEntry?.fruitTag ?? widget.fruitTag;
-    final habitName = widget.initialEntry?.habitName ?? widget.habitName;
-    final sourceType = widget.initialEntry?.sourceType ?? widget.sourceType;
+    final fruitTag = widget.initialEntry?.fruitTag ?? _linkedHabit?.fruitTags.firstOrNull ?? widget.fruitTag;
+    final habitName = widget.initialEntry?.habitName ?? _linkedHabit?.name ?? widget.habitName;
+    final sourceType = widget.initialEntry?.sourceType ?? (_linkedHabit != null ? 'linked' : widget.sourceType);
 
     final hasVoice = _newVoicePath != null ||
         (_existingVoiceUrl != null && !_removeExistingVoice);
@@ -507,13 +584,27 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          // Source chip
-          if (sourceType != 'free' || fruitTag != null || habitName != null)
+          // Source chip / habit link
+          if (!_isEditMode && widget.sourceType == 'free')
+            _linkedHabit != null
+                ? _SourceChip(
+                    habitName: habitName,
+                    fruitTag: fruitTag,
+                    sourceType: sourceType,
+                    theme: theme,
+                    onClear: () => setState(() => _linkedHabit = null),
+                  )
+                : _LinkHabitButton(
+                    theme: theme,
+                    onTap: () => _showHabitPicker(theme),
+                  )
+          else if (sourceType != 'free' || fruitTag != null || habitName != null)
             _SourceChip(
-                habitName: habitName,
-                fruitTag: fruitTag,
-                sourceType: sourceType,
-                theme: theme),
+              habitName: habitName,
+              fruitTag: fruitTag,
+              sourceType: sourceType,
+              theme: theme,
+            ),
 
           // Toolbar
           DecoratedBox(
@@ -667,12 +758,14 @@ class _SourceChip extends StatelessWidget {
   final FruitType? fruitTag;
   final String sourceType;
   final JournalTheme theme;
+  final VoidCallback? onClear;
 
   const _SourceChip({
     this.habitName,
     this.fruitTag,
     required this.sourceType,
     required this.theme,
+    this.onClear,
   });
 
   @override
@@ -724,7 +817,49 @@ class _SourceChip extends StatelessWidget {
               ],
             ),
           ),
+          if (onClear != null) ...[
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: onClear,
+              child: Icon(Icons.close, size: 14,
+                  color: chipColor.withValues(alpha: 0.6)),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+// ── Link Habit Button ────────────────────────────────────────────────────────
+
+class _LinkHabitButton extends StatelessWidget {
+  final JournalTheme theme;
+  final VoidCallback onTap;
+
+  const _LinkHabitButton({required this.theme, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.link, size: 14,
+                color: theme.textSecondary.withValues(alpha: 0.6)),
+            const SizedBox(width: 5),
+            Text(
+              'Link to a habit',
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.textSecondary.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

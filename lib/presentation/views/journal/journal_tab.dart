@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import 'journal_entry_composer.dart';
 import 'journal_entry_detail_view.dart';
 import 'journal_theme_picker.dart';
+import '../shared/appbar_actions.dart';
 
 class JournalTab extends StatefulWidget {
   const JournalTab({super.key});
@@ -152,6 +153,7 @@ class _JournalTabState extends State<JournalTab> {
               ),
             ),
             actions: [
+              bibleBrowserAction(context, theme.textPrimary),
               IconButton(
                 icon: Icon(Icons.palette_outlined,
                     size: 26, color: theme.textPrimary),

@@ -5,13 +5,15 @@ import '../../domain/entities/circle.dart';
 import '../../domain/entities/habit.dart' show PrayerItemStatus;
 import '../../domain/repositories/circle_repository.dart';
 import '../../domain/services/week_id_service.dart';
+import '../services/pending_notification_send_queue.dart';
 
 class FirestoreCircleRepository implements CircleRepository {
   final FirebaseFirestore _db;
   final FirebaseAuth _auth;
   final FirebaseFunctions _fn;
+  final PendingNotificationSendQueue _sendQueue;
 
-  FirestoreCircleRepository()
+  FirestoreCircleRepository(this._sendQueue)
       : _db = FirebaseFirestore.instance,
         _auth = FirebaseAuth.instance,
         _fn = FirebaseFunctions.instanceFor(region: 'us-central1');
@@ -99,21 +101,51 @@ class FirestoreCircleRepository implements CircleRepository {
     return Map<String, dynamic>.from(result.data);
   }
 
+  // ── Cache-fallback helpers ────────────────────────────────────────────────
+
+  /// Fetch a document server-first; retries from local cache on network errors.
+  ///
+  /// Only `unavailable` and `deadline-exceeded` trigger the cache retry.
+  /// Other codes (e.g. `permission-denied`, `unauthenticated`) are rethrown
+  /// so security failures are never silently masked by stale cached data.
+  Future<DocumentSnapshot<T>> _getWithFallback<T>(
+      DocumentReference<T> ref) async {
+    try {
+      return await ref.get();
+    } on FirebaseException catch (e) {
+      if (e.code != 'unavailable' && e.code != 'deadline-exceeded') rethrow;
+      return await ref.get(const GetOptions(source: Source.cache));
+    }
+  }
+
+  /// Fetch a query server-first; retries from local cache on network errors.
+  ///
+  /// Only `unavailable` and `deadline-exceeded` trigger the cache retry.
+  /// Other codes (e.g. `permission-denied`, `unauthenticated`) are rethrown
+  /// so security failures are never silently masked by stale cached data.
+  Future<QuerySnapshot<T>> _queryWithFallback<T>(Query<T> query) async {
+    try {
+      return await query.get();
+    } on FirebaseException catch (e) {
+      if (e.code != 'unavailable' && e.code != 'deadline-exceeded') rethrow;
+      return await query.get(const GetOptions(source: Source.cache));
+    }
+  }
+
   // ── Existing: listCircles ─────────────────────────────────────────────────
 
   @override
   Future<List<Circle>> listCircles() async {
     final uid = _uid;
-    final memberSnaps = await _db
+    final memberSnaps = await _queryWithFallback(_db
         .collectionGroup('members')
-        .where('userId', isEqualTo: uid)
-        .get();
+        .where('userId', isEqualTo: uid));
     if (memberSnaps.docs.isEmpty) return [];
 
     final circleIds =
         memberSnaps.docs.map((d) => d.reference.parent.parent!.id).toList();
     final circleSnaps =
-        await Future.wait(circleIds.map((id) => _circles.doc(id).get()));
+        await Future.wait(circleIds.map((id) => _getWithFallback(_circles.doc(id))));
 
     return circleSnaps.where((s) => s.exists).map((s) {
       final data = s.data()! as Map<String, dynamic>;
@@ -138,8 +170,8 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<CircleDetails> getCircleDetail(String circleId) async {
     final results = await Future.wait([
-      _circles.doc(circleId).get(),
-      _members(circleId).get(),
+      _getWithFallback(_circles.doc(circleId)),
+      _queryWithFallback(_members(circleId)),
     ]);
     final snap = results[0] as DocumentSnapshot;
     final membersSnap = results[1] as QuerySnapshot;
@@ -179,7 +211,7 @@ class FirestoreCircleRepository implements CircleRepository {
         .where('sharedAt', isGreaterThan: Timestamp.fromDate(lowerBound))
         .where('sharedAt', isLessThanOrEqualTo: Timestamp.fromDate(upperBound))
         .orderBy('sharedAt', descending: true);
-    final snap = await query.get();
+    final snap = await _queryWithFallback(query);
     final posts = snap.docs
         .map((d) => d.data() as Map<String, dynamic>)
         .where((d) => d['deleted'] != true)
@@ -198,17 +230,21 @@ class FirestoreCircleRepository implements CircleRepository {
 
   @override
   Future<int> getGratitudeNewCount(String circleId) async {
-    final seenSnap = await _seenDoc(circleId).get();
+    final seenSnap = await _getWithFallback(_seenDoc(circleId));
     final lastSeenAt = seenSnap.exists
         ? ((seenSnap.data() as Map<String, dynamic>?)?['lastSeenAt']
             as Timestamp?)
         : null;
 
-    Query query = _gratitudes(circleId);
-    if (lastSeenAt != null) {
-      query = query.where('sharedAt', isGreaterThan: lastSeenAt);
-    }
-    final snap = await query.get();
+    // Always bound to 30 days to avoid a full collection scan when the user
+    // has never opened the gratitude tab (lastSeenAt == null).
+    final thirtyDaysAgo = Timestamp.fromDate(
+        DateTime.now().subtract(const Duration(days: 30)));
+    final Query query = lastSeenAt != null
+        ? _gratitudes(circleId).where('sharedAt', isGreaterThan: lastSeenAt)
+        : _gratitudes(circleId).where('sharedAt', isGreaterThan: thirtyDaysAgo);
+
+    final snap = await _queryWithFallback(query);
     return snap.docs
         .where((d) =>
             (d.data() as Map<String, dynamic>)['deleted'] != true)
@@ -218,9 +254,8 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<int> getGratitudeWeekCount(String circleId) async {
     final weekAgo = DateTime.now().subtract(const Duration(days: 7));
-    final snap = await _gratitudes(circleId)
-        .where('sharedAt', isGreaterThan: Timestamp.fromDate(weekAgo))
-        .get();
+    final snap = await _queryWithFallback(_gratitudes(circleId)
+        .where('sharedAt', isGreaterThan: Timestamp.fromDate(weekAgo)));
     return snap.docs
         .where((d) =>
             (d.data() as Map<String, dynamic>)['deleted'] != true)
@@ -230,7 +265,7 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<CircleHeatmap> getCircleHeatmap(String circleId,
       {int weekCount = 1}) async {
-    final snap = await _heatmapEntries(circleId).get();
+    final snap = await _queryWithFallback(_heatmapEntries(circleId));
     final totalMembers = snap.size == 0 ? 1 : snap.size;
     final cutoff = DateTime.now().subtract(Duration(days: weekCount * 7));
     final cutoffStr = WeekIdService.dateStr(cutoff);
@@ -270,8 +305,8 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<CollectiveMilestones> getCircleMilestones(String circleId) async {
     final results = await Future.wait([
-      _meta(circleId).get(),
-      _milestones(circleId).orderBy('achievedAt', descending: false).get(),
+      _getWithFallback(_meta(circleId)),
+      _queryWithFallback(_milestones(circleId).orderBy('achievedAt', descending: false)),
     ]);
     final totalsSnap = results[0] as DocumentSnapshot;
     final milestonesSnap = results[1] as QuerySnapshot;
@@ -298,8 +333,8 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<CircleWeeklySummary> getSundaySummary(String circleId) async {
     final results = await Future.wait([
-      _circles.doc(circleId).get(),
-      _heatmapEntries(circleId).get(),
+      _getWithFallback(_circles.doc(circleId)),
+      _queryWithFallback(_heatmapEntries(circleId)),
     ]);
     final circleSnap = results[0] as DocumentSnapshot;
     final entrySnaps = results[1] as QuerySnapshot;
@@ -344,10 +379,9 @@ class FirestoreCircleRepository implements CircleRepository {
       {String? circleId, int limit = 20}) async {
     final uid = _uid;
     if (circleId == null) return [];
-    final snap = await _sosRequests(circleId)
+    final snap = await _queryWithFallback(_sosRequests(circleId)
         .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .get();
+        .limit(limit));
     return snap.docs.map((d) {
       final data = d.data() as Map<String, dynamic>;
       return SOSMessage(
@@ -363,7 +397,7 @@ class FirestoreCircleRepository implements CircleRepository {
 
   @override
   Future<String> generateShareLink(String circleId) async {
-    final snap = await _circles.doc(circleId).get();
+    final snap = await _getWithFallback(_circles.doc(circleId));
     final inviteCode = snap.exists
         ? (snap.data()! as Map<String, dynamic>)['inviteCode'] as String? ?? ''
         : '';
@@ -417,10 +451,13 @@ class FirestoreCircleRepository implements CircleRepository {
 
   @override
   Future<void> sendSOS(
-      String circleId, String message, List<String> recipientIds) async {
-    await _call('circleSendSOS',
-        {'circleId': circleId, 'message': message, 'recipientIds': recipientIds});
-  }
+          String circleId, String message, List<String> recipientIds) =>
+      _sendQueue.enqueue({
+        'type': 'sos',
+        'circleId': circleId,
+        'message': message,
+        'recipientIds': recipientIds,
+      });
 
   @override
   Future<void> shareGratitude({
@@ -471,10 +508,9 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<List<PrayerRequest>> getPrayerRequests(String circleId) async {
     final uid = _uid;
-    final snap = await _prayerRequests(circleId)
+    final snap = await _queryWithFallback(_prayerRequests(circleId)
         .where('status', whereIn: ['ACTIVE', 'ANSWERED'])
-        .orderBy('createdAt', descending: true)
-        .get();
+        .orderBy('createdAt', descending: true));
     return snap.docs.map((d) {
       final data = d.data() as Map<String, dynamic>;
       return _parsePrayerRequest(d.id, data, uid);
@@ -540,6 +576,13 @@ class FirestoreCircleRepository implements CircleRepository {
             .toList());
   }
 
+  // Scripture-thread writes (createThread, closeThread, deleteThread,
+  // addComment, deleteComment) use direct Firestore writes rather than
+  // callable functions. This is intentional: scripture threads don't require
+  // server-side aggregation or fan-out, so bypassing Cloud Functions reduces
+  // latency and also means these operations work fully offline (Firestore
+  // queues the writes and applies them on reconnect).
+
   @override
   Future<void> createThread({
     required String circleId,
@@ -573,8 +616,10 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<void> deleteThread(String circleId, String threadId) async {
     // Delete all comments first, then the thread document.
+    // Use _queryWithFallback so this also works when the device is offline
+    // (Firestore will queue the batch delete and apply it when reconnected).
     final comments =
-        await _threadComments(circleId, threadId).get();
+        await _queryWithFallback(_threadComments(circleId, threadId));
     final batch = _db.batch();
     for (final doc in comments.docs) {
       batch.delete(doc.reference);
@@ -626,10 +671,9 @@ class FirestoreCircleRepository implements CircleRepository {
 
   @override
   Future<List<CircleHabit>> getCircleHabits(String circleId) async {
-    final snap = await _circleHabits(circleId)
+    final snap = await _queryWithFallback(_circleHabits(circleId)
         .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: false)
-        .get();
+        .orderBy('createdAt', descending: false));
     return snap.docs.map((d) {
       final data = d.data() as Map<String, dynamic>;
       return _parseCircleHabit(d.id, data);
@@ -643,7 +687,7 @@ class FirestoreCircleRepository implements CircleRepository {
     String date,
   ) async {
     final snap =
-        await _habitDailySummary(circleId, habitId).doc(date).get();
+        await _getWithFallback(_habitDailySummary(circleId, habitId).doc(date));
     if (!snap.exists) return null;
     final data = snap.data() as Map<String, dynamic>;
     return CircleHabitDailySummary(
@@ -771,17 +815,17 @@ class FirestoreCircleRepository implements CircleRepository {
     String? presetKey,
     String? customText,
     required bool isAnonymous,
-  }) async {
-    await _call('circleSendEncouragement', {
-      'circleId': circleId,
-      'recipientId': recipientId,
-      'messageType':
-          messageType == EncouragementMessageType.preset ? 'PRESET' : 'CUSTOM',
-      'presetKey': presetKey,
-      'customText': customText,
-      'isAnonymous': isAnonymous,
-    });
-  }
+  }) =>
+      _sendQueue.enqueue({
+        'type': 'encouragement',
+        'circleId': circleId,
+        'recipientId': recipientId,
+        'messageType':
+            messageType == EncouragementMessageType.preset ? 'PRESET' : 'CUSTOM',
+        'presetKey': presetKey,
+        'customText': customText,
+        'isAnonymous': isAnonymous,
+      });
 
   @override
   Future<void> markEncouragementRead(
@@ -795,10 +839,9 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<List<MilestoneShare>> getMilestoneShares(String circleId) async {
     final uid = _uid;
-    final snap = await _milestoneShares(circleId)
+    final snap = await _queryWithFallback(_milestoneShares(circleId)
         .orderBy('createdAt', descending: true)
-        .limit(20)
-        .get();
+        .limit(20));
     return snap.docs.map((d) {
       final data = d.data() as Map<String, dynamic>;
       return _parseMilestoneShare(d.id, data, uid);
@@ -833,9 +876,8 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<List<CircleHabitMilestone>> getCircleHabitMilestones(
       String circleId) async {
-    final snap = await _circleHabitMilestones(circleId)
-        .orderBy('createdAt', descending: true)
-        .get();
+    final snap = await _queryWithFallback(_circleHabitMilestones(circleId)
+        .orderBy('createdAt', descending: true));
     return snap.docs.map((d) {
       final data = d.data() as Map<String, dynamic>;
       return CircleHabitMilestone(
@@ -854,7 +896,7 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<WeeklyPulse?> getCurrentWeeklyPulse(String circleId) async {
     final weekId = WeekIdService.currentWeekId();
-    final snap = await _weeklyPulse(circleId).doc(weekId).get();
+    final snap = await _getWithFallback(_weeklyPulse(circleId).doc(weekId));
     if (!snap.exists) return null;
     final data = snap.data() as Map<String, dynamic>;
     return _parseWeeklyPulse(snap.id, data);
@@ -864,7 +906,7 @@ class FirestoreCircleRepository implements CircleRepository {
   Future<PulseResponse?> getMyPulseResponse(
       String circleId, String weekId) async {
     final uid = _uid;
-    final snap = await _pulseResponses(circleId, weekId).doc(uid).get();
+    final snap = await _getWithFallback(_pulseResponses(circleId, weekId).doc(uid));
     if (!snap.exists) return null;
     final data = snap.data() as Map<String, dynamic>;
     return _parsePulseResponse(snap.id, data);
@@ -890,11 +932,10 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<List<CircleEvent>> getUpcomingEvents(String circleId) async {
     final now = DateTime.now();
-    final snap = await _events(circleId)
+    final snap = await _queryWithFallback(_events(circleId)
         .where('eventDate', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
         .orderBy('eventDate', descending: false)
-        .limit(2)
-        .get();
+        .limit(2));
     return snap.docs.map((d) {
       final data = d.data() as Map<String, dynamic>;
       return _parseCircleEvent(d.id, data);
@@ -1241,7 +1282,7 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<CirclePrayerList?> getGroupPrayerList(String circleId) async {
     final uid = _uid;
-    final metaSnap = await _groupPrayerListMeta(circleId).get();
+    final metaSnap = await _getWithFallback(_groupPrayerListMeta(circleId));
     if (!metaSnap.exists) return null;
     final meta = metaSnap.data() as Map<String, dynamic>;
     final visibleIds =
@@ -1257,7 +1298,7 @@ class FirestoreCircleRepository implements CircleRepository {
       );
     }
     final itemsSnap =
-        await _groupPrayerItems(circleId).orderBy('order').get();
+        await _queryWithFallback(_groupPrayerItems(circleId).orderBy('order'));
     final items = itemsSnap.docs.map((d) {
       final data = d.data() as Map<String, dynamic>;
       return CirclePrayerItem(
@@ -1312,8 +1353,17 @@ class FirestoreCircleRepository implements CircleRepository {
     await _groupPrayerItems(circleId).doc(itemId).delete();
   }
 
+  /// Returns true if [uid] is an admin of [circleId].
+  ///
+  /// Uses [_getWithFallback], so when offline a cached member document is used.
+  /// This means a role change (admin → member) is not reflected until the
+  /// device reconnects. This is an accepted trade-off for offline-first access:
+  /// a demoted admin can view the group prayer list from cache but cannot make
+  /// privileged writes (those go through callable functions which enforce roles
+  /// server-side). [_getWithFallback] will rethrow `permission-denied` when
+  /// online, so the stale-role window is limited to genuine offline sessions.
   Future<bool> _isAdmin(String circleId, String uid) async {
-    final snap = await _members(circleId).doc(uid).get();
+    final snap = await _getWithFallback(_members(circleId).doc(uid));
     if (!snap.exists) return false;
     final data = snap.data() as Map<String, dynamic>;
     return (data['role'] as String?) == 'admin';

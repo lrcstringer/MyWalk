@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../domain/entities/bible_entities.dart';
 import '../../providers/bible_provider.dart';
 import '../../theme/app_theme.dart';
+import '../memorization/screens/memorization_input_screen.dart';
 import 'bible_book_picker_sheet.dart';
 import 'bible_bookmarks_sheet.dart';
 import 'bible_search_sheet.dart';
@@ -375,6 +376,21 @@ class _BibleBrowserViewState extends State<BibleBrowserView> {
               onTap: () {
                 Navigator.pop(context);
                 provider.toggleBookmark(verse);
+              },
+            ),
+            _ActionTile(
+              icon: Icons.psychology_outlined,
+              label: 'Memorize this verse',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => MemorizationInputScreen(
+                      initialTitle: verse.reference,
+                      initialText: verse.text,
+                    ),
+                  ),
+                );
               },
             ),
             if (widget.onVerseSelected != null)

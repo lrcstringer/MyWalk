@@ -439,7 +439,11 @@ class HabitProvider extends ChangeNotifier {
       );
     }
 
-    await _repository.upsertEntry(entry);
+    final deltaCompleted =
+        (isCompleted ? 1 : 0) - (existing?.isCompleted == true ? 1 : 0);
+    final deltaValue = value - (existing?.value ?? 0.0);
+    await _repository.upsertEntry(entry,
+        deltaCompleted: deltaCompleted, deltaValue: deltaValue);
 
     // Replace the habit in _habits with an updated immutable copy.
     _habits = [

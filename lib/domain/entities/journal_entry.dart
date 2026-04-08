@@ -27,7 +27,7 @@ class JournalEntry {
   /// Fruit this entry is tagged with (set from habit tags or the Fruit screen).
   final FruitType? fruitTag;
 
-  /// 'habit' | 'fruit' | 'free'
+  /// 'habit' | 'fruit' | 'free' | 'linked'
   final String sourceType;
 
   /// Whether this entry is pinned to the top of the journal list.

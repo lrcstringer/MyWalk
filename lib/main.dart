@@ -41,6 +41,7 @@ import 'data/repositories/local_habit_category_repository.dart';
 import 'data/repositories/firestore_journal_repository.dart';
 import 'data/services/media_upload_service.dart';
 import 'data/services/pending_action_queue_service.dart';
+import 'data/services/pending_notification_send_queue.dart';
 import 'data/repositories/firestore_notification_repository.dart';
 import 'domain/repositories/notification_repository.dart';
 import 'presentation/providers/circle_notification_provider.dart';
@@ -50,22 +51,16 @@ import 'data/repositories/firestore_bookmark_repository.dart';
 import 'domain/repositories/bible_repository.dart';
 import 'domain/repositories/bookmark_repository.dart';
 import 'presentation/providers/bible_provider.dart';
+import 'data/repositories/firestore_memorization_repository.dart';
+import 'domain/repositories/memorization_repository.dart';
+import 'presentation/providers/memorization_provider.dart';
 import 'app.dart';
 
 /// Top-level handler for background/terminated FCM messages.
+/// The FCM payload includes a `notification` field so the OS displays the
+/// notification automatically — no manual display needed here.
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Firebase must be initialised again in the background isolate.
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await NotificationService.shared.init();
-  final isSOS = message.data['type'] == 'sos';
-  await NotificationService.shared.showCircleNotification(
-    id: message.messageId ?? message.data['notifId'] ?? 'bg',
-    title: message.notification?.title ?? (isSOS ? 'SOS Alert' : 'Circle Notification'),
-    body: message.notification?.body ?? '',
-    isSOS: isSOS,
-  );
-}
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -129,10 +124,12 @@ void main() async {
   await MediaUploadService.instance.init(sharedPrefs, journalRepository);
 
   final pendingActionQueue = PendingActionQueueService(sharedPrefs);
-  final notificationRepository = FirestoreNotificationRepository(pendingActionQueue);
+  final pendingSendQueue = PendingNotificationSendQueue(sharedPrefs);
+  final notificationRepository = FirestoreNotificationRepository(pendingActionQueue, pendingSendQueue);
 
   final bibleRepository = LocalBibleRepository(BibleDatabase.instance);
   final bookmarkRepository = FirestoreBookmarkRepository();
+  final memorizationRepository = FirestoreMemorizationRepository();
 
   runApp(
     MultiProvider(
@@ -144,7 +141,7 @@ void main() async {
         Provider<WeekCycleManager>(create: (_) => WeekCycleManager(userPrefs)),
         ChangeNotifierProvider<EngagementService>(create: (_) => EngagementService(userPrefs)),
         Provider<CircleRepository>(
-            create: (_) => FirestoreCircleRepository()),
+            create: (_) => FirestoreCircleRepository(pendingSendQueue)),
         ChangeNotifierProvider<HabitCategoryProvider>(
           create: (_) => HabitCategoryProvider(LocalHabitCategoryRepository())
             ..loadCategories(),
@@ -192,7 +189,7 @@ void main() async {
           create: (context) => CircleEventsProvider(context.read<CircleRepository>()),
         ),
         ChangeNotifierProvider<JournalProvider>(
-          create: (_) => JournalProvider(journalRepository)..loadEntries(),
+          create: (_) => JournalProvider(journalRepository),
         ),
         ChangeNotifierProvider<JournalThemeProvider>(
           create: (_) => JournalThemeProvider()..load(),
@@ -206,6 +203,13 @@ void main() async {
         Provider<BookmarkRepository>.value(value: bookmarkRepository),
         ChangeNotifierProvider<BibleProvider>(
           create: (_) => BibleProvider(bibleRepository, bookmarkRepository),
+        ),
+        Provider<MemorizationRepository>.value(value: memorizationRepository),
+        ChangeNotifierProvider<MemorizationProvider>(
+          create: (context) => MemorizationProvider(
+            memorizationRepository,
+            () => context.read<EngagementService>().isPremium,
+          ),
         ),
       ],
       child: const MyWalkApp(),

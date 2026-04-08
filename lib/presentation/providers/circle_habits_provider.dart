@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../data/datasources/remote/auth_service.dart';
 import '../../domain/entities/circle.dart';
 import '../../domain/repositories/circle_repository.dart';
 import '../../domain/services/week_id_service.dart';
@@ -6,7 +7,9 @@ import '../../domain/services/week_id_service.dart';
 class CircleHabitsProvider extends ChangeNotifier {
   final CircleRepository _repo;
 
-  CircleHabitsProvider(this._repo);
+  CircleHabitsProvider(this._repo) {
+    AuthService.shared.addListener(_onAuthChanged);
+  }
 
   final Map<String, List<CircleHabit>> _habitsByCircle = {};
   // Key: '{circleId}_{habitId}_{date}'
@@ -14,6 +17,25 @@ class CircleHabitsProvider extends ChangeNotifier {
   final Map<String, bool> _loadingByCircle = {};
   bool _creating = false;
   String? error;
+
+  @override
+  void dispose() {
+    AuthService.shared.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (!AuthService.shared.isAuthenticated) _clearAll();
+  }
+
+  void _clearAll() {
+    _habitsByCircle.clear();
+    _summaries.clear();
+    _loadingByCircle.clear();
+    _creating = false;
+    error = null;
+    notifyListeners();
+  }
 
   List<CircleHabit> habitsFor(String circleId) =>
       _habitsByCircle[circleId] ?? [];

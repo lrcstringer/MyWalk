@@ -1,16 +1,37 @@
 import 'package:flutter/foundation.dart';
+import '../../data/datasources/remote/auth_service.dart';
 import '../../domain/entities/circle.dart';
 import '../../domain/repositories/circle_repository.dart';
 
 class PrayerListProvider extends ChangeNotifier {
   final CircleRepository _repo;
 
-  PrayerListProvider(this._repo);
+  PrayerListProvider(this._repo) {
+    AuthService.shared.addListener(_onAuthChanged);
+  }
 
   final Map<String, List<PrayerRequest>> _activeByCircle = {};
   final Map<String, List<PrayerRequest>> _answeredByCircle = {};
   final Map<String, bool> _loadingByCircle = {};
   String? error;
+
+  @override
+  void dispose() {
+    AuthService.shared.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (!AuthService.shared.isAuthenticated) _clearAll();
+  }
+
+  void _clearAll() {
+    _activeByCircle.clear();
+    _answeredByCircle.clear();
+    _loadingByCircle.clear();
+    error = null;
+    notifyListeners();
+  }
 
   List<PrayerRequest> activeFor(String circleId) =>
       _activeByCircle[circleId] ?? [];

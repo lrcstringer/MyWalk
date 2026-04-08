@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../data/datasources/remote/auth_service.dart';
 import '../../domain/entities/circle.dart';
 import '../../domain/repositories/circle_repository.dart';
 import '../../domain/services/week_id_service.dart';
@@ -6,13 +7,34 @@ import '../../domain/services/week_id_service.dart';
 class WeeklyPulseProvider extends ChangeNotifier {
   final CircleRepository _repo;
 
-  WeeklyPulseProvider(this._repo);
+  WeeklyPulseProvider(this._repo) {
+    AuthService.shared.addListener(_onAuthChanged);
+  }
 
   final Map<String, WeeklyPulse?> _pulseByCircle = {};
   final Map<String, PulseResponse?> _myResponseByCircle = {};
   final Map<String, bool> _loadingByCircle = {};
   bool _submitting = false;
   String? error;
+
+  @override
+  void dispose() {
+    AuthService.shared.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (!AuthService.shared.isAuthenticated) _clearAll();
+  }
+
+  void _clearAll() {
+    _pulseByCircle.clear();
+    _myResponseByCircle.clear();
+    _loadingByCircle.clear();
+    _submitting = false;
+    error = null;
+    notifyListeners();
+  }
 
   WeeklyPulse? pulseFor(String circleId) => _pulseByCircle[circleId];
 

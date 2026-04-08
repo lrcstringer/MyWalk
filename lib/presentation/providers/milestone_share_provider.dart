@@ -1,16 +1,37 @@
 import 'package:flutter/foundation.dart';
+import '../../data/datasources/remote/auth_service.dart';
 import '../../domain/entities/circle.dart';
 import '../../domain/repositories/circle_repository.dart';
 
 class MilestoneShareProvider extends ChangeNotifier {
   final CircleRepository _repo;
 
-  MilestoneShareProvider(this._repo);
+  MilestoneShareProvider(this._repo) {
+    AuthService.shared.addListener(_onAuthChanged);
+  }
 
   final Map<String, List<MilestoneShare>> _sharesByCircle = {};
   final Map<String, bool> _loadingByCircle = {};
   bool _sharing = false;
   String? error;
+
+  @override
+  void dispose() {
+    AuthService.shared.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (!AuthService.shared.isAuthenticated) _clearAll();
+  }
+
+  void _clearAll() {
+    _sharesByCircle.clear();
+    _loadingByCircle.clear();
+    _sharing = false;
+    error = null;
+    notifyListeners();
+  }
 
   List<MilestoneShare> sharesFor(String circleId) =>
       _sharesByCircle[circleId] ?? [];

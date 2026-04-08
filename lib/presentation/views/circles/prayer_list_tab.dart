@@ -1,9 +1,15 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/datasources/remote/auth_service.dart';
 import '../../providers/prayer_list_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
+
+Future<bool> _isOffline() async {
+  final r = await Connectivity().checkConnectivity();
+  return r.every((c) => c == ConnectivityResult.none);
+}
 
 class PrayerListTab extends StatelessWidget {
   final String circleId;
@@ -181,7 +187,17 @@ class _PrayerRequestCard extends StatelessWidget {
   Widget _prayButton(BuildContext context, bool hasPrayed) {
     final provider = context.read<PrayerListProvider>();
     return GestureDetector(
-      onTap: hasPrayed ? null : () => provider.prayFor(circleId, request.id, uid),
+      onTap: hasPrayed
+          ? null
+          : () async {
+              final messenger = ScaffoldMessenger.of(context);
+              if (await _isOffline()) {
+                messenger.showSnackBar(const SnackBar(
+                    content: Text('No internet connection. Please connect and try again.')));
+                return;
+              }
+              provider.prayFor(circleId, request.id, uid);
+            },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -247,10 +263,20 @@ class _PrayerRequestCard extends StatelessWidget {
             child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final dialogNav = Navigator.of(dialogContext);
+              final provider = context.read<PrayerListProvider>();
               final note = noteController.text.trim().isEmpty ? null : noteController.text.trim();
-              Navigator.pop(dialogContext);
-              context.read<PrayerListProvider>().markAnswered(circleId, request.id, answeredNote: note);
+              if (await _isOffline()) {
+                dialogNav.pop();
+                messenger.showSnackBar(const SnackBar(
+                    content: Text('No internet connection. Please connect and try again.')));
+                return;
+              }
+              dialogNav.pop();
+              provider.markAnswered(circleId, request.id, answeredNote: note);
+              // ignore: use_build_context_synchronously
               _promptGratitudeShare(context, note ?? request.requestText);
             },
             child: const Text('Mark Answered', style: TextStyle(color: MyWalkColor.sage, fontWeight: FontWeight.w600)),
@@ -524,10 +550,17 @@ class _AddPrayerRequestSheetState extends State<AddPrayerRequestSheet> {
       return;
     }
     setState(() { _submitting = true; _error = null; });
+    if (await _isOffline()) {
+      if (mounted) setState(() { _error = 'No internet connection. Please try again when online.'; _submitting = false; });
+      return;
+    }
+    if (!mounted) return;
+    final provider = context.read<PrayerListProvider>();
+    final nav = Navigator.of(context);
     try {
-      await context.read<PrayerListProvider>().createRequest(
+      await provider.createRequest(
         circleId: widget.circleId, text: text, duration: _duration, anonymous: _anonymous);
-      if (mounted) Navigator.pop(context);
+      nav.pop();
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _submitting = false; });
     }

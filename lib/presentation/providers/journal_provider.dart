@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../data/datasources/remote/auth_service.dart';
+import '../../data/services/local_voice_cache_service.dart';
 import '../../data/services/media_upload_service.dart';
 import '../../domain/entities/fruit.dart';
 import '../../domain/entities/journal_entry.dart';
@@ -208,13 +209,21 @@ class JournalProvider extends ChangeNotifier {
 
   /// Delete a journal entry and all its Storage media.
   Future<void> deleteEntry(JournalEntry entry) async {
-    // Delete Storage media (fire-and-forget).
+    // Cancel any in-flight upload for this entry. This deletes the staged
+    // local files and removes the queue entry, preventing orphaned Storage
+    // objects when the entry is deleted before its upload completes.
+    await MediaUploadService.instance.cancelEntry(entry.id);
+
+    // Delete already-uploaded Storage media (fire-and-forget).
     for (final url in entry.imageUrls) {
       _repository.deleteMedia(url).ignore();
     }
     if (entry.voiceUrl != null) {
       _repository.deleteMedia(entry.voiceUrl!).ignore();
     }
+
+    // Remove any cached local voice path so it doesn't linger indefinitely.
+    LocalVoiceCacheService.instance.removePath(entry.id).ignore();
 
     // Fire-and-forget: stream reflects deletion automatically.
     _repository.deleteEntry(entry.id).ignore();

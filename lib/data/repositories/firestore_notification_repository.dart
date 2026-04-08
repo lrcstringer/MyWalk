@@ -4,13 +4,15 @@ import '../../domain/entities/circle_notification.dart';
 import '../../domain/repositories/notification_repository.dart';
 import '../datasources/remote/api_service.dart';
 import '../services/pending_action_queue_service.dart';
+import '../services/pending_notification_send_queue.dart';
 
 class FirestoreNotificationRepository implements NotificationRepository {
   final FirebaseFirestore _db;
   final FirebaseAuth _auth;
   final PendingActionQueueService _queue;
+  final PendingNotificationSendQueue _sendQueue;
 
-  FirestoreNotificationRepository(this._queue)
+  FirestoreNotificationRepository(this._queue, this._sendQueue)
       : _db = FirebaseFirestore.instance,
         _auth = FirebaseAuth.instance;
 
@@ -40,36 +42,51 @@ class FirestoreNotificationRepository implements NotificationRepository {
     int limit = 50,
     bool onlyUnread = false,
   }) async {
-    final items = await APIService.shared.getNotificationInbox(
-      limit: limit,
-      onlyUnread: onlyUnread,
-    );
-    return items
-        .map(
-          (i) => CircleNotification.fromJson({
-            'id': i.id,
-            'type': i.type,
-            'circleId': i.circleId,
-            'circleName': i.circleName,
-            'senderUid': i.senderUid,
-            'senderName': i.senderName,
-            'message': i.message,
-            'createdAt': i.createdAt,
-            'isRead': i.isRead,
-            'actionTaken': i.actionTaken,
-            'suppressActions': i.suppressActions,
-          }),
-        )
-        .toList();
+    try {
+      final items = await APIService.shared.getNotificationInbox(
+        limit: limit,
+        onlyUnread: onlyUnread,
+      );
+      return items
+          .map(
+            (i) => CircleNotification.fromJson({
+              'id': i.id,
+              'type': i.type,
+              'circleId': i.circleId,
+              'circleName': i.circleName,
+              'senderUid': i.senderUid,
+              'senderName': i.senderName,
+              'message': i.message,
+              'createdAt': i.createdAt,
+              'isRead': i.isRead,
+              'actionTaken': i.actionTaken,
+              'suppressActions': i.suppressActions,
+            }),
+          )
+          .toList();
+    } catch (_) {
+      // HTTP API is unavailable (offline, server error, captive portal).
+      // Return empty list so callers degrade gracefully; the real-time
+      // [watchInbox] stream remains the authoritative source of truth and
+      // continues to work from Firestore's local cache.
+      return const [];
+    }
   }
 
   @override
   Future<int> getUnreadCount() async {
     final uid = _uidOrNull;
     if (uid == null) return 0;
-    final snap =
-        await _inbox(uid).where('isRead', isEqualTo: false).count().get();
-    return snap.count ?? 0;
+    try {
+      final snap =
+          await _inbox(uid).where('isRead', isEqualTo: false).count().get();
+      return snap.count ?? 0;
+    } on FirebaseException catch (e) {
+      if (e.code != 'unavailable' && e.code != 'deadline-exceeded') rethrow;
+      // count() aggregate queries are server-only and have no local-cache
+      // representation. Return 0 when offline rather than throwing.
+      return 0;
+    }
   }
 
   // ── Mutations ──────────────────────────────────────────────────────────────
@@ -102,7 +119,11 @@ class FirestoreNotificationRepository implements NotificationRepository {
     required String circleId,
     required String message,
   }) =>
-      APIService.shared.sendAnnouncement(circleId: circleId, message: message);
+      _sendQueue.enqueue({
+        'type': 'announcement',
+        'circleId': circleId,
+        'message': message,
+      });
 
   @override
   Future<void> sendPrayerRequest({
@@ -110,11 +131,12 @@ class FirestoreNotificationRepository implements NotificationRepository {
     required String message,
     required List<String> recipientIds,
   }) =>
-      APIService.shared.sendPrayerRequest(
-        circleId: circleId,
-        message: message,
-        recipientIds: recipientIds,
-      );
+      _sendQueue.enqueue({
+        'type': 'prayer_request',
+        'circleId': circleId,
+        'message': message,
+        'recipientIds': recipientIds,
+      });
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 

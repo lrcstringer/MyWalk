@@ -1,17 +1,39 @@
 import 'package:flutter/foundation.dart';
+import '../../data/datasources/remote/auth_service.dart';
 import '../../domain/entities/circle.dart';
 import '../../domain/repositories/circle_repository.dart';
 
 class EncouragementProvider extends ChangeNotifier {
   final CircleRepository _repo;
 
-  EncouragementProvider(this._repo);
+  EncouragementProvider(this._repo) {
+    AuthService.shared.addListener(_onAuthChanged);
+  }
 
   final Map<String, List<Encouragement>> _receivedByCircle = {};
   final Map<String, List<Encouragement>> _sentByCircle = {};
   final Map<String, bool> _loadingByCircle = {};
   bool _sending = false;
   String? error;
+
+  @override
+  void dispose() {
+    AuthService.shared.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (!AuthService.shared.isAuthenticated) _clearAll();
+  }
+
+  void _clearAll() {
+    _receivedByCircle.clear();
+    _sentByCircle.clear();
+    _loadingByCircle.clear();
+    _sending = false;
+    error = null;
+    notifyListeners();
+  }
 
   List<Encouragement> receivedFor(String circleId) =>
       _receivedByCircle[circleId] ?? [];
@@ -67,12 +89,22 @@ class EncouragementProvider extends ChangeNotifier {
         customText: customText,
         isAnonymous: isAnonymous,
       );
-      // Reload sent list so the new item appears.
-      final sent = await _repo.getSentEncouragements(circleId);
-      _sentByCircle[circleId] = sent;
     } catch (e) {
       error = e.toString();
+      _sending = false;
+      notifyListeners();
       rethrow;
+    }
+
+    // Reload sent list so the new item appears. This is best-effort: when the
+    // send was queued offline the reload will fail, but that must not surface
+    // as an error — the send itself succeeded (it is queued). The list
+    // refreshes correctly on the next load() call when back online.
+    try {
+      final sent = await _repo.getSentEncouragements(circleId);
+      _sentByCircle[circleId] = sent;
+    } catch (_) {
+      // Intentionally ignored.
     } finally {
       _sending = false;
       notifyListeners();

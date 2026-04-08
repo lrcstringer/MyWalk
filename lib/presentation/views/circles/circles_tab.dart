@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import 'circle_detail_view.dart';
 import 'create_circle_view.dart';
 import 'join_circle_view.dart';
+import '../shared/appbar_actions.dart';
 
 class CirclesTab extends StatelessWidget {
   const CirclesTab({super.key});
@@ -237,6 +238,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
               foregroundColor: MyWalkColor.warmWhite,
               expandedHeight: imageHeight,
               pinned: true,
+              actions: standardAppBarActions(context),
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.parallax,
                 background: Stack(

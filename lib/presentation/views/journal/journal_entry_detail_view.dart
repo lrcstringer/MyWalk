@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
+import '../../../data/services/local_voice_cache_service.dart';
 import '../../../domain/entities/fruit.dart';
 import '../../../domain/entities/journal_entry.dart';
 import '../../../domain/entities/journal_theme.dart';
@@ -100,14 +103,19 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
 
   Future<void> _togglePlayback() async {
     final current = context.read<JournalProvider>().getEntry(_entry.id) ?? _entry;
-    final url = current.voiceUrl;
-    if (url == null) return;
+    final remoteUrl = current.voiceUrl;
+    if (remoteUrl == null) return;
 
     if (_isPlaying) {
       await _player.pause();
     } else {
+      // Prefer local cached file for offline playback.
+      final localPath = LocalVoiceCacheService.instance.getPath(current.id);
+      final source = (localPath != null && File(localPath).existsSync())
+          ? DeviceFileSource(localPath) as Source
+          : UrlSource(remoteUrl);
       if (_position == Duration.zero) {
-        await _player.play(UrlSource(url));
+        await _player.play(source);
       } else {
         await _player.resume();
       }
@@ -440,10 +448,10 @@ class _NetworkImageTileState extends State<_NetworkImageTile> {
     return SizedBox(
       width: _thumbSize,
       height: _thumbSize,
-      child: Image.network(
-        widget.url,
+      child: CachedNetworkImage(
+        imageUrl: widget.url,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
+        errorWidget: (_, _, _) => Container(
           color: widget.theme.bgCard,
           child: Icon(Icons.broken_image_outlined,
               color: widget.theme.textSecondary, size: 28),
@@ -455,10 +463,10 @@ class _NetworkImageTileState extends State<_NetworkImageTile> {
   Widget _expandedImage() {
     return SizedBox(
       width: double.infinity,
-      child: Image.network(
-        widget.url,
+      child: CachedNetworkImage(
+        imageUrl: widget.url,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
+        errorWidget: (_, _, _) => Container(
           height: 160,
           color: widget.theme.bgCard,
           child: Center(

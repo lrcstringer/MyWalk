@@ -123,6 +123,18 @@ dependencies:
   sqflite: ^2.3.3
   path: ^1.9.0
 
+  # Disk-cached network images (offline journal image display)
+  cached_network_image: ^3.4.1
+
+  # Memorization: analytics charts
+  fl_chart: ^0.68.0
+
+  # Memorization: celebration animation
+  confetti: ^0.7.0
+
+  # Memorization: haptic milestone feedback
+  vibration: ^2.0.0
+
   # Smooth freehand stroke rendering (journal doodle)
   perfect_freehand: ^2.0.1
   flutter_quill: ^11.5.0

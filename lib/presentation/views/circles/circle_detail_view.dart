@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -39,6 +40,7 @@ class _CircleDetailViewState extends State<CircleDetailView>
   CircleDetails? _detail;
   bool _isLoading = true;
   String? _error;
+  bool _wasOffline = false;
   bool _isLeaving = false;
   CircleHeatmap? _heatmap;
   bool _heatmapFailed = false;
@@ -84,13 +86,27 @@ class _CircleDetailViewState extends State<CircleDetailView>
     context.read<CircleEventsProvider>().load(widget.circleId);
   }
 
+  Future<bool> _isOffline() async {
+    final r = await Connectivity().checkConnectivity();
+    return r.every((c) => c == ConnectivityResult.none);
+  }
+
   Future<void> _loadDetail() async {
     setState(() { _isLoading = true; _error = null; });
     try {
       final detail = await context.read<CircleRepository>().getCircleDetail(widget.circleId);
       if (mounted) setState(() { _detail = detail; _isLoading = false; });
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
+      final offline = await _isOffline();
+      if (mounted) {
+        setState(() {
+          _wasOffline = offline;
+          _error = offline
+              ? 'No internet connection. Connect to load circle data.'
+              : e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -115,9 +131,17 @@ class _CircleDetailViewState extends State<CircleDetailView>
   }
 
   Future<void> _leaveCircle() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = context.read<CircleRepository>();
+    if (await _isOffline()) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('No internet connection. Please connect and try again.')),
+      );
+      return;
+    }
     setState(() => _isLeaving = true);
     try {
-      await context.read<CircleRepository>().leaveCircle(widget.circleId);
+      await repo.leaveCircle(widget.circleId);
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _isLeaving = false; });
@@ -139,9 +163,16 @@ class _CircleDetailViewState extends State<CircleDetailView>
     if (_detail == null) {
       return Center(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.warning_amber_rounded, size: 32, color: Colors.white.withValues(alpha: 0.3)),
+          Icon(
+            _wasOffline ? Icons.wifi_off_rounded : Icons.warning_amber_rounded,
+            size: 32, color: Colors.white.withValues(alpha: 0.3)),
           const SizedBox(height: 12),
-          Text(_error ?? 'Failed to load', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(_error ?? 'Failed to load',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+          ),
           const SizedBox(height: 16),
           TextButton(onPressed: _loadDetail,
               child: const Text('Retry', style: TextStyle(color: MyWalkColor.golden))),

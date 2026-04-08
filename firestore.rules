@@ -240,6 +240,41 @@ service cloud.firestore {
       }
     }
 
+    // ─── memorizations ────────────────────────────────────────────────────
+    match /users/{userId}/memorizations/{itemId} {
+      allow read, write: if isOwner(userId);
+
+      // Shared read: a friend the item was shared with can view it.
+      allow read: if isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(userId)/memorizations/$(itemId)/shares/$(request.auth.uid));
+
+      match /attempts/{attemptId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /shares/{shareId} {
+        allow read: if isOwner(userId) || request.auth.uid == shareId;
+        allow write: if isOwner(userId);
+      }
+    }
+
+    // ─── memorizationCircles ───────────────────────────────────────────────
+    match /memorizationCircles/{circleId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (
+        !exists(/databases/$(database)/documents/memorizationCircles/$(circleId)) ||
+        request.auth.uid == resource.data.createdBy ||
+        request.auth.uid in resource.data.memberIds
+      );
+
+      // Comments: any circle member can read and post; no editing/deleting others' posts.
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && request.resource.data.authorUid == request.auth.uid;
+        allow update, delete: if request.auth.uid == resource.data.authorUid;
+      }
+    }
+
     // ─── bible_passage_cache ───────────────────────────────────────────────
     // Populated by circleFetchBiblePassage callable. Read-only for all
     // authenticated users (public scripture text, no PII).

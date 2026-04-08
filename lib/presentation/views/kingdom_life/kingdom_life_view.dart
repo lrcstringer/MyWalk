@@ -6,6 +6,7 @@ import '../kingdom_life/i_am_sayings_view.dart';
 import '../kingdom_life/how_to_pray_view.dart';
 import '../kingdom_life/women_of_valor_view.dart';
 import '../../theme/app_theme.dart';
+import '../shared/appbar_actions.dart';
 
 class KingdomLifeView extends StatelessWidget {
   const KingdomLifeView({super.key});
@@ -22,6 +23,7 @@ class KingdomLifeView extends StatelessWidget {
             expandedHeight: 240,
             pinned: true,
             automaticallyImplyLeading: false,
+            actions: standardAppBarActions(context),
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
               background: Stack(

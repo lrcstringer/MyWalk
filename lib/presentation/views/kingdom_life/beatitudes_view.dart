@@ -3,6 +3,7 @@ import 'package:video_player/video_player.dart';
 import '../../../domain/entities/beatitude.dart';
 import '../../theme/app_theme.dart';
 import 'beatitude_detail_view.dart';
+import 'bible_project_browser_view.dart';
 
 const _kAccent = Color(0xFF9B8BB4);
 
@@ -421,10 +422,16 @@ class _BibleProjectVideoCardState extends State<_BibleProjectVideoCard> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.wifi_off_rounded, size: 32, color: Colors.white.withValues(alpha: 0.3)),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               'Video unavailable offline',
               style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.45)),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => BibleProjectBrowserView.openOrPrompt(context),
+              child: const Text('Watch on BibleProject',
+                  style: TextStyle(fontSize: 12, color: MyWalkColor.golden)),
             ),
           ],
         ),

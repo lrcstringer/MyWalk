@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/datasources/remote/auth_service.dart';
@@ -5,6 +6,11 @@ import '../../providers/circle_events_provider.dart';
 import '../../providers/circle_notification_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
+
+Future<bool> _isOffline() async {
+  final r = await Connectivity().checkConnectivity();
+  return r.every((c) => c == ConnectivityResult.none);
+}
 
 class EventsTab extends StatelessWidget {
   final String circleId;
@@ -509,11 +515,18 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
       return;
     }
     setState(() { _submitting = true; _error = null; });
+    if (await _isOffline()) {
+      if (mounted) setState(() { _error = 'No internet connection. Please connect and try again.'; _submitting = false; });
+      return;
+    }
+    if (!mounted) return;
+    final eventsProvider = context.read<CircleEventsProvider>();
     final notifProvider = _notifyMembers && widget.isAdmin
         ? context.read<CircleNotificationProvider>()
         : null;
+    final nav = Navigator.of(context);
     try {
-      await context.read<CircleEventsProvider>().createEvent(
+      await eventsProvider.createEvent(
         circleId: widget.circleId,
         title: title,
         eventDate: _eventDate!,
@@ -531,7 +544,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         circleId: widget.circleId,
         message: 'New event: $title — ${_formatFull(_eventDate!)}',
       ).catchError((_) {});
-      if (mounted) Navigator.pop(context);
+      nav.pop();
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _submitting = false; });
     }
@@ -781,11 +794,18 @@ class _EditEventSheetState extends State<EditEventSheet> {
       return;
     }
     setState(() { _submitting = true; _error = null; });
+    if (await _isOffline()) {
+      if (mounted) setState(() { _error = 'No internet connection. Please connect and try again.'; _submitting = false; });
+      return;
+    }
+    if (!mounted) return;
+    final eventsProvider = context.read<CircleEventsProvider>();
     final notifProvider = _notifyMembers && widget.isAdmin
         ? context.read<CircleNotificationProvider>()
         : null;
+    final nav = Navigator.of(context);
     try {
-      await context.read<CircleEventsProvider>().updateEvent(
+      await eventsProvider.updateEvent(
         circleId: widget.circleId,
         eventId: widget.event.id,
         title: title,
@@ -804,7 +824,7 @@ class _EditEventSheetState extends State<EditEventSheet> {
         circleId: widget.circleId,
         message: 'Event updated: $title — ${_formatFull(_eventDate)}',
       ).catchError((_) {});
-      if (mounted) Navigator.pop(context);
+      nav.pop();
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _submitting = false; });
     }

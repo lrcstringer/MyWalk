@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../domain/entities/journal_entry.dart';
 import '../../domain/repositories/journal_repository.dart';
+import 'local_voice_cache_service.dart';
 
 /// Describes a single local media file waiting to be uploaded.
 class PendingMediaFile {
@@ -71,17 +73,23 @@ class MediaUploadService {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   Future<void> init(SharedPreferences prefs, JournalRepository repo) async {
+    // Cancel any existing connectivity subscription before re-subscribing so
+    // that calling init() more than once (e.g. after re-authentication) does
+    // not leave orphaned listeners that fire processQueue() indefinitely.
+    _connectivitySub?.cancel();
+
     _prefs = prefs;
     _repo = repo;
+    LocalVoiceCacheService.instance.init(prefs);
 
     // Listen for connectivity changes and process queue when online.
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       final isOnline = results.any((r) => r != ConnectivityResult.none);
-      if (isOnline) unawaited(processQueue());
+      if (isOnline) processQueue().ignore();
     });
 
     // Process any leftover queue from a previous session.
-    unawaited(processQueue());
+    processQueue().ignore();
   }
 
   /// Register a callback invoked after each entry's media is successfully
@@ -93,6 +101,37 @@ class MediaUploadService {
 
   void dispose() {
     _connectivitySub?.cancel();
+  }
+
+  /// Remove a journal entry from the upload queue and delete its staged local
+  /// files. Call this when a journal entry is deleted while its upload is still
+  /// pending, to prevent orphaned Firebase Storage objects.
+  ///
+  /// If a [processQueue] run is currently uploading the entry, the upload will
+  /// still complete (it has already snapshotted the queue). The resulting
+  /// Storage objects will not be referenced anywhere and the Firestore write
+  /// will be skipped (entry no longer in [allEntries]). This is an accepted
+  /// narrow race window — the files are then permanently orphaned in Storage.
+  /// To eliminate this entirely a running-entry cancellation token would be
+  /// required; for now, the window is the duration of a single Storage PUT.
+  Future<void> cancelEntry(String entryId) async {
+    final queue = _loadQueue();
+    final entry = queue.where((e) => e.entryId == entryId).firstOrNull;
+    if (entry == null) return;
+
+    // Delete staged local files synchronously before clearing the queue entry.
+    for (final file in entry.files) {
+      try { File(file.localPath).deleteSync(); } catch (_) {}
+    }
+
+    queue.removeWhere((e) => e.entryId == entryId);
+    await _saveQueue(queue);
+
+    if (_processing) {
+      // If currently processing, the running snapshot already has this entry.
+      // Flag a re-run so it won't be re-added after the current run finishes.
+      _needsRerun = false;
+    }
   }
 
   /// Enqueue media files for a journal entry and start processing immediately.
@@ -109,7 +148,7 @@ class MediaUploadService {
       // Flag it to re-run when it finishes so the new entry isn't skipped.
       _needsRerun = true;
     } else {
-      unawaited(processQueue());
+      processQueue().ignore();
     }
   }
 
@@ -126,8 +165,13 @@ class MediaUploadService {
       final isOnline = results.any((r) => r != ConnectivityResult.none);
       if (!isOnline) return;
 
+      // Load journal entries once for the entire run rather than once per
+      // pending entry. The list is fetched lazily on first use so an empty
+      // queue (caught above) never triggers a Firestore read.
+      List<JournalEntry>? cachedEntries;
       for (final pending in List.of(queue)) {
-        await _processEntry(pending, queue);
+        cachedEntries ??= await _repo.loadEntries();
+        await _processEntry(pending, queue, cachedEntries);
       }
     } finally {
       _processing = false;
@@ -135,12 +179,16 @@ class MediaUploadService {
       // entries now rather than waiting for the next connectivity event.
       if (_needsRerun) {
         _needsRerun = false;
-        unawaited(processQueue());
+        processQueue().ignore();
       }
     }
   }
 
-  Future<void> _processEntry(_PendingEntry pending, List<_PendingEntry> queue) async {
+  Future<void> _processEntry(
+    _PendingEntry pending,
+    List<_PendingEntry> queue,
+    List<JournalEntry> allEntries,
+  ) async {
     // Track files uploaded to Storage this run (but not yet committed to Firestore).
     // Local files are NOT deleted until the Firestore write succeeds.
     final uploaded = <({PendingMediaFile file, String url})>[];
@@ -170,9 +218,8 @@ class MediaUploadService {
         // Clear uploadPending in Firestore so the banner doesn't stick forever,
         // then remove the entry from the queue.
         try {
-          final entries = await _repo.loadEntries();
           final current =
-              entries.where((e) => e.id == pending.entryId).firstOrNull;
+              allEntries.where((e) => e.id == pending.entryId).firstOrNull;
           if (current != null && current.uploadPending) {
             await _repo.updateEntry(current.copyWith(uploadPending: false));
           }
@@ -192,8 +239,7 @@ class MediaUploadService {
     // Firestore write does not result in orphaned Storage objects.
     bool committed = false;
     try {
-      final entries = await _repo.loadEntries();
-      final current = entries.where((e) => e.id == pending.entryId).firstOrNull;
+      final current = allEntries.where((e) => e.id == pending.entryId).firstOrNull;
       if (current != null) {
         final newImages = uploaded
             .where((u) => u.file.type == 'image')
@@ -222,9 +268,16 @@ class MediaUploadService {
     }
 
     if (committed) {
-      // Safe to clean up local staging files now.
+      // Clean up local staging files; retain voice files for offline playback.
       for (final (:file, url: _) in uploaded) {
-        try { File(file.localPath).deleteSync(); } catch (_) {}
+        if (file.type == 'voice') {
+          // Keep the voice file for offline playback and register it.
+          LocalVoiceCacheService.instance
+              .setPath(pending.entryId, file.localPath)
+              .ignore();
+        } else {
+          try { File(file.localPath).deleteSync(); } catch (_) {}
+        }
         stillPending.remove(file);
       }
       _onEntryUpdated?.call(pending.entryId);
@@ -260,8 +313,4 @@ class MediaUploadService {
   Future<void> _saveQueue(List<_PendingEntry> queue) async {
     await _prefs.setString(_queueKey, jsonEncode(queue.map((e) => e.toJson()).toList()));
   }
-}
-
-void unawaited(Future<void> future) {
-  future.ignore();
 }

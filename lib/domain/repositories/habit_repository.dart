@@ -8,7 +8,8 @@ abstract class HabitRepository {
   Future<void> insertHabit(Habit habit);
   Future<void> updateHabit(Habit habit);
   Future<void> deleteHabit(String habitId);
-  Future<void> upsertEntry(HabitEntry entry);
+  Future<void> upsertEntry(HabitEntry entry,
+      {int deltaCompleted = 0, double deltaValue = 0});
   Future<void> updateHabitSortOrders(List<Habit> habits);
   Future<void> setArchived(String habitId, {required bool archived});
   Future<List<Habit>> loadArchivedHabits();

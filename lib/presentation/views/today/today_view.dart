@@ -15,15 +15,13 @@ import '../circles/share_gratitude_sheet.dart';
 import '../circles/sos_view.dart';
 import '../habits/add_habit_view.dart';
 import '../habits/habit_check_in_card_view.dart';
-import '../settings/settings_view.dart';
 import '../circles/sos_disclaimer_view.dart';
 import '../shared/engagement_banner_view.dart';
-import '../shared/notification_bell.dart';
 import '../shared/golden_pulse_view.dart';
 import '../shared/mywalk_paywall_view.dart';
+import '../shared/appbar_actions.dart';
 import '../week/week_strip_view.dart';
 import 'widgets/category_group_header.dart';
-import '../kingdom_life/bible_project_browser_view.dart';
 
 class TodayView extends StatefulWidget {
   final WeekCycleManager weekCycleManager;
@@ -137,28 +135,7 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                   expandedHeight: imageHeight,
                   pinned: true,
                   automaticallyImplyLeading: false,
-                  actions: [
-                    const NotificationBell(),
-                    IconButton(
-                      icon: Icon(
-                        Icons.menu_book_outlined,
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
-                      ),
-                      onPressed: () => BibleProjectBrowserView.openOrPrompt(context),
-                      tooltip: 'Bible',
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.settings_outlined,
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
-                      ),
-                      onPressed: () => Navigator.push<void>(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SettingsView()),
-                      ),
-                      tooltip: 'Settings',
-                    ),
-                  ],
+                  actions: standardAppBarActions(context),
                   flexibleSpace: FlexibleSpaceBar(
                     collapseMode: CollapseMode.parallax,
                     background: Stack(

@@ -1,16 +1,37 @@
 import 'package:flutter/foundation.dart';
+import '../../data/datasources/remote/auth_service.dart';
 import '../../domain/entities/circle.dart';
 import '../../domain/repositories/circle_repository.dart';
 
 class CircleEventsProvider extends ChangeNotifier {
   final CircleRepository _repo;
 
-  CircleEventsProvider(this._repo);
+  CircleEventsProvider(this._repo) {
+    AuthService.shared.addListener(_onAuthChanged);
+  }
 
   final Map<String, List<CircleEvent>> _eventsByCircle = {};
   final Map<String, bool> _loadingByCircle = {};
   bool _creating = false;
   String? error;
+
+  @override
+  void dispose() {
+    AuthService.shared.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (!AuthService.shared.isAuthenticated) _clearAll();
+  }
+
+  void _clearAll() {
+    _eventsByCircle.clear();
+    _loadingByCircle.clear();
+    _creating = false;
+    error = null;
+    notifyListeners();
+  }
 
   List<CircleEvent> eventsFor(String circleId) =>
       _eventsByCircle[circleId] ?? [];

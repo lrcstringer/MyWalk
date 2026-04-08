@@ -11,8 +11,11 @@ import '../services/encryption_service.dart';
 ///   users/{uid}/habits/{habitId}          — habit metadata + lifetime aggregates
 ///   users/{uid}/habits/{habitId}/entries/{YYYY-MM-DD}  — daily entry
 ///
-/// Aggregates (allTimeCompletedCount, allTimeTotalValue) are maintained atomically
-/// via Firestore transactions on every [upsertEntry] call.
+/// Aggregates (allTimeCompletedCount, allTimeTotalValue) are maintained via
+/// fire-and-forget [FieldValue.increment] writes on every [upsertEntry] call.
+/// Deltas are pre-computed by the provider from its in-memory entry list, so
+/// no read is required. Firestore queues these writes offline and syncs them
+/// automatically on reconnect.
 ///
 /// Only entries from the last [_entryWindowDays] days are loaded to keep
 /// memory usage bounded; lifetime stats come from the aggregate fields.
@@ -39,6 +42,21 @@ class FirestoreHabitRepository implements HabitRepository {
   CollectionReference<Map<String, dynamic>> _entriesRef(String habitId) =>
       _habitsRef.doc(habitId).collection('entries');
 
+  // ── Cache-fallback helpers ────────────────────────────────────────────────
+
+  /// Fetch a query server-first; retries from local cache on network errors.
+  /// Only `unavailable`/`deadline-exceeded` trigger the retry — other codes
+  /// (e.g. `permission-denied`) are rethrown immediately.
+  Future<QuerySnapshot<Map<String, dynamic>>> _queryWithFallback(
+      Query<Map<String, dynamic>> query) async {
+    try {
+      return await query.get();
+    } on FirebaseException catch (e) {
+      if (e.code != 'unavailable' && e.code != 'deadline-exceeded') rethrow;
+      return await query.get(const GetOptions(source: Source.cache));
+    }
+  }
+
   // ── HabitRepository interface ─────────────────────────────────────────────
 
   @override
@@ -46,7 +64,7 @@ class FirestoreHabitRepository implements HabitRepository {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return const [];
 
-    final habitsSnap = await _habitsRef.orderBy('sortOrder').get();
+    final habitsSnap = await _queryWithFallback(_habitsRef.orderBy('sortOrder'));
     if (habitsSnap.docs.isEmpty) return const [];
 
     // Load entries for the last _entryWindowDays days in parallel.
@@ -54,9 +72,8 @@ class FirestoreHabitRepository implements HabitRepository {
     final cutoffKey = HabitEntry.dateKey(cutoffDate);
 
     final entryFutures = habitsSnap.docs.map((doc) async {
-      final entriesSnap = await _entriesRef(doc.id)
-          .where('date', isGreaterThanOrEqualTo: cutoffKey)
-          .get();
+      final entriesSnap = await _queryWithFallback(_entriesRef(doc.id)
+          .where('date', isGreaterThanOrEqualTo: cutoffKey));
       return entriesSnap.docs
           .map((e) => HabitEntry.fromFirestore(e.data()))
           .toList();
@@ -97,32 +114,23 @@ class FirestoreHabitRepository implements HabitRepository {
   }
 
   @override
-  Future<void> upsertEntry(HabitEntry entry) async {
+  Future<void> upsertEntry(HabitEntry entry,
+      {int deltaCompleted = 0, double deltaValue = 0}) async {
     final entryKey = HabitEntry.dateKey(entry.date);
     final entryRef = _entriesRef(entry.habitId).doc(entryKey);
     final habitRef = _habitsRef.doc(entry.habitId);
 
-    await _db.runTransaction((tx) async {
-      final existingSnap = await tx.get(entryRef);
-      final existing = existingSnap.exists && existingSnap.data() != null
-          ? HabitEntry.fromFirestore(existingSnap.data()!)
-          : null;
+    // Fire-and-forget: Firestore queues writes offline and syncs when online.
+    // Delta is precomputed by the provider from its in-memory entry list —
+    // no transaction read required.
+    entryRef.set(entry.toFirestore()).ignore();
 
-      final prevCompleted = (existing?.isCompleted ?? false) ? 1 : 0;
-      final prevValue = existing?.value ?? 0.0;
-
-      final deltaCompleted = (entry.isCompleted ? 1 : 0) - prevCompleted;
-      final deltaValue = entry.value - prevValue;
-
-      tx.set(entryRef, entry.toFirestore());
-
-      if (deltaCompleted != 0 || deltaValue != 0.0) {
-        tx.update(habitRef, {
-          'allTimeCompletedCount': FieldValue.increment(deltaCompleted),
-          'allTimeTotalValue': FieldValue.increment(deltaValue),
-        });
-      }
-    });
+    if (deltaCompleted != 0 || deltaValue != 0.0) {
+      habitRef.update({
+        'allTimeCompletedCount': FieldValue.increment(deltaCompleted),
+        'allTimeTotalValue': FieldValue.increment(deltaValue),
+      }).ignore();
+    }
   }
 
   @override
@@ -134,7 +142,8 @@ class FirestoreHabitRepository implements HabitRepository {
   Future<List<Habit>> loadArchivedHabits() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return const [];
-    final snap = await _habitsRef.where('isArchived', isEqualTo: true).get();
+    final snap = await _queryWithFallback(
+        _habitsRef.where('isArchived', isEqualTo: true));
     return snap.docs.map((d) => Habit.fromFirestore(d.data())).toList();
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../data/datasources/remote/auth_service.dart';
 import '../../domain/entities/circle.dart';
 import '../../domain/entities/habit.dart' show PrayerItemStatus;
 import '../../domain/repositories/circle_repository.dart';
@@ -6,11 +7,30 @@ import '../../domain/repositories/circle_repository.dart';
 class GroupPrayerListProvider extends ChangeNotifier {
   final CircleRepository _repo;
 
-  GroupPrayerListProvider(this._repo);
+  GroupPrayerListProvider(this._repo) {
+    AuthService.shared.addListener(_onAuthChanged);
+  }
 
   final Map<String, CirclePrayerList?> _listByCircle = {};
   final Map<String, bool> _loadingByCircle = {};
   String? error;
+
+  @override
+  void dispose() {
+    AuthService.shared.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (!AuthService.shared.isAuthenticated) _clearAll();
+  }
+
+  void _clearAll() {
+    _listByCircle.clear();
+    _loadingByCircle.clear();
+    error = null;
+    notifyListeners();
+  }
 
   CirclePrayerList? listFor(String circleId) => _listByCircle[circleId];
   bool isLoading(String circleId) => _loadingByCircle[circleId] ?? false;
