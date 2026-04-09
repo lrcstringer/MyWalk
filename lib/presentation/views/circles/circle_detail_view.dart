@@ -25,7 +25,6 @@ import 'activity_tab.dart';
 import 'events_tab.dart';
 import 'circle_settings_view.dart';
 import 'announcement_compose_view.dart';
-import 'prayer_request_compose_view.dart';
 
 class CircleDetailView extends StatefulWidget {
   final String circleId;
@@ -54,7 +53,7 @@ class _CircleDetailViewState extends State<CircleDetailView>
     ('Prayer', Icons.volunteer_activism_rounded),
     ('Scripture', Icons.menu_book_rounded),
     ('Habits', Icons.check_circle_outline_rounded),
-    ('Activity', Icons.people_rounded),
+    ('Encouragement', Icons.favorite_rounded),
     ('Events', Icons.event_rounded),
   ];
 
@@ -210,21 +209,6 @@ class _CircleDetailViewState extends State<CircleDetailView>
                   ),
                 ),
               ),
-            IconButton(
-              icon: const Icon(Icons.volunteer_activism_rounded, size: 20, color: MyWalkColor.softGold),
-              tooltip: 'Prayer Request',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PrayerRequestComposeView(
-                    circleId: widget.circleId,
-                    members: detail.members
-                        .where((m) => m.userId != AuthService.shared.userId)
-                        .toList(),
-                  ),
-                ),
-              ),
-            ),
             if (detail.members.any((m) => m.userId == AuthService.shared.userId && m.isAdmin))
               IconButton(
                 icon: const Icon(Icons.settings_rounded, size: 20, color: MyWalkColor.softGold),
@@ -381,7 +365,7 @@ class _OverviewTab extends StatelessWidget {
       children: [
         _collaborativeHeatmapSection(isPremium),
         const SizedBox(height: 16),
-        _collectiveMilestonesSection(),
+        _collectiveMilestonesSection(context),
         const SizedBox(height: 16),
         GratitudeWallWidget(circleId: circleId),
         const SizedBox(height: 16),
@@ -444,8 +428,11 @@ class _OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _collectiveMilestonesSection() {
+  Widget _collectiveMilestonesSection(BuildContext context) {
     final ms = milestones;
+    final habitMilestones = context
+        .watch<CircleHabitMilestoneProvider>()
+        .milestonesFor(circleId);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: MyWalkDecorations.card,
@@ -468,15 +455,42 @@ class _OverviewTab extends StatelessWidget {
           if (ms.totalGivingDays > 0 || ms.totalHours > 0 || ms.totalGratitudeDays > 0)
             _milestoneTotalsRow(ms),
           const SizedBox(height: 10),
-          if (ms.milestones.isEmpty)
+          if (ms.milestones.isEmpty && habitMilestones.isEmpty)
             Text('Keep going — your first circle milestone is on its way.',
                 style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4), height: 1.4))
-          else
+          else ...[
             ...ms.milestones.take(3).map((m) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _milestoneTile(m),
             )),
+            ...habitMilestones.map((m) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _habitMilestoneTile(m),
+            )),
+          ],
         ],
+      ]),
+    );
+  }
+
+  Widget _habitMilestoneTile(CircleHabitMilestone m) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: MyWalkColor.golden.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.18), width: 0.5),
+      ),
+      child: Row(children: [
+        const Icon(Icons.groups_rounded, size: 16, color: MyWalkColor.golden),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Circle habit milestone!',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
+          const SizedBox(height: 2),
+          Text(m.displayLabel,
+              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.55))),
+        ])),
       ]),
     );
   }

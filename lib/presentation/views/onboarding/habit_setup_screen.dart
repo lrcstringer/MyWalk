@@ -1,20 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../domain/entities/habit.dart';
-import '../../../domain/entities/scripture.dart';
-import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 
 class HabitSetupScreen extends StatefulWidget {
   final HabitCategory category;
   final void Function(
     String name,
-    String purpose,
     HabitTrackingType trackingType,
     double dailyTarget,
     String targetUnit,
-    String trigger,
-    String copingPlan,
     Set<int> activeDays,
   ) onComplete;
 
@@ -26,9 +20,6 @@ class HabitSetupScreen extends StatefulWidget {
 
 class _HabitSetupScreenState extends State<HabitSetupScreen> {
   final _nameController = TextEditingController();
-  final _purposeController = TextEditingController();
-  final _triggerController = TextEditingController();
-  final _copingController = TextEditingController();
   HabitTrackingType _trackingType = HabitTrackingType.checkIn;
   double _dailyTarget = 1;
   String _targetUnit = '';
@@ -38,7 +29,7 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
   void initState() {
     super.initState();
     _nameController.text = _defaultName(widget.category);
-    _purposeController.text = widget.category.defaultPurpose;
+    _nameController.addListener(() => setState(() {}));
     _trackingType = widget.category.suggestedTrackingType;
     _dailyTarget = _defaultTarget(widget.category);
     _targetUnit = _defaultUnit(widget.category);
@@ -47,9 +38,6 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _purposeController.dispose();
-    _triggerController.dispose();
-    _copingController.dispose();
     super.dispose();
   }
 
@@ -57,12 +45,8 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
     switch (category) {
       case HabitCategory.exercise: return 'Exercise';
       case HabitCategory.scripture: return 'Bible Reading';
-      case HabitCategory.rest: return 'Sleep';
-      case HabitCategory.fasting: return 'Fasting';
-      case HabitCategory.study: return 'Study';
       case HabitCategory.service: return 'Serve Someone';
-      case HabitCategory.connection: return 'Call a Friend';
-      case HabitCategory.health: return 'Drink Water';
+      case HabitCategory.prayer: return 'Daily Prayer';
       default: return '';
     }
   }
@@ -71,8 +55,7 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
     switch (category) {
       case HabitCategory.exercise: return 30;
       case HabitCategory.scripture: return 15;
-      case HabitCategory.study: return 30;
-      case HabitCategory.health: return 8;
+      case HabitCategory.prayer: return 20;
       default: return 1;
     }
   }
@@ -81,48 +64,33 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
     switch (category) {
       case HabitCategory.exercise:
       case HabitCategory.scripture:
-      case HabitCategory.study: return 'minutes';
-      case HabitCategory.service: return 'acts';
-      case HabitCategory.health: return 'glasses';
+      case HabitCategory.prayer: return 'minutes';
       default: return '';
     }
   }
 
-  List<String> _triggerChips(HabitCategory category) {
-    switch (category) {
-      case HabitCategory.exercise: return ['After my morning coffee', 'Before work', 'During lunch break', 'After dinner'];
-      case HabitCategory.scripture: return ['First thing in the morning', 'Before bed', 'During lunch', 'After prayer'];
-      case HabitCategory.rest: return ['At 10pm', 'After dinner', 'When I feel tired'];
-      case HabitCategory.fasting: return ['After morning prayer', 'On Wednesdays', 'Weekly'];
-      case HabitCategory.study: return ['After dinner', 'Morning routine', 'Lunch break'];
-      case HabitCategory.service: return ['After church', 'On weekends', 'When I see a need'];
-      case HabitCategory.connection: return ['Sunday afternoon', 'After dinner', 'During commute'];
-      case HabitCategory.health: return ['With every meal', 'First thing in the morning', 'After exercise', 'Before bed'];
-      default: return ['In the morning', 'After lunch', 'Before bed'];
-    }
-  }
-
-  static const _copingSuggestions = ['Pray first', 'Call a friend', 'Go for a walk', 'Read my verse', 'Journal it out'];
-
   IconData _categoryIcon() {
     switch (widget.category) {
       case HabitCategory.exercise: return Icons.fitness_center;
-      case HabitCategory.scripture: return Icons.menu_book;
-      case HabitCategory.rest: return Icons.bedtime;
-      case HabitCategory.fasting: return Icons.no_food;
-      case HabitCategory.study: return Icons.school;
-      case HabitCategory.service: return Icons.volunteer_activism;
-      case HabitCategory.connection: return Icons.people;
-      case HabitCategory.health: return Icons.favorite;
-      case HabitCategory.abstain: return Icons.shield_rounded;
-      default: return Icons.auto_awesome;
+      case HabitCategory.scripture: return Icons.menu_book_rounded;
+      case HabitCategory.service: return Icons.volunteer_activism_rounded;
+      case HabitCategory.prayer: return Icons.self_improvement_rounded;
+      default: return Icons.brush_rounded;
     }
+  }
+
+  void _submit() {
+    widget.onComplete(
+      _nameController.text.trim(),
+      _trackingType,
+      _dailyTarget,
+      _targetUnit,
+      _activeDays,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final verse = ScriptureLibrary.anchorVerse(widget.category);
-    final isAbstain = widget.category == HabitCategory.abstain;
     final nameEmpty = _nameController.text.trim().isEmpty;
 
     return Column(children: [
@@ -131,216 +99,109 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Icon(_categoryIcon(), size: 20,
-                  color: isAbstain ? MyWalkColor.warmCoral : MyWalkColor.golden),
+              Icon(_categoryIcon(), size: 20, color: MyWalkColor.golden),
               const SizedBox(width: 10),
-              Text(widget.category.rawValue,
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: MyWalkColor.softGold)),
+              Text(
+                widget.category.rawValue,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: MyWalkColor.softGold,
+                ),
+              ),
             ]),
             const SizedBox(height: 24),
-            if (isAbstain) _abstainNameSection() else _nameSection(),
+            _nameSection(),
             const SizedBox(height: 24),
-            _purposeSection(),
+            _trackingSection(),
             const SizedBox(height: 24),
-            _verseSection(verse),
-            if (!isAbstain) ...[
+            if (_trackingType == HabitTrackingType.timed) ...[
+              _timedTargetSection(),
               const SizedBox(height: 24),
-              _trackingSection(),
-              const SizedBox(height: 24),
-              if (_trackingType == HabitTrackingType.timed) _timedTargetSection(),
-              if (_trackingType == HabitTrackingType.count) _countTargetSection(),
             ],
-            const SizedBox(height: 24),
+            if (_trackingType == HabitTrackingType.count) ...[
+              _countTargetSection(),
+              const SizedBox(height: 24),
+            ],
             _dayOfWeekSection(),
-            const SizedBox(height: 24),
-            if (isAbstain) _copingSection() else _triggerSection(),
           ]),
         ),
       ),
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: Opacity(
-          opacity: nameEmpty ? 0.5 : 1.0,
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: nameEmpty ? null : _submit,
-              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-              label: const Text('Set this habit',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: MyWalkColor.golden,
-                foregroundColor: MyWalkColor.charcoal,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: nameEmpty ? null : _submit,
+            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+            label: const Text(
+              'Set this activity',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MyWalkColor.golden,
+              foregroundColor: MyWalkColor.charcoal,
+              disabledBackgroundColor: MyWalkColor.golden.withValues(alpha: 0.25),
+              disabledForegroundColor: MyWalkColor.charcoal.withValues(alpha: 0.4),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
           ),
         ),
       ),
     ]);
-  }
-
-  void _submit() {
-    widget.onComplete(
-      _nameController.text.trim(),
-      _purposeController.text,
-      _trackingType,
-      _dailyTarget,
-      _targetUnit,
-      _triggerController.text,
-      _copingController.text,
-      _activeDays,
-    );
   }
 
   Widget _nameSection() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Habit Name',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-              color: MyWalkColor.softGold.withValues(alpha: 0.6))),
+      Text(
+        'Activity Name',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: MyWalkColor.softGold.withValues(alpha: 0.6),
+        ),
+      ),
       const SizedBox(height: 8),
       TextField(
         controller: _nameController,
-        onChanged: (_) => setState(() {}),
+        autofocus: widget.category == HabitCategory.custom,
         style: const TextStyle(fontSize: 16, color: MyWalkColor.warmWhite),
         decoration: InputDecoration(
-          hintText: 'e.g. Morning run',
+          hintText: 'e.g. Morning sketching',
           hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
           filled: true,
           fillColor: MyWalkColor.cardBackground,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          contentPadding: const EdgeInsets.all(14),
-        ),
-      ),
-    ]);
-  }
-
-  Widget _abstainNameSection() {
-    const presets = ['No alcohol', 'No porn', 'No doom-scrolling', 'No junk food', 'No smoking'];
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('What are you letting go of?',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-              color: MyWalkColor.softGold.withValues(alpha: 0.6))),
-      const SizedBox(height: 10),
-      Wrap(
-        spacing: 8, runSpacing: 8,
-        children: presets.map((preset) {
-          final selected = _nameController.text == preset;
-          return GestureDetector(
-            onTap: () => setState(() => _nameController.text = preset),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              decoration: BoxDecoration(
-                color: selected ? MyWalkColor.warmCoral : MyWalkColor.cardBackground,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(preset,
-                  style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w500,
-                    color: selected ? MyWalkColor.charcoal : MyWalkColor.softGold,
-                  )),
-            ),
-          );
-        }).toList(),
-      ),
-      const SizedBox(height: 10),
-      TextField(
-        controller: _nameController,
-        onChanged: (_) => setState(() {}),
-        style: const TextStyle(fontSize: 15, color: MyWalkColor.warmWhite),
-        decoration: InputDecoration(
-          hintText: 'Or type your own...',
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-          filled: true,
-          fillColor: MyWalkColor.cardBackground,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          contentPadding: const EdgeInsets.all(14),
-        ),
-      ),
-    ]);
-  }
-
-  Widget _purposeSection() {
-    final isPremium = context.read<StoreProvider>().isPremium;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        Text('Your Why',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-                color: MyWalkColor.softGold.withValues(alpha: 0.6))),
-        if (!isPremium) ...[
-          const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: MyWalkColor.golden.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text('PRO',
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: MyWalkColor.golden)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
-        ],
-      ]),
-      const SizedBox(height: 4),
-      Text(isPremium ? 'Why does this matter to you and to God?' : 'Upgrade to write a custom purpose statement.',
-          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5))),
-      const SizedBox(height: 8),
-      TextField(
-        controller: _purposeController,
-        maxLines: 4,
-        readOnly: !isPremium,
-        style: TextStyle(fontSize: 15, color: isPremium ? MyWalkColor.warmWhite : MyWalkColor.warmWhite.withValues(alpha: 0.5)),
-        decoration: InputDecoration(
-          hintText: 'Your purpose for this habit...',
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-          filled: true,
-          fillColor: isPremium ? MyWalkColor.cardBackground : MyWalkColor.cardBackground.withValues(alpha: 0.5),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: MyWalkColor.golden.withValues(alpha: 0.5), width: 1.5),
+          ),
           contentPadding: const EdgeInsets.all(14),
         ),
-      ),
-    ]);
-  }
-
-  Widget _verseSection(Scripture verse) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Your Anchor Verse',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-              color: MyWalkColor.softGold.withValues(alpha: 0.6))),
-      const SizedBox(height: 8),
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: MyWalkColor.golden.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.12), width: 0.5),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('\u201C${verse.text}\u201D',
-              style: TextStyle(
-                fontSize: 14, fontStyle: FontStyle.italic, height: 1.6,
-                color: MyWalkColor.softGold.withValues(alpha: 0.7),
-              )),
-          const SizedBox(height: 6),
-          Text('- ${verse.reference}',
-              style: TextStyle(fontSize: 12, color: MyWalkColor.golden.withValues(alpha: 0.5))),
-        ]),
       ),
     ]);
   }
 
   Widget _trackingSection() {
     const types = [HabitTrackingType.checkIn, HabitTrackingType.timed, HabitTrackingType.count];
-    final labels = {
-      HabitTrackingType.checkIn: 'Yes/No',
+    const labels = {
+      HabitTrackingType.checkIn: 'Yes / No',
       HabitTrackingType.timed: 'Timed',
       HabitTrackingType.count: 'Count',
     };
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('How do you want to track this?',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-              color: MyWalkColor.softGold.withValues(alpha: 0.6))),
+      Text(
+        'How do you want to track this?',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: MyWalkColor.softGold.withValues(alpha: 0.6),
+        ),
+      ),
       const SizedBox(height: 8),
       Row(
         children: types.map((type) {
@@ -352,11 +213,14 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
                 onTap: () => setState(() {
                   _trackingType = type;
                   if (type == HabitTrackingType.timed) {
-                    _dailyTarget = 30; _targetUnit = 'minutes';
+                    _dailyTarget = 30;
+                    _targetUnit = 'minutes';
                   } else if (type == HabitTrackingType.count) {
-                    _dailyTarget = 8; _targetUnit = '';
+                    _dailyTarget = 1;
+                    _targetUnit = '';
                   } else {
-                    _dailyTarget = 1; _targetUnit = '';
+                    _dailyTarget = 1;
+                    _targetUnit = '';
                   }
                 }),
                 child: Container(
@@ -366,11 +230,14 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
-                    child: Text(labels[type]!,
-                        style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w500,
-                          color: selected ? MyWalkColor.charcoal : MyWalkColor.softGold,
-                        )),
+                    child: Text(
+                      labels[type]!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: selected ? MyWalkColor.charcoal : MyWalkColor.softGold,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -382,18 +249,23 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
   }
 
   Widget _timedTargetSection() {
-    const minuteOptions = [15.0, 30.0, 45.0, 60.0];
+    const minuteOptions = [15.0, 20.0, 30.0, 45.0, 60.0];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Daily Goal (minutes)',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-              color: MyWalkColor.softGold.withValues(alpha: 0.6))),
+      Text(
+        'Daily Goal (minutes)',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: MyWalkColor.softGold.withValues(alpha: 0.6),
+        ),
+      ),
       const SizedBox(height: 8),
       Row(
         children: minuteOptions.map((mins) {
           final selected = _dailyTarget == mins;
           return Expanded(
             child: Padding(
-              padding: EdgeInsets.only(right: mins != minuteOptions.last ? 10 : 0),
+              padding: EdgeInsets.only(right: mins != minuteOptions.last ? 8 : 0),
               child: GestureDetector(
                 onTap: () => setState(() => _dailyTarget = mins),
                 child: Container(
@@ -403,11 +275,14 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
-                    child: Text('${mins.toInt()}',
-                        style: TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w500,
-                          color: selected ? MyWalkColor.charcoal : MyWalkColor.softGold,
-                        )),
+                    child: Text(
+                      '${mins.toInt()}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: selected ? MyWalkColor.charcoal : MyWalkColor.softGold,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -420,13 +295,20 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
 
   Widget _countTargetSection() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Daily Goal',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-              color: MyWalkColor.softGold.withValues(alpha: 0.6))),
+      Text(
+        'Daily Goal',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: MyWalkColor.softGold.withValues(alpha: 0.6),
+        ),
+      ),
       const SizedBox(height: 8),
       Row(children: [
-        Text('${_dailyTarget.toInt()}',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: MyWalkColor.golden)),
+        Text(
+          '${_dailyTarget.toInt()}',
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: MyWalkColor.golden),
+        ),
         const SizedBox(width: 12),
         Column(children: [
           GestureDetector(
@@ -462,9 +344,14 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
   Widget _dayOfWeekSection() {
     const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Active days',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-              color: MyWalkColor.softGold.withValues(alpha: 0.6))),
+      Text(
+        'Active days',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: MyWalkColor.softGold.withValues(alpha: 0.6),
+        ),
+      ),
       const SizedBox(height: 8),
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -480,124 +367,29 @@ class _HabitSetupScreenState extends State<HabitSetupScreen> {
               }
             }),
             child: Container(
-              width: 36, height: 36,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: selected ? MyWalkColor.golden : MyWalkColor.cardBackground,
-                border: Border.all(color: selected ? MyWalkColor.golden : MyWalkColor.cardBorder, width: 0.5),
+                border: Border.all(
+                  color: selected ? MyWalkColor.golden : MyWalkColor.cardBorder,
+                  width: 0.5,
+                ),
               ),
               child: Center(
-                child: Text(dayLabels[i],
-                    style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600,
-                      color: selected ? MyWalkColor.charcoal : Colors.white.withValues(alpha: 0.4),
-                    )),
+                child: Text(
+                  dayLabels[i],
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? MyWalkColor.charcoal : Colors.white.withValues(alpha: 0.4),
+                  ),
+                ),
               ),
             ),
           );
         }),
-      ),
-    ]);
-  }
-
-  Widget _triggerSection() {
-    final chips = _triggerChips(widget.category);
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('When will you do this?',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-              color: MyWalkColor.softGold.withValues(alpha: 0.6))),
-      const SizedBox(height: 4),
-      Text('Anchor it to something you already do.',
-          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5))),
-      const SizedBox(height: 8),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: chips.map((chip) {
-            final selected = _triggerController.text == chip;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () => setState(() => _triggerController.text = chip),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                  decoration: BoxDecoration(
-                    color: selected ? MyWalkColor.golden : MyWalkColor.cardBackground,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(chip,
-                      style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w500,
-                        color: selected ? MyWalkColor.charcoal : MyWalkColor.softGold,
-                      )),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-      const SizedBox(height: 10),
-      TextField(
-        controller: _triggerController,
-        onChanged: (_) => setState(() {}),
-        style: const TextStyle(fontSize: 15, color: MyWalkColor.warmWhite),
-        decoration: InputDecoration(
-          hintText: 'Or type your own trigger\u2026',
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-          filled: true,
-          fillColor: MyWalkColor.cardBackground,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          contentPadding: const EdgeInsets.all(14),
-        ),
-      ),
-    ]);
-  }
-
-  Widget _copingSection() {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('When I feel tempted, I will\u2026',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-              color: MyWalkColor.softGold.withValues(alpha: 0.6))),
-      const SizedBox(height: 8),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: _copingSuggestions.map((s) {
-            final selected = _copingController.text == s;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () => setState(() => _copingController.text = s),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                  decoration: BoxDecoration(
-                    color: selected ? MyWalkColor.warmCoral : MyWalkColor.cardBackground,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(s,
-                      style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w500,
-                        color: selected ? MyWalkColor.charcoal : MyWalkColor.softGold,
-                      )),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-      const SizedBox(height: 10),
-      TextField(
-        controller: _copingController,
-        onChanged: (_) => setState(() {}),
-        style: const TextStyle(fontSize: 15, color: MyWalkColor.warmWhite),
-        decoration: InputDecoration(
-          hintText: 'Or write your own plan\u2026',
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-          filled: true,
-          fillColor: MyWalkColor.cardBackground,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          contentPadding: const EdgeInsets.all(14),
-        ),
       ),
     ]);
   }

@@ -1,6 +1,6 @@
-enum CircleNotificationType { sos, prayerRequest, announcement }
+enum CircleNotificationType { sos, prayerRequest, announcement, partnershipInvite }
 
-enum NotificationAction { pray, imHere }
+enum NotificationAction { pray, imHere, accept, decline }
 
 class CircleNotification {
   final String id;
@@ -14,6 +14,8 @@ class CircleNotification {
   final bool isRead;
   final NotificationAction? actionTaken;
   final bool suppressActions;
+  // Only set for partnershipInvite notifications.
+  final String? partnerInviteToken;
 
   const CircleNotification({
     required this.id,
@@ -27,6 +29,7 @@ class CircleNotification {
     required this.isRead,
     this.actionTaken,
     required this.suppressActions,
+    this.partnerInviteToken,
   });
 
   CircleNotification copyWith({bool? isRead, NotificationAction? actionTaken}) =>
@@ -42,6 +45,7 @@ class CircleNotification {
         isRead: isRead ?? this.isRead,
         actionTaken: actionTaken ?? this.actionTaken,
         suppressActions: suppressActions,
+        partnerInviteToken: partnerInviteToken,
       );
 
   static CircleNotificationType _typeFromString(String s) {
@@ -50,6 +54,8 @@ class CircleNotification {
         return CircleNotificationType.sos;
       case 'prayer_request':
         return CircleNotificationType.prayerRequest;
+      case 'partnership_invite':
+        return CircleNotificationType.partnershipInvite;
       default:
         return CircleNotificationType.announcement;
     }
@@ -58,6 +64,8 @@ class CircleNotification {
   static NotificationAction? _actionFromString(String? s) {
     if (s == 'pray') return NotificationAction.pray;
     if (s == 'im_here') return NotificationAction.imHere;
+    if (s == 'accept') return NotificationAction.accept;
+    if (s == 'decline') return NotificationAction.decline;
     return null;
   }
 
@@ -65,8 +73,8 @@ class CircleNotification {
       CircleNotification(
         id: j['id'] as String,
         type: _typeFromString(j['type'] as String),
-        circleId: j['circleId'] as String,
-        circleName: j['circleName'] as String,
+        circleId: j['circleId'] as String? ?? '',
+        circleName: j['circleName'] as String? ?? '',
         senderUid: j['senderUid'] as String,
         senderName: j['senderName'] as String,
         message: j['message'] as String,
@@ -74,5 +82,6 @@ class CircleNotification {
         isRead: j['isRead'] as bool? ?? false,
         actionTaken: _actionFromString(j['actionTaken'] as String?),
         suppressActions: j['suppressActions'] as bool? ?? false,
+        partnerInviteToken: j['partnerInviteToken'] as String?,
       );
 }

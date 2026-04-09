@@ -5,6 +5,7 @@ import '../../../domain/services/recovery_module_content.dart';
 import '../../../domain/services/recovery_phase_calculator.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import 'module_session_screen.dart';
 import 'values_inventory_screen.dart';
@@ -310,6 +311,7 @@ class _BeginBodyState extends State<_BeginBody> {
 
   @override
   Widget build(BuildContext context) {
+    final userIsPremium = context.read<StoreProvider>().isPremium;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
       child: Column(
@@ -348,7 +350,7 @@ class _BeginBodyState extends State<_BeginBody> {
           ...RecoveryModuleContent.modules.map((m) => _ModulePreviewRow(
                 meta: m,
                 unlocked: true, // All shown as available before start
-                isPremium: m.isPremium,
+                isPremium: m.isPremium && !userIsPremium,
               )),
 
           const SizedBox(height: 28),
@@ -412,6 +414,7 @@ class _ActiveBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userIsPremium = context.read<StoreProvider>().isPremium;
     final path = prov.pathFor(habitId)!;
     final phase = RecoveryPhaseCalculator.calculate(path);
     final day = prov.dayNumberFor(habitId);
@@ -526,7 +529,7 @@ class _ActiveBody extends StatelessWidget {
             return _ModuleCard(
               meta: m,
               unlocked: unlocked,
-              isPremium: m.isPremium,
+              isPremium: m.isPremium && !userIsPremium,
               checkInCount: m.number == 1
                   ? path.module1.dailyCheckInCount
                   : null,

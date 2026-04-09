@@ -158,7 +158,7 @@ class _MemorizationReviewShellState extends State<MemorizationReviewShell> {
     final passed = qualityScore >= 3;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => MemorizationCelebration(
+        builder: (ctx) => MemorizationCelebration(
           message: passed
               ? 'Well done!'
               : 'Keep pressing in — every review matters.',
@@ -166,7 +166,7 @@ class _MemorizationReviewShellState extends State<MemorizationReviewShell> {
               ? 'God\'s Word is taking root in your heart.'
               : 'Come back tomorrow. Consistency is the key.',
           onContinue: () =>
-              Navigator.of(context).popUntil((r) => r.isFirst || r.settings.name == '/'),
+              Navigator.of(ctx).popUntil((r) => r.isFirst || r.settings.name == '/'),
         ),
       ),
     );

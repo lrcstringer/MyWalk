@@ -32,8 +32,17 @@ class _PartnerAcceptanceScreenState extends State<PartnerAcceptanceScreen> {
 
   Future<void> _loadPartnership() async {
     try {
-      final p = await context.read<AccountabilityProvider>().findByToken(widget.token);
+      final provider = context.read<AccountabilityProvider>();
+      final p = await provider.findByToken(widget.token);
       if (!mounted) return;
+      // Detect own invite before showing Accept button.
+      if (p != null && p.ownerId == provider.currentUserId) {
+        setState(() {
+          _loading = false;
+          _errorMessage = 'This is your own invite link. Share it with a friend to invite them as your prayer partner.';
+        });
+        return;
+      }
       setState(() {
         _partnership = p;
         _loading = false;

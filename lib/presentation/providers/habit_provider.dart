@@ -154,6 +154,12 @@ class HabitProvider extends ChangeNotifier {
           'Loving the Lord & Spiritual Growth',
           'Worship'
         ),
+      HabitCategory.prayer => (
+          'loving_the_lord',
+          'prayer',
+          'Loving the Lord & Spiritual Growth',
+          'Prayer'
+        ),
       HabitCategory.custom =>
         ('create_my_own', 'custom', 'Create My Own', habit.name),
     };

@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/repositories/iap_repository.dart';
 
 /// Product IDs — must match Google Play Console / App Store Connect exactly.
@@ -34,17 +35,24 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
   final InAppPurchase _iap;
   final FirebaseAuth _auth;
 
+  static const _kIsPremiumKey = 'store_is_premium';
+
   StoreProvider({
     required IAPRepository iapRepository,
+    required SharedPreferences prefs,
     InAppPurchase? iap,
     FirebaseAuth? auth,
   })  : _iapRepository = iapRepository,
+        _prefs = prefs,
         _iap = iap ?? InAppPurchase.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+        _auth = auth ?? FirebaseAuth.instance,
+        // Seed from cache so premium users see no upsell banner on launch.
+        isPremium = prefs.getBool(_kIsPremiumKey) ?? false;
 
+  final SharedPreferences _prefs;
   bool _initialized = false;
   Map<String, ProductDetails> _products = {};
-  bool isPremium = false;
+  bool isPremium;
   bool isLoading = false;
   bool isPurchasing = false;
   String? error;
@@ -108,7 +116,7 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
     // a background/foreground cycle.
     _premiumSub = _iapRepository.watchPremiumStatus().listen((status) {
       if (isPremium != status) {
-        isPremium = status;
+        _setPremium(status);
         notifyListeners();
       }
     });
@@ -147,13 +155,20 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   // ── Premium status ────────────────────────────────────────────────────────
 
+  /// Sets [isPremium] and persists it to SharedPreferences so the next launch
+  /// can seed the value synchronously and avoid a flash of the upsell banner.
+  void _setPremium(bool value) {
+    isPremium = value;
+    _prefs.setBool(_kIsPremiumKey, value);
+  }
+
   /// Reads premium status from Firestore (authoritative source after server
   /// validation). A null return from the repository means a transient error —
   /// we leave [isPremium] unchanged to remain optimistic for existing users.
   Future<void> _syncPremiumStatus() async {
     final status = await _iapRepository.getPremiumStatus();
     if (status != null) {
-      isPremium = status;
+      _setPremium(status);
     }
   }
 
@@ -284,7 +299,7 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
             ? purchase.verificationData.localVerificationData
             : null,
       );
-      isPremium = validated;
+      _setPremium(validated);
     } catch (e) {
       error = 'Receipt validation failed: ${e.toString()}';
     }

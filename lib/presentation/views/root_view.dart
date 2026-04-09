@@ -77,7 +77,14 @@ class _RootViewState extends State<RootView> {
       return;
     }
 
-    // Partner invite: https://mywalk.faith/accountability/accept/:token
+    // Partner invite (custom scheme): mywalk://accountability/accept?token=TOKEN
+    if (uri.scheme == 'mywalk' && uri.host == 'accountability') {
+      final token = uri.queryParameters['token'];
+      if (token != null && token.isNotEmpty) partnerTokenService.save(token);
+      return;
+    }
+
+    // Partner invite (HTTPS App Link): https://mywalk.faith/accountability/accept/TOKEN
     final segments = uri.pathSegments;
     if (segments.length >= 3 &&
         segments[0] == 'accountability' &&

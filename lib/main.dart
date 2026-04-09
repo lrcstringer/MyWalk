@@ -124,7 +124,7 @@ void main() async {
   });
 
   final iapRepository = FirestoreIAPRepository();
-  final storeProvider = StoreProvider(iapRepository: iapRepository);
+  final storeProvider = StoreProvider(iapRepository: iapRepository, prefs: sharedPrefs);
   final pendingInviteService = PendingInviteService(sharedPrefs);
   final pendingPartnerTokenService = PendingPartnerTokenService(sharedPrefs);
   final accountabilityRepository = FirestoreAccountabilityRepository();

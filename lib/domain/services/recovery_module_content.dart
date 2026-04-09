@@ -168,11 +168,11 @@ class RecoveryModuleContent {
 
   // ── Recovery Path home screen copy ──────────────────────────────────────
 
-  static const String homeBeginTitle = 'Start Your Recovery Path';
+  static const String homeBeginTitle = 'Start Your Freedom Journey';
   static const String homeBeginBody =
       'A structured, private programme to help you understand your patterns, '
       'anchor to what matters, and walk in lasting freedom.';
-  static const String homeBeginButton = 'Begin my Recovery Path';
+  static const String homeBeginButton = 'Begin my Freedom Journey';
 
   static const String lapseEntryLabel = 'Record a setback';
 

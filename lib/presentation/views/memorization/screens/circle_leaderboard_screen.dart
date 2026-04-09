@@ -32,6 +32,7 @@ class _CircleLeaderboardScreenState extends State<CircleLeaderboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(widget.circle.name),
         backgroundColor: MyWalkColor.charcoal,

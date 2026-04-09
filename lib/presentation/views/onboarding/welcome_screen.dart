@@ -137,7 +137,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         offset: _showTagline ? Offset.zero : const Offset(0, 0.3),
                         duration: const Duration(milliseconds: 700),
                         child: Text(
-                          'Track your habits & practices.\nGive them to the Lord.',
+                          'A daily walk with God. Track your habits,\njournal your heart, and grow in community.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 16,

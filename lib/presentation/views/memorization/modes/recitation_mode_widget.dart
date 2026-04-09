@@ -400,13 +400,13 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
     final passed = qualityScore >= 3;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => MemorizationCelebration(
+        builder: (ctx) => MemorizationCelebration(
           message: passed ? 'Well spoken!' : 'Keep pressing in',
           subtitle: passed
               ? 'God\'s Word is being hidden in your heart.'
               : 'Every attempt draws you closer. Come back tomorrow.',
           onContinue: () =>
-              Navigator.of(context).popUntil((r) => r.isFirst || r.settings.name == '/'),
+              Navigator.of(ctx).popUntil((r) => r.isFirst || r.settings.name == '/'),
         ),
       ),
     );

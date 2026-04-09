@@ -78,6 +78,12 @@ class MicroActionContent {
         ];
       case HabitCategory.gratitude:
         return ['Thank God for one thing right now.'];
+      case HabitCategory.prayer:
+        return [
+          'Just start talking to God. No script needed.',
+          'Pray for one person by name right now.',
+          'Be still for 60 seconds and listen.',
+        ];
     }
   }
 

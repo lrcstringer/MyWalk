@@ -114,7 +114,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
                   // Sub-heading
                   Text(
-                    'Sign in so your habits, practices, and progress'
+                    'Sign in so your habits & activities and progress'
                     ' are safely backed up and available on any device.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -139,8 +139,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'We never share your data. Sign-in is used only to'
-                          ' keep your habits & practices safe and synced across your devices.',
+                          'Your walk is saved securely to your account. All data outside of your device is encrypted. We never share your data with third-parties.',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.white.withValues(alpha: 0.45),

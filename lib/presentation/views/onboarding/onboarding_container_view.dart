@@ -13,13 +13,8 @@ import 'reframe_screen.dart';
 import 'first_gratitude_screen.dart';
 import 'habit_selection_screen.dart';
 import 'habit_setup_screen.dart';
-import 'habit_summary_screen.dart';
-import 'core_mechanics_screen.dart';
-import 'notification_preferences_screen.dart';
 import 'paywall_screen.dart';
 import 'dedication_ceremony_screen.dart';
-import 'fruit_intro_screen.dart';
-import 'fruit_tagging_screen.dart';
 
 class OnboardingContainerView extends StatefulWidget {
   final VoidCallback onComplete;
@@ -30,24 +25,22 @@ class OnboardingContainerView extends StatefulWidget {
 }
 
 class _OnboardingContainerViewState extends State<OnboardingContainerView> {
+  // Set to true when rolling out to production to show the paywall.
+  static const bool _paywallEnabled = false;
+
   int _currentStep = 0;
   bool _isSavingHabit = false;
   String? _gratitudeNote;
   HabitCategory? _selectedCategory;
   String _customHabitName = '';
-  String _customPurpose = '';
   HabitTrackingType _customTrackingType = HabitTrackingType.checkIn;
   double _customDailyTarget = 1;
   String _customTargetUnit = '';
-  String _customTrigger = '';
-  String _customCopingPlan = '';
   Set<int> _customActiveDays = const {1, 2, 3, 4, 5, 6, 7};
 
   // 0: Welcome  1: SignIn  2: Identity  3: Reframe  4: FirstGratitude
-  // 5: HabitSelection  6: HabitSetup  7: HabitSummary  8: FruitIntro
-  // 9: FruitTagging  10: CoreMechanics  11: NotificationPrefs
-  // 12: Paywall  13: DedicationCeremony
-  static const int _totalSteps = 14;
+  // 5: HabitSelection  6: HabitSetup  7: Paywall  8: DedicationCeremony
+  static const int _totalSteps = 9;
 
   void _advance() => setState(() => _currentStep++);
 
@@ -57,7 +50,7 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
 
   @override
   Widget build(BuildContext context) {
-    // Show nav bar for steps 2-12 (between sign-in and dedication).
+    // Show nav bar for steps 2–7 (between sign-in and dedication).
     final showNav = _currentStep >= 2 && _currentStep < _totalSteps - 1;
 
     return Scaffold(
@@ -94,8 +87,8 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
   }
 
   Widget _progressDots() {
-    // Dots for steps 2-12 (11 dots total).
-    const dotSteps = _totalSteps - 3; // steps 2..12 = 11
+    // Dots for steps 2–7 (6 dots total).
+    const dotSteps = _totalSteps - 3; // steps 2..6 = 6
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(dotSteps, (i) {
@@ -160,61 +153,33 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
         }
         return HabitSetupScreen(
           category: _selectedCategory!,
-          onComplete: (name, purpose, tracking, target, unit, trigger, copingPlan, days) {
+          onComplete: (name, tracking, target, unit, days) {
             setState(() {
               _customHabitName = name;
-              _customPurpose = purpose;
               _customTrackingType = tracking;
               _customDailyTarget = target;
               _customTargetUnit = unit;
-              _customTrigger = trigger;
-              _customCopingPlan = copingPlan;
               _customActiveDays = days;
             });
-            _advance();
+            _createCustomHabitAndAdvance();
           },
         );
 
       case 7:
-        if (_selectedCategory == null) {
-          _advance();
+        if (!_paywallEnabled) {
+          // Skip paywall during testing — flip _paywallEnabled for production.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _advance();
+          });
           return const SizedBox.shrink();
         }
-        return HabitSummaryScreen(
-          habitName: _customHabitName,
-          habitCategory: _selectedCategory!,
-          trackingType: _customTrackingType,
-          purposeStatement: _customPurpose,
-          dailyTarget: _customDailyTarget,
-          targetUnit: _customTargetUnit,
-          activeDays: _customActiveDays,
-          onFinish: () => _createCustomHabitAndAdvance(),
-        );
-
-      case 8:
-        return FruitIntroScreen(onNext: _advance);
-
-      case 9:
-        return FruitTaggingScreen(onNext: _advance, onSkip: _advance);
-
-      case 10:
-        return CoreMechanicsScreen(
-          onNext: _advance,
-          givenName: context.read<AuthService>().givenName,
-        );
-
-      case 11:
-        return NotificationPreferencesScreen(onNext: _advance);
-
-      case 12:
         return PaywallScreen(onNext: _advance);
 
-      case 13:
+      case 8:
         return DedicationCeremonyScreen(
           gratitudeNote: _gratitudeNote,
           habitName: _customHabitName,
           habitCategory: _selectedCategory ?? HabitCategory.gratitude,
-          purposeStatement: _customPurpose,
           trackingType: _customTrackingType,
           dailyTarget: _customDailyTarget,
           targetUnit: _customTargetUnit,
@@ -247,7 +212,6 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
   }
 
   Future<void> _onIdentityContinue(String name, List<String> selections) async {
-    // Persist name + identity selections to Firestore.
     final auth = context.read<AuthService>();
     if (auth.userId != null) {
       final repo = context.read<UserRepository>();
@@ -293,19 +257,17 @@ class _OnboardingContainerViewState extends State<OnboardingContainerView> {
         name: _customHabitName,
         category: _selectedCategory!,
         trackingType: _customTrackingType,
-        purpose: _customPurpose,
+        purpose: _selectedCategory!.defaultPurpose,
         dailyTarget: _customDailyTarget,
         targetUnit: _customTargetUnit,
         activeDays: _customActiveDays,
-        trigger: _customTrigger,
-        copingPlan: _customCopingPlan,
       );
       if (mounted) _advance();
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Couldn't save your habit. Check your connection and try again."),
+            content: Text("Couldn't save your activity. Check your connection and try again."),
             duration: Duration(seconds: 4),
           ),
         );

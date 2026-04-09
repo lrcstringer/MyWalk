@@ -637,6 +637,7 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
       case HabitCategory.connection: return Icons.people;
       case HabitCategory.health: return Icons.favorite;
       case HabitCategory.abstain: return Icons.shield_rounded;
+      case HabitCategory.prayer: return Icons.self_improvement_rounded;
       case HabitCategory.custom: return Icons.star;
     }
   }

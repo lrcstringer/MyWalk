@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyWalk Onboarding — Updated Mockups</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a1a1a;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    padding: 40px 20px;
+    color: #f5f0e8;
+  }
+  h1 {
+    text-align: center;
+    color: #C9A84C;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    text-align: center;
+    color: rgba(255,255,255,0.4);
+    font-size: 13px;
+    margin-bottom: 48px;
+  }
+  .screens-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .screen-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .screen-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+  }
+  .phone {
+    width: 320px;
+    height: 620px;
+    background: #1C1C1E;
+    border-radius: 44px;
+    border: 2px solid rgba(255,255,255,0.1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+  }
+  /* Notch */
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100px; height: 28px;
+    background: #1C1C1E;
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+    z-index: 10;
+  }
+  .phone-content {
+    padding: 44px 0 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ─── Colours ─── */
+  :root {
+    --golden: #C9A84C;
+    --soft-gold: #D4B86A;
+    --warm-white: #F5F0E8;
+    --charcoal: #1C1C1E;
+    --card-bg: rgba(255,255,255,0.05);
+    --card-border: rgba(255,255,255,0.1);
+    --muted: rgba(255,255,255,0.45);
+    --dim: rgba(255,255,255,0.25);
+    --sage: #8BAF7C;
+    --coral: #E07070;
+  }
+
+  /* ─── Nav bar ─── */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    gap: 8px;
+  }
+  .back-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+  .back-btn svg { opacity: 0.45; }
+  .dots { display: flex; gap: 6px; flex: 1; justify-content: center; }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+  }
+  .dot.active { width: 8px; height: 8px; background: var(--golden); }
+  .dot.done { background: var(--golden); }
+  .nav-spacer { width: 28px; }
+
+  /* ─── Scroll body ─── */
+  .scroll-body {
+    flex: 1;
+    padding: 16px 20px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .scroll-body.centered {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* ─── Typography ─── */
+  .headline {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--warm-white);
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+  .headline-lg {
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--warm-white);
+    letter-spacing: 5px;
+    margin-bottom: 12px;
+  }
+  .tagline {
+    font-size: 14px;
+    color: rgba(201,168,76,0.85);
+    line-height: 1.55;
+    margin-bottom: 18px;
+  }
+  .body-text {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  .fine-text {
+    font-size: 11px;
+    color: var(--dim);
+    line-height: 1.5;
+  }
+  .verse-block {
+    text-align: center;
+    margin: 16px 0;
+  }
+  .verse-text {
+    font-size: 12px;
+    font-style: italic;
+    color: rgba(201,168,76,0.55);
+    line-height: 1.6;
+  }
+  .verse-ref {
+    font-size: 11px;
+    color: rgba(201,168,76,0.4);
+    margin-top: 4px;
+  }
+
+  /* ─── Bottom button ─── */
+  .btn-bar {
+    padding: 0 20px 28px;
+    flex-shrink: 0;
+  }
+  .btn-primary {
+    width: 100%;
+    padding: 15px;
+    background: var(--golden);
+    color: #1C1C1E;
+    border: none;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-primary.disabled {
+    background: rgba(201,168,76,0.25);
+    color: rgba(28,28,30,0.4);
+  }
+  .arrow { font-size: 14px; }
+
+  /* ─── Input field ─── */
+  .field {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    color: var(--warm-white);
+    width: 100%;
+    margin-bottom: 0;
+  }
+  .field.focused {
+    border-color: rgba(201,168,76,0.5);
+    border-width: 1.5px;
+  }
+  .field.placeholder { color: rgba(255,255,255,0.25); font-size: 14px; }
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(201,168,76,0.6);
+    letter-spacing: 0.5px;
+    margin-bottom: 7px;
+  }
+
+  /* ─── Compare columns (Reframe) ─── */
+  .compare-row { display: flex; gap: 10px; margin-bottom: 20px; }
+  .compare-col { flex: 1; }
+  .compare-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .compare-card {
+    border-radius: 12px;
+    padding: 16px 10px;
+    text-align: center;
+  }
+  .compare-card.bad {
+    background: rgba(224,112,112,0.06);
+    border: 0.5px solid rgba(224,112,112,0.15);
+  }
+  .compare-card.good {
+    background: rgba(201,168,76,0.06);
+    border: 0.5px solid rgba(201,168,76,0.2);
+  }
+  .compare-card .big { font-size: 17px; font-weight: 700; }
+  .compare-card .big.red { color: var(--coral); text-decoration: line-through; }
+  .compare-card .sub { font-size: 11px; margin-top: 4px; }
+  .compare-card .sub.red { color: rgba(224,112,112,0.8); }
+  .compare-card .sub.sage { color: var(--sage); }
+  .week-dots { display: flex; justify-content: center; gap: 3px; margin-bottom: 6px; }
+  .wd { width: 12px; height: 12px; border-radius: 50%; }
+  .wd.on { background: var(--golden); }
+  .wd.off { background: rgba(255,255,255,0.08); }
+
+  /* ─── Reframe points ─── */
+  .reframe-points { display: flex; flex-direction: column; gap: 13px; margin-bottom: 16px; }
+  .rp { display: flex; gap: 10px; align-items: flex-start; }
+  .rp-icon { font-size: 13px; color: var(--golden); margin-top: 1px; flex-shrink: 0; }
+  .rp-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  /* ─── Gratitude textarea ─── */
+  .textarea {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.25);
+    width: 100%;
+    height: 100px;
+    resize: none;
+    line-height: 1.5;
+    margin-bottom: 0;
+  }
+
+  /* ─── Activity tiles ─── */
+  .activity-list { display: flex; flex-direction: column; gap: 10px; }
+  .activity-tile {
+    background: var(--card-bg);
+    border: 0.5px solid var(--card-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .activity-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(201,168,76,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .activity-tile-text { flex: 1; }
+  .activity-tile-name { font-size: 15px; font-weight: 600; color: var(--warm-white); margin-bottom: 2px; }
+  .activity-tile-sub { font-size: 12px; color: rgba(255,255,255,0.38); }
+  .tile-chevron { color: rgba(255,255,255,0.25); font-size: 14px; }
+
+  /* ─── Habit Setup ─── */
+  .setup-header { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+  .setup-header-icon { font-size: 18px; color: var(--golden); }
+  .setup-header-label { font-size: 16px; font-weight: 600; color: var(--soft-gold); }
+  .tracking-row { display: flex; gap: 8px; margin-bottom: 0; }
+  .tracking-chip {
+    flex: 1; padding: 9px 4px; border-radius: 10px;
+    background: var(--card-bg); text-align: center;
+    font-size: 12px; font-weight: 500; color: var(--soft-gold);
+  }
+  .tracking-chip.selected { background: var(--golden); color: #1C1C1E; }
+  .day-row { display: flex; justify-content: space-between; }
+  .day-circle {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--golden);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: #1C1C1E;
+  }
+  .day-circle.off {
+    background: var(--card-bg);
+    border: 0.5px solid var(--card-border);
+    color: rgba(255,255,255,0.35);
+  }
+  .minutes-row { display: flex; gap: 6px; }
+  .min-chip {
+    flex: 1; padding: 9px 4px; border-radius: 10px;
+    background: var(--card-bg); text-align: center;
+    font-size: 13px; font-weight: 500; color: var(--soft-gold);
+  }
+  .min-chip.selected { background: var(--golden); color: #1C1C1E; }
+  .setup-section { margin-bottom: 20px; }
+
+  /* ─── Dedication ─── */
+  .ded-title { font-size: 20px; font-weight: 700; color: var(--warm-white); text-align: center; margin-bottom: 6px; }
+  .ded-sub { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 20px; }
+  .habit-tile {
+    background: var(--card-bg);
+    border: 0.5px solid var(--card-border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px;
+  }
+  .habit-tile-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,168,76,0.2) 0%, rgba(201,168,76,0.06) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .habit-tile-name { font-size: 16px; font-weight: 600; color: var(--warm-white); margin-bottom: 3px; }
+  .habit-tile-detail { font-size: 11px; color: rgba(255,255,255,0.45); line-height: 1.4; }
+  .habit-tile-check { margin-left: auto; font-size: 18px; color: rgba(255,255,255,0.15); flex-shrink: 0; }
+  .milestone-box {
+    background: rgba(201,168,76,0.04);
+    border: 0.5px solid rgba(201,168,76,0.12);
+    border-radius: 12px; padding: 12px; margin-bottom: 14px;
+  }
+  .milestone-title { font-size: 12px; font-weight: 600; color: var(--soft-gold); margin-bottom: 8px; }
+  .milestone-line { font-size: 12px; color: rgba(255,255,255,0.55); margin-bottom: 5px; display: flex; gap: 6px; }
+
+  /* ─── Paywall skipped ─── */
+  .skipped-badge {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed rgba(255,255,255,0.15);
+    border-radius: 14px;
+    padding: 40px 20px;
+    text-align: center;
+    margin: 20px;
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  }
+  .skipped-icon { font-size: 32px; opacity: 0.4; }
+  .skipped-label { font-size: 13px; color: rgba(255,255,255,0.35); }
+  .skipped-sub { font-size: 11px; color: rgba(255,255,255,0.2); }
+
+  /* ─── Post-dedication ─── */
+  .ded-complete {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 32px 20px 20px; flex: 1;
+  }
+  .ded-icon-ring {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,168,76,0.35) 0%, rgba(201,168,76,0.08) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; margin-bottom: 18px;
+  }
+  .ded-complete-title { font-size: 17px; font-weight: 700; color: var(--warm-white); margin-bottom: 6px; text-align: center; }
+  .ded-complete-sub { font-size: 16px; font-weight: 600; color: var(--soft-gold); text-align: center; margin-bottom: 24px; }
+  .circles-card {
+    background: var(--card-bg);
+    border: 0.5px solid var(--card-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    text-align: center;
+    width: 100%;
+  }
+  .circles-card-icon { font-size: 22px; color: var(--golden); margin-bottom: 8px; }
+  .circles-card-title { font-size: 13px; font-weight: 600; color: var(--warm-white); margin-bottom: 3px; }
+  .circles-card-sub { font-size: 11px; color: rgba(255,255,255,0.45); line-height: 1.5; }
+
+  /* ─── Welcome glow ─── */
+  .welcome-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 55%, rgba(201,168,76,0.14) 0%, rgba(201,168,76,0.04) 50%, transparent 75%);
+    pointer-events: none;
+  }
+  .welcome-body {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 0 32px;
+    text-align: center;
+  }
+  .welcome-title-ring {
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, rgba(201,168,76,0.1) 60%, transparent 80%);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  /* ─── Identity ─── */
+  .identity-hint { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.5; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+<h1>MYWALK — ONBOARDING V2</h1>
+<p class="subtitle">9 screens · Updated flow</p>
+
+<div class="screens-grid">
+
+  <!-- ── Screen 0: Welcome ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">0 · Welcome</div>
+    <div class="phone">
+      <div class="welcome-glow"></div>
+      <div class="phone-content" style="display:flex;flex-direction:column;">
+        <div class="welcome-body" style="flex:1;">
+          <div class="welcome-title-ring">
+            <span style="font-size:44px;font-weight:700;color:#F5F0E8;letter-spacing:6px;text-shadow:0 0 30px rgba(201,168,76,0.6);">MyWalk</span>
+          </div>
+          <p class="tagline" style="font-size:14px;line-height:1.6;">A daily walk with God. Track your habits,<br>journal your heart, and grow in community.</p>
+          <div class="verse-block">
+            <p class="verse-text">"Offer your bodies as a living sacrifice, holy and pleasing to God — this is your true and proper worship."</p>
+            <p class="verse-ref">Romans 12:1</p>
+          </div>
+        </div>
+        <div class="btn-bar">
+          <button class="btn-primary"><span class="arrow">→</span> Let's begin</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screen 1: Sign In ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">1 · Sign In</div>
+    <div class="phone">
+      <div class="phone-content" style="display:flex;flex-direction:column;">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 28px;text-align:center;gap:0;">
+          <div style="width:72px;height:72px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,0.2) 0%,rgba(201,168,76,0.04) 100%);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:20px;">🔓</div>
+          <p style="font-size:22px;font-weight:700;color:#F5F0E8;line-height:1.3;margin-bottom:12px;">Your walk,<br>always with you.</p>
+          <p style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;margin-bottom:28px;">Sign in so your habits &amp; activities and progress are safely backed up and available on any device.</p>
+          <!-- Privacy card -->
+          <div style="width:100%;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;text-align:left;margin-bottom:0;">
+            <span style="color:rgba(201,168,76,0.7);font-size:13px;margin-top:1px;flex-shrink:0;">🔒</span>
+            <p style="font-size:11px;color:rgba(255,255,255,0.42);line-height:1.55;">Your walk is saved securely to your account. All data outside of your device is encrypted. We never share your data with third-parties.</p>
+          </div>
+        </div>
+        <div class="btn-bar" style="padding-bottom:20px;">
+          <button class="btn-primary" style="margin-bottom:10px;">🍎 Continue with Apple</button>
+          <p style="font-size:10px;color:rgba(255,255,255,0.28);text-align:center;line-height:1.5;">By continuing you agree to our <span style="color:rgba(212,184,106,0.8);text-decoration:underline;">Terms of Service and Privacy Policy</span>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screen 2: Identity ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">2 · Identity</div>
+    <div class="phone">
+      <div class="phone-content" style="display:flex;flex-direction:column;">
+        <div class="nav-bar">
+          <div class="back-btn"><svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7L7 13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="dots">
+            <div class="dot done"></div>
+            <div class="dot active"></div>
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="nav-spacer"></div>
+        </div>
+        <div class="scroll-body" style="flex:1;">
+          <p class="headline">What should we<br>call you?</p>
+          <p class="identity-hint">We'll use your first name to personalise your experience.</p>
+          <div class="field-label">YOUR FIRST NAME</div>
+          <div class="field focused" style="margin-bottom:0;">Lance</div>
+        </div>
+        <div class="btn-bar">
+          <button class="btn-primary"><span class="arrow">→</span> Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screen 3: Reframe ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">3 · Reframe</div>
+    <div class="phone">
+      <div class="phone-content" style="display:flex;flex-direction:column;">
+        <div class="nav-bar">
+          <div class="back-btn"><svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7L7 13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="dots">
+            <div class="dot done"></div><div class="dot done"></div>
+            <div class="dot active"></div>
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="nav-spacer"></div>
+        </div>
+        <div class="scroll-body" style="flex:1;padding-top:10px;">
+          <p class="headline" style="font-size:20px;margin-bottom:20px;">MyWalk works<br>a bit differently.</p>
+          <div class="compare-row">
+            <div class="compare-col">
+              <p class="compare-label" style="color:rgba(255,255,255,0.4);">Other apps</p>
+              <div class="compare-card bad">
+                <div class="big red">Day 47</div>
+                <div class="sub red">Streak broken.</div>
+                <div style="font-size:20px;margin-top:6px;opacity:0.6;">✕</div>
+              </div>
+            </div>
+            <div class="compare-col">
+              <p class="compare-label" style="color:#C9A84C;">MyWalk</p>
+              <div class="compare-card good">
+                <div class="week-dots">
+                  <div class="wd on"></div><div class="wd on"></div><div class="wd on"></div>
+                  <div class="wd on"></div><div class="wd on"></div>
+                  <div class="wd off"></div><div class="wd off"></div>
+                </div>
+                <div class="big" style="color:#C9A84C;font-size:14px;">5 out of 7</div>
+                <div class="sub sage">Great week.</div>
+              </div>
+            </div>
+          </div>
+          <div class="reframe-points">
+            <div class="rp"><span class="rp-icon">♥</span><span class="rp-text">Most apps track your performance. MyWalk tracks what you're giving to God.</span></div>
+            <div class="rp"><span class="rp-icon">↺</span><span class="rp-text">No streaks. Every week is a fresh start. 5 out of 7 is still a gift.</span></div>
+            <div class="rp"><span class="rp-icon">✋</span><span class="rp-text">We'll never tell you that you failed. We'll meet you wherever you are.</span></div>
+            <div class="rp"><span class="rp-icon">🧭</span><span class="rp-text">There's more to discover — journalling, Kingdom Life content, and community circles. Your walk starts with one step.</span></div>
+          </div>
+          <div class="verse-block">
+            <p class="verse-text">"The steadfast love of the Lord never ceases; his mercies never come to an end; they are new every morning."</p>
+            <p class="verse-ref">Lamentations 3:22–23</p>
+          </div>
+        </div>
+        <div class="btn-bar">
+          <button class="btn-primary"><span class="arrow">→</span> Got it, let's get started</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screen 4: First Gratitude ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">4 · First Gratitude</div>
+    <div class="phone">
+      <div class="phone-content" style="display:flex;flex-direction:column;">
+        <div class="nav-bar">
+          <div class="back-btn"><svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7L7 13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="dots">
+            <div class="dot done"></div><div class="dot done"></div><div class="dot done"></div>
+            <div class="dot active"></div>
+            <div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="nav-spacer"></div>
+        </div>
+        <div class="scroll-body" style="flex:1;">
+          <p class="headline">Every journey starts<br>with gratitude.</p>
+          <p class="body-text">Your first habit is already set — a daily moment to thank God for something. It takes a few seconds. It changes everything.</p>
+          <p style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:10px;">What's one thing you're grateful to God for today?</p>
+          <textarea class="textarea" readonly>God's grace in my life this morning...</textarea>
+          <div class="verse-block" style="margin-top:14px;">
+            <p class="verse-text">"Give thanks in all circumstances; for this is God's will for you in Christ Jesus."</p>
+            <p class="verse-ref">1 Thessalonians 5:18</p>
+          </div>
+        </div>
+        <div class="btn-bar">
+          <button class="btn-primary">🙏 Thank you, Lord</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screen 5: Habit Selection ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">5 · Activity Selection</div>
+    <div class="phone">
+      <div class="phone-content" style="display:flex;flex-direction:column;">
+        <div class="nav-bar">
+          <div class="back-btn"><svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7L7 13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="dots">
+            <div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div>
+            <div class="dot active"></div>
+            <div class="dot"></div>
+          </div>
+          <div class="nav-spacer"></div>
+        </div>
+        <div class="scroll-body" style="flex:1;">
+          <p class="headline">One small activity<br>to start.</p>
+          <p class="body-text" style="margin-bottom:20px;">Pick something simple — you're not committing to forever. You can change or delete this any time.</p>
+          <div class="activity-list">
+            <div class="activity-tile">
+              <div class="activity-icon">🏃</div>
+              <div class="activity-tile-text">
+                <div class="activity-tile-name">Exercise</div>
+                <div class="activity-tile-sub">Movement, sport, a daily walk</div>
+              </div>
+              <span class="tile-chevron">›</span>
+            </div>
+            <div class="activity-tile">
+              <div class="activity-icon">🎨</div>
+              <div class="activity-tile-text">
+                <div class="activity-tile-name">Creativity</div>
+                <div class="activity-tile-sub">Write, draw, make music, create</div>
+              </div>
+              <span class="tile-chevron">›</span>
+            </div>
+            <div class="activity-tile">
+              <div class="activity-icon">📖</div>
+              <div class="activity-tile-text">
+                <div class="activity-tile-name">God's Word</div>
+                <div class="activity-tile-sub">Bible reading, devotions, study</div>
+              </div>
+              <span class="tile-chevron">›</span>
+            </div>
+            <div class="activity-tile">
+              <div class="activity-icon">🧘</div>
+              <div class="activity-tile-text">
+                <div class="activity-tile-name">Prayer</div>
+                <div class="activity-tile-sub">Daily time talking with God</div>
+              </div>
+              <span class="tile-chevron">›</span>
+            </div>
+            <div class="activity-tile">
+              <div class="activity-icon">🤲</div>
+              <div class="activity-tile-text">
+                <div class="activity-tile-name">Service</div>
+                <div class="activity-tile-sub">Give, help, volunteer, serve</div>
+              </div>
+              <span class="tile-chevron">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screen 6: Habit Setup (Prayer example) ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">6 · Activity Setup</div>
+    <div class="phone">
+      <div class="phone-content" style="display:flex;flex-direction:column;">
+        <div class="nav-bar">
+          <div class="back-btn"><svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7L7 13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="dots">
+            <div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div><div class="dot done"></div>
+            <div class="dot active"></div>
+          </div>
+          <div class="nav-spacer"></div>
+        </div>
+        <div class="scroll-body" style="flex:1;">
+          <div class="setup-header">
+            <span class="setup-header-icon">🧘</span>
+            <span class="setup-header-label">Prayer</span>
+          </div>
+
+          <div class="setup-section">
+            <div class="field-label">ACTIVITY NAME</div>
+            <div class="field focused">Daily Prayer</div>
+          </div>
+
+          <div class="setup-section">
+            <div class="field-label" style="margin-bottom:8px;">HOW DO YOU WANT TO TRACK THIS?</div>
+            <div class="tracking-row">
+              <div class="tracking-chip">Yes / No</div>
+              <div class="tracking-chip selected">Timed</div>
+              <div class="tracking-chip">Count</div>
+            </div>
+          </div>
+
+          <div class="setup-section">
+            <div class="field-label" style="margin-bottom:8px;">DAILY GOAL (MINUTES)</div>
+            <div class="minutes-row">
+              <div class="min-chip">15</div>
+              <div class="min-chip selected">20</div>
+              <div class="min-chip">30</div>
+              <div class="min-chip">45</div>
+              <div class="min-chip">60</div>
+            </div>
+          </div>
+
+          <div class="setup-section">
+            <div class="field-label" style="margin-bottom:8px;">ACTIVE DAYS</div>
+            <div class="day-row">
+              <div class="day-circle">S</div>
+              <div class="day-circle">M</div>
+              <div class="day-circle">T</div>
+              <div class="day-circle">W</div>
+              <div class="day-circle">T</div>
+              <div class="day-circle">F</div>
+              <div class="day-circle">S</div>
+            </div>
+          </div>
+        </div>
+        <div class="btn-bar">
+          <button class="btn-primary"><span class="arrow">→</span> Set this activity</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screen 7: Paywall (skipped in testing) ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">7 · Paywall (testing: skipped)</div>
+    <div class="phone">
+      <div class="phone-content" style="display:flex;flex-direction:column;'>">
+        <div style="flex:1;display:flex;flex-direction:column;">
+          <div class="skipped-badge">
+            <div class="skipped-icon">🔒</div>
+            <div class="skipped-label">Paywall screen exists</div>
+            <div class="skipped-sub" style="margin-top:4px;">Auto-skipped while<br><code style="color:rgba(201,168,76,0.6);font-size:10px;">_paywallEnabled = false</code></div>
+            <div class="skipped-sub" style="margin-top:8px;">Flip to <code style="color:rgba(201,168,76,0.6);font-size:10px;">true</code> for production</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screen 8a: Dedication (pre-tap) ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">8 · Dedication</div>
+    <div class="phone">
+      <div class="phone-content" style="display:flex;flex-direction:column;">
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%, rgba(201,168,76,0.08) 0%, transparent 65%);pointer-events:none;"></div>
+        <div class="scroll-body" style="flex:1;padding-top:20px;">
+          <div class="ded-title">Your Walk</div>
+          <div class="ded-sub">Everything you've chosen — offered to God.</div>
+
+          <div class="habit-tile">
+            <div class="habit-tile-icon">🙏</div>
+            <div style="flex:1;">
+              <div class="habit-tile-name">Daily Gratitude</div>
+              <div class="habit-tile-detail">Every good gift comes from above.</div>
+            </div>
+            <div class="habit-tile-check">○</div>
+          </div>
+
+          <div class="habit-tile">
+            <div class="habit-tile-icon">🧘</div>
+            <div style="flex:1;">
+              <div class="habit-tile-name">Daily Prayer</div>
+              <div class="habit-tile-detail">Prayer is where my walk with God begins and ends.</div>
+            </div>
+            <div class="habit-tile-check">○</div>
+          </div>
+
+          <div class="milestone-box">
+            <div class="milestone-title">If you hit your targets this week:</div>
+            <div class="milestone-line">✦ <span>4 days of gratitude</span></div>
+            <div class="milestone-line">✦ <span>80 minutes of daily prayer</span></div>
+          </div>
+
+          <div class="verse-block">
+            <p class="verse-text">"I urge you, brothers and sisters, in view of God's mercy, to offer your bodies as a living sacrifice, holy and pleasing to God."</p>
+            <p class="verse-ref">Romans 12:1</p>
+          </div>
+        </div>
+        <div class="btn-bar">
+          <button class="btn-primary">🤲 Begin My Walk</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screen 8b: Dedication (post-dedication) ── -->
+  <div class="screen-wrap">
+    <div class="screen-label">8 · Dedication (after)</div>
+    <div class="phone">
+      <div class="phone-content" style="display:flex;flex-direction:column;">
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%, rgba(201,168,76,0.18) 0%, transparent 65%);pointer-events:none;"></div>
+        <div class="ded-complete" style="flex:1;">
+          <div class="ded-icon-ring">🤲</div>
+          <div class="ded-complete-title">Your walk is set.</div>
+          <div class="ded-complete-sub">Remain steadfast in all you do, Lance.</div>
+          <div class="verse-block" style="margin-bottom:16px;">
+            <p class="verse-text">"The steadfast love of the Lord never ceases; his mercies never come to an end; they are new every morning."</p>
+            <p class="verse-ref">Lamentations 3:22–23</p>
+          </div>
+          <div class="circles-card">
+            <div class="circles-card-icon">👥</div>
+            <div class="circles-card-title">Want to walk with others?</div>
+            <div class="circles-card-sub">Circles let you share your walk, pray together, and study scripture as a community.</div>
+          </div>
+        </div>
+        <div class="btn-bar">
+          <button class="btn-primary"><span class="arrow">→</span> Enter MyWalk</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -41,17 +41,23 @@ class FirestoreAccountabilityRepository implements AccountabilityRepository {
   // ── AccountabilityRepository ───────────────────────────────────────────────
 
   @override
-  Future<String> createInvite({
+  Future<InviteResult> createInvite({
     required String habitId,
     required String habitName,
     required String ownerDisplayName,
+    String? recipientEmail,
   }) async {
     final result = await _call('accountabilityCreateInvite', {
       'habitId': habitId,
       'habitName': habitName,
       'ownerDisplayName': ownerDisplayName,
+      'recipientEmail': recipientEmail,
     });
-    return result['shareUrl'] as String;
+    return InviteResult(
+      shareUrl: result['shareUrl'] as String,
+      shortCode: result['shortCode'] as String,
+      inAppSent: result['inAppSent'] as bool? ?? false,
+    );
   }
 
   @override
@@ -162,6 +168,21 @@ class FirestoreAccountabilityRepository implements AccountabilityRepository {
     try {
       final snap = await _partnerships
           .where('inviteToken', isEqualTo: token)
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+      if (snap.docs.isEmpty) return null;
+      return AccountabilityPartnership.fromFirestore(snap.docs.first);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<AccountabilityPartnership?> findByShortCode(String code) async {
+    try {
+      final snap = await _partnerships
+          .where('shortCode', isEqualTo: code.toUpperCase())
           .where('status', isEqualTo: 'pending')
           .limit(1)
           .get();

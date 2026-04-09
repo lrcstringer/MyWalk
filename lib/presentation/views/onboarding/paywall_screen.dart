@@ -31,7 +31,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     (Icons.format_quote_rounded, 'Custom Purpose Statements'),
     (Icons.bar_chart_rounded, 'Detailed Stats & Insights'),
     (Icons.notifications_rounded, 'Smart Reminders'),
-    (Icons.shield_rounded, 'SOS Temptation Support'),
+    (Icons.shield_rounded, 'Recovery Path & Partner Support'),
     (Icons.auto_awesome, '52-Week Year in MyWalk'),
   ];
 

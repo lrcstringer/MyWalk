@@ -6,30 +6,38 @@ class HabitSelectionScreen extends StatelessWidget {
   final void Function(HabitCategory) onSelect;
   const HabitSelectionScreen({super.key, required this.onSelect});
 
-  static const _gridCategories = [
-    HabitCategory.exercise,
-    HabitCategory.scripture,
-    HabitCategory.rest,
-    HabitCategory.fasting,
-    HabitCategory.study,
-    HabitCategory.service,
-    HabitCategory.connection,
-    HabitCategory.health,
+  static const _options = [
+    _ActivityOption(
+      label: 'Exercise',
+      subtitle: 'Movement, sport, a daily walk',
+      icon: Icons.fitness_center,
+      category: HabitCategory.exercise,
+    ),
+    _ActivityOption(
+      label: 'Creativity',
+      subtitle: 'Write, draw, make music, create',
+      icon: Icons.brush_rounded,
+      category: HabitCategory.custom,
+    ),
+    _ActivityOption(
+      label: "God's Word",
+      subtitle: 'Bible reading, devotions, study',
+      icon: Icons.menu_book_rounded,
+      category: HabitCategory.scripture,
+    ),
+    _ActivityOption(
+      label: 'Prayer',
+      subtitle: 'Daily time talking with God',
+      icon: Icons.self_improvement_rounded,
+      category: HabitCategory.prayer,
+    ),
+    _ActivityOption(
+      label: 'Service',
+      subtitle: 'Give, help, volunteer, serve',
+      icon: Icons.volunteer_activism_rounded,
+      category: HabitCategory.service,
+    ),
   ];
-
-  IconData _icon(HabitCategory category) {
-    switch (category) {
-      case HabitCategory.exercise: return Icons.fitness_center;
-      case HabitCategory.scripture: return Icons.menu_book;
-      case HabitCategory.rest: return Icons.bedtime;
-      case HabitCategory.fasting: return Icons.no_food;
-      case HabitCategory.study: return Icons.school;
-      case HabitCategory.service: return Icons.volunteer_activism;
-      case HabitCategory.connection: return Icons.people;
-      case HabitCategory.health: return Icons.favorite;
-      default: return Icons.auto_awesome;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,117 +47,91 @@ class HabitSelectionScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text(
-              'Now pick your\nown habit.',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite, height: 1.3),
+              'One small activity\nto start.',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: MyWalkColor.warmWhite,
+                height: 1.25,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
-              'Gratitude is set. What else do you want to give to God this season?',
-              style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.5)),
+              'Pick something simple \u2014 you\u2019re not committing to forever. You can change or delete this any time.',
+              style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.5), height: 1.5),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Pick 1 to start. You can add more later.',
-              style: TextStyle(fontSize: 12, color: MyWalkColor.softGold.withValues(alpha: 0.6)),
-            ),
-            const SizedBox(height: 20),
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: _gridCategories.map((category) {
-                return GestureDetector(
-                  onTap: () => onSelect(category),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: MyWalkColor.cardBackground,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(_icon(category), size: 26, color: MyWalkColor.golden),
-                        const SizedBox(height: 10),
-                        Text(
-                          category.rawValue,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          style: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w500, color: MyWalkColor.warmWhite,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          category.defaultPurpose,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.4)),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
-            _specialRow(
-              icon: Icons.shield_rounded,
-              iconColor: MyWalkColor.warmCoral,
-              borderColor: MyWalkColor.warmCoral.withValues(alpha: 0.2),
-              title: 'I\u2019m letting go of something',
-              subtitle: 'Break a bad habit with God\u2019s help',
-              onTap: () => onSelect(HabitCategory.abstain),
-            ),
-            const SizedBox(height: 12),
-            _specialRow(
-              icon: Icons.auto_awesome,
-              iconColor: MyWalkColor.golden,
-              borderColor: MyWalkColor.golden.withValues(alpha: 0.15),
-              title: 'Something else entirely',
-              subtitle: 'Create a fully custom habit',
-              onTap: () => onSelect(HabitCategory.custom),
-            ),
+            const SizedBox(height: 28),
+            ..._options.map((opt) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ActivityTile(option: opt, onTap: () => onSelect(opt.category)),
+            )),
           ]),
         ),
       ),
     ]);
   }
+}
 
-  Widget _specialRow({
-    required IconData icon,
-    required Color iconColor,
-    required Color borderColor,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
+class _ActivityOption {
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final HabitCategory category;
+
+  const _ActivityOption({
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.category,
+  });
+}
+
+class _ActivityTile extends StatelessWidget {
+  final _ActivityOption option;
+  final VoidCallback onTap;
+
+  const _ActivityTile({required this.option, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
           color: MyWalkColor.cardBackground,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: borderColor, width: 0.5),
+          border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
         ),
         child: Row(children: [
-          Icon(icon, size: 20, color: iconColor),
-          const SizedBox(width: 12),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: MyWalkColor.golden.withValues(alpha: 0.1),
+            ),
+            child: Icon(option.icon, size: 20, color: MyWalkColor.golden),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: MyWalkColor.warmWhite)),
+              Text(
+                option.label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: MyWalkColor.warmWhite,
+                ),
+              ),
               const SizedBox(height: 3),
-              Text(subtitle,
-                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4))),
+              Text(
+                option.subtitle,
+                style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)),
+              ),
             ]),
           ),
-          Icon(Icons.chevron_right, size: 14, color: Colors.white.withValues(alpha: 0.4)),
+          Icon(Icons.chevron_right_rounded, size: 18, color: Colors.white.withValues(alpha: 0.3)),
         ]),
       ),
     );

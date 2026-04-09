@@ -114,6 +114,7 @@ class _DedicationCeremonyScreenState extends State<DedicationCeremonyScreen>
       case HabitCategory.connection: return Icons.people;
       case HabitCategory.health: return Icons.favorite;
       case HabitCategory.abstain: return Icons.shield_rounded;
+      case HabitCategory.prayer: return Icons.self_improvement_rounded;
       default: return Icons.auto_awesome;
     }
   }
@@ -202,7 +203,7 @@ class _DedicationCeremonyScreenState extends State<DedicationCeremonyScreen>
           const Text('Your Walk',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
           const SizedBox(height: 8),
-          Text('Everything you\u2019ve set \u2014 offered to God.',
+          Text('Everything you\u2019ve chosen \u2014 offered to God.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.5))),
         ]),
@@ -338,11 +339,11 @@ class _DedicationCeremonyScreenState extends State<DedicationCeremonyScreen>
             child: Column(children: [
               const Icon(Icons.groups_rounded, size: 28, color: MyWalkColor.golden),
               const SizedBox(height: 10),
-              const Text('Want to invite a few people to walk with you?',
+              const Text('Want to walk with others?',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
               const SizedBox(height: 4),
-              Text('In MyWalk you can start a Prayer Circle and do this together.',
+              Text('Circles let you share your walk, pray together, and study scripture as a community.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5))),
             ]),

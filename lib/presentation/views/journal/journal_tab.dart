@@ -112,6 +112,15 @@ class _JournalTabState extends State<JournalTab> {
             foregroundColor: theme.textPrimary,
             expandedHeight: 220,
             pinned: true,
+            automaticallyImplyLeading: false,
+            title: Text(
+              'MyWalk',
+              style: TextStyle(
+                color: theme.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
               background: Stack(

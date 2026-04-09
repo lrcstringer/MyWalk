@@ -117,6 +117,7 @@ class _ModuleSessionScreenState extends State<ModuleSessionScreen> {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

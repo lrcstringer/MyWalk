@@ -139,12 +139,12 @@ class _InitialMemorizationScreenState extends State<InitialMemorizationScreen> {
   void _onComplete() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => MemorizationCelebration(
+        builder: (ctx) => MemorizationCelebration(
           message: 'First encounter complete!',
           subtitle:
               'Your next review is in 12 hours.\nKeep coming back — repetition is how the Word takes root.',
           onContinue: () =>
-              Navigator.of(context).popUntil((r) => r.isFirst || r.settings.name == '/'),
+              Navigator.of(ctx).popUntil((r) => r.isFirst || r.settings.name == '/'),
         ),
       ),
     );

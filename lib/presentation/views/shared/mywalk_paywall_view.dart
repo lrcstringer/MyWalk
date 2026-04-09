@@ -22,7 +22,7 @@ class _MyWalkPaywallViewState extends State<MyWalkPaywallView> {
 
   static const _features = [
     (Icons.all_inclusive_rounded, 'Unlimited habits'),
-    (Icons.shield_rounded, 'SOS temptation support'),
+    (Icons.shield_rounded, 'Recovery Path & partner support'),
     (Icons.bar_chart_rounded, 'Detailed analytics & insights'),
     (Icons.format_quote_rounded, 'Custom purpose statements'),
     (Icons.calendar_month_rounded, '52-week Year in MyWalk heatmap'),

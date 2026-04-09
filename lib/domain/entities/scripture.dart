@@ -31,7 +31,9 @@ class ScriptureLibrary {
       case HabitCategory.custom:
         return const Scripture(text: 'Whatever you do, whether in word or deed, do it all in the name of the Lord Jesus, giving thanks to God the Father through him.', reference: 'Colossians 3:17');
       case HabitCategory.gratitude:
-        return const Scripture(text: 'Give thanks in all circumstances; for this is God\u2019s will for you in Christ Jesus.', reference: '1 Thessalonians 5:18');
+        return const Scripture(text: 'The joy of the Lord is my strength.', reference: 'Nehemiah 8:10');
+      case HabitCategory.prayer:
+        return const Scripture(text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.', reference: 'Philippians 4:6');
     }
   }
 
@@ -119,11 +121,17 @@ class ScriptureLibrary {
         ];
       case HabitCategory.gratitude:
         return const [
-          Scripture(text: 'Every good and perfect gift is from above.', reference: 'James 1:17'),
-          Scripture(text: 'Enter his gates with thanksgiving and his courts with praise.', reference: 'Psalm 100:4'),
-          Scripture(text: 'I will give thanks to the Lord with my whole heart.', reference: 'Psalm 9:1'),
-          Scripture(text: 'Let the peace of Christ rule in your hearts, since as members of one body you were called to peace. And be thankful.', reference: 'Colossians 3:15'),
-          Scripture(text: 'Rejoice always, pray continually, give thanks in all circumstances.', reference: '1 Thessalonians 5:16\u201318'),
+          Scripture(text: 'The joy of the Lord is my strength.', reference: 'Nehemiah 8:10'),
+          Scripture(text: 'I can do all things through Christ who strengthens me.', reference: 'Philippians 4:13'),
+          Scripture(text: 'Rejoice in the Lord always, and again I say rejoice.', reference: 'Philippians 4:4'),
+        ];
+      case HabitCategory.prayer:
+        return const [
+          Scripture(text: 'Call to me and I will answer you and tell you great and unsearchable things you do not know.', reference: 'Jeremiah 33:3'),
+          Scripture(text: 'The prayer of a righteous person is powerful and effective.', reference: 'James 5:16'),
+          Scripture(text: 'Ask and it will be given to you; seek and you will find; knock and the door will be opened to you.', reference: 'Matthew 7:7'),
+          Scripture(text: 'Devote yourselves to prayer, being watchful and thankful.', reference: 'Colossians 4:2'),
+          Scripture(text: 'Pray without ceasing.', reference: '1 Thessalonians 5:17'),
         ];
     }
   }
@@ -141,8 +149,7 @@ class ScriptureLibrary {
   }
 
   static Scripture completionVerse(HabitCategory category, DateTime date, {required bool isPremium}) {
-    if (isPremium) return rotatingVerse(category, date);
-    return anchorVerse(category);
+    return rotatingVerse(category, date);
   }
 
   static int _weekOfYear(DateTime date) {

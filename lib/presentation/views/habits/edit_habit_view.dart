@@ -469,13 +469,12 @@ class _EditHabitViewState extends State<EditHabitView> {
           ? null
           : () async {
               try {
-                final url = await accountability.createInvite(
+                final result = await accountability.createInvite(
                   habitId: widget.habit.id,
                   habitName: widget.habit.name,
                 );
                 if (!mounted) return;
-                // Share the URL via OS share sheet
-                await _sharePartnerLink(url);
+                await _sharePartnerLink(result.shareUrl, result.shortCode);
               } catch (_) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -544,12 +543,12 @@ class _EditHabitViewState extends State<EditHabitView> {
             GestureDetector(
               onTap: () async {
                 try {
-                  final url = await accountability.createInvite(
+                  final result = await accountability.createInvite(
                     habitId: widget.habit.id,
                     habitName: widget.habit.name,
                   );
                   if (!mounted) return;
-                  await _sharePartnerLink(url);
+                  await _sharePartnerLink(result.shareUrl, result.shortCode);
                 } catch (_) {}
               },
               child: Text('Resend invite',
@@ -599,9 +598,11 @@ class _EditHabitViewState extends State<EditHabitView> {
     ]);
   }
 
-  Future<void> _sharePartnerLink(String url) async {
+  Future<void> _sharePartnerLink(String url, String shortCode) async {
     await Share.share(
-        'Walk with me on MyWalk — tap to become my prayer partner: $url');
+        'Please walk with me on my journey — open MyWalk on your phone '
+        'and accept my prayer partner invite. If you don\'t have MyWalk, '
+        'download it and tap this link: $url\n\nOr enter code $shortCode in the app.');
   }
 
   // ── Recovery Path teaser card ─────────────────────────────────────────────

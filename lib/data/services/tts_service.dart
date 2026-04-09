@@ -1,123 +1,113 @@
 import 'dart:io';
-import 'package:audioplayers/audioplayers.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_tts/flutter_tts.dart';
 
+/// On-device Text-to-Speech for the memorization module.
+///
+/// Uses the platform's built-in TTS engine (AVSpeechSynthesizer on iOS,
+/// Android TTS on Android). Works fully offline with no Cloud Function
+/// or API key required.
 class TtsService {
   static final TtsService instance = TtsService._();
   TtsService._();
 
-  final _functions = FirebaseFunctions.instance;
-  final _player = AudioPlayer();
-
-  static const _prefPrefix = 'tts_cache_';
+  final FlutterTts _tts = FlutterTts();
+  bool _initialized = false;
 
   // ---------------------------------------------------------------------------
   // Public API
   // ---------------------------------------------------------------------------
 
-  /// Plays TTS audio for [itemId]. Generates via Cloud Function on first call;
-  /// subsequent calls serve from device cache. Returns the cached file path.
-  ///
-  /// Lazy: only called when the user explicitly taps Play.
-  Future<String?> playOrGenerate({
+  /// Speaks [text] aloud. Stops any current speech first.
+  /// [itemId] is kept for API compatibility — not used with on-device TTS.
+  Future<void> playOrGenerate({
     required String itemId,
     required String text,
   }) async {
-    try {
-      // Stop any currently playing audio before starting new playback.
-      await _player.stop();
-
-      final cached = await _cachedPath(itemId);
-      if (cached != null && File(cached).existsSync()) {
-        await _player.play(DeviceFileSource(cached));
-        return cached;
-      }
-
-      // Generate via Cloud Function.
-      final url = await _generateTtsUrl(text);
-      if (url == null) return null;
-
-      // Download and cache.
-      final localPath = await _downloadAndCache(itemId, url);
-      if (localPath != null) {
-        await _player.play(DeviceFileSource(localPath));
-      }
-      return localPath;
-    } catch (_) {
-      return null;
-    }
+    await _ensureInitialized();
+    await _tts.stop();
+    await _tts.speak(text.trim());
   }
 
-  Future<void> stop() => _player.stop();
+  Future<void> stop() => _tts.stop();
 
-  Future<void> pause() => _player.pause();
+  Future<void> pause() => _tts.pause();
 
-  Future<void> resume() => _player.resume();
+  Future<void> resume() => _tts.speak(''); // flutter_tts has no resume
 
-  Stream<PlayerState> get onPlayerStateChanged => _player.onPlayerStateChanged;
-
-  // TtsService is a singleton — do not dispose the underlying AudioPlayer.
-  // Call stop() to halt playback when leaving a screen instead.
-  void stopAndRelease() => _player.stop();
+  // TtsService is a singleton — no dispose needed.
+  void stopAndRelease() => _tts.stop();
 
   // ---------------------------------------------------------------------------
-  // Private helpers
+  // Private
   // ---------------------------------------------------------------------------
 
-  Future<String?> _generateTtsUrl(String text) async {
-    try {
-      final result = await _functions
-          .httpsCallable(
-            'generateTts',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
-          )
-          .call<dynamic>({'text': text});
+  Future<void> _ensureInitialized() async {
+    if (_initialized) return;
+    await _tts.setLanguage('en-US');
+    await _tts.setSpeechRate(0.45); // slightly slower — easier to follow
+    await _tts.setVolume(1.0);
+    // iOS: pitch 1.0 — voice selection handles masculinity (Aaron etc.)
+    // Android: pitch 0.88 — deepens whatever voice the device defaults to
+    await _tts.setPitch(Platform.isIOS ? 1.0 : 0.88);
 
-      final data = result.data;
-      if (data is Map && data['url'] is String) {
-        return data['url'] as String;
+    await _selectMaleVoice();
+
+    _initialized = true;
+  }
+
+  /// Picks the best available male en-US voice on iOS and Android.
+  /// Silently skips if no suitable voice is found (platform default is used).
+  Future<void> _selectMaleVoice() async {
+    try {
+      final raw = await _tts.getVoices;
+      if (raw == null) return;
+      final voices = (raw as List).cast<Map>();
+
+      if (Platform.isIOS) {
+        // iOS named voices — male en-US in order of quality preference.
+        const preferred = ['Aaron', 'Reed', 'Eddy', 'Fred'];
+        for (final name in preferred) {
+          final match = voices.where(
+            (v) => (v['name'] as String?)?.contains(name) == true,
+          );
+          if (match.isNotEmpty) {
+            await _tts.setVoice({
+              'name': match.first['name'] as String,
+              'locale': 'en-US',
+            });
+            return;
+          }
+        }
+      } else if (Platform.isAndroid) {
+        // Google TTS en-US voices. Male voices typically contain 'm' as the
+        // gender marker in the model segment, e.g. "en-us-x-iom-local".
+        // Filter to local (offline) en-US voices first, then network.
+        final enUs = voices.where((v) {
+          final name = (v['name'] as String? ?? '').toLowerCase();
+          final locale = (v['locale'] as String? ?? '').toLowerCase();
+          return name.startsWith('en-us') || locale.startsWith('en-us') || locale == 'en_us';
+        }).toList();
+
+        // Prefer local (offline) male voices, then network male voices.
+        for (final quality in ['-local', '-network', '']) {
+          final male = enUs.where((v) {
+            final name = (v['name'] as String? ?? '').toLowerCase();
+            // Male marker: segment ending in 'm' before the quality suffix
+            // e.g. en-us-x-iom-local, en-us-x-sfm-local
+            return name.contains(quality) &&
+                RegExp(r'x-\w+m-').hasMatch(name);
+          }).toList();
+          if (male.isNotEmpty) {
+            await _tts.setVoice({
+              'name': male.first['name'] as String,
+              'locale': 'en-US',
+            });
+            return;
+          }
+        }
       }
-      return null;
     } catch (_) {
-      return null;
+      // Voice selection is best-effort — never block TTS.
     }
-  }
-
-  Future<String?> _downloadAndCache(String itemId, String url) async {
-    try {
-      final response = await http
-          .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 30));
-      if (response.statusCode != 200) return null;
-
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/tts_$itemId.mp3');
-      await file.writeAsBytes(response.bodyBytes);
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('$_prefPrefix$itemId', file.path);
-
-      return file.path;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<String?> _cachedPath(String itemId) async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('$_prefPrefix$itemId');
-  }
-
-  Future<void> clearCache(String itemId) async {
-    final path = await _cachedPath(itemId);
-    if (path != null) {
-      final file = File(path);
-      if (file.existsSync()) await file.delete();
-    }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_prefPrefix$itemId');
   }
 }

@@ -31,7 +31,6 @@ class _SettingsViewState extends State<SettingsView> {
   List<Habit> _archivedHabits = [];
 
   // Circle notification preferences
-  bool _circleNotifSOS = true;
   bool _circleNotifPrayer = true;
   bool _circleNotifAnnouncement = true;
 
@@ -70,12 +69,10 @@ class _SettingsViewState extends State<SettingsView> {
 
   Future<void> _loadCircleNotifPrefs() async {
     final prefs = context.read<UserPreferencesRepository>();
-    final sos = await prefs.getBool('circle_notif_sos') ?? true;
     final prayer = await prefs.getBool('circle_notif_prayer') ?? true;
     final announcement = await prefs.getBool('circle_notif_announcement') ?? true;
     if (mounted) {
       setState(() {
-        _circleNotifSOS = sos;
         _circleNotifPrayer = prayer;
         _circleNotifAnnouncement = announcement;
       });
@@ -384,7 +381,7 @@ class _SettingsViewState extends State<SettingsView> {
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('Upgrade to Pro',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
-                Text('Unlimited habits, SOS, analytics & more',
+                Text('Unlimited habits, Recovery Path, analytics & more',
                     style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4))),
               ])),
               Icon(Icons.chevron_right, size: 16, color: Colors.white.withValues(alpha: 0.3)),
@@ -620,16 +617,6 @@ class _SettingsViewState extends State<SettingsView> {
       child: Column(
         children: [
           _circleNotifToggle(
-            label: 'SOS Alerts',
-            subtitle: 'Urgent prayer requests from circle members',
-            value: _circleNotifSOS,
-            onChanged: (val) {
-              setState(() => _circleNotifSOS = val);
-              _saveCircleNotifPref('circle_notif_sos', val);
-            },
-          ),
-          Divider(height: 1, color: MyWalkColor.warmWhite.withValues(alpha: 0.06)),
-          _circleNotifToggle(
             label: 'Prayer Requests',
             subtitle: 'Help and prayer requests from members',
             value: _circleNotifPrayer,
@@ -734,6 +721,7 @@ class _SettingsViewState extends State<SettingsView> {
       case HabitCategory.connection: return Icons.people;
       case HabitCategory.health: return Icons.favorite;
       case HabitCategory.abstain: return Icons.shield_rounded;
+      case HabitCategory.prayer: return Icons.self_improvement_rounded;
       case HabitCategory.custom: return Icons.star;
     }
   }

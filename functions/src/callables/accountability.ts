@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { FieldValue } from 'firebase-admin/firestore';
-import { partnershipsCol, usersCol, Timestamp } from '../lib/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import { partnershipsCol, usersCol, userNotificationsCol, Timestamp } from '../lib/firestore';
 import { sendPushToUsers } from '../lib/fcm';
 
 // ── accountabilityCreateInvite ────────────────────────────────────────────────
@@ -10,10 +11,11 @@ export const accountabilityCreateInvite = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
     const uid = request.auth.uid;
-    const { habitId, habitName, ownerDisplayName } = request.data as {
+    const { habitId, habitName, ownerDisplayName, recipientEmail } = request.data as {
       habitId: string;
       habitName: string;
       ownerDisplayName: string;
+      recipientEmail?: string;
     };
     if (!habitId?.trim()) throw new HttpsError('invalid-argument', 'habitId is required');
 
@@ -41,6 +43,10 @@ export const accountabilityCreateInvite = onCall(
 
     const token = crypto.randomUUID();
     const partnershipId = crypto.randomUUID();
+    // Short code: first 6 chars of token (uppercased, hyphens removed) for manual entry.
+    const shortCode = token.replace(/-/g, '').substring(0, 6).toUpperCase();
+    const now = Timestamp.now();
+
     await partnershipsCol().doc(partnershipId).set({
       id: partnershipId,
       ownerId: uid,
@@ -49,13 +55,52 @@ export const accountabilityCreateInvite = onCall(
       habitName: habitName ?? '',
       status: 'pending',
       inviteToken: token,
+      shortCode,
       participantIds: [uid],
-      createdAt: Timestamp.now(),
+      createdAt: now,
     });
+
+    // If a recipient email was provided, look up whether they have a MyWalk account
+    // and write a partnership_invite notification directly to their inbox.
+    let inAppSent = false;
+    if (recipientEmail?.trim()) {
+      try {
+        const recipientRecord = await getAuth().getUserByEmail(recipientEmail.trim());
+        const recipientUid = recipientRecord.uid;
+        if (recipientUid !== uid) {
+          const notifId = crypto.randomUUID();
+          await userNotificationsCol(recipientUid).doc(notifId).set({
+            id: notifId,
+            type: 'partnership_invite',
+            senderUid: uid,
+            senderName: ownerDisplayName ?? '',
+            circleId: partnershipId,
+            circleName: habitName ?? '',
+            message: `${ownerDisplayName ?? 'Someone'} wants you to be their support/prayer partner for "${habitName ?? 'a habit'}"`,
+            partnerInviteToken: token,
+            isRead: false,
+            suppressActions: false,
+            createdAt: now,
+          });
+          inAppSent = true;
+          // Also send a push nudge so the notification bell lights up.
+          sendPushToUsers([recipientUid], {
+            title: `${ownerDisplayName ?? 'Someone'} invited you to walk with them`,
+            body: `Open MyWalk to accept their support partner request.`,
+            data: { type: 'partnership_invite', partnershipId, channel: 'partnerships' },
+            channelId: 'partnerships',
+          }).catch(() => {});
+        }
+      } catch (_) {
+        // User not found — fall through to link-only flow.
+      }
+    }
 
     return {
       partnershipId,
       shareUrl: `https://mywalk.faith/accountability/accept/${token}`,
+      shortCode,
+      inAppSent,
     };
   }
 );

@@ -132,6 +132,14 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                   expandedHeight: imageHeight,
                   pinned: true,
                   automaticallyImplyLeading: false,
+                  title: const Text(
+                    'MyWalk',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
                   actions: standardAppBarActions(context),
                   flexibleSpace: FlexibleSpaceBar(
                     collapseMode: CollapseMode.parallax,
@@ -161,10 +169,11 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                           right: 20,
                           bottom: 14,
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               const Text(
                                 'MyWalk',
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.w700,
@@ -175,6 +184,7 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                               const SizedBox(height: 5),
                               const Text(
                                 '\u2018This is the day that the Lord has made; let us rejoice and be glad in it.\u2019',
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic,
@@ -185,6 +195,7 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                               const SizedBox(height: 3),
                               const Text(
                                 'Psalm 118:24',
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: MyWalkColor.golden,
@@ -264,11 +275,11 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
           ),
         ),
 
-        // Add a habit — pinned bottom-left, hidden when at limit or in retroactive mode.
+        // Add a habit — pinned bottom-right, hidden when at limit or in retroactive mode.
         if (!_isRetroactive && !atLimit)
           Positioned(
             bottom: 24,
-            left: 20,
+            right: 20,
             child: _addHabitButton(),
           ),
 

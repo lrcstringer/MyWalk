@@ -7,6 +7,7 @@ import '../../providers/group_prayer_list_provider.dart';
 import '../../providers/circle_notification_provider.dart';
 import '../../theme/app_theme.dart';
 import 'prayer_list_tab.dart';
+import 'prayer_request_compose_view.dart';
 
 // ── Top-level Prayer tab: Requests | List sub-tabs ───────────────────────────
 
@@ -44,25 +45,49 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
     super.dispose();
   }
 
+  void _openPrayerRequestCompose(BuildContext context) {
+    final otherMembers = widget.members
+        .where((m) => m.userId != AuthService.shared.userId)
+        .toList();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PrayerRequestComposeView(
+          circleId: widget.circleId,
+          members: otherMembers,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(children: [
       Container(
         color: MyWalkColor.charcoal,
-        child: TabBar(
-          controller: _tabController,
-          labelColor: MyWalkColor.golden,
-          unselectedLabelColor: MyWalkColor.softGold,
-          indicatorColor: MyWalkColor.golden,
-          indicatorSize: TabBarIndicatorSize.label,
-          labelStyle:
-              const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          unselectedLabelStyle: const TextStyle(fontSize: 13),
-          tabs: const [
-            Tab(text: 'Requests'),
-            Tab(text: 'List'),
-          ],
-        ),
+        child: Row(children: [
+          Expanded(
+            child: TabBar(
+              controller: _tabController,
+              labelColor: MyWalkColor.golden,
+              unselectedLabelColor: MyWalkColor.softGold,
+              indicatorColor: MyWalkColor.golden,
+              indicatorSize: TabBarIndicatorSize.label,
+              labelStyle:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              unselectedLabelStyle: const TextStyle(fontSize: 13),
+              tabs: const [
+                Tab(text: 'Requests'),
+                Tab(text: 'List'),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.send_rounded, size: 18, color: MyWalkColor.softGold),
+            tooltip: 'Send Prayer Request',
+            onPressed: () => _openPrayerRequestCompose(context),
+          ),
+        ]),
       ),
       Expanded(
         child: TabBarView(

@@ -61,7 +61,7 @@ class WeekStripView extends StatelessWidget {
                       : Colors.white.withValues(alpha: 0.5),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               _DayTile(
                 date: date,
                 tier: tier,
@@ -69,7 +69,7 @@ class WeekStripView extends StatelessWidget {
                 isSelected: isSelected,
                 isToday: isToday,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 '${date.day}',
                 style: TextStyle(
@@ -122,8 +122,8 @@ class _DayTile extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      width: 34,
-      height: 34,
+      width: 28,
+      height: 28,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,

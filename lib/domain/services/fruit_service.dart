@@ -81,6 +81,8 @@ class FruitSuggestionService {
         return [FruitType.selfControl, FruitType.faithfulness];
       case HabitCategory.gratitude:
         return [FruitType.joy, FruitType.love];
+      case HabitCategory.prayer:
+        return [FruitType.peace, FruitType.faithfulness, FruitType.joy];
       case HabitCategory.custom:
         return [];
     }

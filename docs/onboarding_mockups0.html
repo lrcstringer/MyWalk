@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyWalk — Onboarding Screen Mockups</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a1a2e;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 40px 20px;
+    color: #fff;
+  }
+  h1 {
+    text-align: center;
+    color: #c9a84c;
+    font-size: 22px;
+    letter-spacing: 2px;
+    margin-bottom: 40px;
+    font-weight: 300;
+    text-transform: uppercase;
+  }
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+  }
+  .screen-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .screen-label {
+    color: #c9a84c;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .phone {
+    width: 320px;
+    min-height: 580px;
+    background: #12121f;
+    border-radius: 36px;
+    border: 2px solid #2a2a3e;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.04);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  /* Notch */
+  .phone::before {
+    content: '';
+    display: block;
+    width: 100px;
+    height: 24px;
+    background: #12121f;
+    border-radius: 0 0 16px 16px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    border: 2px solid #2a2a3e;
+    border-top: none;
+  }
+  .screen-content {
+    padding: 48px 20px 28px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* ── Typography tokens ── */
+  .t-app { font-size: 36px; font-weight: 700; letter-spacing: 6px; color: #f5f0e8; }
+  .t-h1  { font-size: 22px; font-weight: 700; color: #f5f0e8; line-height: 1.3; }
+  .t-h2  { font-size: 17px; font-weight: 600; color: #f5f0e8; line-height: 1.35; }
+  .t-body { font-size: 13px; color: rgba(245,240,232,0.6); line-height: 1.6; }
+  .t-small { font-size: 11px; color: rgba(245,240,232,0.4); line-height: 1.5; }
+  .t-gold  { color: #c9a84c; }
+  .t-sage  { color: #8fbb99; }
+  .t-italic { font-style: italic; }
+  .t-center { text-align: center; }
+
+  /* ── Spacing ── */
+  .sp2  { height: 6px; }
+  .sp4  { height: 12px; }
+  .sp6  { height: 18px; }
+  .sp8  { height: 24px; }
+  .sp12 { height: 36px; }
+  .spacer { flex: 1; }
+
+  /* ── Button ── */
+  .btn {
+    background: #c9a84c;
+    color: #12121f;
+    border-radius: 12px;
+    padding: 13px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    margin-top: auto;
+  }
+  .btn-outline {
+    background: transparent;
+    color: rgba(245,240,232,0.45);
+    border: 1px solid rgba(245,240,232,0.15);
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-size: 13px;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .card-gold {
+    background: rgba(201,168,76,0.07);
+    border: 0.5px solid rgba(201,168,76,0.2);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .card-sage {
+    background: rgba(143,187,153,0.07);
+    border: 0.5px solid rgba(143,187,153,0.2);
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  /* ── Verse block ── */
+  .verse {
+    border-left: 3px solid rgba(201,168,76,0.5);
+    background: rgba(201,168,76,0.05);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-style: italic;
+    color: rgba(201,168,76,0.8);
+    line-height: 1.55;
+  }
+  .verse-ref {
+    font-size: 11px;
+    color: rgba(201,168,76,0.45);
+    margin-top: 4px;
+    font-style: normal;
+  }
+
+  /* ── Chip / pill ── */
+  .chip {
+    display: inline-block;
+    background: rgba(201,168,76,0.1);
+    border: 0.5px solid rgba(201,168,76,0.25);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #c9a84c;
+    margin: 2px;
+  }
+  .chip-sage {
+    display: inline-block;
+    background: rgba(143,187,153,0.12);
+    border: 0.5px solid rgba(143,187,153,0.25);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #8fbb99;
+    margin: 2px;
+  }
+
+  /* ── Selection option ── */
+  .option {
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: rgba(245,240,232,0.7);
+    margin-bottom: 6px;
+  }
+  .option-selected {
+    background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.35);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #c9a84c;
+    margin-bottom: 6px;
+  }
+
+  /* ── Grid for fruit/habits ── */
+  .fg {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .fg-item {
+    background: rgba(143,187,153,0.08);
+    border: 0.5px solid rgba(143,187,153,0.2);
+    border-radius: 10px;
+    padding: 10px 4px;
+    text-align: center;
+    font-size: 11px;
+    color: rgba(245,240,232,0.7);
+  }
+  .fg-icon { font-size: 18px; margin-bottom: 3px; }
+
+  /* ── Habit grid ── */
+  .hg {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .hg-item {
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 11px;
+    color: rgba(245,240,232,0.7);
+  }
+
+  /* ── Comparison table ── */
+  .cmp {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 8px 0;
+  }
+  .cmp-bad {
+    background: rgba(255,80,80,0.06);
+    border: 0.5px solid rgba(255,80,80,0.2);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+    font-size: 11px;
+    color: rgba(245,240,232,0.5);
+  }
+  .cmp-good {
+    background: rgba(143,187,153,0.08);
+    border: 0.5px solid rgba(143,187,153,0.25);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+    font-size: 11px;
+    color: #8fbb99;
+  }
+  .cmp-label { font-size: 10px; opacity: 0.5; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .cmp-big { font-size: 20px; font-weight: 700; }
+
+  /* ── Toggle row ── */
+  .toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 0.5px solid rgba(255,255,255,0.07);
+  }
+  .toggle {
+    width: 36px;
+    height: 20px;
+    background: #c9a84c;
+    border-radius: 10px;
+    position: relative;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    right: 3px;
+    top: 3px;
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+  }
+
+  /* ── Paywall plan row ── */
+  .plan {
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: rgba(245,240,232,0.7);
+  }
+  .plan-selected {
+    background: rgba(201,168,76,0.1);
+    border: 1.5px solid rgba(201,168,76,0.5);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #c9a84c;
+  }
+  .plan-badge {
+    background: #c9a84c;
+    color: #12121f;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+
+  /* ── Feature compare row ── */
+  .feat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 0.5px solid rgba(255,255,255,0.05);
+    font-size: 11px;
+    color: rgba(245,240,232,0.6);
+  }
+  .check { color: #8fbb99; }
+  .cross { color: rgba(255,255,255,0.2); }
+
+  /* ── Habit tile ── */
+  .habit-tile {
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .habit-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(201,168,76,0.1);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Progress dots ── */
+  .dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 0;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.15); }
+  .dot.active { background: #c9a84c; width: 18px; }
+
+  /* ── Header image area ── */
+  .img-header {
+    height: 90px;
+    background: linear-gradient(180deg, rgba(201,168,76,0.15) 0%, rgba(201,168,76,0.05) 60%, transparent 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    margin: -48px -20px 16px;
+    padding-top: 48px;
+  }
+
+  /* ── Input field ── */
+  .input {
+    background: rgba(255,255,255,0.06);
+    border: 0.5px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: rgba(245,240,232,0.35);
+    margin-bottom: 8px;
+  }
+
+  /* ── Security row ── */
+  .sec-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  /* ── Ceremony offering list ── */
+  .offering-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 0.5px solid rgba(255,255,255,0.06);
+    font-size: 12px;
+    color: rgba(245,240,232,0.7);
+  }
+
+  /* Scrollbar hide */
+  ::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+<h1>MyWalk — Onboarding Screen Mockups</h1>
+<div class="grid">
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 0 — WELCOME
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 0 — Welcome</div>
+    <div class="phone">
+      <div class="screen-content" style="background: radial-gradient(ellipse at 50% 60%, rgba(201,168,76,0.12) 0%, transparent 70%);">
+        <div class="spacer"></div>
+        <div style="text-align:center; padding: 0 16px;">
+          <div style="width:200px; height:200px; background: radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%); border-radius:50%; margin:0 auto 8px; display:flex; align-items:center; justify-content:center;">
+            <div class="t-app t-gold" style="text-shadow: 0 0 30px rgba(201,168,76,0.5);">MyWalk</div>
+          </div>
+          <div class="sp2"></div>
+          <div class="t-body t-gold t-italic" style="font-size:13px; opacity:0.85;">Track your habits &amp; daily activities.<br>Walk daily with the Lord.</div>
+          <div class="sp6"></div>
+          <div class="verse" style="text-align:left;">
+            "Offer your bodies as a living sacrifice, holy and pleasing to God — this is your true and proper worship."
+            <div class="verse-ref">Romans 12:1</div>
+          </div>
+        </div>
+        <div class="spacer"></div>
+        <div style="padding: 0 16px;">
+          <div class="btn">Let's begin →</div>
+        </div>
+        <div class="sp4"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 1 — SIGN IN
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 1 — Sign In</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div style="flex:1; overflow:hidden;">
+          <div style="text-align:center; padding-top: 8px;">
+            <div style="width:80px; height:80px; background: radial-gradient(circle, rgba(201,168,76,0.2) 0%, rgba(201,168,76,0.04) 100%); border-radius:50%; margin:0 auto; display:flex; align-items:center; justify-content:center;">
+              <div style="font-size:28px;">🔓</div>
+            </div>
+            <div class="sp4"></div>
+            <div class="t-h1 t-center">Your walk,<br>always with you.</div>
+            <div class="sp4"></div>
+            <div class="t-body t-center" style="font-size:13px;">Sign in so your habits &amp; activities and progress are safely backed up and available on any device.</div>
+            <div class="sp4"></div>
+            <div class="card">
+              <div class="sec-row">
+                <div style="color: rgba(201,168,76,0.7); font-size:14px; padding-top:1px;">🔒</div>
+                <div class="t-small" style="font-size:11px;">We never share your data. All data outside of your device is encrypted and unreadable. Sign-in is used only to keep your habits &amp; activities safe and synced across your devices.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="btn" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span>🍎</span> Continue with Apple
+          </div>
+          <div class="sp2"></div>
+          <div class="t-small t-center" style="margin-top:8px;">By continuing you agree to our <span style="color:#c9a84c; text-decoration:underline;">Terms of Service and Privacy Policy</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 2 — IDENTITY
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 2 — Identity</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div class="t-h1">What is God working on in your life right now?</div>
+        <div class="sp2"></div>
+        <div class="t-body" style="font-size:12px;">This helps us personalise your verses and encouragement.</div>
+        <div class="sp4"></div>
+        <div class="option-selected">Taking better care of my body</div>
+        <div class="option">Getting into God's Word more</div>
+        <div class="option">Breaking a habit that's holding me back</div>
+        <div class="option">Learning to actually rest</div>
+        <div class="option">Building discipline as an act of worship</div>
+        <div class="spacer"></div>
+        <div class="btn">That's me</div>
+        <div class="btn-outline">Skip for now</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 3 — REFRAME
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 3 — Reframe</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div class="t-h1">MyWalk works a bit differently.</div>
+        <div class="sp4"></div>
+        <div class="cmp">
+          <div class="cmp-bad">
+            <div class="cmp-label">OTHER APPS</div>
+            <div class="cmp-big" style="color:rgba(255,100,100,0.7);">Day 47</div>
+            <div style="font-size:10px; color:rgba(255,100,100,0.6);">Streak broken.</div>
+          </div>
+          <div class="cmp-good">
+            <div class="cmp-label">MYWALK</div>
+            <div class="cmp-big">5 out of 7</div>
+            <div style="font-size:10px;">Great week.</div>
+          </div>
+        </div>
+        <div class="sp2"></div>
+        <div class="t-body" style="font-size:12px;">Most apps track your performance. MyWalk tracks what you're giving to God.</div>
+        <div class="sp2"></div>
+        <div class="t-body" style="font-size:12px;">No streaks. Every week is a fresh start. 5 out of 7 is still a gift.</div>
+        <div class="sp2"></div>
+        <div class="t-body" style="font-size:12px;">We'll never tell you that you failed. We'll meet you wherever you are.</div>
+        <div class="sp4"></div>
+        <div class="verse">"The steadfast love of the Lord never ceases; his mercies never come to an end; they are new every morning."<div class="verse-ref">Lamentations 3:22–23</div></div>
+        <div class="spacer"></div>
+        <div class="btn">Got it. Let's set up my habits</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 4 — FIRST GRATITUDE
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 4 — First Gratitude</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div class="t-h1">Every journey starts with gratitude.</div>
+        <div class="sp4"></div>
+        <div class="t-body" style="font-size:12px;">Your first habit is already set — a daily moment to thank God for something. It takes a few seconds. It changes everything.</div>
+        <div class="sp4"></div>
+        <div class="t-body" style="font-size:12px; color: rgba(245,240,232,0.8);">Let's do your first one right now.</div>
+        <div class="sp4"></div>
+        <div class="t-body" style="font-size:13px; font-weight:600; color:rgba(245,240,232,0.85);">What's one thing you're grateful to God for today?</div>
+        <div class="sp2"></div>
+        <div class="input">Something you're thankful for…</div>
+        <div class="spacer"></div>
+        <div class="btn">Thank you, Lord 🙏</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 5 — HABIT SELECTION
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 5 — Habit Selection</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div class="t-h1">Now pick your own habit.</div>
+        <div class="sp2"></div>
+        <div class="t-body" style="font-size:12px;">Gratitude is set. What else do you want to give to God this season?</div>
+        <div class="sp2"></div>
+        <div class="t-small t-gold">Pick 1 to start. You can add more later.</div>
+        <div class="sp4"></div>
+        <div class="hg">
+          <div class="hg-item">🏃 Exercise</div>
+          <div class="hg-item">📖 Scripture</div>
+          <div class="hg-item">😴 Rest</div>
+          <div class="hg-item">🌿 Fasting</div>
+          <div class="hg-item">📚 Study</div>
+          <div class="hg-item">🤝 Service</div>
+          <div class="hg-item">💬 Connection</div>
+          <div class="hg-item">❤️ Health</div>
+        </div>
+        <div class="sp2"></div>
+        <div class="option" style="font-size:11px;">✋ I'm letting go of something<br><span style="opacity:0.45; font-size:10px;">Break a bad habit with God's help</span></div>
+        <div class="option" style="font-size:11px;">✏️ Something else entirely<br><span style="opacity:0.45; font-size:10px;">Create a fully custom habit</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 6 — HABIT SETUP
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 6 — Habit Setup</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div style="overflow-y:auto; flex:1;">
+          <div class="t-small t-gold" style="letter-spacing:1px; margin-bottom:4px;">HABIT NAME</div>
+          <div class="input">e.g. Morning run</div>
+          <div class="t-small t-gold" style="letter-spacing:1px; margin-bottom:4px; margin-top:8px;">YOUR WHY <span style="background:#c9a84c; color:#12121f; font-size:9px; padding:1px 5px; border-radius:4px; font-weight:700; vertical-align:middle; margin-left:4px;">PRO</span></div>
+          <div class="input">Your purpose for this habit…</div>
+          <div class="t-small t-gold" style="letter-spacing:1px; margin-bottom:4px; margin-top:8px;">YOUR ANCHOR VERSE</div>
+          <div class="verse" style="font-size:11px;">"I can do all things through Christ who strengthens me."<div class="verse-ref">Philippians 4:13</div></div>
+          <div class="t-small t-gold" style="letter-spacing:1px; margin-bottom:4px; margin-top:8px;">TRACKING</div>
+          <div style="display:flex; gap:6px; margin-bottom:8px;">
+            <div class="chip-sage">Yes/No</div>
+            <div class="chip" style="background:transparent; border-color:rgba(255,255,255,0.1); color:rgba(245,240,232,0.4);">Timed</div>
+            <div class="chip" style="background:transparent; border-color:rgba(255,255,255,0.1); color:rgba(245,240,232,0.4);">Count</div>
+          </div>
+          <div class="t-small t-gold" style="letter-spacing:1px; margin-bottom:4px;">ACTIVE DAYS</div>
+          <div style="display:flex; gap:4px; margin-bottom:8px;">
+            <div class="chip-sage" style="padding:5px 8px; font-size:10px;">M</div>
+            <div class="chip-sage" style="padding:5px 8px; font-size:10px;">T</div>
+            <div class="chip-sage" style="padding:5px 8px; font-size:10px;">W</div>
+            <div class="chip-sage" style="padding:5px 8px; font-size:10px;">T</div>
+            <div class="chip-sage" style="padding:5px 8px; font-size:10px;">F</div>
+            <div class="chip" style="padding:5px 8px; font-size:10px; background:transparent; border-color:rgba(255,255,255,0.1); color:rgba(245,240,232,0.3);">S</div>
+            <div class="chip" style="padding:5px 8px; font-size:10px; background:transparent; border-color:rgba(255,255,255,0.1); color:rgba(245,240,232,0.3);">S</div>
+          </div>
+          <div class="t-small t-gold" style="letter-spacing:1px; margin-bottom:4px;">TRIGGER</div>
+          <div class="t-small" style="margin-bottom:4px;">Anchor it to something you already do.</div>
+          <div class="input" style="font-size:11px;">Or type your own trigger…</div>
+        </div>
+        <div class="btn" style="margin-top:8px;">Set this habit</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 7 — HABIT SUMMARY
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 7 — Habit Summary</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div class="t-h1">Your MyWalk habits</div>
+        <div class="sp2"></div>
+        <div class="t-body" style="font-size:12px;">Looks good? You can change any of this later.</div>
+        <div class="sp4"></div>
+        <div class="habit-tile">
+          <div class="habit-icon">🙏</div>
+          <div>
+            <div style="font-size:13px; font-weight:600; color:#f5f0e8;">Daily Gratitude</div>
+            <div style="font-size:11px; color:rgba(245,240,232,0.4);">Check-in · Already completed today</div>
+          </div>
+        </div>
+        <div class="habit-tile">
+          <div class="habit-icon">🏃</div>
+          <div>
+            <div style="font-size:13px; font-weight:600; color:#f5f0e8;">Morning Run</div>
+            <div style="font-size:11px; color:rgba(245,240,232,0.4);">Timed · 30 min · Mon–Fri</div>
+            <div style="font-size:11px; color:rgba(201,168,76,0.5); margin-top:2px; font-style:italic;">To honour the body God gave me</div>
+          </div>
+        </div>
+        <div class="spacer"></div>
+        <div class="btn">Let's go 🚀</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 8 — FRUIT INTRO
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 8 — Fruit Intro</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div class="t-h1">Habits aren't the goal.</div>
+        <div class="sp4"></div>
+        <div class="t-body" style="font-size:12px;">The goal is who you're becoming. In Galatians, Paul describes the fruit of a life connected to God's Spirit:</div>
+        <div class="sp4"></div>
+        <div class="fg">
+          <div class="fg-item"><div class="fg-icon">❤️</div>Love</div>
+          <div class="fg-item"><div class="fg-icon">😊</div>Joy</div>
+          <div class="fg-item"><div class="fg-icon">☮️</div>Peace</div>
+          <div class="fg-item"><div class="fg-icon">⏳</div>Patience</div>
+          <div class="fg-item"><div class="fg-icon">🤗</div>Kindness</div>
+          <div class="fg-item"><div class="fg-icon">✨</div>Goodness</div>
+          <div class="fg-item"><div class="fg-icon">🤝</div>Faithfulness</div>
+          <div class="fg-item"><div class="fg-icon">🕊️</div>Gentleness</div>
+          <div class="fg-item"><div class="fg-icon">💪</div>Self-control</div>
+        </div>
+        <div class="sp4"></div>
+        <div class="t-body t-center t-italic" style="font-size:12px; color:rgba(201,168,76,0.7);">Your habits are how you tend the soil.<br>The Spirit grows the fruit.</div>
+        <div class="spacer"></div>
+        <div class="btn">Continue</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 9 — FRUIT TAGGING
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 9 — Fruit Tagging</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div class="t-h1">Connect your habits to the fruit.</div>
+        <div class="sp2"></div>
+        <div class="t-body" style="font-size:12px;">See which fruits your habits are cultivating. You can always change this later.</div>
+        <div class="sp4"></div>
+        <div class="card" style="margin-bottom:8px;">
+          <div style="font-size:13px; font-weight:600; color:#f5f0e8; margin-bottom:8px;">🙏 Daily Gratitude</div>
+          <div><span class="chip-sage" style="font-size:10px;">Joy</span> <span class="chip-sage" style="font-size:10px;">Peace</span> <span class="chip-sage" style="font-size:10px;">Faithfulness</span></div>
+        </div>
+        <div class="card">
+          <div style="font-size:13px; font-weight:600; color:#f5f0e8; margin-bottom:8px;">🏃 Morning Run</div>
+          <div><span class="chip-sage" style="font-size:10px;">Self-control</span> <span class="chip" style="font-size:10px; background:rgba(201,168,76,0.08);">Goodness</span></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="btn">Continue</div>
+        <div class="btn-outline">I'll do this later</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 10 — CORE MECHANICS (panel 1 shown)
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 10 — Core Mechanics</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <!-- Panel 1 shown -->
+        <div style="flex:1; display:flex; flex-direction:column;">
+          <div style="text-align:center; padding: 8px 0 12px;">
+            <div class="t-small t-gold" style="letter-spacing:2px; margin-bottom:6px;">PANEL 1 OF 3 — WEEKLY RHYTHM</div>
+          </div>
+          <div class="t-h1">Every week is an offering, not a scorecard.</div>
+          <div class="sp4"></div>
+          <div class="t-body" style="font-size:12px;">Every Sunday you set your intention. Monday through Saturday you check in — each one is a small gift to God. The next Sunday you look back. 5 out of 7? That's a beautiful week.</div>
+          <div class="sp4"></div>
+          <div class="verse">"Because of the Lord's great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness."<div class="verse-ref">Lamentations 3:22–23</div></div>
+          <div class="spacer"></div>
+          <div class="t-small t-center" style="margin-bottom:6px; opacity:0.4;">swipe to continue →</div>
+          <!-- Panels 2 & 3 summary -->
+          <div class="card" style="font-size:11px; color:rgba(245,240,232,0.4); margin-bottom:6px;">Panel 2: "Every minute counts. Every day counts." — 247 minutes given — Colossians 3:23</div>
+          <div class="card" style="font-size:11px; color:rgba(245,240,232,0.4);">Panel 3: "You're not doing this alone." — Prayer Circles — James 5:16 → <strong style="color:#c9a84c;">Continue</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 11 — NOTIFICATIONS
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 11 — Notifications</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div>
+        </div>
+        <div style="text-align:center; padding: 8px 0;">
+          <div style="font-size:36px;">🔔</div>
+        </div>
+        <div class="t-h1 t-center">Stay on track, gently.</div>
+        <div class="sp4"></div>
+        <div class="t-body t-center" style="font-size:12px;">We'll send a gentle nudge — never guilt. Just a quiet reminder that your walk is waiting.</div>
+        <div class="sp6"></div>
+        <div class="toggle-row">
+          <div>
+            <div style="font-size:13px; font-weight:600; color:#f5f0e8;">Daily Reminders</div>
+            <div class="t-small">A small prompt at the time you choose</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+        <div class="sp2"></div>
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="t-body" style="font-size:12px;">Remind me at</div>
+          <div style="font-size:13px; font-weight:600; color:#c9a84c;">8:00 AM · tap to change</div>
+        </div>
+        <div class="sp2"></div>
+        <div class="t-small t-center">You can change this anytime in Settings.</div>
+        <div class="sp4"></div>
+        <div class="verse">"Commit to the Lord whatever you do, and he will establish your plans."<div class="verse-ref">Proverbs 16:3</div></div>
+        <div class="spacer"></div>
+        <div class="btn">Enable Reminders</div>
+        <div class="btn-outline">Skip for now</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 12 — PAYWALL
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 12 — Paywall</div>
+    <div class="phone">
+      <div class="screen-content">
+        <div class="dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div>
+        </div>
+        <div class="t-h2 t-center" style="font-size:18px;">Go deeper with<br><span class="t-gold">MyWalk Pro</span></div>
+        <div class="sp2"></div>
+        <div class="t-body t-center" style="font-size:11px;">Everything you need to build lasting habits rooted in faith.</div>
+        <div class="sp4"></div>
+        <!-- Feature compare -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:8px;">
+          <div style="text-align:center; font-size:10px; color:rgba(245,240,232,0.4); letter-spacing:1px; font-weight:600;">FREE</div>
+          <div style="text-align:center; font-size:10px; color:#c9a84c; letter-spacing:1px; font-weight:600;">PRO ✦</div>
+        </div>
+        <div class="feat-row"><span>Daily Gratitude</span><span class="check">✓</span></div>
+        <div class="feat-row"><span>2 Custom Habits</span><span class="cross">✓</span></div>
+        <div class="feat-row"><span>Unlimited Habits</span><span class="check">✓</span></div>
+        <div class="feat-row"><span>Custom Purpose Statements</span><span class="check">✓</span></div>
+        <div class="feat-row"><span>Recovery Path &amp; Partner</span><span class="check">✓</span></div>
+        <div class="feat-row"><span>52-Week Year in MyWalk</span><span class="check">✓</span></div>
+        <div class="sp4"></div>
+        <div class="plan">Monthly <span style="color:rgba(245,240,232,0.4);">$4.99 / month</span></div>
+        <div class="plan-selected">Yearly · 7-day free trial <span class="plan-badge">SAVE 33%</span></div>
+        <div class="plan">Lifetime <span style="color:rgba(245,240,232,0.4);">one-time · never expires</span></div>
+        <div class="sp2"></div>
+        <div class="btn">Start Free Trial</div>
+        <div class="btn-outline">Continue with Free</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SCREEN 13 — DEDICATION CEREMONY
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 13 — Dedication Ceremony</div>
+    <div class="phone">
+      <div class="screen-content" style="background: radial-gradient(ellipse at 50% 30%, rgba(201,168,76,0.08) 0%, transparent 60%);">
+        <div class="t-h2 t-gold t-center" style="font-size:13px; letter-spacing:2px; font-weight:400; margin-bottom:4px;">YOUR WALK</div>
+        <div class="t-body t-center" style="font-size:12px;">Everything you've set — offered to God.</div>
+        <div class="sp4"></div>
+        <div class="offering-item">🙏 <span style="font-weight:600;">Daily Gratitude</span></div>
+        <div class="offering-item">🏃 <span style="font-weight:600;">Morning Run</span> <span style="font-size:10px; color:rgba(245,240,232,0.35);">30 min · Mon–Fri</span></div>
+        <div class="sp4"></div>
+        <div class="verse" style="font-size:11px;">"Therefore, I urge you, brothers and sisters, in view of God's mercy, to offer your bodies as a living sacrifice, holy and pleasing to God — this is your true and proper worship."<div class="verse-ref">Romans 12:1</div></div>
+        <div class="sp2"></div>
+        <div class="card-gold" style="font-size:11px; color:rgba(245,240,232,0.55);">
+          Starting mid-week? No problem. Your first full Sunday cycle begins this coming Sunday.
+        </div>
+        <div class="sp2"></div>
+        <div class="card" style="font-size:11px; color:rgba(245,240,232,0.5);">If you hit your targets this week:<br><span style="color:#8fbb99;">7 days of gratitude + 5 runs</span></div>
+        <div class="spacer"></div>
+        <div class="btn">Begin My Walk</div>
+        <div class="sp2"></div>
+        <!-- Post-ceremony state note -->
+        <div class="t-small t-center" style="margin-top:4px;">→ After tap: "Your walk is set." / "Want to invite a few people to walk with you?" / <strong style="color:#c9a84c;">Enter MyWalk</strong></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

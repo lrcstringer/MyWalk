@@ -1,12 +1,27 @@
 import '../entities/accountability_partnership.dart';
 import '../entities/partner_message.dart';
 
+class InviteResult {
+  final String shareUrl;
+  final String shortCode;
+  final bool inAppSent;
+
+  const InviteResult({
+    required this.shareUrl,
+    required this.shortCode,
+    required this.inAppSent,
+  });
+}
+
 abstract class AccountabilityRepository {
-  /// Creates a new partnership doc and returns the share URL.
-  Future<String> createInvite({
+  /// Creates a new partnership doc and returns invite details.
+  /// [recipientEmail] is optional — if the email belongs to a MyWalk user an
+  /// in-app notification is written to their inbox automatically.
+  Future<InviteResult> createInvite({
     required String habitId,
     required String habitName,
     required String ownerDisplayName,
+    String? recipientEmail,
   });
 
   /// Accepts a pending partnership via its invite token.
@@ -45,4 +60,8 @@ abstract class AccountabilityRepository {
   /// Looks up a partnership by invite token (for the acceptance screen).
   /// Returns null if not found or already used.
   Future<AccountabilityPartnership?> findByToken(String token);
+
+  /// Looks up a pending partnership by its 6-character short code.
+  /// Returns null if not found or already used.
+  Future<AccountabilityPartnership?> findByShortCode(String code);
 }

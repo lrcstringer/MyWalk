@@ -167,14 +167,17 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                 _header(accentColor),
                 const SizedBox(height: 8),
                 _trackingUI(accentColor),
-                if (_isCompleted && _completionVerse != null) ...[
+                if (_habit.category == HabitCategory.gratitude) ...[
+                  const SizedBox(height: 12),
+                  _gratitudeVersesSection(),
+                ] else if (_isCompleted && _completionVerse != null) ...[
                   const SizedBox(height: 12),
                   _verseSection(),
                 ],
                 if (isAbstain && !widget.isRetroactive) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   _partnerStrip(context),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   _rpStrip(context),
                 ],
               ],
@@ -356,32 +359,123 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
             ? null
             : () async {
                 final messenger = ScaffoldMessenger.of(context);
+                // Step 1 — collect recipient's email (optional).
+                final emailController = TextEditingController();
+                final email = await showDialog<String?>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: MyWalkColor.charcoal,
+                    title: const Text('Invite a prayer partner',
+                        style: TextStyle(
+                            color: MyWalkColor.warmWhite,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16)),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Enter their MyWalk email address and they\'ll receive an in-app notification immediately.',
+                          style: TextStyle(
+                              color: MyWalkColor.warmWhite, fontSize: 13, height: 1.5),
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: 'their@email.com (optional)',
+                            hintStyle: TextStyle(
+                                color: MyWalkColor.warmWhite.withValues(alpha: 0.35),
+                                fontSize: 13),
+                            enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: MyWalkColor.warmWhite.withValues(alpha: 0.2))),
+                            focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: MyWalkColor.sage)),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No email? We\'ll create a link you can share via WhatsApp, email, or SMS.',
+                          style: TextStyle(
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                              fontSize: 11,
+                              height: 1.4),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text('Cancel',
+                            style: TextStyle(
+                                color: MyWalkColor.warmWhite.withValues(alpha: 0.5))),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(ctx, emailController.text.trim()),
+                        child: const Text('Continue',
+                            style: TextStyle(color: MyWalkColor.sage)),
+                      ),
+                    ],
+                  ),
+                );
+                emailController.dispose();
+                // null = user tapped Cancel; empty string = skipped email field
+                if (email == null || !mounted) return;
                 try {
-                  final url = await accountabilityProv.createInvite(
+                  final result = await accountabilityProv.createInvite(
                     habitId: _habit.id,
                     habitName: _habit.name,
+                    recipientEmail: email.isEmpty ? null : email,
                   );
                   if (!mounted) return;
-                  await Share.share(
-                    'Walk with me on MyWalk — tap to become my prayer partner: $url',
-                  );
+                  if (result.inAppSent) {
+                    // In-app notification delivered — confirm to owner.
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Invitation sent! They\'ll see it in their MyWalk notifications. '
+                          'Share code as backup: ${result.shortCode}',
+                        ),
+                        duration: const Duration(seconds: 6),
+                      ),
+                    );
+                  } else {
+                    // No MyWalk account found — share the link.
+                    await Share.share(
+                      'Please walk with me on my journey — open MyWalk on your phone '
+                      'and accept my prayer partner invite. If you don\'t have MyWalk, '
+                      'download it and tap this link: ${result.shareUrl}\n\n'
+                      'Or enter code ${result.shortCode} in the app.',
+                    );
+                  }
                 } catch (_) {
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Could not create invite. Try again.')),
+                    const SnackBar(
+                        content: Text('Could not create invite. Try again.')),
                   );
                 }
               },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: MyWalkColor.warmWhite.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Row(children: [
-            Icon(Icons.add_rounded, size: 12,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
-            const SizedBox(width: 4),
-            Text(
-              accountabilityProv.isLoading ? 'Creating invite…' : 'Add a prayer partner',
-              style: TextStyle(
-                  fontSize: 10,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+            Icon(Icons.add_rounded, size: 14,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.55)),
+            const SizedBox(width: 5),
+            Expanded(
+              child: Text(
+                accountabilityProv.isLoading ? 'Creating invite…' : 'Add a support/prayer partner',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.55)),
+              ),
             ),
           ]),
         ),
@@ -389,16 +483,22 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     }
 
     if (partnership.status == PartnershipStatus.pending) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: MyWalkColor.warmWhite.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Row(children: [
-          Icon(Icons.hourglass_top_rounded, size: 12,
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.35)),
-          const SizedBox(width: 4),
-          Text('Waiting for partner…',
-              style: TextStyle(
-                  fontSize: 11,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.35))),
+          Icon(Icons.hourglass_top_rounded, size: 14,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.45)),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text('Waiting for partner…',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.45))),
+          ),
         ]),
       );
     }
@@ -410,20 +510,23 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         arguments: partnership,
       ),
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: MyWalkColor.warmWhite.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Row(children: [
-          const Icon(Icons.handshake_rounded, size: 12, color: MyWalkColor.sage),
+          const Icon(Icons.handshake_rounded, size: 14, color: MyWalkColor.sage),
           const SizedBox(width: 5),
-          Text(
-            'Reach out to ${partnership.partnerDisplayName ?? 'your partner'}',
-            style: TextStyle(
-                fontSize: 11,
-                color: MyWalkColor.sage.withValues(alpha: 0.8)),
+          Expanded(
+            child: Text(
+              'Reach out to ${partnership.partnerDisplayName ?? 'your partner'}',
+              style: TextStyle(fontSize: 12, color: MyWalkColor.sage.withValues(alpha: 0.9)),
+            ),
           ),
-          const SizedBox(width: 3),
           Icon(Icons.chevron_right_rounded,
-              size: 12, color: MyWalkColor.sage.withValues(alpha: 0.5)),
+              size: 14, color: MyWalkColor.sage.withValues(alpha: 0.5)),
         ]),
       ),
     );
@@ -461,15 +564,21 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
       return GestureDetector(
         onTap: openRP,
         behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: purple.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Row(children: [
-            const Icon(Icons.route_rounded, size: 11, color: purple),
-            const SizedBox(width: 4),
-            Text('Recovery Path — Begin ›',
-                style: TextStyle(
-                    fontSize: 10,
-                    color: purple.withValues(alpha: 0.7))),
+            const Icon(Icons.route_rounded, size: 14, color: purple),
+            const SizedBox(width: 5),
+            Expanded(
+              child: Text('Freedom Path — Begin ›',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: purple.withValues(alpha: 0.85))),
+            ),
           ]),
         ),
       );
@@ -482,24 +591,33 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     return GestureDetector(
       onTap: openRP,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: purple.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Row(children: [
-          const Icon(Icons.route_rounded, size: 11, color: purple),
-          const SizedBox(width: 4),
-          Text('Recovery Path · Phase $phase · Day $day',
-              style: TextStyle(fontSize: 10, color: purple.withValues(alpha: 0.7))),
-          if (checkInPending) ...[
-            const SizedBox(width: 5),
+          const Icon(Icons.route_rounded, size: 14, color: purple),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(
+              'Freedom Path · Phase $phase · Day $day',
+              style: TextStyle(fontSize: 12, color: purple.withValues(alpha: 0.85)),
+            ),
+          ),
+          if (checkInPending)
             Container(
-              width: 6,
-              height: 6,
+              width: 7,
+              height: 7,
               decoration: const BoxDecoration(
                 color: MyWalkColor.warmCoral,
                 shape: BoxShape.circle,
               ),
-            ),
-          ],
+            )
+          else
+            Icon(Icons.chevron_right_rounded,
+                size: 14, color: purple.withValues(alpha: 0.5)),
         ]),
       ),
     );
@@ -646,6 +764,37 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     );
   }
 
+  Widget _gratitudeVersesSection() {
+    const verses = [
+      ('The joy of the Lord is my strength', 'Nehemiah 8:10'),
+      ('I can do all things through Christ who strengthens me', 'Philippians 4:13'),
+      ('Rejoice in the Lord always and again I say rejoice', 'Philippians 4:4'),
+    ];
+    return Column(
+      children: [
+        for (int i = 0; i < verses.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          Text(
+            '\u201C${verses[i].$1}\u201D',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+              color: MyWalkColor.softGold.withValues(alpha: 0.55),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            verses[i].$2,
+            style: TextStyle(
+                fontSize: 10, color: MyWalkColor.golden.withValues(alpha: 0.4)),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _verseSection() {
     final verse = _completionVerse!;
     return Column(
@@ -679,7 +828,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
       case HabitTrackingType.checkIn:
         return '${_habit.totalCompletedDays()} days total';
       case HabitTrackingType.abstain:
-        return 'Clean day \u2713';
+        return 'I walked freely today \u2713';
     }
   }
 
@@ -696,6 +845,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
       case HabitCategory.connection: return Icons.people;
       case HabitCategory.health: return Icons.favorite;
       case HabitCategory.abstain: return Icons.shield_rounded;
+      case HabitCategory.prayer: return Icons.self_improvement_rounded;
       case HabitCategory.custom: return Icons.star;
     }
   }

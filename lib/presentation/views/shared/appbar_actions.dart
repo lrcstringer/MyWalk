@@ -11,7 +11,7 @@ List<Widget> standardAppBarActions(BuildContext context) {
   final iconColor = MyWalkColor.warmWhite.withValues(alpha: 0.7);
   return [
     IconButton(
-      icon: Icon(Icons.auto_stories_outlined, color: iconColor),
+      icon: Icon(Icons.psychology, color: iconColor),
       onPressed: () => MemorizationRouter.pushHome(context),
       tooltip: 'Memorization',
     ),

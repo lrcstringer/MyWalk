@@ -111,6 +111,7 @@ enum HabitCategory {
   connection('Connection'),
   health('Health & Nourishment'),
   abstain('Breaking a Bad Habit'),
+  prayer('Prayer'),
   custom('Custom'),
   gratitude('Gratitude');
 
@@ -150,6 +151,8 @@ enum HabitCategory {
         return 'sparkles';
       case gratitude:
         return 'hands.sparkles.fill';
+      case prayer:
+        return 'hands.sparkles.fill';
     }
   }
 
@@ -177,6 +180,8 @@ enum HabitCategory {
         return 'Whatever you do, do it all for the glory of God.';
       case gratitude:
         return 'Every good gift comes from above.';
+      case prayer:
+        return 'Prayer is where my walk with God begins and ends.';
     }
   }
 
@@ -197,6 +202,8 @@ enum HabitCategory {
         return HabitTrackingType.count;
       case abstain:
         return HabitTrackingType.abstain;
+      case prayer:
+        return HabitTrackingType.timed;
     }
   }
 }

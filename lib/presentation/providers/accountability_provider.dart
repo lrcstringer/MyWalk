@@ -115,10 +115,13 @@ class AccountabilityProvider extends ChangeNotifier {
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
-  /// Creates an invite and returns the share URL.
-  Future<String> createInvite({
+  /// Creates an invite and returns [InviteResult] with shareUrl, shortCode,
+  /// and inAppSent flag. [recipientEmail] is optional — when provided and the
+  /// email belongs to a MyWalk user, an in-app notification is sent to them.
+  Future<InviteResult> createInvite({
     required String habitId,
     required String habitName,
+    String? recipientEmail,
   }) async {
     _loading = true;
     error = null;
@@ -129,6 +132,7 @@ class AccountabilityProvider extends ChangeNotifier {
         habitId: habitId,
         habitName: habitName,
         ownerDisplayName: displayName,
+        recipientEmail: recipientEmail,
       );
     } catch (e) {
       error = e.toString();
@@ -188,4 +192,7 @@ class AccountabilityProvider extends ChangeNotifier {
 
   Future<AccountabilityPartnership?> findByToken(String token) =>
       _repo.findByToken(token);
+
+  Future<AccountabilityPartnership?> findByShortCode(String code) =>
+      _repo.findByShortCode(code);
 }

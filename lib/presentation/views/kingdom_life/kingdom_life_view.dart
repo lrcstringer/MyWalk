@@ -23,6 +23,14 @@ class KingdomLifeView extends StatelessWidget {
             expandedHeight: 240,
             pinned: true,
             automaticallyImplyLeading: false,
+            title: const Text(
+              'MyWalk',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
             actions: standardAppBarActions(context),
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,

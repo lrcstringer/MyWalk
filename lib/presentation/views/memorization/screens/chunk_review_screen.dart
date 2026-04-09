@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../data/services/chunking_service.dart';
 import '../../../../domain/entities/memorization_item.dart';
 import '../../../../domain/utils/hint_generator.dart';
+import '../../../../presentation/providers/memorization_provider.dart';
 import '../../../../presentation/theme/app_theme.dart';
 import 'initial_memorization_screen.dart';
 
 class ChunkReviewScreen extends StatefulWidget {
   final MemorizationItem item;
-  final void Function(MemorizationItem confirmedItem) onConfirmed;
 
   const ChunkReviewScreen({
     super.key,
     required this.item,
-    required this.onConfirmed,
   });
 
   @override
@@ -75,31 +75,34 @@ class _ChunkReviewScreenState extends State<ChunkReviewScreen> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                if (_chunks.length >= kMaxChunks)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      'Maximum $kMaxChunks phrases reached',
-                      style: TextStyle(
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
-                        fontSize: 12,
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  if (_chunks.length >= kMaxChunks)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Maximum $kMaxChunks phrases reached',
+                        style: TextStyle(
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                          fontSize: 12,
+                        ),
                       ),
                     ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: MyWalkButtonStyle.primary(),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: const Text('Begin memorizing'),
+                      onPressed: _onBeginMemorizing,
+                    ),
                   ),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: MyWalkButtonStyle.primary(),
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('Begin memorizing'),
-                    onPressed: _onBeginMemorizing,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -201,7 +204,7 @@ class _ChunkReviewScreenState extends State<ChunkReviewScreen> {
 
   void _onBeginMemorizing() {
     final confirmed = widget.item.copyWith(chunks: _chunks);
-    widget.onConfirmed(confirmed);
+    context.read<MemorizationProvider>().createItem(confirmed);
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => InitialMemorizationScreen(item: confirmed),

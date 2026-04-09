@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../../data/datasources/remote/auth_service.dart';
 import '../../providers/encouragement_provider.dart';
 import '../../providers/milestone_share_provider.dart';
-import '../../providers/circle_habit_milestone_provider.dart';
 import '../../providers/weekly_pulse_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
@@ -16,49 +15,12 @@ class ActivityTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = AuthService.shared.userId ?? '';
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: MyWalkColor.charcoal,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(36),
-          child: TabBar(
-            labelColor: MyWalkColor.golden,
-            unselectedLabelColor: MyWalkColor.softGold,
-            indicatorColor: MyWalkColor.golden,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            tabs: const [Tab(text: 'Encouragements'), Tab(text: 'Milestones'), Tab(text: 'Pulse')],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            _EncouragementsList(circleId: circleId, uid: uid, members: members),
-            _MilestonesList(circleId: circleId, uid: uid),
-            _PulseView(circleId: circleId, uid: uid),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Encouragements ───────────────────────────────────────────────────────────
-
-class _EncouragementsList extends StatelessWidget {
-  final String circleId;
-  final String uid;
-  final List<CircleMember> members;
-  const _EncouragementsList(
-      {required this.circleId, required this.uid, required this.members});
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<EncouragementProvider>(
-      builder: (context, provider, _) {
-        final received = provider.receivedFor(circleId);
-        final sent = provider.sentFor(circleId);
-        final isLoading = provider.isLoading(circleId);
+    return Consumer2<EncouragementProvider, MilestoneShareProvider>(
+      builder: (context, encProvider, shareProvider, _) {
+        final received = encProvider.receivedFor(circleId);
+        final sent = encProvider.sentFor(circleId);
+        final shares = shareProvider.sharesFor(circleId);
+        final isLoading = encProvider.isLoading(circleId) && received.isEmpty && sent.isEmpty;
 
         return Scaffold(
           backgroundColor: MyWalkColor.charcoal,
@@ -68,35 +30,49 @@ class _EncouragementsList extends StatelessWidget {
             foregroundColor: MyWalkColor.charcoal,
             child: const Icon(Icons.favorite_rounded),
           ),
-          body: isLoading && received.isEmpty
+          body: isLoading
               ? const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
               : RefreshIndicator(
                   color: MyWalkColor.golden,
                   backgroundColor: MyWalkColor.cardBackground,
-                  onRefresh: () => provider.load(circleId),
+                  onRefresh: () => Future.wait([
+                    encProvider.load(circleId),
+                    shareProvider.load(circleId),
+                  ]),
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                     children: [
-                      if (received.isEmpty && sent.isEmpty)
+                      if (shares.isEmpty && received.isEmpty && sent.isEmpty)
                         _emptyState()
                       else ...[
+                        if (shares.isNotEmpty) ...[
+                          _sectionHeader('Milestones'),
+                          const SizedBox(height: 8),
+                          ...shares.map((s) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _MilestoneCard(share: s, uid: uid, circleId: circleId),
+                          )),
+                          const SizedBox(height: 8),
+                        ],
                         if (received.isNotEmpty) ...[
                           _sectionHeader('Received (${received.length})'),
                           const SizedBox(height: 8),
                           ...received.map((e) => Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: _EncouragementCard(
-                              enc: e, uid: uid, circleId: circleId, isReceived: true, members: members),
+                              enc: e, uid: uid, circleId: circleId,
+                              isReceived: true, members: members),
                           )),
+                          const SizedBox(height: 8),
                         ],
                         if (sent.isNotEmpty) ...[
-                          const SizedBox(height: 8),
                           _sectionHeader('Sent (${sent.length})'),
                           const SizedBox(height: 8),
                           ...sent.map((e) => Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: _EncouragementCard(
-                              enc: e, uid: uid, circleId: circleId, isReceived: false, members: members),
+                              enc: e, uid: uid, circleId: circleId,
+                              isReceived: false, members: members),
                           )),
                         ],
                       ],
@@ -113,10 +89,10 @@ class _EncouragementsList extends StatelessWidget {
     child: Column(children: [
       Icon(Icons.favorite_border_rounded, size: 40, color: Colors.white.withValues(alpha: 0.15)),
       const SizedBox(height: 12),
-      Text('No encouragements yet.',
+      Text('Nothing here yet.',
           style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
       const SizedBox(height: 6),
-      Text('Tap ♥ to send one to someone in your circle.',
+      Text('Tap ♥ to encourage someone in your circle.',
           style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.3))),
     ]),
   );
@@ -126,7 +102,7 @@ class _EncouragementsList extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.4), letterSpacing: 1.2));
 
   void _showSendSheet(BuildContext context) {
-    final otherMembers = members.where((m) => m.userId != uid).toList();
+    final otherMembers = members.where((m) => m.userId != AuthService.shared.userId).toList();
     showModalBottomSheet(
       context: context, isScrollControlled: true, useSafeArea: true,
       backgroundColor: MyWalkColor.charcoal,
@@ -134,6 +110,7 @@ class _EncouragementsList extends StatelessWidget {
     );
   }
 }
+
 
 class _EncouragementCard extends StatelessWidget {
   final Encouragement enc;
@@ -366,115 +343,6 @@ class _SendEncouragementSheetState extends State<SendEncouragementSheet> {
   }
 }
 
-// ─── Milestones ───────────────────────────────────────────────────────────────
-
-class _MilestonesList extends StatelessWidget {
-  final String circleId;
-  final String uid;
-  const _MilestonesList({required this.circleId, required this.uid});
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer2<CircleHabitMilestoneProvider, MilestoneShareProvider>(
-      builder: (context, circleProvider, shareProvider, _) {
-        final circleMilestones = circleProvider.milestonesFor(circleId);
-        final shares = shareProvider.sharesFor(circleId);
-        final isLoading = (circleProvider.isLoading(circleId) && circleMilestones.isEmpty) ||
-            (shareProvider.isLoading(circleId) && shares.isEmpty);
-
-        if (isLoading) {
-          return const Center(child: CircularProgressIndicator(color: MyWalkColor.golden));
-        }
-
-        if (circleMilestones.isEmpty && shares.isEmpty) {
-          return Center(child: Padding(
-            padding: const EdgeInsets.all(40),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.star_border_rounded, size: 40, color: Colors.white.withValues(alpha: 0.15)),
-              const SizedBox(height: 12),
-              Text('No milestones yet.',
-                  style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
-            ]),
-          ));
-        }
-
-        final items = <Widget>[
-          if (circleMilestones.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-              child: Text('Circle Milestones',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.4), letterSpacing: 0.8)),
-            ),
-            ...circleMilestones.map((m) => _CircleHabitMilestoneCard(milestone: m)),
-          ],
-          if (shares.isNotEmpty) ...[
-            Padding(
-              padding: EdgeInsets.fromLTRB(0, circleMilestones.isNotEmpty ? 20 : 4, 0, 8),
-              child: Text('Member Milestones',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.4), letterSpacing: 0.8)),
-            ),
-            ...shares.map((s) => _MilestoneCard(share: s, uid: uid, circleId: circleId)),
-          ],
-        ];
-
-        return RefreshIndicator(
-          color: MyWalkColor.golden,
-          backgroundColor: MyWalkColor.cardBackground,
-          onRefresh: () => Future.wait([
-            circleProvider.load(circleId),
-            shareProvider.load(circleId),
-          ]),
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-            itemCount: items.length,
-            separatorBuilder: (_, i) {
-              final item = items[i];
-              if (item is Padding) return const SizedBox.shrink();
-              return const SizedBox(height: 10);
-            },
-            itemBuilder: (_, i) => items[i],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _CircleHabitMilestoneCard extends StatelessWidget {
-  final CircleHabitMilestone milestone;
-  const _CircleHabitMilestoneCard({required this.milestone});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: MyWalkColor.golden.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.18), width: 0.5),
-      ),
-      child: Row(children: [
-        Container(
-          width: 44, height: 44,
-          decoration: BoxDecoration(
-              shape: BoxShape.circle, color: MyWalkColor.golden.withValues(alpha: 0.12)),
-          child: const Icon(Icons.groups_rounded, size: 20, color: MyWalkColor.golden),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Circle milestone!',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                  color: MyWalkColor.warmWhite)),
-          const SizedBox(height: 2),
-          Text(milestone.displayLabel,
-              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.55))),
-        ])),
-      ]),
-    );
-  }
-}
 
 class _MilestoneCard extends StatelessWidget {
   final MilestoneShare share;
@@ -534,8 +402,9 @@ class _MilestoneCard extends StatelessWidget {
   }
 }
 
-// ─── Pulse ────────────────────────────────────────────────────────────────────
+// ─── Pulse (tab hidden — restore by adding Tab + _PulseView to ActivityTab) ───
 
+// ignore: unused_element
 class _PulseView extends StatelessWidget {
   final String circleId;
   final String uid;

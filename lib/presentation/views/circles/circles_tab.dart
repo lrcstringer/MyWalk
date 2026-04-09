@@ -220,8 +220,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
 
   @override
   Widget build(BuildContext context) {
-    // Derive header height from the actual image dimensions (2192×824).
-    final imageHeight = MediaQuery.of(context).size.width * (824.0 / 2192.0);
+    final imageHeight = MediaQuery.of(context).size.width * (2.0 / 3.0);
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
@@ -238,6 +237,14 @@ class _CirclesListViewState extends State<_CirclesListView> {
               foregroundColor: MyWalkColor.warmWhite,
               expandedHeight: imageHeight,
               pinned: true,
+              title: const Text(
+                'MyWalk',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
               actions: standardAppBarActions(context),
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.parallax,

@@ -150,6 +150,7 @@ class _ReframeScreenState extends State<ReframeScreen> {
                   _reframePoint(Icons.favorite_rounded, 'Most apps track your performance. MyWalk tracks what you\u2019re giving to God.'),
                   _reframePoint(Icons.refresh_rounded, 'No streaks. Every week is a fresh start. 5 out of 7 is still a gift.'),
                   _reframePoint(Icons.back_hand_rounded, 'We\u2019ll never tell you that you failed. We\u2019ll meet you wherever you are.'),
+                  _reframePoint(Icons.explore_rounded, 'There\u2019s more to discover \u2014 journalling, Kingdom Life content, and community circles. Your walk starts with one step.'),
                 ]),
               ),
             ),
@@ -177,7 +178,7 @@ class _ReframeScreenState extends State<ReframeScreen> {
           child: ElevatedButton.icon(
             onPressed: _showPulse ? null : _onContinue,
             icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: const Text("Got it. Let\u2019s set up my habits",
+            label: const Text("Got it, let\u2019s get started",
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
             style: ElevatedButton.styleFrom(
               backgroundColor: MyWalkColor.golden,

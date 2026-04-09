@@ -94,6 +94,7 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
