@@ -7,6 +7,7 @@ import '../kingdom_life/how_to_pray_view.dart';
 import '../kingdom_life/women_of_valor_view.dart';
 import '../../theme/app_theme.dart';
 import '../shared/appbar_actions.dart';
+import '../help/kingdom_life_help_view.dart';
 
 class KingdomLifeView extends StatelessWidget {
   const KingdomLifeView({super.key});
@@ -31,14 +32,17 @@ class KingdomLifeView extends StatelessWidget {
                 fontSize: 20,
               ),
             ),
-            actions: standardAppBarActions(context),
+            actions: [
+              infoIconAction(context, const KingdomLifeHelpView()),
+              ...standardAppBarActions(context),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
               background: Stack(
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    'assets/Kingdom2.png',
+                    'assets/Kingdom2.webp',
                     fit: BoxFit.cover,
                   ),
                   Container(
@@ -102,7 +106,7 @@ class KingdomLifeView extends StatelessWidget {
                           SizedBox(
                             width: cardWidth,
                             child: _KingdomCard(
-                              imagePath: 'assets/fruit/Header.png',
+                              imagePath: 'assets/fruit/Header.webp',
                               title: 'Fruit of the Spirit',
                               subtitle: 'Galatians 5:22-23',
                               imageFit: BoxFit.cover,
@@ -114,7 +118,7 @@ class KingdomLifeView extends StatelessWidget {
                           SizedBox(
                             width: cardWidth,
                             child: _KingdomCard(
-                              imagePath: 'assets/Women/womenofvalor.png',
+                              imagePath: 'assets/Women/womenofvalor.webp',
                               title: 'Women of Valor',
                               subtitle: 'Proverbs 31:10',
                               onTap: () => Navigator.push(context,
@@ -129,7 +133,7 @@ class KingdomLifeView extends StatelessWidget {
                           SizedBox(
                             width: cardWidth,
                             child: _KingdomCard(
-                              imagePath: 'assets/praying.png',
+                              imagePath: 'assets/praying.webp',
                               title: 'How to Pray',
                               subtitle: 'Matthew 6:9\u201313',
                               onTap: () => Navigator.push(context,
@@ -199,7 +203,7 @@ class KingdomLifeView extends StatelessWidget {
                           SizedBox(
                             width: cardWidth,
                             child: _KingdomCard(
-                              imagePath: 'assets/parables/Header.png',
+                              imagePath: 'assets/parables/Header.webp',
                               title: 'The Parables of Jesus',
                               subtitle: 'Mark 4:30',
                               onTap: () => Navigator.push(context,
@@ -209,7 +213,7 @@ class KingdomLifeView extends StatelessWidget {
                           SizedBox(
                             width: cardWidth,
                             child: _KingdomCard(
-                              imagePath: 'assets/I Am/Header.png',
+                              imagePath: 'assets/I Am/Header.webp',
                               title: 'The \u201cI AM\u201d Sayings of Jesus',
                               subtitle: 'Gospel of John',
                               onTap: () => Navigator.push(context,

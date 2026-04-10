@@ -64,4 +64,9 @@ abstract class AccountabilityRepository {
   /// Looks up a pending partnership by its 6-character short code.
   /// Returns null if not found or already used.
   Future<AccountabilityPartnership?> findByShortCode(String code);
+
+  /// Ends/cancels all active or pending partnerships for the given habit owned
+  /// by the current user. Active ones are ended and the partner is notified.
+  /// [reason] is 'deleted' or 'archived' — passed to the Cloud Function.
+  Future<void> endPartnershipsForHabit(String habitId, {String reason = 'deleted'});
 }

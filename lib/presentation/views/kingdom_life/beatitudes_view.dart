@@ -395,7 +395,7 @@ class _BibleProjectVideoCardState extends State<_BibleProjectVideoCard> {
             Opacity(
               opacity: 0.5,
               child: Image.asset(
-                'assets/BP_logo_wht.png',
+                'assets/BP_logo_wht.webp',
                 height: 16,
               ),
             ),

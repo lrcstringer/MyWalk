@@ -18,6 +18,7 @@ import '../shared/engagement_banner_view.dart';
 import '../shared/golden_pulse_view.dart';
 import '../shared/mywalk_paywall_view.dart';
 import '../shared/appbar_actions.dart';
+import '../help/today_help_view.dart';
 import '../week/week_strip_view.dart';
 import 'widgets/category_group_header.dart';
 
@@ -140,14 +141,17 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                       fontSize: 20,
                     ),
                   ),
-                  actions: standardAppBarActions(context),
+                  actions: [
+                    infoIconAction(context, const TodayHelpView()),
+                    ...standardAppBarActions(context),
+                  ],
                   flexibleSpace: FlexibleSpaceBar(
                     collapseMode: CollapseMode.parallax,
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
                         Image.asset(
-                          'assets/crossfeet.png',
+                          'assets/crossfeet.webp',
                           fit: BoxFit.cover,
                         ),
                         Container(

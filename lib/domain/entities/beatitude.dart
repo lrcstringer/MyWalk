@@ -70,7 +70,7 @@ const List<BeatitudeModel> kBeatitudes = [
       SupportingBeatitudeVerse(text: 'Humble yourselves before the Lord, and he will exalt you.', ref: 'James 4:10'),
       SupportingBeatitudeVerse(text: 'For everyone who exalts himself will be humbled, and he who humbles himself will be exalted.', ref: 'Luke 14:11'),
     ],
-    imagePath: 'assets/beatitudes_golden_etched_separate/1_poor_in_spirit.png',
+    imagePath: 'assets/beatitudes_golden_etched_separate/1_poor_in_spirit.webp',
   ),
   BeatitudeModel(
     number: 2,
@@ -98,7 +98,7 @@ const List<BeatitudeModel> kBeatitudes = [
       SupportingBeatitudeVerse(text: 'He will wipe away every tear from their eyes, and death shall be no more, neither shall there be mourning, nor crying, nor pain anymore, for the former things have passed away.', ref: 'Revelation 21:4'),
       SupportingBeatitudeVerse(text: 'For godly grief produces a repentance that leads to salvation without regret.', ref: '2 Corinthians 7:10'),
     ],
-    imagePath: 'assets/beatitudes_golden_etched_separate/2_those_who_mourn.png',
+    imagePath: 'assets/beatitudes_golden_etched_separate/2_those_who_mourn.webp',
   ),
   BeatitudeModel(
     number: 3,
@@ -126,7 +126,7 @@ const List<BeatitudeModel> kBeatitudes = [
       SupportingBeatitudeVerse(text: 'Put on then, as God\'s chosen ones, holy and beloved, compassionate hearts, kindness, humility, meekness, and patience.', ref: 'Colossians 3:12'),
       SupportingBeatitudeVerse(text: 'But I say to you, do not resist the one who is evil. But if anyone slaps you on the right cheek, turn to him the other also.', ref: 'Matthew 5:39'),
     ],
-    imagePath: 'assets/beatitudes_golden_etched_separate/3_the_meek.png',
+    imagePath: 'assets/beatitudes_golden_etched_separate/3_the_meek.webp',
   ),
   BeatitudeModel(
     number: 4,
@@ -154,7 +154,7 @@ const List<BeatitudeModel> kBeatitudes = [
       SupportingBeatitudeVerse(text: 'Jesus said to them, \'I am the bread of life; whoever comes to me shall not hunger, and whoever believes in me shall never thirst.\'', ref: 'John 6:35'),
       SupportingBeatitudeVerse(text: 'But seek first the kingdom of God and his righteousness, and all these things will be added to you.', ref: 'Matthew 6:33'),
     ],
-    imagePath: 'assets/beatitudes_golden_etched_separate/4_hunger_and_thirst_for_righteousness.png',
+    imagePath: 'assets/beatitudes_golden_etched_separate/4_hunger_and_thirst_for_righteousness.webp',
   ),
   BeatitudeModel(
     number: 5,
@@ -182,7 +182,7 @@ const List<BeatitudeModel> kBeatitudes = [
       SupportingBeatitudeVerse(text: 'Put on then, as God\'s chosen ones, holy and beloved, compassionate hearts, kindness, humility, meekness, and patience, bearing with one another and, if one has a complaint against another, forgiving each other; as the Lord has forgiven you, so you also must forgive.', ref: 'Colossians 3:12–13'),
       SupportingBeatitudeVerse(text: 'Blessed is the one who considers the poor! In the day of trouble the Lord delivers him.', ref: 'Psalm 41:1'),
     ],
-    imagePath: 'assets/beatitudes_golden_etched_separate/5_the_merciful.png',
+    imagePath: 'assets/beatitudes_golden_etched_separate/5_the_merciful.webp',
   ),
   BeatitudeModel(
     number: 6,
@@ -210,7 +210,7 @@ const List<BeatitudeModel> kBeatitudes = [
       SupportingBeatitudeVerse(text: 'Flee youthful passions and pursue righteousness, faith, love, and peace, along with those who call on the Lord from a pure heart.', ref: '2 Timothy 2:22'),
       SupportingBeatitudeVerse(text: 'Draw near to God, and he will draw near to you. Cleanse your hands, you sinners, and purify your hearts, you double-minded.', ref: 'James 4:8'),
     ],
-    imagePath: 'assets/beatitudes_golden_etched_separate/6_pure_in_heart.png',
+    imagePath: 'assets/beatitudes_golden_etched_separate/6_pure_in_heart.webp',
   ),
   BeatitudeModel(
     number: 7,
@@ -238,7 +238,7 @@ const List<BeatitudeModel> kBeatitudes = [
       SupportingBeatitudeVerse(text: 'Let the peace of Christ rule in your hearts, to which indeed you were called in one body. And be thankful.', ref: 'Colossians 3:15'),
       SupportingBeatitudeVerse(text: 'How beautiful upon the mountains are the feet of him who brings good news, who publishes peace.', ref: 'Isaiah 52:7'),
     ],
-    imagePath: 'assets/beatitudes_golden_etched_separate/7_peacemakers.png',
+    imagePath: 'assets/beatitudes_golden_etched_separate/7_peacemakers.webp',
   ),
   BeatitudeModel(
     number: 8,
@@ -268,6 +268,6 @@ const List<BeatitudeModel> kBeatitudes = [
       SupportingBeatitudeVerse(text: 'And after you have suffered a little while, the God of all grace, who has called you to his eternal glory in Christ, will himself restore, confirm, strengthen, and establish you.', ref: '1 Peter 5:10'),
       SupportingBeatitudeVerse(text: 'So do not be ashamed of the testimony about our Lord, nor of me his prisoner, but share in suffering for the gospel by the power of God.', ref: '2 Timothy 1:8'),
     ],
-    imagePath: 'assets/beatitudes_golden_etched_separate/8_those_who_are_persecuted.png',
+    imagePath: 'assets/beatitudes_golden_etched_separate/8_those_who_are_persecuted.webp',
   ),
 ];

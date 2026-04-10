@@ -30,7 +30,7 @@ class FruitPortfolioView extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    'assets/fruit/Header.png',
+                    'assets/fruit/Header.webp',
                     fit: BoxFit.cover,
                   ),
                   Container(

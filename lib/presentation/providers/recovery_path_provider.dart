@@ -254,6 +254,21 @@ class RecoveryPathProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Delete all paths ─────────────────────────────────────────────────────
+
+  Future<void> deleteAllPaths(List<String> habitIds) async {
+    await Future.wait([
+      for (final hId in habitIds)
+        _repo.deletePath(hId).catchError((_) {}),
+    ]);
+    _paths.clear();
+    _loading.clear();
+    _errors.clear();
+    _checkInDoneToday.clear();
+    _compassDoneThisWeek.clear();
+    notifyListeners();
+  }
+
   // ── Load sessions ─────────────────────────────────────────────────────────
 
   Future<List<RecoverySession>> getSessions(

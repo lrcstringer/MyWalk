@@ -94,4 +94,30 @@ class FirestoreUserPreferencesRepository implements UserPreferencesRepository {
     // overwriting any other fields in the document.
     _doc?.set({key: FieldValue.delete()}, SetOptions(merge: true));
   }
+
+  @override
+  Future<void> clearAll({Set<String> preserve = const {}}) async {
+    // Snapshot values to preserve before clearing.
+    final saved = <String, Object>{};
+    for (final key in preserve) {
+      final v = _cache.get(key);
+      if (v != null) saved[key] = v;
+    }
+    await _cache.clear();
+    // Restore preserved values.
+    for (final entry in saved.entries) {
+      final v = entry.value;
+      if (v is int) {
+        await _cache.setInt(entry.key, v);
+      } else if (v is bool) {
+        await _cache.setBool(entry.key, v);
+      } else if (v is String) {
+        await _cache.setString(entry.key, v);
+      } else if (v is double) {
+        await _cache.setDouble(entry.key, v);
+      }
+    }
+    // Delete the Firestore prefs document so the remote store is also wiped.
+    await _doc?.delete();
+  }
 }

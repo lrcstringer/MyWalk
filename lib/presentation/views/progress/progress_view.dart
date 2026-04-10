@@ -11,6 +11,7 @@ import '../../theme/app_theme.dart';
 import '../habits/all_habits_heatmap_view.dart';
 import '../shared/mywalk_paywall_view.dart';
 import '../shared/appbar_actions.dart';
+import '../help/progress_help_view.dart';
 
 class ProgressView extends StatelessWidget {
   final WeekCycleManager weekCycleManager;
@@ -89,14 +90,17 @@ class ProgressView extends StatelessWidget {
                   fontSize: 20,
                 ),
               ),
-              actions: standardAppBarActions(context),
+              actions: [
+                infoIconAction(context, const ProgressHelpView()),
+                ...standardAppBarActions(context),
+              ],
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.parallax,
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
                     Image.asset(
-                      'assets/progress.png',
+                      'assets/progress.webp',
                       fit: BoxFit.cover,
                     ),
                     Container(

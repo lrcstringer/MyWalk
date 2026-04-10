@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delete Account — MyWalk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #C9943A;
+    --gold-light: #E8C47A;
+    --gold-pale: #F9F1E0;
+    --charcoal: #1C1C2E;
+    --charcoal-mid: #2D2D42;
+    --ink: #1A1A2A;
+    --warm-white: #FDFAF4;
+    --text-muted: #6B6878;
+    --text-body: #3A3848;
+    --rule: #E0D5B8;
+    --coral: #D4836B;
+    --coral-pale: #FAF0EC;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #E8E4DC;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 80px;
+    min-height: 100vh;
+  }
+
+  .page {
+    background: var(--warm-white);
+    max-width: 640px;
+    width: 100%;
+    border-radius: 4px;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.10);
+    overflow: hidden;
+  }
+
+  .header {
+    background: var(--charcoal);
+    padding: 48px 56px 40px;
+    border-bottom: 3px solid var(--coral);
+  }
+
+  .header-eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(253,250,244,0.45);
+    margin-bottom: 12px;
+  }
+
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--warm-white);
+    line-height: 1.2;
+  }
+
+  .body {
+    padding: 44px 56px 52px;
+  }
+
+  .intro {
+    font-family: 'Crimson Pro', serif;
+    font-size: 18px;
+    color: var(--text-body);
+    line-height: 1.75;
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .method {
+    margin-bottom: 32px;
+  }
+
+  .method-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .method h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+
+  .method p {
+    font-size: 15px;
+    color: var(--text-body);
+    line-height: 1.75;
+  }
+
+  .steps {
+    margin: 14px 0 0 0;
+    padding-left: 20px;
+  }
+
+  .steps li {
+    font-size: 15px;
+    color: var(--text-body);
+    line-height: 1.75;
+    margin-bottom: 4px;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 28px 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--rule);
+  }
+
+  .btn {
+    display: inline-block;
+    margin-top: 18px;
+    padding: 14px 28px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+
+  .btn:hover { opacity: 0.85; }
+
+  .btn-coral {
+    background: var(--coral);
+    color: #fff;
+  }
+
+  .warning {
+    background: var(--coral-pale);
+    border-left: 3px solid var(--coral);
+    border-radius: 0 4px 4px 0;
+    padding: 14px 18px;
+    margin-top: 28px;
+    font-size: 14px;
+    color: var(--text-body);
+    line-height: 1.7;
+  }
+
+  .warning strong {
+    color: var(--coral);
+  }
+
+  .footer {
+    background: var(--charcoal-mid);
+    padding: 20px 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .footer-brand {
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    color: var(--warm-white);
+  }
+
+  .footer a {
+    font-size: 13px;
+    color: var(--gold-light);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 600px) {
+    .header, .body, .footer { padding-left: 24px; padding-right: 24px; }
+    .header h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="header">
+    <div class="header-eyebrow">MyWalk</div>
+    <h1>Delete Your Account</h1>
+  </div>
+
+  <div class="body">
+
+    <p class="intro">
+      You have the right to delete your MyWalk account and all associated data at any time.
+      All journal entries, habit notes, prayer history, and media are permanently removed
+      from our servers and cannot be recovered.
+    </p>
+
+    <!-- Option 1: In-app -->
+    <div class="method">
+      <div class="method-label">Option 1 — Fastest</div>
+      <h2>Delete directly in the app</h2>
+      <p>If you have the MyWalk app installed and can sign in, you can delete your account instantly from Settings:</p>
+      <ol class="steps">
+        <li>Open MyWalk and go to <strong>Settings</strong></li>
+        <li>Scroll to the bottom</li>
+        <li>Tap <strong>Delete My Account</strong></li>
+        <li>Confirm in the dialog</li>
+      </ol>
+      <p style="margin-top:12px;">Your account, all content, and all data are deleted immediately and permanently.</p>
+    </div>
+
+    <div class="divider">or</div>
+
+    <!-- Option 2: Email request -->
+    <div class="method">
+      <div class="method-label">Option 2 — Email request</div>
+      <h2>Submit a deletion request</h2>
+      <p>If you no longer have access to the app, email us and we will manually delete your account within 7 days.</p>
+      <a class="btn btn-coral"
+         href="mailto:hello@mywalk.faith?subject=Account%20Deletion%20Request&body=Please%20delete%20my%20MyWalk%20account%20and%20all%20associated%20data.%0A%0AEmail%20address%20associated%20with%20my%20account%3A%20">
+        Request deletion by email
+      </a>
+    </div>
+
+    <div class="warning">
+      <strong>This cannot be undone.</strong> Deletion permanently removes your account, all journal entries, habit data, prayer history, scripture memorization progress, circle memberships, and any uploaded media. Your subscription is not automatically refunded — please cancel your subscription first if applicable.
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--rule);margin:40px 0;">
+
+    <!-- Reset data without deleting account -->
+    <div class="method">
+      <div class="method-label">Keep your account</div>
+      <h2>Reset your data only</h2>
+      <p>If you want to clear your habits, journal entries, and progress without closing your account, use Reset All Data in the app:</p>
+      <ol class="steps">
+        <li>Open MyWalk and go to <strong>Settings</strong></li>
+        <li>Scroll to the bottom</li>
+        <li>Tap <strong>Reset All Data</strong></li>
+        <li>Confirm in the dialog</li>
+      </ol>
+      <p style="margin-top:12px;">This removes all habits, journal entries, scripture memorization, circle memberships, and uploaded media. Your account and sign-in credentials are preserved.</p>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span class="footer-brand">MyWalk</span>
+    <div style="display:flex;gap:24px;">
+      <a href="https://mywalk.faith/privacy">Privacy Policy</a>
+      <a href="https://mywalk.faith">mywalk.faith</a>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

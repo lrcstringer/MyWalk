@@ -32,6 +32,13 @@ class HabitSelectionScreen extends StatelessWidget {
       category: HabitCategory.prayer,
     ),
     _ActivityOption(
+      label: 'Breaking Patterns',
+      subtitle: 'Overcoming bad/persistent habits, optionally with support partners and our Freedom Path activities guide',
+      icon: Icons.shield_rounded,
+      category: HabitCategory.abstain,
+      color: MyWalkColor.warmCoral,
+    ),
+    _ActivityOption(
       label: 'Service',
       subtitle: 'Give, help, volunteer, serve',
       icon: Icons.volunteer_activism_rounded,
@@ -77,12 +84,14 @@ class _ActivityOption {
   final String subtitle;
   final IconData icon;
   final HabitCategory category;
+  final Color? color;
 
   const _ActivityOption({
     required this.label,
     required this.subtitle,
     required this.icon,
     required this.category,
+    this.color,
   });
 }
 
@@ -109,9 +118,9 @@ class _ActivityTile extends StatelessWidget {
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: MyWalkColor.golden.withValues(alpha: 0.1),
+              color: (option.color ?? MyWalkColor.golden).withValues(alpha: 0.1),
             ),
-            child: Icon(option.icon, size: 20, color: MyWalkColor.golden),
+            child: Icon(option.icon, size: 20, color: option.color ?? MyWalkColor.golden),
           ),
           const SizedBox(width: 16),
           Expanded(

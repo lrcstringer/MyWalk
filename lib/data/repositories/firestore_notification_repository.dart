@@ -105,7 +105,12 @@ class FirestoreNotificationRepository implements NotificationRepository {
   Future<void> recordAction(String notifId, NotificationAction action) async {
     final uid = _uidOrNull;
     if (uid == null) return;
-    final actionStr = action == NotificationAction.pray ? 'pray' : 'im_here';
+    final actionStr = switch (action) {
+      NotificationAction.pray => 'pray',
+      NotificationAction.imHere => 'im_here',
+      NotificationAction.accept => 'accept',
+      NotificationAction.decline => 'decline',
+    };
     // Local write for immediate UI feedback.
     await _inbox(uid)
         .doc(notifId)

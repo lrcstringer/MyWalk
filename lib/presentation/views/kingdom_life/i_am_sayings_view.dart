@@ -26,7 +26,7 @@ const _sayings = [
   _IAmSaying(
     title: 'The Bread of Life',
     reference: 'John 6:35',
-    imagePath: 'assets/I Am/The Bread.png',
+    imagePath: 'assets/I Am/The Bread.webp',
     fullVerse:
         '"I am the bread of life; whoever comes to me shall not hunger, and whoever believes in me shall never thirst."',
     reflection:
@@ -35,7 +35,7 @@ const _sayings = [
   _IAmSaying(
     title: 'The Light of the World',
     reference: 'John 8:12',
-    imagePath: 'assets/I Am/the light.png',
+    imagePath: 'assets/I Am/the light.webp',
     fullVerse:
         '"I am the light of the world. Whoever follows me will not walk in darkness, but will have the light of life."',
     reflection:
@@ -44,7 +44,7 @@ const _sayings = [
   _IAmSaying(
     title: 'The Door of the Sheep',
     reference: 'John 10:9',
-    imagePath: 'assets/I Am/The gate.png',
+    imagePath: 'assets/I Am/The gate.webp',
     fullVerse:
         '"I am the door. If anyone enters by me, he will be saved and will go in and out and find pasture."',
     reflection:
@@ -53,7 +53,7 @@ const _sayings = [
   _IAmSaying(
     title: 'The Good Shepherd',
     reference: 'John 10:11',
-    imagePath: 'assets/I Am/the GoodShephard.png',
+    imagePath: 'assets/I Am/the GoodShephard.webp',
     fullVerse:
         '"I am the good shepherd. The good shepherd lays down his life for the sheep."',
     reflection:
@@ -62,7 +62,7 @@ const _sayings = [
   _IAmSaying(
     title: 'The Resurrection and the Life',
     reference: 'John 11:25',
-    imagePath: 'assets/I Am/the Resurrection.png',
+    imagePath: 'assets/I Am/the Resurrection.webp',
     fullVerse:
         '"I am the resurrection and the life. Whoever believes in me, though he die, yet shall he live, and everyone who lives and believes in me shall never die."',
     reflection:
@@ -71,7 +71,7 @@ const _sayings = [
   _IAmSaying(
     title: 'The Way, Truth, and Life',
     reference: 'John 14:6',
-    imagePath: 'assets/I Am/The Way.png',
+    imagePath: 'assets/I Am/The Way.webp',
     fullVerse:
         '"I am the way, and the truth, and the life. No one comes to the Father except through me."',
     reflection:
@@ -80,7 +80,7 @@ const _sayings = [
   _IAmSaying(
     title: 'The True Vine',
     reference: 'John 15:5',
-    imagePath: 'assets/I Am/The Vine.png',
+    imagePath: 'assets/I Am/The Vine.webp',
     fullVerse:
         '"I am the vine; you are the branches. Whoever abides in me and I in him, he it is that bears much fruit, for apart from me you can do nothing."',
     reflection:
@@ -111,7 +111,7 @@ class IAmSayingsView extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    'assets/I Am/Header.png',
+                    'assets/I Am/Header.webp',
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
                   ),

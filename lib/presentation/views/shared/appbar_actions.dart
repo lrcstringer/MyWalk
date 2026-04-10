@@ -32,6 +32,25 @@ List<Widget> standardAppBarActions(BuildContext context) {
   ];
 }
 
+/// Info / Help icon for any screen. [color] defaults to the standard warm-white.
+Widget infoIconAction(
+  BuildContext context,
+  Widget helpView, {
+  Color? color,
+}) {
+  return IconButton(
+    icon: Icon(
+      Icons.info_outline,
+      color: color ?? MyWalkColor.warmWhite.withValues(alpha: 0.7),
+    ),
+    onPressed: () => Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (_) => helpView),
+    ),
+    tooltip: 'Help',
+  );
+}
+
 /// Standalone Bible icon for screens that use a theme-aware color (e.g. Journal).
 Widget bibleBrowserAction(BuildContext context, Color color) {
   return IconButton(

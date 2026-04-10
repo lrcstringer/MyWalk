@@ -336,7 +336,7 @@ class WomenOfValorView extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    'assets/Women/womenofvalor.png',
+                    'assets/Women/womenofvalor.webp',
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
                   ),

@@ -190,6 +190,12 @@ class AccountabilityProvider extends ChangeNotifier {
     await _repo.markMessagesRead(partnershipId);
   }
 
+  /// Ends/cancels all active or pending partnerships for the given habit.
+  /// Call before deleting or archiving a habit. No-ops if no partnerships exist.
+  Future<void> endPartnershipsForHabit(String habitId, {String reason = 'deleted'}) async {
+    await _repo.endPartnershipsForHabit(habitId, reason: reason);
+  }
+
   Future<AccountabilityPartnership?> findByToken(String token) =>
       _repo.findByToken(token);
 

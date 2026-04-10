@@ -57,6 +57,12 @@ class CircleNotificationProvider extends ChangeNotifier {
     _sub = null;
   }
 
+  /// Re-subscribes to the inbox stream — forces Firestore to re-emit the
+  /// latest snapshot. Used by pull-to-refresh.
+  Future<void> refresh() async {
+    _subscribeIfAuthenticated();
+  }
+
   Future<void> markRead(String notifId) async {
     final idx = _notifications.indexWhere((n) => n.id == notifId);
     if (idx == -1) return;

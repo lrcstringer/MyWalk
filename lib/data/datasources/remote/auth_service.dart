@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -270,6 +271,42 @@ class AuthService extends ChangeNotifier {
     await prefs.remove('tribute_surname');
     await prefs.remove('tribute_phone');
     notifyListeners();
+  }
+
+  // ── Delete account ───────────────────────────────────────────────────────
+
+  /// Calls the `deleteAccount` Cloud Function, which permanently deletes all
+  /// Firestore data, Storage files, and the Firebase Auth account server-side
+  /// (no re-authentication required). Clears local state on success.
+  Future<void> deleteAccount() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final fn = FirebaseFunctions.instanceFor(region: 'us-central1');
+      await fn.httpsCallable('deleteAccount').call<void>();
+      // Auth account is now deleted server-side — clear the local session.
+      await FirebaseAuth.instance.signOut();
+      if (!isApplePlatform) await GoogleSignIn().signOut();
+      APIService.shared.setFirebaseToken(null);
+      _userId = null;
+      _isAuthenticated = false;
+      _displayName = null;
+      _givenName = null;
+      _email = null;
+      _photoURL = null;
+      _surname = null;
+      _phone = null;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    } on FirebaseFunctionsException catch (e) {
+      _error = e.message ?? 'Account deletion failed. Please try again.';
+    } catch (e) {
+      _error = 'Account deletion failed. Please try again.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // ── Profile update ────────────────────────────────────────────────────────

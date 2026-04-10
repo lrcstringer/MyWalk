@@ -33,49 +33,78 @@ class NotificationInboxView extends StatelessWidget {
       body: Consumer<CircleNotificationProvider>(
         builder: (context, provider, _) {
           if (provider.notifications.isEmpty && provider.error == null) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+            return RefreshIndicator(
+              color: MyWalkColor.golden,
+              backgroundColor: MyWalkColor.cardBackground,
+              onRefresh: provider.refresh,
+              child: ListView(
                 children: [
-                  Icon(Icons.notifications_none,
-                      size: 56,
-                      color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No notifications yet',
-                    style: TextStyle(
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
-                        fontSize: 16),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.5,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.notifications_none,
+                              size: 56,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No notifications yet',
+                            style: TextStyle(
+                                color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                                fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             );
           }
           if (provider.error != null) {
-            return Center(
-              child: Text(
-                'Could not load notifications',
-                style: TextStyle(
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
-                    fontSize: 15),
+            return RefreshIndicator(
+              color: MyWalkColor.golden,
+              backgroundColor: MyWalkColor.cardBackground,
+              onRefresh: provider.refresh,
+              child: ListView(
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.5,
+                    child: Center(
+                      child: Text(
+                        'Could not load notifications',
+                        style: TextStyle(
+                            color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                            fontSize: 15),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: provider.notifications.length,
-            separatorBuilder: (_, _) => Divider(
-              height: 1,
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.06),
+          return RefreshIndicator(
+            color: MyWalkColor.golden,
+            backgroundColor: MyWalkColor.cardBackground,
+            onRefresh: provider.refresh,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: provider.notifications.length,
+              separatorBuilder: (_, _) => Divider(
+                height: 1,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.06),
+              ),
+              itemBuilder: (context, i) {
+                final notif = provider.notifications[i];
+                return _NotificationTile(
+                  notification: notif,
+                  onMarkRead: () => provider.markRead(notif.id),
+                  onAction: (action) => provider.recordAction(notif.id, action),
+                );
+              },
             ),
-            itemBuilder: (context, i) {
-              final notif = provider.notifications[i];
-              return _NotificationTile(
-                notification: notif,
-                onMarkRead: () => provider.markRead(notif.id),
-                onAction: (action) => provider.recordAction(notif.id, action),
-              );
-            },
           );
         },
       ),
@@ -190,6 +219,17 @@ class _NotificationTileState extends State<_NotificationTile> {
 
   CircleNotification get n => widget.notification;
 
+  void _openThread(BuildContext context) {
+    if (!n.isRead) widget.onMarkRead();
+    final partnership = context
+        .read<AccountabilityProvider>()
+        .partnerships
+        .where((p) => p.id == n.circleId)
+        .firstOrNull;
+    if (partnership == null || !context.mounted) return;
+    Navigator.of(context).pushNamed('/partnership-detail', arguments: partnership);
+  }
+
   Future<void> _handlePartnerAction(NotificationAction action) async {
     final token = n.partnerInviteToken;
     if (token == null) return;
@@ -223,9 +263,15 @@ class _NotificationTileState extends State<_NotificationTile> {
     final icon = _typeIcon(n.type);
     final timeStr = _formatTime(n.createdAt);
     final isPartnerInvite = n.type == CircleNotificationType.partnershipInvite;
+    final isThreadable = n.type == CircleNotificationType.partnerMessage ||
+        n.type == CircleNotificationType.partnershipAccepted;
 
     return InkWell(
-      onTap: isUnread && !isPartnerInvite ? widget.onMarkRead : null,
+      onTap: isThreadable
+          ? () => _openThread(context)
+          : isUnread && !isPartnerInvite
+              ? widget.onMarkRead
+              : null,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
         color: isUnread
@@ -334,6 +380,8 @@ class _NotificationTileState extends State<_NotificationTile> {
       case CircleNotificationType.announcement:
         return const Color(0xFF5B8DEF);
       case CircleNotificationType.partnershipInvite:
+      case CircleNotificationType.partnerMessage:
+      case CircleNotificationType.partnershipAccepted:
         return MyWalkColor.sage;
     }
   }
@@ -348,6 +396,10 @@ class _NotificationTileState extends State<_NotificationTile> {
         return Icons.campaign_rounded;
       case CircleNotificationType.partnershipInvite:
         return Icons.handshake_rounded;
+      case CircleNotificationType.partnerMessage:
+        return Icons.chat_bubble_outline_rounded;
+      case CircleNotificationType.partnershipAccepted:
+        return Icons.handshake_rounded;
     }
   }
 
@@ -361,6 +413,10 @@ class _NotificationTileState extends State<_NotificationTile> {
         return 'ANNOUNCEMENT';
       case CircleNotificationType.partnershipInvite:
         return 'PARTNER INVITE';
+      case CircleNotificationType.partnerMessage:
+        return 'PARTNER MESSAGE';
+      case CircleNotificationType.partnershipAccepted:
+        return 'PARTNER ACCEPTED';
     }
   }
 

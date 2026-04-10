@@ -475,7 +475,8 @@ class _EditHabitViewState extends State<EditHabitView> {
                 );
                 if (!mounted) return;
                 await _sharePartnerLink(result.shareUrl, result.shortCode);
-              } catch (_) {
+              } catch (e) {
+                debugPrint('createInvite failed: $e');
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -549,7 +550,9 @@ class _EditHabitViewState extends State<EditHabitView> {
                   );
                   if (!mounted) return;
                   await _sharePartnerLink(result.shareUrl, result.shortCode);
-                } catch (_) {}
+                } catch (e) {
+                  debugPrint('createInvite (resend) failed: $e');
+                }
               },
               child: Text('Resend invite',
                   style: TextStyle(
@@ -811,6 +814,12 @@ class _EditHabitViewState extends State<EditHabitView> {
       ),
     );
     if (confirmed == true && mounted) {
+      // End any partnerships before archiving so the partner is notified.
+      await context
+          .read<AccountabilityProvider>()
+          .endPartnershipsForHabit(widget.habit.id, reason: 'archived')
+          .catchError((_) {});
+      if (!mounted) return;
       await context.read<HabitProvider>().archiveHabit(widget.habit);
       if (mounted) {
         Navigator.pop(context); // dismiss EditHabitView
@@ -871,6 +880,12 @@ class _EditHabitViewState extends State<EditHabitView> {
       ),
     );
     if (confirmed == true && mounted) {
+      // End any partnerships before deleting so the partner is notified.
+      await context
+          .read<AccountabilityProvider>()
+          .endPartnershipsForHabit(widget.habit.id, reason: 'deleted')
+          .catchError((_) {});
+      if (!mounted) return;
       await context.read<HabitProvider>().deleteHabit(widget.habit);
       if (mounted) {
         Navigator.pop(context); // dismiss EditHabitView

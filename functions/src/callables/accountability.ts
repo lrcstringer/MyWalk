@@ -144,7 +144,21 @@ export const accountabilityAcceptInvite = onCall(
       acceptedAt: now,
     });
 
-    // Notify the owner.
+    // Notify the owner in-app + push.
+    const ownerNotifId = crypto.randomUUID();
+    userNotificationsCol(data.ownerId).doc(ownerNotifId).set({
+      id: ownerNotifId,
+      type: 'partnership_accepted',
+      senderUid: uid,
+      senderName: partnerDisplayName ?? '',
+      circleId: doc.id,
+      circleName: data.habitName ?? '',
+      message: `${partnerDisplayName ?? 'Someone'} accepted your partner invite for "${data.habitName ?? 'your habit'}"`,
+      isRead: false,
+      suppressActions: true,
+      createdAt: now,
+    }).catch(() => {});
+
     sendPushToUsers([data.ownerId], {
       title: `${partnerDisplayName ?? 'Someone'} accepted your invite`,
       body: `You're now walking together on "${data.habitName}".`,
@@ -192,6 +206,89 @@ export const accountabilityDeclineInvite = onCall(
   }
 );
 
+// ── accountabilityEndForHabit ─────────────────────────────────────────────────
+
+export const accountabilityEndForHabit = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+    const uid = request.auth.uid;
+    const { habitId, reason } = request.data as { habitId: string; reason?: string };
+    if (!habitId?.trim()) throw new HttpsError('invalid-argument', 'habitId is required');
+
+    const isArchive = reason === 'archived';
+
+    // Find all active/pending partnerships owned by this user for the habit.
+    const [activeSnap, pendingSnap] = await Promise.all([
+      partnershipsCol()
+        .where('ownerId', '==', uid)
+        .where('habitId', '==', habitId)
+        .where('status', '==', 'active')
+        .get(),
+      partnershipsCol()
+        .where('ownerId', '==', uid)
+        .where('habitId', '==', habitId)
+        .where('status', '==', 'pending')
+        .get(),
+    ]);
+
+    if (activeSnap.empty && pendingSnap.empty) return { ended: 0, cancelled: 0 };
+
+    const now = Timestamp.now();
+
+    // Get sender name once.
+    const senderSnap = await usersCol().doc(uid).get();
+    const senderName = (senderSnap.data()?.displayName as string | undefined) ?? 'Your partner';
+
+    const promises: Promise<unknown>[] = [];
+
+    // End active partnerships and notify the partner.
+    for (const doc of activeSnap.docs) {
+      const data = doc.data();
+      promises.push(doc.ref.update({ status: isArchive ? 'ended' : 'ended' }));
+
+      const partnerId: string | undefined = data.ownerId === uid ? data.partnerId : data.ownerId;
+      if (partnerId) {
+        const notifId = crypto.randomUUID();
+        const msgText = isArchive
+          ? `${senderName} archived the habit "${data.habitName ?? 'a habit'}" — this support partnership has ended.`
+          : `${senderName} deleted the habit "${data.habitName ?? 'a habit'}" — this support partnership has ended.`;
+
+        promises.push(
+          userNotificationsCol(partnerId).doc(notifId).set({
+            id: notifId,
+            type: 'partner_message',
+            senderUid: uid,
+            senderName,
+            circleId: doc.id,
+            circleName: data.habitName ?? '',
+            message: msgText,
+            isRead: false,
+            suppressActions: true,
+            createdAt: now,
+          })
+        );
+        promises.push(
+          sendPushToUsers([partnerId], {
+            title: senderName,
+            body: msgText,
+            data: { type: 'partner_message', partnershipId: doc.id, channel: 'partnerships' },
+            channelId: 'partnerships',
+          }).catch(() => {})
+        );
+      }
+    }
+
+    // Cancel pending partnerships (no partner to notify — invite was never accepted).
+    for (const doc of pendingSnap.docs) {
+      promises.push(doc.ref.update({ status: 'cancelled' }));
+    }
+
+    await Promise.all(promises);
+    return { ended: activeSnap.size, cancelled: pendingSnap.size };
+  }
+);
+
 // ── accountabilityNotifyParticipant ───────────────────────────────────────────
 
 export const accountabilityNotifyParticipant = onCall(
@@ -219,12 +316,29 @@ export const accountabilityNotifyParticipant = onCall(
     const senderSnap = await usersCol().doc(uid).get();
     const senderName = (senderSnap.data()?.displayName as string | undefined) ?? 'Your partner';
 
-    await sendPushToUsers([recipientId], {
+    // Write to recipient's notification inbox so it appears in-app.
+    const notifId = crypto.randomUUID();
+    const now = Timestamp.now();
+    await userNotificationsCol(recipientId).doc(notifId).set({
+      id: notifId,
+      type: 'partner_message',
+      senderUid: uid,
+      senderName,
+      circleId: partnershipId,
+      circleName: data.habitName ?? '',
+      message: messagePreview,
+      isRead: false,
+      suppressActions: true,
+      createdAt: now,
+    });
+
+    // Also send a push nudge.
+    sendPushToUsers([recipientId], {
       title: senderName,
       body: messagePreview,
       data: { type: 'partner_message', partnershipId, channel: 'partnerships' },
       channelId: 'partnerships',
-    });
+    }).catch(() => {});
 
     return { sent: true };
   }

@@ -207,6 +207,12 @@ class JournalProvider extends ChangeNotifier {
     }
   }
 
+  /// Delete every journal entry owned by the current user, including all media.
+  Future<void> deleteAllEntries() async {
+    final all = List<JournalEntry>.from(_entries);
+    await Future.wait(all.map(deleteEntry));
+  }
+
   /// Delete a journal entry and all its Storage media.
   Future<void> deleteEntry(JournalEntry entry) async {
     // Cancel any in-flight upload for this entry. This deletes the staged

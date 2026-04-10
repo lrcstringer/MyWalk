@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../data/datasources/remote/auth_service.dart';
 import '../../domain/repositories/iap_repository.dart';
 
 /// Product IDs — must match Google Play Console / App Store Connect exactly.
@@ -47,7 +48,9 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
         _iap = iap ?? InAppPurchase.instance,
         _auth = auth ?? FirebaseAuth.instance,
         // Seed from cache so premium users see no upsell banner on launch.
-        isPremium = prefs.getBool(_kIsPremiumKey) ?? false;
+        isPremium = prefs.getBool(_kIsPremiumKey) ?? false {
+    AuthService.shared.addListener(_onAuthChanged);
+  }
 
   final SharedPreferences _prefs;
   bool _initialized = false;
@@ -127,10 +130,33 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    AuthService.shared.removeListener(_onAuthChanged);
     WidgetsBinding.instance.removeObserver(this);
     _purchaseSub?.cancel();
     _premiumSub?.cancel();
     super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (AuthService.shared.isAuthenticated) {
+      // Re-sync and restart the real-time listener with the new UID.
+      _premiumSub?.cancel();
+      _syncPremiumStatus().then((_) => notifyListeners());
+      _premiumSub = _iapRepository.watchPremiumStatus().listen((status) {
+        if (isPremium != status) {
+          _setPremium(status);
+          notifyListeners();
+        }
+      });
+    } else {
+      // Signed out — cancel stream but do NOT write false to cache.
+      // The cache should retain the last known premium state so it's
+      // still valid on the next sign-in before Firestore responds.
+      _premiumSub?.cancel();
+      _premiumSub = null;
+      isPremium = false;
+      notifyListeners();
+    }
   }
 
   /// Re-syncs premium status from Firestore whenever the app returns to the

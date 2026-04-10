@@ -25,4 +25,27 @@ class SharedPreferencesRepository implements UserPreferencesRepository {
 
   @override
   Future<void> remove(String key) async => (await _instance).remove(key);
+
+  @override
+  Future<void> clearAll({Set<String> preserve = const {}}) async {
+    final prefs = await _instance;
+    final saved = <String, Object>{};
+    for (final key in preserve) {
+      final v = prefs.get(key);
+      if (v != null) saved[key] = v;
+    }
+    await prefs.clear();
+    for (final entry in saved.entries) {
+      final v = entry.value;
+      if (v is int) {
+        await prefs.setInt(entry.key, v);
+      } else if (v is bool) {
+        await prefs.setBool(entry.key, v);
+      } else if (v is String) {
+        await prefs.setString(entry.key, v);
+      } else if (v is double) {
+        await prefs.setDouble(entry.key, v);
+      }
+    }
+  }
 }

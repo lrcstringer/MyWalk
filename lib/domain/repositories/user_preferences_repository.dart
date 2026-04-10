@@ -12,4 +12,9 @@ abstract class UserPreferencesRepository {
   Future<void> setInt(String key, int value);
   Future<void> setBool(String key, bool value);
   Future<void> remove(String key);
+
+  /// Clears all stored preferences, preserving any keys listed in [preserve].
+  /// Also wipes the remote (Firestore) prefs document if the implementation
+  /// maintains one.
+  Future<void> clearAll({Set<String> preserve = const {}});
 }

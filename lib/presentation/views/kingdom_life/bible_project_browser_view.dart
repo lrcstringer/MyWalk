@@ -273,7 +273,7 @@ class _BibleProjectBrowserViewState extends State<BibleProjectBrowserView> {
           children: [
             Opacity(
               opacity: 0.85,
-              child: Image.asset('assets/BP_logo_wht.png', height: 20),
+              child: Image.asset('assets/BP_logo_wht.webp', height: 20),
             ),
             const SizedBox(width: 10),
             const Text(

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../data/datasources/remote/auth_service.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
 import '../../domain/repositories/habit_repository.dart';
@@ -21,13 +22,35 @@ class HabitProvider extends ChangeNotifier {
     this._isAuthenticated,
     this._circleRepository,
     this._fruitPortfolio,
-  );
+  ) : _prevAuthenticated = AuthService.shared.isAuthenticated {
+    AuthService.shared.addListener(_onAuthChanged);
+  }
 
   List<Habit> _habits = [];
   bool _isLoading = false;
   String? _checkInPulseHabitId;
   bool _showingAddHabit = false;
   bool _loadInProgress = false;
+  bool _prevAuthenticated;
+
+  @override
+  void dispose() {
+    AuthService.shared.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    final isNow = AuthService.shared.isAuthenticated;
+    if (!_prevAuthenticated && isNow) {
+      // Signed in — reload habits from Firestore.
+      loadHabits();
+    } else if (_prevAuthenticated && !isNow) {
+      // Signed out — clear habits immediately.
+      _habits = [];
+      notifyListeners();
+    }
+    _prevAuthenticated = isNow;
+  }
 
   List<Habit> get habits => List.unmodifiable(_habits);
   List<Habit> get sortedHabits =>

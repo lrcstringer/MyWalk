@@ -179,6 +179,11 @@ class FirestoreAccountabilityRepository implements AccountabilityRepository {
   }
 
   @override
+  Future<void> endPartnershipsForHabit(String habitId, {String reason = 'deleted'}) async {
+    await _call('accountabilityEndForHabit', {'habitId': habitId, 'reason': reason});
+  }
+
+  @override
   Future<AccountabilityPartnership?> findByShortCode(String code) async {
     try {
       final snap = await _partnerships

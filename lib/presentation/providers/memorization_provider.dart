@@ -106,6 +106,11 @@ class MemorizationProvider extends ChangeNotifier {
     MemorizationNotificationService.instance.scheduleReviewReminder(item).ignore();
   }
 
+  Future<void> deleteAllItems() async {
+    final all = List<MemorizationItem>.from(_items);
+    await Future.wait(all.map((item) => _repository.deleteItem(item.id)));
+  }
+
   Future<void> archiveItem(MemorizationItem item) async {
     final archived = item.copyWith(status: MemorizationStatus.archived);
     _repository.updateItem(archived).ignore();

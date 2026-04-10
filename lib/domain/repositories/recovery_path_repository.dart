@@ -30,4 +30,7 @@ abstract class RecoveryPathRepository {
 
   /// Returns true if a M3 compass check already exists this week.
   Future<bool> hasWeeklyCompassThisWeek(String habitId);
+
+  /// Deletes the recovery path document and all its sessions for [habitId].
+  Future<void> deletePath(String habitId);
 }

@@ -101,6 +101,27 @@ class FirestoreRecoveryPathRepository implements RecoveryPathRepository {
   }
 
   @override
+  Future<void> deletePath(String habitId) async {
+    final sessions = await _sessions(habitId).get();
+    // Collect session refs + the path doc itself (path doc deleted last so
+    // sub-collections are gone before the parent).
+    final allDocs = <DocumentReference>[
+      ...sessions.docs.map((d) => d.reference),
+      _paths.doc(habitId),
+    ];
+    // Batch in chunks of 400 to stay under Firestore's 500-op limit.
+    const batchLimit = 400;
+    for (var i = 0; i < allDocs.length; i += batchLimit) {
+      final batch = _db.batch();
+      final end = (i + batchLimit).clamp(0, allDocs.length);
+      for (final ref in allDocs.sublist(i, end)) {
+        batch.delete(ref);
+      }
+      await batch.commit();
+    }
+  }
+
+  @override
   Future<bool> hasWeeklyCompassThisWeek(String habitId) async {
     final now = DateTime.now();
     // Week starts on Monday.

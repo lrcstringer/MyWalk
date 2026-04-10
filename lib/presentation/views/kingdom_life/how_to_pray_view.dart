@@ -27,7 +27,7 @@ class HowToPrayView extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    'assets/crossfeet.png',
+                    'assets/crossfeet.webp',
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
                   ),
@@ -326,7 +326,7 @@ class _LordsPrayerVideoCardState extends State<_LordsPrayerVideoCard> {
             Opacity(
               opacity: 0.5,
               child: Image.asset(
-                'assets/BP_logo_wht.png',
+                'assets/BP_logo_wht.webp',
                 height: 16,
               ),
             ),

@@ -8,6 +8,7 @@ import 'circle_detail_view.dart';
 import 'create_circle_view.dart';
 import 'join_circle_view.dart';
 import '../shared/appbar_actions.dart';
+import '../help/circles_help_view.dart';
 
 class CirclesTab extends StatelessWidget {
   const CirclesTab({super.key});
@@ -245,7 +246,10 @@ class _CirclesListViewState extends State<_CirclesListView> {
                   fontSize: 20,
                 ),
               ),
-              actions: standardAppBarActions(context),
+              actions: [
+                infoIconAction(context, const CirclesHelpView()),
+                ...standardAppBarActions(context),
+              ],
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.parallax,
                 background: Stack(
@@ -253,7 +257,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
                   children: [
                     // Pre-composed triptych
                     Image.asset(
-                      'assets/circles/groups.png',
+                      'assets/circles/groups.webp',
                       fit: BoxFit.cover,
                     ),
                     // Gradient fade to app background

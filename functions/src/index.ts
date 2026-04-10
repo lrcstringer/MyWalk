@@ -64,6 +64,7 @@ export {
   accountabilityAcceptInvite,
   accountabilityDeclineInvite,
   accountabilityNotifyParticipant,
+  accountabilityEndForHabit,
 } from './callables/accountability';
 export { scheduleReviewReminder, cancelReviewReminder, sweepDueReminders } from './callables/memorization_notify';
 export {
@@ -74,6 +75,7 @@ export {
   rpQuarterlyReviewReminder,
   rpM2UnlockReminder,
 } from './callables/recovery_path_notify';
+export { deleteAccount } from './callables/account';
 
 // ── TEMP: Grant premium to all new users (remove before production launch) ──
 

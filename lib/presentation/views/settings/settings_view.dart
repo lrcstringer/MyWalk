@@ -2,13 +2,20 @@ import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/habit.dart';
+import '../../../domain/entities/circle.dart';
+import '../../../domain/repositories/circle_repository.dart';
 import '../../../domain/repositories/user_preferences_repository.dart';
 import '../../providers/fruit_portfolio_provider.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/journal_provider.dart';
+import '../../providers/memorization_provider.dart';
+import '../../providers/recovery_path_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../../data/datasources/remote/auth_service.dart';
 import '../../../domain/services/milestone_service.dart';
 import '../../../data/datasources/local/notification_service.dart';
+import '../../../domain/entities/accountability_partnership.dart';
+import '../../providers/accountability_provider.dart';
 import '../../providers/journal_theme_provider.dart';
 import '../../theme/app_theme.dart';
 import '../journal/journal_theme_picker.dart';
@@ -104,6 +111,17 @@ class _SettingsViewState extends State<SettingsView> {
     }
   }
 
+  // Identity/auth keys that survive a data reset (set by AuthService, not
+  // user-generated data).
+  static const _identityPrefsKeys = {
+    'tribute_display_name',
+    'tribute_given_name',
+    'tribute_surname',
+    'tribute_email',
+    'tribute_phone',
+    'tribute_photo_url',
+  };
+
   void _confirmReset() {
     showDialog(
       context: context,
@@ -111,7 +129,7 @@ class _SettingsViewState extends State<SettingsView> {
         backgroundColor: MyWalkColor.cardBackground,
         title: const Text('Reset All Data', style: TextStyle(color: MyWalkColor.warmWhite)),
         content: Text(
-          'This will permanently delete all your habits, practices, and progress. This cannot be undone.',
+          'This will permanently delete all your habits, journal entries, scripture memorization, and circle memberships. This cannot be undone.',
           style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
         ),
         actions: [
@@ -132,21 +150,62 @@ class _SettingsViewState extends State<SettingsView> {
   }
 
   Future<void> _resetAllData() async {
-    final provider = context.read<HabitProvider>();
+    final habitProvider = context.read<HabitProvider>();
     final fruit = context.read<FruitPortfolioProvider>();
     final prefs = context.read<UserPreferencesRepository>();
+    final accountability = context.read<AccountabilityProvider>();
+    final journal = context.read<JournalProvider>();
+    final memorization = context.read<MemorizationProvider>();
+    final recoveryPaths = context.read<RecoveryPathProvider>();
+    final circles = context.read<CircleRepository>();
 
+    // 1. End all active/pending accountability partnerships.
+    final partnerHabitIds = accountability.partnerships
+        .where((p) =>
+            p.status == PartnershipStatus.active ||
+            p.status == PartnershipStatus.pending)
+        .map((p) => p.habitId)
+        .toSet();
     await Future.wait([
-      provider.resetAllData(),
+      for (final hId in partnerHabitIds)
+        accountability
+            .endPartnershipsForHabit(hId, reason: 'deleted')
+            .catchError((_) {}),
+    ]);
+
+    // 2. Collect all habit IDs (active + archived) before resetting habits
+    //    so we can delete their recovery paths afterwards.
+    final allHabitIds = {
+      ...habitProvider.sortedHabits.map((h) => h.id),
+      ...(await habitProvider.loadArchivedHabits()).map((h) => h.id),
+    };
+
+    // 3. Leave all circles the user belongs to.
+    List<Circle> userCircles = const [];
+    try {
+      userCircles = await circles.listCircles();
+    } catch (_) {}
+    await Future.wait([
+      for (final c in userCircles)
+        circles.leaveCircle(c.id).catchError((_) {}),
+    ]);
+
+    // 4. Delete all user-generated content in parallel.
+    await Future.wait([
+      habitProvider.resetAllData(),
       fruit.reset(),
+      journal.deleteAllEntries(),
+      memorization.deleteAllItems(),
     ]);
 
-    await Future.wait([
-      prefs.remove('tribute_reminders_enabled'),
-      prefs.remove('tribute_reminder_hour'),
-      prefs.remove('tribute_reminder_minute'),
-      prefs.remove('tribute_onboarding_date'),
-    ]);
+    // 5. Delete recovery paths for every habit (sequential per path is fine;
+    //    each call is already batched internally).
+    await recoveryPaths
+        .deleteAllPaths(allHabitIds.toList())
+        .catchError((_) {});
+
+    // 6. Wipe all preferences, preserving identity/auth keys.
+    await prefs.clearAll(preserve: _identityPrefsKeys);
 
     if (mounted) setState(() => _remindersEnabled = false);
     await NotificationService.shared.cancelDailyReminders();
@@ -156,8 +215,10 @@ class _SettingsViewState extends State<SettingsView> {
         builder: (_) => AlertDialog(
           backgroundColor: MyWalkColor.cardBackground,
           title: const Text('Data Reset', style: TextStyle(color: MyWalkColor.warmWhite)),
-          content: Text('All data has been cleared. Your subscription status is unchanged.',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+          content: Text(
+            'All your data has been cleared — habits, journal entries, scripture memorization, and circles. Your account and subscription are unchanged.',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -250,6 +311,8 @@ class _SettingsViewState extends State<SettingsView> {
                 _infoRow('Version', '1.0.0'),
                 const SizedBox(height: 20),
                 _resetButton(),
+                const SizedBox(height: 8),
+                _deleteAccountButton(),
               ]),
             ),
           ),
@@ -686,6 +749,62 @@ class _SettingsViewState extends State<SettingsView> {
         Text(value, style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.4))),
       ]),
     );
+  }
+
+  Widget _deleteAccountButton() {
+    return GestureDetector(
+      onTap: _confirmDeleteAccount,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: MyWalkColor.warmCoral.withValues(alpha: 0.25), width: 0.5),
+        ),
+        child: Row(children: [
+          Icon(Icons.no_accounts_rounded, size: 16, color: MyWalkColor.warmCoral.withValues(alpha: 0.7)),
+          const SizedBox(width: 10),
+          Expanded(child: Text('Delete My Account',
+              style: TextStyle(fontSize: 14, color: MyWalkColor.warmCoral.withValues(alpha: 0.7)))),
+        ]),
+      ),
+    );
+  }
+
+  void _confirmDeleteAccount() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: MyWalkColor.cardBackground,
+        title: const Text('Delete Account', style: TextStyle(color: MyWalkColor.warmWhite)),
+        content: Text(
+          'This permanently deletes your account and all your data — habits, journal entries, scripture memorization, circles, and all media. '
+          'This cannot be undone.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteAccount();
+            },
+            child: const Text('Delete Forever', style: TextStyle(color: MyWalkColor.warmCoral)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    final auth = context.read<AuthService>();
+    await auth.deleteAccount();
+    // On success, AuthService notifyListeners() triggers root_view.dart to pop
+    // all routes and show the onboarding screen automatically. On failure,
+    // auth.error is non-null and displayed in the account section.
   }
 
   Widget _resetButton() {

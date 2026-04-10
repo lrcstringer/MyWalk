@@ -452,7 +452,8 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                       'Or enter code ${result.shortCode} in the app.',
                     );
                   }
-                } catch (_) {
+                } catch (e) {
+                  debugPrint('createInvite failed: $e');
                   messenger.showSnackBar(
                     const SnackBar(
                         content: Text('Could not create invite. Try again.')),
