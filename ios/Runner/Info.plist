@@ -13,6 +13,14 @@
 					<string>mywalk</string>
 				</array>
 			</dict>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.googleusercontent.apps.537863956617-iqli8oglbauie2dgqs3mob923e0cj7rh</string>
+				</array>
+			</dict>
 		</array>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>

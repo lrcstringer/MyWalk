@@ -126,6 +126,7 @@ class AuthService extends ChangeNotifier {
 
       final oAuthCredential = OAuthProvider('apple.com').credential(
         idToken: credential.identityToken,
+        accessToken: credential.authorizationCode,
         rawNonce: rawNonce,
       );
 
@@ -174,8 +175,10 @@ class AuthService extends ChangeNotifier {
         providers: ['apple.com'],
       );
     } on FirebaseAuthException catch (e) {
-      _error = _friendlyAuthError(e);
+      debugPrint('🔴 Apple Sign-In FirebaseAuthException: code=${e.code} message=${e.message} credential=${e.credential}');
+      _error = '[${e.code}] ${e.message}';
     } catch (e) {
+      debugPrint('🔴 Apple Sign-In error: $e');
       _error = e.toString();
     }
 

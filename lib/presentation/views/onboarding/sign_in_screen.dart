@@ -54,8 +54,12 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
-  Future<void> _handleSignIn(AuthService auth) async {
-    await auth.signIn();
+  Future<void> _handleSignIn(AuthService auth, {bool useGoogle = false}) async {
+    if (useGoogle) {
+      await auth.signInWithGoogle();
+    } else {
+      await auth.signIn();
+    }
     if (!mounted) return;
     if (auth.isAuthenticated) {
       widget.onNext();
@@ -231,6 +235,27 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
             ),
           ),
+          // Secondary button: Google on iOS (for simulator testing & user choice)
+          if (isApple) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: auth.isLoading || _isOffline ? null : () => _handleSignIn(auth, useGoogle: true),
+                icon: const Icon(Icons.g_mobiledata_rounded, size: 20),
+                label: const Text(
+                  'Continue with Google',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: MyWalkColor.warmWhite,
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           RichText(
             textAlign: TextAlign.center,
