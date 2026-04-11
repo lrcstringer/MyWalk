@@ -68,6 +68,10 @@ class JournalProvider extends ChangeNotifier {
     );
   }
 
+  /// All entries, unfiltered and unsorted. Use for lookups by specific criteria
+  /// (e.g. modal views) where the active search query must not hide results.
+  List<JournalEntry> get allEntries => List.unmodifiable(_entries);
+
   /// Returns the entry with [id] from the raw (unfiltered) list, or null.
   JournalEntry? getEntry(String id) =>
       _entries.where((e) => e.id == id).firstOrNull;

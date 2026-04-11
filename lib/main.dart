@@ -61,6 +61,8 @@ import 'presentation/providers/memorization_provider.dart';
 import 'data/repositories/firestore_recovery_path_repository.dart';
 import 'domain/repositories/recovery_path_repository.dart';
 import 'presentation/providers/recovery_path_provider.dart';
+import 'data/repositories/firestore_bible_reading_repository.dart';
+import 'presentation/providers/bible_reading_provider.dart';
 import 'app.dart';
 
 /// Top-level handler for background/terminated FCM messages.
@@ -140,6 +142,7 @@ void main() async {
   final bookmarkRepository = FirestoreBookmarkRepository();
   final memorizationRepository = FirestoreMemorizationRepository();
   final recoveryPathRepository = FirestoreRecoveryPathRepository();
+  final bibleReadingRepository = FirestoreBibleReadingRepository();
 
   runApp(
     MultiProvider(
@@ -229,6 +232,9 @@ void main() async {
         Provider<RecoveryPathRepository>.value(value: recoveryPathRepository),
         ChangeNotifierProvider<RecoveryPathProvider>(
           create: (_) => RecoveryPathProvider(recoveryPathRepository),
+        ),
+        ChangeNotifierProvider<BibleReadingProvider>(
+          create: (_) => BibleReadingProvider(bibleReadingRepository),
         ),
       ],
       child: const MyWalkApp(),
