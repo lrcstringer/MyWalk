@@ -143,8 +143,7 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                     ),
                   ),
                   actions: [
-                    infoIconAction(context, const TodayHelpView()),
-                    ...standardAppBarActions(context),
+                    ...standardAppBarActions(context, helpView: const TodayHelpView()),
                   ],
                   flexibleSpace: FlexibleSpaceBar(
                     collapseMode: CollapseMode.parallax,

@@ -41,8 +41,7 @@ class KingdomLifeView extends StatelessWidget {
               ),
             ),
             actions: [
-              infoIconAction(context, const KingdomLifeHelpView()),
-              ...standardAppBarActions(context),
+              ...standardAppBarActions(context, helpView: const KingdomLifeHelpView()),
             ],
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
@@ -122,17 +121,6 @@ class KingdomLifeView extends StatelessWidget {
                                   MaterialPageRoute(builder: (_) => const FruitPortfolioView())),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          SizedBox(
-                            width: cardWidth,
-                            child: _KingdomCard(
-                              imagePath: 'assets/beatitudes_golden_etched_separate/Beatitudes.jpg',
-                              title: 'The Beatitudes',
-                              subtitle: 'Matthew 5:3-12',
-                              onTap: () => Navigator.push(context,
-                                  MaterialPageRoute(builder: (_) => const BeatitudesView())),
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -161,6 +149,12 @@ class KingdomLifeView extends StatelessWidget {
                           ),
                         ],
                       ),
+
+                      // ── Premium upsell (non-premium only) ────────────────
+                      if (!context.watch<StoreProvider>().isPremium) ...[
+                        const SizedBox(height: 12),
+                        _PremiumUpsellCard(cardWidth: cardWidth),
+                      ],
 
                       // ── Premium divider ──────────────────────────────────
                       Padding(
@@ -216,11 +210,11 @@ class KingdomLifeView extends StatelessWidget {
                           SizedBox(
                             width: cardWidth,
                             child: _KingdomCard(
-                              imagePath: 'assets/Women/womenofvalor.webp',
-                              title: 'Women of Valor',
-                              subtitle: 'Proverbs 31:10',
+                              imagePath: 'assets/beatitudes_golden_etched_separate/Beatitudes.jpg',
+                              title: 'The Beatitudes',
+                              subtitle: 'Matthew 5:3-12',
                               onTap: () => Navigator.push(context,
-                                  MaterialPageRoute(builder: (_) => const WomenOfValorView())),
+                                  MaterialPageRoute(builder: (_) => const BeatitudesView())),
                             ),
                           ),
                           SizedBox(
@@ -231,6 +225,16 @@ class KingdomLifeView extends StatelessWidget {
                               subtitle: 'Mark 4:30',
                               onTap: () => Navigator.push(context,
                                   MaterialPageRoute(builder: (_) => const ParablesView())),
+                            ),
+                          ),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _KingdomCard(
+                              imagePath: 'assets/Women/womenofvalor.webp',
+                              title: 'Women of Valor',
+                              subtitle: 'Proverbs 31:10',
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const WomenOfValorView())),
                             ),
                           ),
                           SizedBox(
@@ -574,6 +578,133 @@ class _MemorizationKingdomCard extends StatelessWidget {
 }
 
 // ── Kingdom card ───────────────────────────────────────────────────────────────
+
+// ── Premium Upsell Card ────────────────────────────────────────────────────────
+
+class _PremiumUpsellCard extends StatelessWidget {
+  final double cardWidth;
+  const _PremiumUpsellCard({required this.cardWidth});
+
+  static const _features = [
+    (Icons.menu_book_rounded, 'Bible in a Year — 52-week daily reading plan'),
+    (Icons.psychology, 'Scripture Memorisation'),
+    (Icons.format_list_bulleted, 'The Beatitudes — Matthew 5:3–12'),
+    (Icons.auto_stories, 'The Parables of Jesus'),
+    (Icons.favorite_border, 'Women of Valor — Proverbs 31'),
+    (Icons.record_voice_over_outlined, 'The \u201cI AM\u201d Sayings of Jesus'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            MyWalkColor.golden.withValues(alpha: 0.10),
+            MyWalkColor.cardBackground,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: MyWalkColor.golden.withValues(alpha: 0.55),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: MyWalkColor.golden.withValues(alpha: 0.12),
+            blurRadius: 16,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Icon(Icons.star_rounded, size: 18, color: MyWalkColor.golden.withValues(alpha: 0.85)),
+              const SizedBox(width: 8),
+              const Text(
+                'Go Deeper with Premium',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: MyWalkColor.warmWhite,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Unlock a full suite of Kingdom Life study tools — work through the entire Bible in a year, memorise scripture, and explore the Beatitudes, the Parables of Jesus, the \u201cI AM\u201d sayings, and Women of Valor in depth.',
+            style: TextStyle(
+              fontSize: 13,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Feature list
+          for (final (icon, label) in _features)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(icon, size: 15, color: MyWalkColor.golden.withValues(alpha: 0.7)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 20),
+          // CTA button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                useSafeArea: true,
+                backgroundColor: MyWalkColor.charcoal,
+                builder: (_) => const MyWalkPaywallView(),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MyWalkColor.golden,
+                foregroundColor: MyWalkColor.charcoal,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Upgrade to Premium',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _KingdomCard extends StatelessWidget {
   final String imagePath;

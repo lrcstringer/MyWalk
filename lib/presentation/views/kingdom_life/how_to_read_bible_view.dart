@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -347,7 +349,14 @@ class _BibleGuideCardState extends State<_BibleGuideCard> {
                 if (_hasError)
                   _buildOffline()
                 else
-                  WebViewWidget(controller: _controller),
+                  WebViewWidget(
+                    controller: _controller,
+                    gestureRecognizers: {
+                      Factory<EagerGestureRecognizer>(
+                        () => EagerGestureRecognizer(),
+                      ),
+                    },
+                  ),
                 if (_isLoading && !_hasError)
                   Positioned.fill(
                     child: ColoredBox(

@@ -55,6 +55,11 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // ── bibleReadingPlan subcollection ───────────────────────────────────
+      match /bibleReadingPlan/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // ── journal subcollection ─────────────────────────────────────────────
       match /journal/{entryId} {
         allow read, write: if isOwner(userId);

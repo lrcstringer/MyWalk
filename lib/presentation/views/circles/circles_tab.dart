@@ -247,8 +247,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
                 ),
               ),
               actions: [
-                infoIconAction(context, const CirclesHelpView()),
-                ...standardAppBarActions(context),
+                ...standardAppBarActions(context, helpView: const CirclesHelpView()),
               ],
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.parallax,

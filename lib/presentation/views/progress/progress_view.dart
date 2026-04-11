@@ -91,8 +91,7 @@ class ProgressView extends StatelessWidget {
                 ),
               ),
               actions: [
-                infoIconAction(context, const ProgressHelpView()),
-                ...standardAppBarActions(context),
+                ...standardAppBarActions(context, helpView: const ProgressHelpView()),
               ],
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.parallax,

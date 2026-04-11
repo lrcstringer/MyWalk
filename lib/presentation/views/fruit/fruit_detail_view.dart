@@ -157,23 +157,29 @@ class FruitDetailView extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () => _showMoreOnThisFruit(context),
-                            child: Row(
-                              children: [
-                                Icon(Icons.menu_book_outlined, size: 11, color: fruit.color.withValues(alpha: 0.6)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'More on this fruit',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: fruit.color.withValues(alpha: 0.7),
-                                  ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              GestureDetector(
+                                onTap: () => _showMoreOnThisFruit(context),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.menu_book_outlined, size: 11, color: fruit.color.withValues(alpha: 0.6)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'More on this fruit',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: fruit.color.withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Icon(Icons.chevron_right, size: 13, color: fruit.color.withValues(alpha: 0.5)),
+                                  ],
                                 ),
-                                const SizedBox(width: 2),
-                                Icon(Icons.chevron_right, size: 13, color: fruit.color.withValues(alpha: 0.5)),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

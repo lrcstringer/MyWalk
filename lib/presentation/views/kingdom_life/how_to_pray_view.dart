@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
@@ -495,7 +497,14 @@ class _LordsPrayerGuideCardState extends State<_LordsPrayerGuideCard> {
                 if (_hasError)
                   _buildOffline()
                 else
-                  WebViewWidget(controller: _controller),
+                  WebViewWidget(
+                    controller: _controller,
+                    gestureRecognizers: {
+                      Factory<EagerGestureRecognizer>(
+                        () => EagerGestureRecognizer(),
+                      ),
+                    },
+                  ),
                 if (_isLoading && !_hasError)
                   Positioned.fill(
                     child: ColoredBox(
