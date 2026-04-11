@@ -98,6 +98,22 @@ export const circleJoin = onCall(
     batch.update(circlesCol().doc(circleId), { memberCount: FieldValue.increment(1) });
     await batch.commit();
 
+    // Notify all admins that a new member joined (best-effort)
+    const membersSnap = await membersCol(circleId).where('role', '==', 'admin').get();
+    const adminIds = membersSnap.docs
+      .map((d) => d.data()['userId'] as string)
+      .filter((id) => id !== uid);
+    if (adminIds.length > 0) {
+      const joinerDoc = await db.collection('users').doc(uid).get();
+      const joinerName = (joinerDoc.data()?.['displayName'] as string | undefined) ?? 'Someone';
+      sendPushToUsers(adminIds, {
+        title: circle.name as string,
+        body: `${joinerName} joined the circle`,
+        data: { type: 'circle_member_joined', circleId },
+        channelId: 'circles',
+      }).catch(() => { /* non-fatal */ });
+    }
+
     return { id: circleId, name: circle.name as string, alreadyMember: false };
   }
 );
@@ -371,6 +387,80 @@ export const circleUpdateMemberRole = onCall(
     if (!targetSnap.exists) throw new HttpsError('not-found', 'Member not found in this circle');
 
     await membersCol(circleId).doc(targetUserId).update({ role });
+
+    return { success: true };
+  }
+);
+
+// ── circleUpdate ──────────────────────────────────────────────────────────────
+
+export const circleUpdate = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+
+    const { circleId, name, description } = request.data as {
+      circleId: string;
+      name?: string;
+      description?: string;
+    };
+
+    if (!circleId?.trim()) throw new HttpsError('invalid-argument', 'circleId required');
+
+    const uid = request.auth.uid;
+    const memberSnap = await membersCol(circleId).doc(uid).get();
+    if (!memberSnap.exists) throw new HttpsError('permission-denied', 'Not a member of this circle');
+    if (memberSnap.data()!['role'] !== 'admin') {
+      throw new HttpsError('permission-denied', 'Only admins can edit circle details');
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (name !== undefined) {
+      const trimmed = name.trim();
+      if (!trimmed) throw new HttpsError('invalid-argument', 'Name cannot be empty');
+      updates['name'] = trimmed;
+      // Keep invite code index in sync
+      const circleSnap = await circlesCol().doc(circleId).get();
+      const inviteCode = circleSnap.data()?.['inviteCode'] as string | undefined;
+      if (inviteCode) {
+        await inviteCodesCol().doc(inviteCode).update({ circleName: trimmed });
+      }
+    }
+    if (description !== undefined) updates['description'] = description;
+
+    if (Object.keys(updates).length === 0) return { success: true };
+
+    await circlesCol().doc(circleId).update(updates);
+    return { success: true };
+  }
+);
+
+// ── circleDelete ──────────────────────────────────────────────────────────────
+
+export const circleDelete = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+
+    const { circleId } = request.data as { circleId: string };
+    if (!circleId?.trim()) throw new HttpsError('invalid-argument', 'circleId required');
+
+    const uid = request.auth.uid;
+    const memberSnap = await membersCol(circleId).doc(uid).get();
+    if (!memberSnap.exists) throw new HttpsError('permission-denied', 'Not a member of this circle');
+    if (memberSnap.data()!['role'] !== 'admin') {
+      throw new HttpsError('permission-denied', 'Only admins can delete a circle');
+    }
+
+    // Remove invite code index first so no one can join mid-delete
+    const circleSnap = await circlesCol().doc(circleId).get();
+    const inviteCode = circleSnap.data()?.['inviteCode'] as string | undefined;
+    if (inviteCode) {
+      await inviteCodesCol().doc(inviteCode).delete();
+    }
+
+    // Recursively delete the entire circle document tree
+    await db.recursiveDelete(circlesCol().doc(circleId));
 
     return { success: true };
   }

@@ -444,6 +444,21 @@ class FirestoreCircleRepository implements CircleRepository {
         {'circleId': circleId, 'weekData': weekData});
   }
 
+  // ── Circle management ─────────────────────────────────────────────────────
+
+  @override
+  Future<void> updateCircle(String circleId, {String? name, String? description}) async {
+    final payload = <String, dynamic>{'circleId': circleId};
+    if (name != null) payload['name'] = name;
+    if (description != null) payload['description'] = description;
+    await _call('circleUpdate', payload);
+  }
+
+  @override
+  Future<void> deleteCircle(String circleId) async {
+    await _call('circleDelete', {'circleId': circleId});
+  }
+
   // ── Circle Settings ───────────────────────────────────────────────────────
 
   @override

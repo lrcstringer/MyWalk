@@ -14,6 +14,8 @@ export {
   circleSubmitHeatmapData,
   circleUpdateSettings,
   circleUpdateMemberRole,
+  circleUpdate,
+  circleDelete,
 } from './callables/circles';
 export {
   prayerRequestCreate,

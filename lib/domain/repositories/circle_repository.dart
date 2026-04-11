@@ -24,6 +24,10 @@ abstract class CircleRepository {
   Future<CollectiveMilestones> getCircleMilestones(String circleId);
   Future<void> submitHeatmapData(String circleId, List<Map<String, dynamic>> weekData);
 
+  // ── Circle management ───────────────────────────────────────────────────────
+  Future<void> updateCircle(String circleId, {String? name, String? description});
+  Future<void> deleteCircle(String circleId);
+
   // ── Circle Settings ─────────────────────────────────────────────────────────
   Future<void> updateCircleSettings(String circleId, CircleSettings settings);
   Future<void> updateMemberRole(String circleId, String targetUserId, String role);

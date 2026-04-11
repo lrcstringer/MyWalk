@@ -1,8 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../data/datasources/remote/auth_service.dart';
 import '../../providers/store_provider.dart';
 import '../../providers/prayer_list_provider.dart';
@@ -214,10 +212,6 @@ class _CircleDetailViewState extends State<CircleDetailView>
                 icon: const Icon(Icons.settings_rounded, size: 20, color: MyWalkColor.softGold),
                 onPressed: () => _openSettings(detail),
               ),
-            IconButton(
-              icon: const Icon(Icons.link_rounded, size: 20, color: MyWalkColor.golden),
-              onPressed: () => _shareInvite(detail),
-            ),
           ],
           pinned: true,
           bottom: TabBar(
@@ -253,7 +247,6 @@ class _CircleDetailViewState extends State<CircleDetailView>
             onSummaryTap: () => _showSundaySummary(detail),
             onLeaveTap: _confirmLeave,
             isLeaving: _isLeaving,
-            onRoleChanged: _loadDetail,
           ),
           CirclePrayerTab(
             circleId: widget.circleId,
@@ -290,19 +283,26 @@ class _CircleDetailViewState extends State<CircleDetailView>
     );
   }
 
-  void _shareInvite(CircleDetails detail) {
-    showModalBottomSheet(
-      context: context, isScrollControlled: true, useSafeArea: true,
-      backgroundColor: MyWalkColor.charcoal,
-      builder: (_) => _ShareInviteSheet(
-        circleName: detail.name, inviteCode: detail.inviteCode),
-    );
-  }
-
-  void _openSettings(CircleDetails detail) {
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => CircleSettingsView(circleId: widget.circleId, settings: detail.settings),
+  void _openSettings(CircleDetails detail) async {
+    final result = await Navigator.push<Object?>(context, MaterialPageRoute(
+      builder: (_) => CircleSettingsView(
+        circleId: widget.circleId,
+        circleName: detail.name,
+        circleDescription: detail.description,
+        inviteCode: detail.inviteCode,
+        settings: detail.settings,
+        members: detail.members,
+        currentUserId: AuthService.shared.userId ?? '',
+      ),
     ));
+    if (!mounted) return;
+    if (result == 'deleted') {
+      // Circle was deleted — pop back to the circles list
+      Navigator.pop(context);
+    } else {
+      // Settings/name may have changed — reload
+      _loadDetail();
+    }
   }
 
   void _confirmLeave() {
@@ -342,7 +342,6 @@ class _OverviewTab extends StatelessWidget {
   final VoidCallback onSummaryTap;
   final VoidCallback onLeaveTap;
   final bool isLeaving;
-  final VoidCallback onRoleChanged;
 
   const _OverviewTab({
     required this.circleId,
@@ -354,7 +353,6 @@ class _OverviewTab extends StatelessWidget {
     required this.onSummaryTap,
     required this.onLeaveTap,
     required this.isLeaving,
-    required this.onRoleChanged,
   });
 
   @override
@@ -573,65 +571,25 @@ class _OverviewTab extends StatelessWidget {
 
   Widget _memberRow(BuildContext context, CircleMember m) {
     final currentUid = AuthService.shared.userId ?? '';
-    final currentUserIsAdmin = detail.members.any((x) => x.userId == currentUid && x.isAdmin);
     final isSelf = m.userId == currentUid;
     final isAdmin = m.isAdmin;
     final color = isAdmin ? MyWalkColor.golden : MyWalkColor.sage;
-    return GestureDetector(
-      onTap: currentUserIsAdmin && !isSelf ? () => _showRoleDialog(context, m) : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: MyWalkDecorations.card,
-        child: Row(children: [
-          Container(width: 36, height: 36,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.12)),
-            child: Icon(Icons.person_rounded, size: 14, color: color)),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(isSelf ? 'You' : m.displayName,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.warmWhite)),
-            Text(isAdmin ? 'Admin' : 'Member',
-                style: TextStyle(fontSize: 11,
-                    color: isAdmin ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.4))),
-          ])),
-          if (currentUserIsAdmin && !isSelf)
-            Icon(Icons.more_horiz_rounded, size: 16, color: Colors.white.withValues(alpha: 0.25)),
-        ]),
-      ),
-    );
-  }
-
-  void _showRoleDialog(BuildContext context, CircleMember m) {
-    final isAdmin = m.isAdmin;
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: MyWalkColor.cardBackground,
-        title: Text(isAdmin ? 'Remove Admin' : 'Make Admin',
-            style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
-        content: Text(
-          isAdmin
-              ? 'Remove admin privileges from this member? They will become a regular member.'
-              : 'Give this member admin privileges? They will be able to manage habits, events, and circle settings.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<CircleRepository>().updateMemberRole(
-                circleId, m.userId, isAdmin ? 'member' : 'admin',
-              ).then((_) => onRoleChanged());
-            },
-            child: Text(isAdmin ? 'Remove Admin' : 'Make Admin',
-                style: const TextStyle(color: MyWalkColor.golden)),
-          ),
-        ],
-      ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: MyWalkDecorations.card,
+      child: Row(children: [
+        Container(width: 36, height: 36,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.12)),
+          child: Icon(Icons.person_rounded, size: 14, color: color)),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(isSelf ? 'You' : m.displayName,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.warmWhite)),
+          Text(isAdmin ? 'Admin' : 'Member',
+              style: TextStyle(fontSize: 11,
+                  color: isAdmin ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.4))),
+        ])),
+      ]),
     );
   }
 
@@ -654,81 +612,6 @@ class _OverviewTab extends StatelessWidget {
             const SizedBox(width: 16, height: 16,
               child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.warmCoral)),
         ]),
-      ),
-    );
-  }
-}
-
-// ─── Share invite sheet ───────────────────────────────────────────────────────
-
-class _ShareInviteSheet extends StatelessWidget {
-  final String circleName;
-  final String inviteCode;
-  const _ShareInviteSheet({required this.circleName, required this.inviteCode});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: MyWalkColor.charcoal,
-      appBar: AppBar(
-        backgroundColor: MyWalkColor.charcoal,
-        title: const Text('Invite', style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Done', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
-          ),
-        ],
-        automaticallyImplyLeading: false,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(children: [
-            Container(width: 64, height: 64,
-              decoration: BoxDecoration(shape: BoxShape.circle,
-                  color: MyWalkColor.golden.withValues(alpha: 0.1)),
-              child: const Icon(Icons.link_rounded, size: 28, color: MyWalkColor.golden)),
-            const SizedBox(height: 12),
-            Text('Invite to $circleName',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  final text = 'Join my Prayer Circle "$circleName" on MyWalk!\n\n'
-                    'Tap to join: https://mywalk.faith/join?code=$inviteCode\n\n'
-                    'Or enter invite code "$inviteCode" manually in the app.';
-                  Share.share(text);
-                },
-                icon: const Icon(Icons.share_rounded, size: 18),
-                label: const Text('Share Invite', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: MyWalkColor.golden,
-                  foregroundColor: MyWalkColor.charcoal,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: () => Clipboard.setData(ClipboardData(text: inviteCode)),
-                icon: const Icon(Icons.copy_rounded, size: 16, color: MyWalkColor.golden),
-                label: Text('Copy Code: $inviteCode',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.golden)),
-                style: TextButton.styleFrom(
-                  backgroundColor: MyWalkColor.golden.withValues(alpha: 0.1),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-          ]),
-        ),
       ),
     );
   }
