@@ -5,10 +5,14 @@ import '../kingdom_life/beatitudes_view.dart';
 import '../kingdom_life/parables_view.dart';
 import '../kingdom_life/i_am_sayings_view.dart';
 import '../kingdom_life/how_to_pray_view.dart';
+import '../kingdom_life/how_to_read_bible_view.dart';
 import '../kingdom_life/women_of_valor_view.dart';
 import '../bible_reading/bible_reading_grid_view.dart';
+import '../memorization/memorization_router.dart';
+import '../shared/mywalk_paywall_view.dart';
 import '../../../domain/entities/bible_reading_plan.dart';
 import '../../providers/bible_reading_provider.dart';
+import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import '../shared/appbar_actions.dart';
 import '../help/kingdom_life_help_view.dart';
@@ -144,6 +148,17 @@ class KingdomLifeView extends StatelessWidget {
                                   MaterialPageRoute(builder: (_) => const HowToPrayView())),
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: cardWidth,
+                            child: _KingdomCard(
+                              imagePath: 'assets/readbible2.png',
+                              title: 'How to Read the Bible',
+                              subtitle: 'A BibleProject guide',
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const HowToReadBibleView())),
+                            ),
+                          ),
                         ],
                       ),
 
@@ -191,6 +206,8 @@ class KingdomLifeView extends StatelessWidget {
 
                       // ── Premium grid ─────────────────────────────────────
                       const _BibleReadingPlanKingdomCard(),
+                      const SizedBox(height: 12),
+                      const _MemorizationKingdomCard(),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 12,
@@ -427,6 +444,132 @@ class _BiblePlanCardBody extends StatelessWidget {
           ],
         );
     }
+  }
+}
+
+// ── Memorization Kingdom card ──────────────────────────────────────────────────
+
+class _MemorizationKingdomCard extends StatelessWidget {
+  const _MemorizationKingdomCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final isPremium = context.watch<StoreProvider>().isPremium;
+
+    return GestureDetector(
+      onTap: () {
+        if (isPremium) {
+          MemorizationRouter.pushHome(context);
+        } else {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const MyWalkPaywallView(
+                contextTitle: 'Scripture Memorization',
+                contextMessage:
+                    'Hide God\'s Word in your heart with structured review sessions.',
+              ),
+              fullscreenDialog: true,
+            ),
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isPremium
+                ? [
+                    MyWalkColor.cardBackground,
+                    MyWalkColor.golden.withValues(alpha: 0.06),
+                  ]
+                : [
+                    MyWalkColor.cardBackground,
+                    MyWalkColor.cardBackground,
+                  ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isPremium
+                ? MyWalkColor.golden.withValues(alpha: 0.35)
+                : MyWalkColor.cardBorder,
+            width: isPremium ? 1.5 : 0.5,
+          ),
+          boxShadow: isPremium
+              ? [
+                  BoxShadow(
+                    color: MyWalkColor.golden.withValues(alpha: 0.10),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isPremium
+                    ? MyWalkColor.golden.withValues(alpha: 0.12)
+                    : MyWalkColor.surfaceOverlay,
+              ),
+              child: Icon(
+                Icons.psychology,
+                color: isPremium
+                    ? MyWalkColor.golden
+                    : MyWalkColor.softGold.withValues(alpha: 0.4),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Scripture Memorization',
+                    style: TextStyle(
+                      color: isPremium
+                          ? MyWalkColor.warmWhite
+                          : MyWalkColor.warmWhite.withValues(alpha: 0.45),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isPremium
+                        ? 'Review sessions · spaced repetition'
+                        : 'Hide God\'s Word in your heart — Premium',
+                    style: TextStyle(
+                      color: isPremium
+                          ? MyWalkColor.softGold
+                          : MyWalkColor.softGold.withValues(alpha: 0.4),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              isPremium ? Icons.chevron_right : Icons.lock_outline,
+              color: isPremium
+                  ? MyWalkColor.softGold.withValues(alpha: 0.6)
+                  : MyWalkColor.softGold.withValues(alpha: 0.3),
+              size: isPremium ? 20 : 16,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

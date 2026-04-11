@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../theme/app_theme.dart';
 import 'bible_project_browser_view.dart';
 
-const _kAccent = Color(0xFF7EA8C4); // soft blue — prayer / serenity
+const _kAccent = Color(0xFFC49A6C); // warm amber — parchment / scripture
 
-class HowToPrayView extends StatelessWidget {
-  const HowToPrayView({super.key});
+class HowToReadBibleView extends StatelessWidget {
+  const HowToReadBibleView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +27,7 @@ class HowToPrayView extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    'assets/crossfeet.webp',
+                    'assets/readbible2.png',
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
                   ),
@@ -46,32 +45,18 @@ class HowToPrayView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Positioned(
+                  const Positioned(
                     left: 20,
                     right: 20,
                     bottom: 16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'How to Pray',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
-                            height: 1.1,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Matthew 6:9\u201313',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: MyWalkColor.golden.withValues(alpha: 0.85),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'How to Read the Bible',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: MyWalkColor.warmWhite,
+                        height: 1.1,
+                      ),
                     ),
                   ),
                 ],
@@ -86,10 +71,17 @@ class HowToPrayView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _LordsPrayerBlock(),
-                  const SizedBox(height: 32),
                   Text(
-                    'Prayer is central to a Christian\u2019s daily walk. It is both a discipline and a joy to pray. Watch the following short video on how Jesus said we should pray.',
+                    'The Bible has remained one of the most influential books for close on 1\u2009700 years, and in partial form, close on 1\u2009900 years. Its stories, poetry and history have influenced religions, cultures, philosophy, the arts and inspired some of the most enduring characters and plots in some of the greatest literature ever written. For over 30% of the world\u2019s population (and 70% of people in the Global South) it is considered no less than God\u2019s Holy Word. Watch the videos and delve into the themes, literary styles, settings and content of the Bible.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                      height: 1.65,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'To start, watch Episode\u00a01, \u201cWhat Is the Bible?\u201d and then access the rest of the videos below.',
                     style: TextStyle(
                       fontSize: 14,
                       color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
@@ -97,9 +89,9 @@ class HowToPrayView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const _LordsPrayerVideoCard(),
+                  const _BibleVideoCard(),
                   const SizedBox(height: 32),
-                  const _LordsPrayerGuideCard(),
+                  const _BibleGuideCard(),
                 ],
               ),
             ),
@@ -110,163 +102,22 @@ class HowToPrayView extends StatelessWidget {
   }
 }
 
-// ── Lord's Prayer Text Block ──────────────────────────────────────────────────
+// ── Episode 1 Video Card ───────────────────────────────────────────────────────
 
-class _LordsPrayerBlock extends StatelessWidget {
-  const _LordsPrayerBlock();
-
-  static const _lines = [
-    'Our Father in heaven,',
-    'hallowed be your name.',
-    'Your kingdom come,',
-    'your will be done,',
-    'on earth as it is in heaven.',
-    'Give us this day our daily bread,',
-    'and forgive us our debts,',
-    'as we also have forgiven our debtors.',
-    'And lead us not into temptation,',
-    'but deliver us from evil.',
-  ];
+class _BibleVideoCard extends StatefulWidget {
+  const _BibleVideoCard();
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            MyWalkColor.golden.withValues(alpha: 0.07),
-            MyWalkColor.golden.withValues(alpha: 0.03),
-          ],
-        ),
-        border: Border.all(
-          color: MyWalkColor.golden.withValues(alpha: 0.28),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Decorative top rule
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  height: 0.5,
-                  color: MyWalkColor.golden.withValues(alpha: 0.35),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Icon(
-                  Icons.circle,
-                  size: 5,
-                  color: MyWalkColor.golden.withValues(alpha: 0.5),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  height: 0.5,
-                  color: MyWalkColor.golden.withValues(alpha: 0.35),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Lead-in
-          Text(
-            'Pray then like this:',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.dmSerifDisplay(
-              fontSize: 13,
-              fontStyle: FontStyle.italic,
-              color: MyWalkColor.golden.withValues(alpha: 0.65),
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // Prayer lines
-          for (final line in _lines)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                line,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.dmSerifDisplay(
-                  fontSize: 17,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.92),
-                  height: 1.7,
-                ),
-              ),
-            ),
-
-          const SizedBox(height: 20),
-
-          // Reference
-          Text(
-            'Matthew 6:9\u201313',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.dmSerifDisplay(
-              fontSize: 12,
-              fontStyle: FontStyle.italic,
-              color: MyWalkColor.golden.withValues(alpha: 0.6),
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Decorative bottom rule
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  height: 0.5,
-                  color: MyWalkColor.golden.withValues(alpha: 0.35),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Icon(
-                  Icons.circle,
-                  size: 5,
-                  color: MyWalkColor.golden.withValues(alpha: 0.5),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  height: 0.5,
-                  color: MyWalkColor.golden.withValues(alpha: 0.35),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  State<_BibleVideoCard> createState() => _BibleVideoCardState();
 }
 
-// ── Lord's Prayer Video Card ──────────────────────────────────────────────────
-
-class _LordsPrayerVideoCard extends StatefulWidget {
-  const _LordsPrayerVideoCard();
-
-  @override
-  State<_LordsPrayerVideoCard> createState() => _LordsPrayerVideoCardState();
-}
-
-class _LordsPrayerVideoCardState extends State<_LordsPrayerVideoCard> {
+class _BibleVideoCardState extends State<_BibleVideoCard> {
   late final VideoPlayerController _controller;
   bool _initialized = false;
   bool _hasError = false;
 
   static const _videoUrl =
-      'https://stream.mux.com/Ok02b3DgDhHj1pqIXldDtkGTMrkrygpUlJpxaCzqq6K4/high.mp4';
+      'https://stream.mux.com/hRgtUaEhBl97k3Y3j9GyVG794KP43ULDBu9gL6tGoa8/high.mp4';
 
   @override
   void initState() {
@@ -295,7 +146,7 @@ class _LordsPrayerVideoCardState extends State<_LordsPrayerVideoCard> {
             Icon(Icons.play_circle_outline, size: 14, color: _kAccent),
             const SizedBox(width: 6),
             Text(
-              'Watch a 5 min. intro to The Lord\u2019s Prayer',
+              'Episode\u00a01: \u201cWhat Is the Bible?\u201d',
               style: TextStyle(
                 fontSize: 12,
                 color: _kAccent.withValues(alpha: 0.85),
@@ -318,7 +169,9 @@ class _LordsPrayerVideoCardState extends State<_LordsPrayerVideoCard> {
             borderRadius: BorderRadius.circular(12),
             child: AspectRatio(
               aspectRatio: 16 / 9,
-              child: _hasError ? _buildOffline() : (_initialized ? _buildPlayer() : _buildLoading()),
+              child: _hasError
+                  ? _buildOffline()
+                  : (_initialized ? _buildPlayer() : _buildLoading()),
             ),
           ),
         ),
@@ -328,10 +181,7 @@ class _LordsPrayerVideoCardState extends State<_LordsPrayerVideoCard> {
           children: [
             Opacity(
               opacity: 0.5,
-              child: Image.asset(
-                'assets/BP_logo_wht.webp',
-                height: 16,
-              ),
+              child: Image.asset('assets/BP_logo_wht.webp', height: 16),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -355,11 +205,13 @@ class _LordsPrayerVideoCardState extends State<_LordsPrayerVideoCard> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.wifi_off_rounded, size: 32, color: Colors.white.withValues(alpha: 0.3)),
+            Icon(Icons.wifi_off_rounded,
+                size: 32, color: Colors.white.withValues(alpha: 0.3)),
             const SizedBox(height: 8),
             Text(
               'Video unavailable offline',
-              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.45)),
+              style: TextStyle(
+                  fontSize: 13, color: Colors.white.withValues(alpha: 0.45)),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -423,21 +275,21 @@ class _LordsPrayerVideoCardState extends State<_LordsPrayerVideoCard> {
   }
 }
 
-// ── Lord's Prayer Guide Card (webpage) ────────────────────────────────────────
+// ── BibleProject Guide Card (webpage) ─────────────────────────────────────────
 
-class _LordsPrayerGuideCard extends StatefulWidget {
-  const _LordsPrayerGuideCard();
+class _BibleGuideCard extends StatefulWidget {
+  const _BibleGuideCard();
 
   @override
-  State<_LordsPrayerGuideCard> createState() => _LordsPrayerGuideCardState();
+  State<_BibleGuideCard> createState() => _BibleGuideCardState();
 }
 
-class _LordsPrayerGuideCardState extends State<_LordsPrayerGuideCard> {
+class _BibleGuideCardState extends State<_BibleGuideCard> {
   late final WebViewController _controller;
   bool _isLoading = true;
   bool _hasError = false;
 
-  static const _guideUrl = 'https://bibleproject.com/guides/the-lords-prayer/';
+  static const _guideUrl = 'https://bibleproject.com/videos/what-is-bible/';
 
   @override
   void initState() {
@@ -470,9 +322,9 @@ class _LordsPrayerGuideCardState extends State<_LordsPrayerGuideCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'More about \u201cThe Lord\u2019s Prayer\u201d',
-          style: const TextStyle(
+        const Text(
+          'More about \u201cWhat Is the Bible?\u201d',
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: MyWalkColor.warmWhite,
