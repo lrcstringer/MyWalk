@@ -225,7 +225,7 @@ class BeatitudesView extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                'What Jesus was saying and why it still matters',
+                'The setting, structure and scholarship behind Matthew 5:3\u201312',
                 style: TextStyle(
                   fontSize: 13,
                   fontStyle: FontStyle.italic,
@@ -239,26 +239,21 @@ class BeatitudesView extends StatelessWidget {
                 controller: controller,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
                 children: [
-                  _para('On a hillside in Galilee, surrounded by crowds of ordinary people \u2014 farmers, fishermen, the poor, the sick, the overlooked \u2014 Jesus sat down and began to teach. What followed was the most concentrated, radical and counter-cultural ethical teaching in human history. We call it the Sermon on the Mount.'),
-                  _para('He opened it with eight statements, each beginning with the word blessed. We call them the Beatitudes, from the Latin beatus \u2014 happy, fortunate, to be envied.'),
-                  _para('But the people Jesus called blessed were not who anyone expected.'),
-                  _italicPara('Blessed are the poor in spirit. The mourning. The meek. Those who hunger for righteousness. The merciful. The pure in heart. The peacemakers. The persecuted.'),
-                  _para('These are not the powerful, the successful, the admired or the comfortable. Jesus is declaring that the Kingdom of God belongs to people the world overlooks \u2014 and more than that, He is describing the kind of person the Kingdom produces.'),
-                  _heading('The Beatitudes are not a checklist.'),
-                  _para('Jesus is not giving eight commands and saying \u201cachieve these states and God will reward you.\u201d He is painting a portrait \u2014 describing from the inside out what a person looks like when the Kingdom of God has truly taken up residence in their soul.'),
-                  _para('Read together, they tell a story. They move in a deliberate direction:'),
-                  _para('The first two \u2014 poor in spirit and mourning \u2014 describe coming to God with nothing held back. Empty hands. Honest grief. The posture of someone who has stopped pretending.'),
-                  _para('The next two \u2014 meek and hungry for righteousness \u2014 describe what happens inside as that person is formed: their will surrendered, their desire sharpened toward God and His ways.'),
-                  _para('The fifth and sixth \u2014 merciful and pure in heart \u2014 describe what begins to flow outward: grace given freely to others, and an inner life with nothing hidden.'),
-                  _para('The final two \u2014 peacemakers and persecuted \u2014 describe engaging the world at real cost, for the sake of the Kingdom.'),
-                  _para('This is a biography of transformation. Not a formula for earning God\u2019s favour, but a description of what a life looks like when the Spirit is at work.'),
-                  _heading('Jesus himself is the fulfilment of every Beatitude.'),
-                  _para('He was poor in spirit \u2014 completely dependent on the Father. He mourned over Jerusalem, over Lazarus, over sin. He was the meekest man who ever lived \u2014 all authority in heaven and earth, yet He washed feet. He hungered for righteousness, showed mercy without limit, was utterly pure in heart, made peace between God and humanity at the cost of His own life, and was persecuted unto death.'),
-                  _para('The Beatitudes are not first a description of what you must become. They are first a description of who Jesus already is \u2014 and the invitation is to be conformed to His image.'),
-                  _heading('What this means for how you use this section:'),
-                  _para('You cannot work your way into being poor in spirit or pure in heart any more than you can manufacture the Fruit of the Spirit. These qualities are the outcome of a life genuinely oriented toward God.'),
-                  _para('But the practices you build \u2014 in prayer, in Scripture, in service, in community \u2014 are the conditions in which the Spirit does this forming work. Each Beatitude in this section offers a reflection question, a set of practices and supporting Scripture to help you not just understand it, but begin to live in its direction.'),
-                  _para('The goal is not to tick off eight beatitudes. The goal is to become, slowly and by grace, the kind of person Jesus was describing on that hillside two thousand years ago.'),
+                  // ── Section 1 ──────────────────────────────────────────────
+                  _lmSectionHeader('THE SETTING OF THE BEATITUDES'),
+                  _lmPara('The Beatitudes (Matt 5:3\u201310) open the Sermon on the Mount, the first of Matthew\'s five great discourses (5\u20137; 10; 13; 18; 23\u201325). Matthew sets the scene deliberately: Jesus sees the crowds, ascends a mountain, sits down \u2014 the posture of a rabbinic teacher \u2014 and his disciples draw near. The mountain setting echoes Sinai and positions Jesus as the new Moses who does not merely transmit Torah but speaks on his own authority: \'But I say to you\u2026\' (5:22ff.).'),
+                  _lmPara('The word makarios, translated \'blessed,\' is drawn from the wisdom literature of the OT (Ps 1:1; 2:12; 32:1\u20132; Prov 3:13) and the prophets (Isa 56:2). In the Hellenistic world it described the happiness of the gods \u2014 a state beyond ordinary human reach. Jesus applies it to people who, by every ordinary measure, appear to lack what flourishing requires: the poor, the grieving, the meek, the persecuted. This is the Beatitudes\' central provocation.'),
+                  _lmPara('Each beatitude has a bipartite structure: a condition (those who\u2026) followed by a promise (for they shall\u2026). The promises operate on two tenses: some \u2014 \'theirs is the kingdom\' \u2014 are present; most \u2014 \'they shall be comforted,\' \'they shall inherit\' \u2014 are future. Scholars debate whether the future promises are purely eschatological or inaugurated \u2014 partially present now, fully realised at the end. The majority position is that Jesus announces a reality already breaking into the present through his own ministry, to be consummated at the eschaton.'),
+                  _lmDivider(),
+
+                  // ── Section 2 ──────────────────────────────────────────────
+                  _lmSectionHeader('SCHOLARLY NOTE: THE SERMON IN MATTHEW AND LUKE'),
+                  _lmPara('The relationship between Matthew\'s Sermon on the Mount (chs. 5\u20137) and Luke\'s Sermon on the Plain (6:20\u201349) has generated extensive scholarly debate. The prevailing explanation is that both evangelists drew on a common sayings source (Q), shaped according to each author\'s theological purposes. Luke\'s version is shorter and more socially direct: four beatitudes, addressed in the second person, accompanied by four corresponding woes. Matthew\'s is expanded, moves \'poor\' to \'poor in spirit,\' and presents a comprehensive account of Kingdom ethics structured around six antitheses.'),
+                  _lmPara('The question of whether the Sermon was delivered as a single address is secondary to its function in Matthew\'s narrative. Most modern scholars \u2014 Luz, Betz, Davies and Allison \u2014 regard it as a Matthean composition gathering material from various points in Jesus\'s ministry into a unified discourse. This does not diminish its authority. Matthew\'s editorial arrangement is itself an act of Spirit-guided interpretation, presenting the vision of Kingdom life that Jesus both taught and embodied as a coherent whole.'),
+                  _lmDivider(),
+
+                  // ── Works Cited ────────────────────────────────────────────
+                  const _BeatitudesWorksCitedExpansion(),
                 ],
               ),
             ),
@@ -268,8 +263,21 @@ class BeatitudesView extends StatelessWidget {
     );
   }
 
-  Widget _para(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
+  Widget _lmSectionHeader(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            color: _kAccent.withValues(alpha: 0.85),
+          ),
+        ),
+      );
+
+  Widget _lmPara(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 14),
         child: Text(
           text,
           style: TextStyle(
@@ -280,40 +288,9 @@ class BeatitudesView extends StatelessWidget {
         ),
       );
 
-  Widget _italicPara(String text) => Padding(
+  Widget _lmDivider() => Padding(
         padding: const EdgeInsets.only(bottom: 16),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          decoration: BoxDecoration(
-            color: _kAccent.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(10),
-            border: Border(
-              left: BorderSide(color: _kAccent.withValues(alpha: 0.5), width: 3),
-            ),
-          ),
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 13,
-              fontStyle: FontStyle.italic,
-              color: _kAccent.withValues(alpha: 0.9),
-              height: 1.6,
-            ),
-          ),
-        ),
-      );
-
-  Widget _heading(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: MyWalkColor.warmWhite,
-            height: 1.4,
-          ),
-        ),
+        child: Divider(color: Colors.white.withValues(alpha: 0.07)),
       );
 }
 
@@ -564,4 +541,119 @@ class _BeatitudeCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Works Cited ───────────────────────────────────────────────────────────────
+
+class _BeatitudesWorksCitedExpansion extends StatelessWidget {
+  const _BeatitudesWorksCitedExpansion();
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = _kAccent;
+    const entries = [
+      _WorksCitedEntry(
+        author: 'Allison, Dale C.',
+        title: 'The Sermon on the Mount: Inspiring the Moral Imagination.',
+        publisher: 'New York: Crossroad, 1999.',
+      ),
+      _WorksCitedEntry(
+        author: 'Betz, Hans Dieter.',
+        title: 'The Sermon on the Mount.',
+        publisher: 'Hermeneia. Minneapolis: Fortress Press, 1995.',
+      ),
+      _WorksCitedEntry(
+        author: 'Davies, W. D., and Dale C. Allison Jr.',
+        title: 'A Critical and Exegetical Commentary on the Gospel According to Saint Matthew. Vol. 1.',
+        publisher: 'ICC. Edinburgh: T\u0026T Clark, 1988.',
+      ),
+      _WorksCitedEntry(
+        author: 'France, R. T.',
+        title: 'The Gospel of Matthew.',
+        publisher: 'NICNT. Grand Rapids: Eerdmans, 2007.',
+      ),
+      _WorksCitedEntry(
+        author: 'Hagner, Donald A.',
+        title: 'Matthew 1\u201313.',
+        publisher: 'WBC 33A. Dallas: Word Books, 1993.',
+      ),
+      _WorksCitedEntry(
+        author: 'Luz, Ulrich.',
+        title: 'Matthew 1\u20137: A Commentary.',
+        publisher: 'Hermeneia. Minneapolis: Fortress Press, 2007.',
+      ),
+      _WorksCitedEntry(
+        author: 'Wright, N. T.',
+        title: 'Jesus and the Victory of God.',
+        publisher: 'Minneapolis: Fortress Press, 1996.',
+      ),
+    ];
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: EdgeInsets.zero,
+        leading: Icon(Icons.menu_book_outlined, size: 16, color: accent.withValues(alpha: 0.6)),
+        title: Text(
+          'Works Cited',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: accent.withValues(alpha: 0.75),
+          ),
+        ),
+        iconColor: accent.withValues(alpha: 0.5),
+        collapsedIconColor: accent.withValues(alpha: 0.4),
+        children: [
+          const SizedBox(height: 4),
+          ...entries.map((e) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
+                      height: 1.55,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '${e.author} ',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      TextSpan(
+                        text: '${e.title} ',
+                        style: const TextStyle(fontStyle: FontStyle.italic),
+                      ),
+                      TextSpan(text: e.publisher),
+                    ],
+                  ),
+                ),
+              )),
+          const SizedBox(height: 8),
+          Text(
+            'Primary sources: Hebrew Bible / LXX; Mishnah (Pirqe Avot 1:2); Dead Sea Scrolls (1QH, 1QM); 2 Maccabees 6\u20137; Wisdom of Solomon; Sirach; Aristotle, Nicomachean Ethics; BDAG (3rd ed.); NA28/UBS5 Greek New Testament; WEB (World English Bible).',
+            style: TextStyle(
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
+              height: 1.55,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorksCitedEntry {
+  final String author;
+  final String title;
+  final String publisher;
+  const _WorksCitedEntry({
+    required this.author,
+    required this.title,
+    required this.publisher,
+  });
 }
