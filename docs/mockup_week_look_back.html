@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyWalk — Week Look-Back Mockup</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111120;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 40px 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    }
+
+    /* Phone shell */
+    .phone {
+      width: 390px;
+      min-height: 844px;
+      background: #1E1E2E;
+      border-radius: 50px;
+      border: 2px solid #333348;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px #0a0a18;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Notch */
+    .notch {
+      width: 120px;
+      height: 32px;
+      background: #111120;
+      border-radius: 0 0 20px 20px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Screen content */
+    .screen {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 24px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    /* ── Heading ── */
+    .heading {
+      text-align: center;
+    }
+    .heading .label {
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      color: rgba(232,213,163,0.5);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .heading h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #FAF7F2;
+      letter-spacing: -0.3px;
+    }
+
+    /* ── Score Tile ── */
+    .score-tile {
+      background: rgba(212,168,67,0.18);
+      border: 1px solid rgba(212,168,67,0.38);
+      border-radius: 20px;
+      height: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .score-numbers {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .score-big {
+      font-size: 52px;
+      font-weight: 800;
+      color: #D4A843;
+      line-height: 1;
+    }
+    .score-denom {
+      font-size: 20px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.38);
+    }
+    .score-label {
+      font-size: 13px;
+      color: rgba(255,255,255,0.38);
+      margin-bottom: 10px;
+    }
+    .day-dots {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .day-dot-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .day-letter {
+      font-size: 10px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.38);
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-full  { background: #D4A843; }
+    .dot-part  { background: rgba(232,213,163,0.38); }
+    .dot-empty { background: rgba(255,255,255,0.08); }
+
+    /* ── Section header ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .section-header .icon { font-size: 13px; }
+    .section-header span {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    /* ── Habit Breakdown ── */
+    .habit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .habit-row {
+      background: #262638;
+      border: 0.5px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .habit-icon { font-size: 15px; }
+    .habit-name {
+      flex: 1;
+      font-size: 14px;
+      color: #FAF7F2;
+    }
+    .habit-score {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .score-good { color: #D4A843; }
+    .score-ok   { color: rgba(232,213,163,0.45); }
+
+    /* ── Milestones ── */
+    .milestones-card {
+      background: rgba(212,168,67,0.04);
+      border: 0.5px solid rgba(212,168,67,0.12);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .milestone-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .milestone-icon { font-size: 13px; color: #D4A843; margin-top: 1px; }
+    .milestone-text { font-size: 12px; color: #FAF7F2; line-height: 1.5; }
+
+    /* ── Fruit Section ── */
+    .fruit-card {
+      background: rgba(122,158,126,0.06);
+      border: 1px solid rgba(122,158,126,0.15);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .fruit-icons {
+      display: flex;
+      gap: 6px;
+      margin: 10px 0 8px;
+    }
+    .fruit-bubble {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .fruit-summary-text {
+      font-size: 13px;
+      color: rgba(250,247,242,0.8);
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+    .fruit-moments {
+      font-size: 12px;
+      color: rgba(232,213,163,0.5);
+      margin-bottom: 10px;
+    }
+    .fruit-footer {
+      font-size: 11px;
+      font-style: italic;
+      color: rgba(232,213,163,0.38);
+      line-height: 1.5;
+    }
+
+    /* ── Grace Message ── */
+    .grace {
+      text-align: center;
+      padding: 0 8px;
+    }
+    .grace-main {
+      font-size: 16px;
+      color: #E8D5A3;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .grace-verse {
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(232,213,163,0.45);
+      line-height: 1.6;
+      margin-bottom: 6px;
+    }
+    .grace-ref {
+      font-size: 11px;
+      color: rgba(212,168,67,0.38);
+    }
+
+    /* ── Bottom CTA ── */
+    .bottom-cta {
+      padding: 16px 24px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .upsell-banner {
+      background: rgba(212,168,67,0.04);
+      border: 0.5px solid rgba(212,168,67,0.12);
+      border-radius: 12px;
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .upsell-banner .icon { font-size: 14px; color: #D4A843; }
+    .upsell-text {
+      flex: 1;
+      font-size: 12px;
+      color: #E8D5A3;
+    }
+    .pro-badge {
+      background: rgba(212,168,67,0.15);
+      border-radius: 10px;
+      padding: 3px 7px;
+      font-size: 9px;
+      font-weight: 700;
+      color: #D4A843;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .cta-btn {
+      background: #D4A843;
+      color: #1E1E2E;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .cta-btn:hover { background: #e0b84e; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="notch"></div>
+
+    <div class="screen">
+
+      <!-- Heading -->
+      <div class="heading">
+        <div class="label">Last Week</div>
+        <h1>Your Week in Review</h1>
+      </div>
+
+      <!-- Score Tile -->
+      <div class="score-tile">
+        <div class="score-numbers">
+          <span class="score-big">14</span>
+          <span class="score-denom">/ 21</span>
+        </div>
+        <div class="score-label">check-ins last week</div>
+        <div class="day-dots">
+          <div class="day-dot-col"><span class="day-letter">S</span><div class="dot dot-full"></div></div>
+          <div class="day-dot-col"><span class="day-letter">M</span><div class="dot dot-full"></div></div>
+          <div class="day-dot-col"><span class="day-letter">T</span><div class="dot dot-part"></div></div>
+          <div class="day-dot-col"><span class="day-letter">W</span><div class="dot dot-full"></div></div>
+          <div class="day-dot-col"><span class="day-letter">T</span><div class="dot dot-empty"></div></div>
+          <div class="day-dot-col"><span class="day-letter">F</span><div class="dot dot-full"></div></div>
+          <div class="day-dot-col"><span class="day-letter">S</span><div class="dot dot-part"></div></div>
+        </div>
+      </div>
+
+      <!-- Habit Breakdown -->
+      <div>
+        <div class="habit-list">
+          <div class="habit-row">
+            <span class="habit-icon">📖</span>
+            <span class="habit-name">Morning Scripture</span>
+            <span class="habit-score score-good">6/7</span>
+          </div>
+          <div class="habit-row">
+            <span class="habit-icon">🙏</span>
+            <span class="habit-name">Daily Prayer</span>
+            <span class="habit-score score-good">5/7</span>
+          </div>
+          <div class="habit-row">
+            <span class="habit-icon">✨</span>
+            <span class="habit-name">Gratitude Journal</span>
+            <span class="habit-score score-ok">3/7</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Milestones -->
+      <div class="milestones-card">
+        <div class="section-header">
+          <span class="icon">⭐</span>
+          <span style="color:#E8D5A3;">Milestones This Week</span>
+        </div>
+        <div class="milestone-row">
+          <span class="milestone-icon">📖</span>
+          <span class="milestone-text">30-day streak on Morning Scripture — a month of faithfulness.</span>
+        </div>
+        <div class="milestone-row">
+          <span class="milestone-icon">🙏</span>
+          <span class="milestone-text">50 total check-ins on Daily Prayer.</span>
+        </div>
+      </div>
+
+      <!-- Fruit Section -->
+      <div class="fruit-card">
+        <div class="section-header">
+          <span class="icon">🌿</span>
+          <span style="color:rgba(122,158,126,0.7);">The Fruit Growing in You</span>
+        </div>
+        <div class="fruit-icons">
+          <div class="fruit-bubble" style="background:rgba(184,64,64,0.15);border:1px solid rgba(184,64,64,0.4);">❤️</div>
+          <div class="fruit-bubble" style="background:rgba(72,120,160,0.15);border:1px solid rgba(72,120,160,0.4);">🕊️</div>
+          <div class="fruit-bubble" style="background:rgba(72,80,152,0.15);border:1px solid rgba(72,80,152,0.4);">⚓</div>
+        </div>
+        <div class="fruit-summary-text">Faithfulness was your focus this week. Keep tending that soil.</div>
+        <div class="fruit-moments">14 moments of intentional practice</div>
+        <div class="fruit-footer">"This isn't a score — it's a story of growth. The fruit is forming, even when you can't see it."</div>
+      </div>
+
+      <!-- Grace Message -->
+      <div class="grace">
+        <div class="grace-main">You showed up 14 times last week. That is not nothing — that is faithfulness, one day at a time.</div>
+        <div class="grace-verse">"The steadfast love of the Lord never ceases; his mercies never come to an end; they are new every morning."</div>
+        <div class="grace-ref">Lamentations 3:22–23</div>
+      </div>
+
+    </div><!-- /screen -->
+
+    <!-- Bottom CTA (sticky) -->
+    <div class="bottom-cta">
+      <div class="upsell-banner">
+        <span class="icon">📊</span>
+        <span class="upsell-text">See your progress over months</span>
+        <span class="pro-badge">⭐ PRO</span>
+      </div>
+      <button class="cta-btn">
+        <span>→</span> Dedicate this week
+      </button>
+    </div>
+
+  </div><!-- /phone -->
+</body>
+</html>

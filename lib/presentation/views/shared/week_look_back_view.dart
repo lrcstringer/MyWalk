@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/fruit.dart';
 import '../../../domain/entities/habit.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/journal_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../../domain/services/milestone_service.dart';
 import '../../../domain/services/week_cycle_manager.dart';
@@ -33,11 +36,22 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
   bool _showMilestones = false;
   bool _showFruitSection = false;
   bool _showMessage = false;
+  bool _showReflection = false;
   bool _showButton = false;
   bool _showUpgradePrompt = false;
   bool _tileGlow = false;
 
+  bool _reflectionExpanded = false;
+  bool _isSaving = false;
+  final _reflectionController = TextEditingController();
+
   static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+  @override
+  void dispose() {
+    _reflectionController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -67,7 +81,10 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
     Future.delayed(const Duration(milliseconds: 2400), () {
       if (mounted) setState(() => _showMessage = true);
     });
-    Future.delayed(const Duration(milliseconds: 2700), () {
+    Future.delayed(const Duration(milliseconds: 2650), () {
+      if (mounted) setState(() => _showReflection = true);
+    });
+    Future.delayed(const Duration(milliseconds: 2900), () {
       if (mounted) setState(() => _showButton = true);
     });
     Future.delayed(const Duration(milliseconds: 3200), () {
@@ -188,6 +205,10 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
                       duration: const Duration(milliseconds: 500),
                       child: _graceMessageSection(totalCompleted, totalPossible),
                     ),
+                    const SizedBox(height: 28),
+
+                    // Weekly reflection
+                    _reflectionSection(),
                   ],
                 ),
               ),
@@ -248,11 +269,34 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          widget.weekCycleManager.completeLookBack();
-                          widget.onDismiss();
-                        },
-                        icon: const Icon(Icons.arrow_forward, size: 18),
+                        onPressed: _isSaving
+                            ? null
+                            : () async {
+                                setState(() => _isSaving = true);
+                                final text = _reflectionController.text.trim();
+                                if (text.isNotEmpty) {
+                                  await context.read<JournalProvider>().saveEntry(
+                                        text: jsonEncode([
+                                          {'insert': '$text\n'}
+                                        ]),
+                                        sourceType: 'weekly_review',
+                                      );
+                                }
+                                if (mounted) {
+                                  widget.weekCycleManager.completeLookBack();
+                                  widget.onDismiss();
+                                }
+                              },
+                        icon: _isSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: MyWalkColor.charcoal,
+                                ),
+                              )
+                            : const Icon(Icons.arrow_forward, size: 18),
                         label: const Text('Dedicate this week',
                             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                         style: ElevatedButton.styleFrom(
@@ -590,6 +634,103 @@ class _WeekLookBackViewState extends State<WeekLookBackView> {
             );
           }),
         ],
+      ),
+    );
+  }
+
+  Widget _reflectionSection() {
+    return AnimatedOpacity(
+      opacity: _showReflection ? 1 : 0,
+      duration: const Duration(milliseconds: 500),
+      child: AnimatedSlide(
+        offset: _showReflection ? Offset.zero : const Offset(0, 0.15),
+        duration: const Duration(milliseconds: 500),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => _reflectionExpanded = !_reflectionExpanded),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.cardBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _reflectionExpanded
+                        ? MyWalkColor.golden.withValues(alpha: 0.4)
+                        : MyWalkColor.cardBorder,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.edit_note_rounded,
+                      size: 18,
+                      color: MyWalkColor.golden.withValues(alpha: 0.7),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Add a weekly reflection (optional)',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: MyWalkColor.softGold.withValues(alpha: 0.75),
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      _reflectionExpanded ? Icons.expand_less : Icons.expand_more,
+                      size: 18,
+                      color: MyWalkColor.softGold.withValues(alpha: 0.4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            AnimatedCrossFade(
+              firstChild: const SizedBox(height: 0, width: double.infinity),
+              secondChild: _reflectionField(),
+              crossFadeState: _reflectionExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 300),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _reflectionField() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: MyWalkColor.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.25)),
+      ),
+      child: TextField(
+        controller: _reflectionController,
+        maxLines: 6,
+        minLines: 4,
+        style: const TextStyle(
+          fontSize: 14,
+          color: MyWalkColor.warmWhite,
+          height: 1.6,
+        ),
+        decoration: InputDecoration(
+          hintText:
+              'What stood out this week? What are you grateful for? What do you want to carry into the week ahead?',
+          hintStyle: TextStyle(
+            fontSize: 13,
+            color: MyWalkColor.softGold.withValues(alpha: 0.3),
+            height: 1.5,
+          ),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
       ),
     );
   }
