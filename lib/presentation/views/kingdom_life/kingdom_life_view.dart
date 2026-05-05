@@ -6,6 +6,7 @@ import '../kingdom_life/parables_view.dart';
 import '../kingdom_life/i_am_sayings_view.dart';
 import '../kingdom_life/how_to_pray_view.dart';
 import '../kingdom_life/how_to_read_bible_view.dart';
+import '../kingdom_life/blue_letter_bible_browser_view.dart';
 import '../kingdom_life/women_of_valor_view.dart';
 import '../bible_reading/bible_reading_grid_view.dart';
 import '../memorization/memorization_router.dart';
@@ -149,6 +150,9 @@ class KingdomLifeView extends StatelessWidget {
                           ),
                         ],
                       ),
+
+                      const SizedBox(height: 12),
+                      const _BlueLLetterBibleCard(),
 
                       // ── Premium upsell (non-premium only) ────────────────
                       if (!context.watch<StoreProvider>().isPremium) ...[
@@ -701,6 +705,86 @@ class _PremiumUpsellCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Blue Letter Bible card (Free) ─────────────────────────────────────────────
+
+class _BlueLLetterBibleCard extends StatelessWidget {
+  const _BlueLLetterBibleCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(context, BlueLLetterBibleBrowserView.route()),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              MyWalkColor.cardBackground,
+              MyWalkColor.golden.withValues(alpha: 0.06),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: MyWalkColor.golden.withValues(alpha: 0.35),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: MyWalkColor.golden.withValues(alpha: 0.10),
+              blurRadius: 12,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Image.asset(
+              'assets/Stacked BLB Logo.png',
+              width: 52,
+              height: 52,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Search the Bible with Blue Letter Bible',
+                    style: TextStyle(
+                      color: MyWalkColor.warmWhite,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'blueletterbible.org',
+                    style: TextStyle(
+                      color: MyWalkColor.softGold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: MyWalkColor.softGold,
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
   }

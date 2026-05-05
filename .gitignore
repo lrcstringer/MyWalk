@@ -31,3 +31,7 @@ ui-debug.log
 
 # macOS
 .DS_Store
+
+# Claude Code and Firebase deploy artifacts
+.claude/
+.firebase/
