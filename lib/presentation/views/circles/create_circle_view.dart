@@ -51,7 +51,7 @@ class _CreateCircleViewState extends State<CreateCircleView> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text('New Circle',
+        title: const Text('New Group',
             style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600)),
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
@@ -65,7 +65,7 @@ class _CreateCircleViewState extends State<CreateCircleView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Circle Name',
+              const Text('Group Name',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.softGold)),
               const SizedBox(height: 6),
               _textField(_nameController, 'e.g. Family Prayer', maxLines: 1),
@@ -73,7 +73,7 @@ class _CreateCircleViewState extends State<CreateCircleView> {
               const Text('Description',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.softGold)),
               const SizedBox(height: 6),
-              _textField(_descController, 'Optional — what is this circle about?', maxLines: 3),
+              _textField(_descController, 'Optional — what is this group about?', maxLines: 3),
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Row(children: [
@@ -98,7 +98,7 @@ class _CreateCircleViewState extends State<CreateCircleView> {
                     child: _isLoading
                         ? const SizedBox(width: 18, height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.charcoal))
-                        : const Text('Create Circle', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                        : const Text('Create Group', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                   ),
                 ),
               ),

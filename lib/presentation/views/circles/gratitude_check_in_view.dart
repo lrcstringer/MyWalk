@@ -248,7 +248,7 @@ class _GratitudeCheckInViewState extends State<GratitudeCheckInView> {
     return GestureDetector(
       onTap: () => _openShareSheet(),
       child: Row(children: [
-        Text('Share with your circle?',
+        Text('Share with your group?',
             style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.5))),
         const Spacer(),
         const Icon(Icons.ios_share_rounded, size: 14, color: MyWalkColor.golden),

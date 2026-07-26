@@ -38,10 +38,10 @@ class _ShareGratitudeSheetState extends State<ShareGratitudeSheet> {
   String _previewText(String firstName) {
     final text = widget.gratitudeText;
     if (text != null && text.isNotEmpty) {
-      return _isAnonymous ? 'Someone in your circle: $text' : '$firstName: $text';
+      return _isAnonymous ? 'Someone in your group: $text' : '$firstName: $text';
     }
     return _isAnonymous
-        ? 'Someone in your circle gave thanks to God today'
+        ? 'Someone in your group gave thanks to God today'
         : '$firstName gave thanks to God today';
   }
 

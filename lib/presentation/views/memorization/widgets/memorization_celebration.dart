@@ -140,7 +140,7 @@ class _MemorizationCelebrationState extends State<MemorizationCelebration>
                   OutlinedButton.icon(
                     onPressed: widget.onShare,
                     icon: const Icon(Icons.share_outlined, size: 18),
-                    label: const Text('Share with my circle'),
+                    label: const Text('Share with my group'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: MyWalkColor.warmWhite,
                       side: BorderSide(color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),

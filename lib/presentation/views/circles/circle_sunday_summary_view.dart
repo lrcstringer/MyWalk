@@ -45,9 +45,9 @@ class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
   }
 
   String _scoreMessage(double score) {
-    if (score >= 0.9) return 'Outstanding! Your circle walked in near-perfect faithfulness this week.';
-    if (score >= 0.7) return 'Strong week! Your circle showed up with consistency and dedication.';
-    if (score >= 0.5) return 'Good effort! More than half the circle stayed faithful this week.';
+    if (score >= 0.9) return 'Outstanding! Your group walked in near-perfect faithfulness this week.';
+    if (score >= 0.7) return 'Strong week! Your group showed up with consistency and dedication.';
+    if (score >= 0.5) return 'Good effort! More than half the group stayed faithful this week.';
     if (score >= 0.3) return 'A start! Every small step counts. Encourage each other.';
     return 'A quiet week. Rally together — you\'re stronger in community.';
   }
@@ -179,7 +179,7 @@ class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
         Row(children: [
           const Icon(Icons.bar_chart_rounded, size: 14, color: MyWalkColor.golden),
           const SizedBox(width: 6),
-          const Text('Circle Faithfulness',
+          const Text('Group Faithfulness',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.golden)),
         ]),
         const SizedBox(height: 10),

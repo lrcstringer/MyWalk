@@ -3,6 +3,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/repositories/iap_repository.dart';
 
+export '../../domain/repositories/iap_repository.dart' show TokenRedemptionResult;
+
 /// Firestore + Firebase Functions implementation of [IAPRepository].
 ///
 /// Clean Architecture: this class lives in the data layer.
@@ -132,5 +134,24 @@ class FirestoreIAPRepository implements IAPRepository {
     final callable = _fn.httpsCallable('validateReceipt');
     final result = await callable.call<Map<String, dynamic>>(payload);
     return result.data['isPremium'] as bool? ?? false;
+  }
+
+  @override
+  Future<TokenRedemptionResult> redeemToken(String tokenCode) async {
+    try {
+      final callable = _fn.httpsCallable('redeemToken');
+      await callable.call<Map<String, dynamic>>({'tokenCode': tokenCode});
+      return TokenRedemptionResult.success;
+    } on FirebaseFunctionsException catch (e) {
+      return switch (e.message) {
+        'invalid-token'   => TokenRedemptionResult.invalidToken,
+        'not-yet-active'  => TokenRedemptionResult.notYetActive,
+        'expired'         => TokenRedemptionResult.expired,
+        'fully-redeemed'  => TokenRedemptionResult.fullyRedeemed,
+        _                 => TokenRedemptionResult.networkError,
+      };
+    } catch (_) {
+      return TokenRedemptionResult.networkError;
+    }
   }
 }

@@ -64,11 +64,11 @@ class CircleHabitsTab extends StatelessWidget {
         Icon(Icons.check_circle_outline_rounded, size: 40,
             color: Colors.white.withValues(alpha: 0.15)),
         const SizedBox(height: 12),
-        Text('No circle habits yet.',
+        Text('No group habits yet.',
             style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
         const SizedBox(height: 6),
         Text(isAdmin
-            ? 'Tap + to create a shared habit for your circle.'
+            ? 'Tap + to create a shared habit for your group.'
             : 'Your admin hasn\'t created any habits yet.',
             style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.3)),
             textAlign: TextAlign.center),
@@ -333,7 +333,7 @@ class _CircleHabitCard extends StatelessWidget {
         backgroundColor: MyWalkColor.cardBackground,
         title: const Text('Deactivate Habit',
             style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
-        content: Text('Hide "${habit.name}" from your circle? History is kept.',
+        content: Text('Hide "${habit.name}" from your group? History is kept.',
             style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context),
@@ -503,7 +503,7 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
               maxLines: 2,
               style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
               decoration:
-                  _inputDec('Why is this habit important for your circle?')),
+                  _inputDec('Why is this habit important for your group?')),
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!,
@@ -733,7 +733,7 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text('New Circle Habit',
+        title: const Text('New Group Habit',
             style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17)),
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
@@ -973,7 +973,7 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
       );
       notifProvider?.sendAnnouncement(
         circleId: widget.circleId,
-        message: 'New circle habit: $name — check the Habits tab.',
+        message: 'New group habit: $name — check the Habits tab.',
       ).catchError((_) {});
       if (mounted) Navigator.pop(context);
     } catch (e) {

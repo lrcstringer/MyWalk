@@ -313,7 +313,7 @@ class _BeatitudePracticeDetailSheetState
                         ),
                       )
                     : const Text(
-                        'Add this habit',
+                        'Add this practice',
                         style: TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 16),
                       ),

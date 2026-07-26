@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../domain/entities/beatitude.dart';
+import '../../../domain/entities/habit.dart';
+import '../../providers/habit_provider.dart';
 import '../../theme/app_theme.dart';
 import 'bible_project_browser_view.dart';
 import '../journal/journal_entry_composer.dart';
@@ -7,10 +10,57 @@ import 'beatitude_practices_view.dart';
 
 const _kAccent = Color(0xFF9B8BB4);
 
-class BeatitudeDetailView extends StatelessWidget {
+class BeatitudeDetailView extends StatefulWidget {
   final BeatitudeModel beatitude;
 
   const BeatitudeDetailView({super.key, required this.beatitude});
+
+  @override
+  State<BeatitudeDetailView> createState() => _BeatitudeDetailViewState();
+}
+
+class _BeatitudeDetailViewState extends State<BeatitudeDetailView> {
+  final Map<int, bool> _adding = {};
+
+  BeatitudeModel get _beatitude => widget.beatitude;
+
+  String _habitName(String text) {
+    const sep = ' — ';
+    final idx = text.indexOf(sep);
+    if (idx > 0 && idx <= 60) return text.substring(0, idx);
+    return text.length > 60 ? '${text.substring(0, 57)}...' : text;
+  }
+
+  Future<void> _addPractice(int index, String practiceText) async {
+    if (_adding[index] == true) return;
+    setState(() => _adding[index] = true);
+    try {
+      await context.read<HabitProvider>().addHabit(
+            name: _habitName(practiceText),
+            category: HabitCategory.custom,
+            trackingType: HabitTrackingType.checkIn,
+            purpose: practiceText,
+            dailyTarget: 1.0,
+            targetUnit: '',
+            sourceType: 'beatitude_practice',
+            categoryId: 'the_beatitudes',
+            subcategoryId: null,
+            categoryName: 'The Beatitudes',
+            subcategoryName: _beatitude.title,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Practice added to Today.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        setState(() => _adding[index] = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _adding[index] = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,12 +72,14 @@ class BeatitudeDetailView extends StatelessWidget {
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
             foregroundColor: MyWalkColor.warmWhite,
-            expandedHeight: 220,
+            expandedHeight: 240,
             pinned: true,
             actions: [
               IconButton(
-                icon: const Icon(Icons.menu_book_outlined, color: MyWalkColor.softGold),
-                onPressed: () => BibleProjectBrowserView.openOrPrompt(context),
+                icon: const Icon(Icons.menu_book_outlined,
+                    color: MyWalkColor.softGold),
+                onPressed: () => BibleProjectBrowserView.openOrPrompt(
+                    context, reference: _beatitude.verseRef),
                 tooltip: 'Bible',
               ),
             ],
@@ -37,8 +89,9 @@ class BeatitudeDetailView extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    beatitude.imagePath,
+                    _beatitude.imagePath,
                     fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
                   ),
                   Container(
                     decoration: BoxDecoration(
@@ -62,7 +115,7 @@ class BeatitudeDetailView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          beatitude.title,
+                          _beatitude.title,
                           style: const TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
@@ -71,12 +124,18 @@ class BeatitudeDetailView extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          beatitude.verseRef,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: _kAccent.withValues(alpha: 0.9),
-                            fontWeight: FontWeight.w500,
+                        GestureDetector(
+                          onTap: () => BibleProjectBrowserView.openOrPrompt(
+                              context, reference: _beatitude.verseRef),
+                          child: Text(
+                            _beatitude.verseRef,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: _kAccent.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w500,
+                              decoration: TextDecoration.underline,
+                              decorationColor: _kAccent.withValues(alpha: 0.4),
+                            ),
                           ),
                         ),
                       ],
@@ -94,21 +153,24 @@ class BeatitudeDetailView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Promise badge
+                  // ── Promise badge ────────────────────────────────────────
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
                       color: _kAccent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _kAccent.withValues(alpha: 0.3)),
+                      border:
+                          Border.all(color: _kAccent.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.star_outline, size: 13, color: _kAccent.withValues(alpha: 0.8)),
+                        Icon(Icons.star_outline,
+                            size: 13, color: _kAccent.withValues(alpha: 0.8)),
                         const SizedBox(width: 6),
                         Text(
-                          'Promise: ${beatitude.promise}',
+                          'Promise: ${_beatitude.promise}',
                           style: TextStyle(
                             fontSize: 12,
                             color: _kAccent.withValues(alpha: 0.9),
@@ -120,68 +182,39 @@ class BeatitudeDetailView extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Verse quote — tappable → opens Bible browser
+                  // ── Scripture block ──────────────────────────────────────
                   GestureDetector(
-                    onTap: () => BibleProjectBrowserView.openOrPrompt(context, reference: beatitude.verseRef),
+                    onTap: () => BibleProjectBrowserView.openOrPrompt(
+                        context, reference: _beatitude.verseRef),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
                       decoration: BoxDecoration(
                         color: _kAccent.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(10),
                         border: Border(
-                          left: BorderSide(color: _kAccent.withValues(alpha: 0.5), width: 3),
+                          left: BorderSide(
+                              color: _kAccent.withValues(alpha: 0.5), width: 3),
                         ),
                       ),
-                      child: Row(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '\u201c${beatitude.verse}\u201d',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontStyle: FontStyle.italic,
-                                    color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
-                                    height: 1.65,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '\u2014 ${beatitude.verseRef}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: _kAccent.withValues(alpha: 0.6),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => _showBeatitudeDetail(context),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.menu_book_outlined, size: 11, color: _kAccent.withValues(alpha: 0.6)),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'More on this Beatitude',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: _kAccent.withValues(alpha: 0.7),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 2),
-                                          Icon(Icons.chevron_right, size: 13, color: _kAccent.withValues(alpha: 0.5)),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                          Text(
+                            '“${_beatitude.verse}”',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontStyle: FontStyle.italic,
+                              color:
+                                  MyWalkColor.warmWhite.withValues(alpha: 0.85),
+                              height: 1.65,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '— ${_beatitude.verseRef}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _kAccent.withValues(alpha: 0.6),
                             ),
                           ),
                         ],
@@ -190,11 +223,10 @@ class BeatitudeDetailView extends StatelessWidget {
                   ),
                   const SizedBox(height: 28),
 
-                  // Your Why
-                  _sectionLabel('Your Why'),
-                  const SizedBox(height: 8),
+                  // ── YOUR WHY ─────────────────────────────────────────────
+                  _sectionHeader('YOUR WHY'),
                   Text(
-                    beatitude.yourWhy,
+                    _beatitude.yourWhy,
                     style: TextStyle(
                       fontSize: 15,
                       color: MyWalkColor.warmWhite.withValues(alpha: 0.8),
@@ -203,22 +235,13 @@ class BeatitudeDetailView extends StatelessWidget {
                   ),
                   const SizedBox(height: 28),
 
-                  // What This Means
-                  _sectionLabel('What This Means'),
-                  const SizedBox(height: 8),
-                  Text(
-                    beatitude.whatThisMeans,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
-                      height: 1.65,
-                    ),
-                  ),
+                  // ── WHAT THIS MEANS ──────────────────────────────────────
+                  _sectionHeader('WHAT THIS MEANS'),
+                  _bodyPara(_beatitude.whatThisMeans),
                   const SizedBox(height: 28),
 
-                  // Reflection Question
-                  _sectionLabel('Reflection'),
-                  const SizedBox(height: 8),
+                  // ── REFLECTION ───────────────────────────────────────────
+                  _sectionHeader('REFLECTION'),
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -226,7 +249,7 @@ class BeatitudeDetailView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      beatitude.reflectionQuestion,
+                      _beatitude.reflectionQuestion,
                       style: TextStyle(
                         fontSize: 14,
                         fontStyle: FontStyle.italic,
@@ -237,25 +260,90 @@ class BeatitudeDetailView extends StatelessWidget {
                   ),
                   const SizedBox(height: 28),
 
-                  // Fruit Connection
-                  _sectionLabel('Fruit Connection'),
-                  const SizedBox(height: 10),
+                  // ── FRUIT CONNECTION ─────────────────────────────────────
+                  _sectionHeader('FRUIT CONNECTION'),
+                  const SizedBox(height: 4),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: beatitude.fruitConnection
+                    children: _beatitude.fruitConnection
                         .map((f) => _fruitChip(f))
                         .toList(),
                   ),
                   const SizedBox(height: 28),
+                  _divider(),
+                  const SizedBox(height: 20),
 
-                  // Add a practice CTA
+                  // ── SCHOLARLY SECTIONS ───────────────────────────────────
+
+                  if (_beatitude.statementInBrief.isNotEmpty) ...[
+                    _sectionHeader('THE STATEMENT IN BRIEF'),
+                    _bodyPara(_beatitude.statementInBrief),
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (_beatitude.centralPoint.isNotEmpty) ...[
+                    _sectionHeader('THE CENTRAL POINT'),
+                    _highlightBox(
+                      _beatitude.centralPointTitle.isNotEmpty
+                          ? _beatitude.centralPointTitle
+                          : 'Central Point',
+                      _beatitude.centralPoint,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (_beatitude.pdfQuestion.isNotEmpty) ...[
+                    _sectionHeader('THE QUESTION IT ASKS YOU'),
+                    _italicPara(_beatitude.pdfQuestion),
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (_beatitude.pdfPractices.isNotEmpty) ...[
+                    _sectionHeader('SUGGESTED PRACTICES'),
+                    for (int i = 0; i < _beatitude.pdfPractices.length; i++) ...[
+                      _practiceCard(i, _beatitude.pdfPractices[i]),
+                      const SizedBox(height: 10),
+                    ],
+                    const SizedBox(height: 8),
+                    _divider(),
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (_beatitude.audienceContext.isNotEmpty) ...[
+                    _sectionHeader('AUDIENCE AND CONTEXT'),
+                    _bodyPara(_beatitude.audienceContext),
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (_beatitude.historicalContext.isNotEmpty) ...[
+                    _sectionHeader('HISTORICAL AND CULTURAL CONTEXT'),
+                    _bodyPara(_beatitude.historicalContext),
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (_beatitude.scholarlyInterpretation.isNotEmpty) ...[
+                    _sectionHeader('SCHOLARLY INTERPRETATION'),
+                    _bodyPara(_beatitude.scholarlyInterpretation),
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (_beatitude.exegeticalNotes.isNotEmpty) ...[
+                    _sectionHeader('EXEGETICAL AND LITERARY NOTES'),
+                    _bodyPara(_beatitude.exegeticalNotes),
+                    const SizedBox(height: 28),
+                  ],
+
+                  _divider(),
+                  const SizedBox(height: 12),
+
+                  // ── Browse curated practices ─────────────────────────────
                   GestureDetector(
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) =>
-                            BeatitudePracticesView(beatitude: beatitude),
+                            BeatitudePracticesView(beatitude: _beatitude),
                       ),
                     ),
                     child: Container(
@@ -273,7 +361,7 @@ class BeatitudeDetailView extends StatelessWidget {
                           Icon(Icons.add, size: 16, color: _kAccent),
                           const SizedBox(width: 8),
                           Text(
-                            'Add a ${beatitude.title} practice',
+                            'Browse all ${_beatitude.title} practices',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -286,13 +374,13 @@ class BeatitudeDetailView extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // Journal entry CTA
+                  // ── Journal entry CTA ────────────────────────────────────
                   GestureDetector(
                     onTap: () => Navigator.push<void>(
                       context,
                       MaterialPageRoute(
                         builder: (_) => JournalEntryComposer(
-                          habitName: 'The Beatitudes: ${beatitude.title}',
+                          habitName: 'The Beatitudes: ${_beatitude.title}',
                           sourceType: 'beatitude',
                         ),
                       ),
@@ -333,202 +421,99 @@ class BeatitudeDetailView extends StatelessWidget {
     );
   }
 
-  Widget _sectionLabel(String text) => Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-          color: _kAccent.withValues(alpha: 0.8),
-        ),
-      );
+  // ── Practice card ─────────────────────────────────────────────────────────
 
-  Widget _fruitChip(String label) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: _kAccent.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _kAccent.withValues(alpha: 0.25)),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: _kAccent.withValues(alpha: 0.85),
-          ),
-        ),
-      );
-
-  void _showBeatitudeDetail(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: MyWalkColor.charcoal,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  Widget _practiceCard(int index, String text) {
+    final isAdding = _adding[index] == true;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: _kAccent.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _kAccent.withValues(alpha: 0.15)),
       ),
-      isScrollControlled: true,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, controller) => Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.8),
+              height: 1.55,
             ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: isAdding ? null : () => _addPractice(index, text),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: _kAccent.withValues(alpha: isAdding ? 0.05 : 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _kAccent.withValues(alpha: isAdding ? 0.1 : 0.3),
+                ),
+              ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.self_improvement, size: 20, color: _kAccent),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          beatitude.title,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            color: _kAccent,
-                          ),
-                        ),
-                        Text(
-                          beatitude.verseRef,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: _kAccent.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
+                  if (isAdding)
+                    SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                        valueColor: AlwaysStoppedAnimation(
+                            _kAccent.withValues(alpha: 0.6)),
+                      ),
+                    )
+                  else
+                    Icon(Icons.add,
+                        size: 14, color: _kAccent.withValues(alpha: 0.8)),
+                  const SizedBox(width: 6),
+                  Text(
+                    isAdding ? 'Adding…' : 'Add this practice',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _kAccent
+                          .withValues(alpha: isAdding ? 0.5 : 0.85),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView(
-                controller: controller,
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-                children: [
-                  // 1. Scripture
-                  _detailScriptureBox('\u201c${beatitude.verse}\u201d \u2014 ${beatitude.verseRef}'),
-                  const SizedBox(height: 20),
-                  // 2. Statement in Brief
-                  if (beatitude.statementInBrief.isNotEmpty) ...[
-                    _detailSectionHeader('THE STATEMENT IN BRIEF'),
-                    _detailBodyPara(beatitude.statementInBrief),
-                    const SizedBox(height: 16),
-                  ],
-                  // 3. Central Point
-                  if (beatitude.centralPoint.isNotEmpty) ...[
-                    _detailSectionHeader('THE CENTRAL POINT'),
-                    _detailHighlightBox(
-                      beatitude.centralPointTitle.isNotEmpty
-                          ? beatitude.centralPointTitle
-                          : 'Central Point',
-                      beatitude.centralPoint,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  // 4. Question It Asks You
-                  if (beatitude.pdfQuestion.isNotEmpty) ...[
-                    _detailSectionHeader('THE QUESTION IT ASKS YOU'),
-                    _detailItalicPara(beatitude.pdfQuestion),
-                    const SizedBox(height: 16),
-                  ],
-                  // 5. Suggested Practices
-                  if (beatitude.pdfPractices.isNotEmpty) ...[
-                    _detailSectionHeader('SUGGESTED PRACTICES'),
-                    ...beatitude.pdfPractices.map((p) => _detailPracticeItem(p)),
-                    const SizedBox(height: 12),
-                    _detailDivider(),
-                    const SizedBox(height: 16),
-                  ],
-                  // 6. Audience and Context
-                  if (beatitude.audienceContext.isNotEmpty) ...[
-                    _detailSectionHeader('AUDIENCE AND CONTEXT'),
-                    _detailBodyPara(beatitude.audienceContext),
-                    const SizedBox(height: 16),
-                  ],
-                  // 7. Historical and Cultural Context
-                  if (beatitude.historicalContext.isNotEmpty) ...[
-                    _detailSectionHeader('HISTORICAL AND CULTURAL CONTEXT'),
-                    _detailBodyPara(beatitude.historicalContext),
-                    const SizedBox(height: 16),
-                  ],
-                  // 8. Scholarly Interpretation
-                  if (beatitude.scholarlyInterpretation.isNotEmpty) ...[
-                    _detailSectionHeader('SCHOLARLY INTERPRETATION'),
-                    _detailBodyPara(beatitude.scholarlyInterpretation),
-                    const SizedBox(height: 16),
-                  ],
-                  // 9. Exegetical and Literary Notes
-                  if (beatitude.exegeticalNotes.isNotEmpty) ...[
-                    _detailSectionHeader('EXEGETICAL AND LITERARY NOTES'),
-                    _detailBodyPara(beatitude.exegeticalNotes),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _detailScriptureBox(String text) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: _kAccent.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
-          border: Border(
-            left: BorderSide(color: _kAccent.withValues(alpha: 0.5), width: 3),
-          ),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 13,
-            fontStyle: FontStyle.italic,
-            color: MyWalkColor.softGold.withValues(alpha: 0.9),
-            height: 1.6,
-          ),
-        ),
-      );
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
-  Widget _detailSectionHeader(String text) => Padding(
+  Widget _sectionHeader(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Text(
           text,
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: _kAccent.withValues(alpha: 0.7),
             letterSpacing: 0.9,
+            color: _kAccent.withValues(alpha: 0.7),
           ),
         ),
       );
 
-  Widget _detailHighlightBox(String title, String body) => Container(
+  Widget _highlightBox(String title, String body) => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: _kAccent.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: _kAccent.withValues(alpha: 0.2), width: 0.5),
+          border:
+              Border.all(color: _kAccent.withValues(alpha: 0.2), width: 0.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,7 +540,7 @@ class BeatitudeDetailView extends StatelessWidget {
         ),
       );
 
-  Widget _detailBodyPara(String text) => Text(
+  Widget _bodyPara(String text) => Text(
         text,
         style: TextStyle(
           fontSize: 14,
@@ -564,7 +549,7 @@ class BeatitudeDetailView extends StatelessWidget {
         ),
       );
 
-  Widget _detailItalicPara(String text) => Text(
+  Widget _italicPara(String text) => Text(
         text,
         style: TextStyle(
           fontSize: 14,
@@ -574,37 +559,21 @@ class BeatitudeDetailView extends StatelessWidget {
         ),
       );
 
-  Widget _detailPracticeItem(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 7),
-              child: Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _kAccent.withValues(alpha: 0.6),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
-                  height: 1.55,
-                ),
-              ),
-            ),
-          ],
+  Widget _fruitChip(String label) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: _kAccent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _kAccent.withValues(alpha: 0.25)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: _kAccent.withValues(alpha: 0.85),
+          ),
         ),
       );
 
-  Widget _detailDivider() => Divider(color: Colors.white.withValues(alpha: 0.07));
+  Widget _divider() => Divider(color: Colors.white.withValues(alpha: 0.07));
 }
-

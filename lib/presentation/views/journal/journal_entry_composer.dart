@@ -497,7 +497,7 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Text(
-                'Link to a Habit',
+                'Link to a Practice',
                 style: TextStyle(
                   color: theme.textPrimary,
                   fontWeight: FontWeight.w600,
@@ -852,7 +852,7 @@ class _LinkHabitButton extends StatelessWidget {
                 color: theme.textSecondary.withValues(alpha: 0.6)),
             const SizedBox(width: 5),
             Text(
-              'Link to a habit',
+              'Link to a practice',
               style: TextStyle(
                 fontSize: 13,
                 color: theme.textSecondary.withValues(alpha: 0.6),

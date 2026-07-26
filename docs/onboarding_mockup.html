@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyWalk — Onboarding Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0F0F18;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  }
+
+  /* ── Phone frame ── */
+  .phone-frame {
+    width: 430px;
+    height: 932px;
+    background: #111118;
+    border-radius: 56px;
+    padding: 14px;
+    box-shadow:
+      0 0 0 1px #2A2A3A,
+      0 0 0 2px #1A1A28,
+      0 40px 120px rgba(0,0,0,0.9),
+      0 0 60px rgba(0,0,0,0.6),
+      inset 0 0 0 1px rgba(255,255,255,0.06);
+    position: relative;
+  }
+
+  /* Side buttons */
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 160px;
+    width: 3px;
+    height: 36px;
+    background: #2A2A3A;
+    border-radius: 2px 0 0 2px;
+    box-shadow: 0 50px 0 #2A2A3A, 0 100px 0 #2A2A3A;
+  }
+  .phone-frame::after {
+    content: '';
+    position: absolute;
+    right: -3px;
+    top: 200px;
+    width: 3px;
+    height: 72px;
+    background: #2A2A3A;
+    border-radius: 0 2px 2px 0;
+  }
+
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    background: #1E1E2E;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Status bar ── */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 28px 8px;
+    flex-shrink: 0;
+  }
+
+  .status-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: #F5F0E8;
+    letter-spacing: 0.2px;
+  }
+
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .signal-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+  }
+  .signal-bars span {
+    background: #F5F0E8;
+    border-radius: 1px;
+    width: 3px;
+  }
+  .signal-bars span:nth-child(1) { height: 4px; }
+  .signal-bars span:nth-child(2) { height: 7px; }
+  .signal-bars span:nth-child(3) { height: 10px; }
+  .signal-bars span:nth-child(4) { height: 12px; }
+
+  .wifi-icon {
+    width: 16px;
+    height: 12px;
+    position: relative;
+    opacity: 0.9;
+  }
+  .wifi-icon svg { width: 16px; height: 12px; }
+
+  .battery {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .battery-body {
+    width: 25px;
+    height: 12px;
+    border: 1.5px solid rgba(245,240,232,0.8);
+    border-radius: 3px;
+    padding: 2px;
+    position: relative;
+  }
+  .battery-fill {
+    width: 80%;
+    height: 100%;
+    background: #F5F0E8;
+    border-radius: 1px;
+  }
+  .battery-tip {
+    width: 2px;
+    height: 6px;
+    background: rgba(245,240,232,0.6);
+    border-radius: 0 1px 1px 0;
+  }
+
+  /* ── Dynamic island ── */
+  .dynamic-island {
+    width: 120px;
+    height: 34px;
+    background: #000;
+    border-radius: 20px;
+    margin: -4px auto 0;
+    flex-shrink: 0;
+  }
+
+  /* ── Scrollable content ── */
+  .screen-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 24px 32px;
+    scrollbar-width: none;
+  }
+  .screen-content::-webkit-scrollbar { display: none; }
+
+  /* ── Header ── */
+  .app-header {
+    text-align: center;
+    padding-top: 28px;
+    padding-bottom: 20px;
+  }
+
+  .app-logo-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  /* Cross / logo mark */
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .logo-mark::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 32px;
+    background: linear-gradient(180deg, #D4A843, #C9A96E);
+    border-radius: 3px;
+  }
+  .logo-mark::after {
+    content: '';
+    position: absolute;
+    top: 38%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 26px;
+    height: 6px;
+    background: linear-gradient(90deg, #C9A96E, #D4A843);
+    border-radius: 3px;
+  }
+
+  .app-title {
+    font-size: 38px;
+    font-weight: 800;
+    color: #F5F0E8;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .app-subtitle {
+    font-size: 15px;
+    font-weight: 400;
+    color: #C9A96E;
+    letter-spacing: 0.6px;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* ── Tab toggle ── */
+  .tab-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 4px;
+    margin-bottom: 22px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    border-radius: 11px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+
+  .tab.active {
+    background: #D4A843;
+    color: #1E1E2E;
+  }
+
+  .tab.inactive {
+    color: rgba(245,240,232,0.4);
+  }
+
+  /* ── Plan cards ── */
+  .plan-cards {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .plan-card {
+    flex: 1;
+    background: #252535;
+    border-radius: 18px;
+    padding: 16px 14px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .plan-card.free {
+    opacity: 0.72;
+  }
+
+  .plan-card.premium {
+    border-color: #D4A843;
+    background: linear-gradient(145deg, #252535 0%, #2A2530 60%, #28243A 100%);
+    box-shadow:
+      0 0 0 1px rgba(212,168,67,0.3),
+      0 0 24px rgba(212,168,67,0.12),
+      0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  /* Premium corner glow */
+  .plan-card.premium::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(212,168,67,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .card-title.free { color: rgba(245,240,232,0.5); }
+  .card-title.premium { color: #D4A843; }
+
+  .radio-unchecked {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(245,240,232,0.25);
+    flex-shrink: 0;
+  }
+
+  .check-circle {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #D4A843;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(212,168,67,0.5);
+  }
+
+  .check-circle svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .everything-label {
+    font-size: 10px;
+    color: #C9A96E;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    margin-bottom: 9px;
+    font-style: italic;
+  }
+
+  .feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .feature-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  .feature-icon.free-icon { opacity: 0.45; }
+  .feature-icon.premium-icon { color: #D4A843; }
+
+  .feature-text {
+    font-size: 11.5px;
+    line-height: 1.2;
+    letter-spacing: 0.1px;
+  }
+
+  .feature-text.free-text { color: rgba(245,240,232,0.5); }
+  .feature-text.premium-text { color: #F5F0E8; font-weight: 500; }
+
+  /* ── CTA button ── */
+  .cta-button {
+    width: 100%;
+    background: linear-gradient(135deg, #D4A843 0%, #C9963A 100%);
+    border-radius: 16px;
+    padding: 17px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    box-shadow:
+      0 4px 20px rgba(212,168,67,0.35),
+      0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .google-icon {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .google-icon svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .cta-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1E1E2E;
+    letter-spacing: 0.2px;
+  }
+
+  /* ── Legal text ── */
+  .legal-text {
+    font-size: 11px;
+    color: rgba(245,240,232,0.28);
+    text-align: center;
+    line-height: 1.5;
+    letter-spacing: 0.2px;
+  }
+
+  .legal-text a {
+    color: rgba(201,169,110,0.55);
+    text-decoration: underline;
+    text-decoration-color: rgba(201,169,110,0.3);
+  }
+
+  /* Home indicator */
+  .home-indicator {
+    width: 134px;
+    height: 5px;
+    background: rgba(245,240,232,0.25);
+    border-radius: 3px;
+    margin: 8px auto 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Page label below phone ── */
+  .page-label {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="phone-frame">
+    <div class="phone-screen">
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <div class="signal-bars">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="wifi-icon">
+            <svg viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 11.5C10.8284 11.5 11.5 12.1716 11.5 13C11.5 13.8284 10.8284 14.5 10 14.5C9.17157 14.5 8.5 13.8284 8.5 13C8.5 12.1716 9.17157 11.5 10 11.5Z" fill="#F5F0E8"/>
+              <path d="M4.22 8.72C5.93 7.01 8.3 6 10 6C11.7 6 14.07 7.01 15.78 8.72" stroke="#F5F0E8" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              <path d="M1.41 5.91C3.89 3.43 6.79 2 10 2C13.21 2 16.11 3.43 18.59 5.91" stroke="#F5F0E8" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+            </svg>
+          </div>
+          <div class="battery">
+            <div class="battery-body">
+              <div class="battery-fill"></div>
+            </div>
+            <div class="battery-tip"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic island -->
+      <div class="dynamic-island"></div>
+
+      <!-- Scrollable screen content -->
+      <div class="screen-content">
+
+        <!-- App header -->
+        <div class="app-header">
+          <div class="app-logo-row">
+            <div class="logo-mark"></div>
+            <span class="app-title">MyWalk</span>
+          </div>
+          <div class="app-subtitle">A daily walk with God.</div>
+        </div>
+
+        <!-- Tab toggle -->
+        <div class="tab-toggle">
+          <div class="tab active">New here?</div>
+          <div class="tab inactive">Sign in</div>
+        </div>
+
+        <!-- Plan cards -->
+        <div class="plan-cards">
+
+          <!-- FREE card -->
+          <div class="plan-card free">
+            <div class="card-header">
+              <span class="card-title free">Free</span>
+              <div class="radio-unchecked"></div>
+            </div>
+            <div class="feature-list">
+              <div class="feature-item">
+                <div class="feature-icon free-icon">🙏</div>
+                <span class="feature-text free-text">Daily Gratitude</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon free-icon">✦</div>
+                <span class="feature-text free-text">2 Custom Practices</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon free-icon">◎</div>
+                <span class="feature-text free-text">Groups &amp; Community</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon free-icon">📖</div>
+                <span class="feature-text free-text">Bible in a Year</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon free-icon">✏</div>
+                <span class="feature-text free-text">Journal</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- PREMIUM card -->
+          <div class="plan-card premium">
+            <div class="card-header">
+              <span class="card-title premium">Premium</span>
+              <div class="check-circle">
+                <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 6L5 9L10 3" stroke="#1E1E2E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <div class="everything-label">Everything in Free, plus:</div>
+            <div class="feature-list">
+              <div class="feature-item">
+                <div class="feature-icon premium-icon">∞</div>
+                <span class="feature-text premium-text">Unlimited Practices</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon premium-icon">✦</div>
+                <span class="feature-text premium-text">Scripture Memorization</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon premium-icon">◎</div>
+                <span class="feature-text premium-text">Full Recovery Path</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon premium-icon">📅</div>
+                <span class="feature-text premium-text">52-week History</span>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon premium-icon">📚</div>
+                <span class="feature-text premium-text">Extended Scripture Library</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /.plan-cards -->
+
+        <!-- CTA button -->
+        <div class="cta-button">
+          <div class="google-icon">
+            <!-- Google G logo -->
+            <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+              <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+              <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.347 2.825.957 4.039l3.007-2.332z"/>
+              <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z"/>
+            </svg>
+          </div>
+          <span class="cta-text">Sign up with Google</span>
+        </div>
+
+        <!-- Legal -->
+        <div class="legal-text">
+          By continuing you agree to our
+          <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+        </div>
+
+      </div><!-- /.screen-content -->
+
+      <!-- Home indicator -->
+      <div class="home-indicator"></div>
+
+    </div><!-- /.phone-screen -->
+  </div><!-- /.phone-frame -->
+
+  <div class="page-label">MyWalk &mdash; Onboarding &middot; New here?</div>
+</div>
+
+</body>
+</html>

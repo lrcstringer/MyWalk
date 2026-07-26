@@ -13,7 +13,7 @@ class CirclesHelpView extends StatelessWidget {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: const Text('Circles — Help'),
+        title: const Text('Groups — Help'),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
         elevation: 0,
@@ -26,22 +26,22 @@ class CirclesHelpView extends StatelessWidget {
             const HelpHero(
               icon: Icons.groups_outlined,
               accentColor: accent,
-              title: 'Prayer Circles',
+              title: 'Prayer Groups',
               subtitle:
                   'Pray together with family and friends.\nSpur one another on in love and good deeds.',
             ),
 
             // ── Features ──────────────────────────────────────────────────
-            const HelpSectionTitle(title: 'What circles give you'),
+            const HelpSectionTitle(title: 'What groups give you'),
             HelpFeatureGrid(
               cards: const [
                 HelpFeatureCard(
                   icon: Icons.groups_outlined,
                   iconColor: accent,
                   iconBg: Color(0x267A9E7E),
-                  title: 'Prayer Circles',
+                  title: 'Prayer Groups',
                   description:
-                      'Create private circles with family, friends, or accountability partners.',
+                      'Create private groups with family, friends, or accountability partners.',
                 ),
                 HelpFeatureCard(
                   icon: Icons.bar_chart_rounded,
@@ -65,13 +65,13 @@ class CirclesHelpView extends StatelessWidget {
                   iconBg: Color(0x1AD4836B),
                   title: 'Easy Invites',
                   description:
-                      'Share a simple invite code so anyone can join your circle in seconds.',
+                      'Share a simple invite code so anyone can join your group in seconds.',
                 ),
               ],
             ),
 
             // ── Circle anatomy ────────────────────────────────────────────
-            const HelpSectionTitle(title: 'Circle card explained'),
+            const HelpSectionTitle(title: 'Group card explained'),
             _CircleCardAnatomy(),
 
             // ── Steps ─────────────────────────────────────────────────────
@@ -82,15 +82,15 @@ class CirclesHelpView extends StatelessWidget {
               accentColor: accent,
               title: 'Sign in to get started',
               description:
-                  'Tap "Sign in with Google" or "Sign in with Apple" on the Circles screen.',
+                  'Tap "Sign in with Google" or "Sign in with Apple" on the Groups screen.',
             ),
             const HelpStep(
               number: 2,
               icon: Icons.add_circle_outline,
               accentColor: golden,
-              title: 'Create or join a circle',
+              title: 'Create or join a group',
               description:
-                  'Tap the + button and choose "Create a Circle" or "Join with Code" to get connected.',
+                  'Tap the + button and choose "Create a Group" or "Join with Code" to get connected.',
             ),
             const HelpStep(
               number: 3,
@@ -98,7 +98,7 @@ class CirclesHelpView extends StatelessWidget {
               accentColor: MyWalkColor.warmCoral,
               title: 'Invite others',
               description:
-                  'Open your circle, find the invite code, and share it with friends or family.',
+                  'Open your group, find the invite code, and share it with friends or family.',
             ),
             const HelpStep(
               number: 4,
@@ -106,7 +106,7 @@ class CirclesHelpView extends StatelessWidget {
               accentColor: golden,
               title: 'Share your gratitude',
               description:
-                  'After completing your daily gratitude on the Today screen, tap "Share with circle."',
+                  'After completing your daily gratitude on the Today screen, tap "Share with group."',
             ),
             const HelpStep(
               number: 5,

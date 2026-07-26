@@ -10,7 +10,7 @@ import 'habits/partner_acceptance_screen.dart';
 import '../../domain/services/week_cycle_manager.dart';
 import 'circles/circle_invitation_dialog.dart';
 import 'today/today_view.dart';
-import 'progress/progress_view.dart';
+import 'practices/practices_view.dart';
 import 'kingdom_life/kingdom_life_view.dart';
 import 'circles/circles_tab.dart';
 import 'journal/journal_tab.dart';
@@ -184,7 +184,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
                 showAutoCarryBanner: _showAutoCarryBanner,
                 onDismissAutoCarry: () => setState(() => _showAutoCarryBanner = false),
               )),
-              _KeepAlivePage(child: ProgressView(weekCycleManager: wcm)),
+              _KeepAlivePage(child: PracticesView(weekCycleManager: wcm)),
               const _KeepAlivePage(child: JournalTab()),
               const _KeepAlivePage(child: KingdomLifeView()),
               const _KeepAlivePage(child: CirclesTab()),
@@ -209,8 +209,8 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
                 label: 'Today',
               ),
               const BottomNavigationBarItem(
-                icon: Icon(Icons.bar_chart),
-                label: 'Progress',
+                icon: Icon(Icons.checklist_rounded),
+                label: 'Practices',
               ),
               const BottomNavigationBarItem(
                 icon: Icon(Icons.book_outlined),
@@ -226,7 +226,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
                 icon: _hasNewGratitudes
                     ? Badge(child: const Icon(Icons.groups))
                     : const Icon(Icons.groups),
-                label: 'Circles',
+                label: 'Groups',
               ),
             ],
           ),

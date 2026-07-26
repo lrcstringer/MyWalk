@@ -234,6 +234,11 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Delegates to [IAPRepository.redeemToken]. Never throws — returns a typed
+  /// result the caller can switch on.
+  Future<TokenRedemptionResult> redeemToken(String tokenCode) =>
+      _iapRepository.redeemToken(tokenCode);
+
   Future<void> restore() async {
     isLoading = true;
     error = null;

@@ -99,7 +99,7 @@ class _CircleDetailViewState extends State<CircleDetailView>
         setState(() {
           _wasOffline = offline;
           _error = offline
-              ? 'No internet connection. Connect to load circle data.'
+              ? 'No internet connection. Connect to load group data.'
               : e.toString();
           _isLoading = false;
         });
@@ -310,9 +310,9 @@ class _CircleDetailViewState extends State<CircleDetailView>
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: MyWalkColor.cardBackground,
-        title: const Text('Leave Circle', style: TextStyle(color: MyWalkColor.warmWhite)),
+        title: const Text('Leave Group', style: TextStyle(color: MyWalkColor.warmWhite)),
         content: Text(
-          "You'll no longer receive prayer requests or see this circle's progress.",
+          "You'll no longer receive prayer requests or see this group's progress.",
           style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
         ),
         actions: [
@@ -372,7 +372,7 @@ class _OverviewTab extends StatelessWidget {
         _actionRow(
           icon: Icons.wb_sunny_rounded, iconColor: MyWalkColor.golden,
           iconBg: MyWalkColor.golden.withValues(alpha: 0.12),
-          title: 'Weekly Summary', subtitle: "See your circle's faithfulness this week",
+          title: 'Weekly Summary', subtitle: "See your group's faithfulness this week",
           onTap: onSummaryTap,
         ),
         const SizedBox(height: 16),
@@ -396,7 +396,7 @@ class _OverviewTab extends StatelessWidget {
         Row(children: [
           const Icon(Icons.grid_view_rounded, size: 13, color: MyWalkColor.golden),
           const SizedBox(width: 6),
-          Text('Circle Activity',
+          Text('Group Activity',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: MyWalkColor.softGold)),
           const Spacer(),
           Text('${detail.memberCount} members',
@@ -404,7 +404,7 @@ class _OverviewTab extends StatelessWidget {
         ]),
         const SizedBox(height: 6),
         Text(
-          'When members have a strong day, this glows. The more the circle gives, the brighter it gets.',
+          'When members have a strong day, this glows. The more the group gives, the brighter it gets.',
           style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45), height: 1.4),
         ),
         const SizedBox(height: 12),
@@ -419,7 +419,7 @@ class _OverviewTab extends StatelessWidget {
           _CircleHeatmapGrid(heatmap: heatmap!, isPremium: isPremium),
         if (!isPremium) ...[
           const SizedBox(height: 8),
-          Text('Upgrade to see your full 52-week circle history.',
+          Text('Upgrade to see your full 52-week group history.',
               style: TextStyle(fontSize: 11, color: MyWalkColor.golden.withValues(alpha: 0.5))),
         ],
       ]),
@@ -438,7 +438,7 @@ class _OverviewTab extends StatelessWidget {
         Row(children: [
           const Icon(Icons.star_rounded, size: 13, color: MyWalkColor.golden),
           const SizedBox(width: 6),
-          Text('Circle Milestones',
+          Text('Group Milestones',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: MyWalkColor.softGold)),
         ]),
         const SizedBox(height: 10),
@@ -454,7 +454,7 @@ class _OverviewTab extends StatelessWidget {
             _milestoneTotalsRow(ms),
           const SizedBox(height: 10),
           if (ms.milestones.isEmpty && habitMilestones.isEmpty)
-            Text('Keep going — your first circle milestone is on its way.',
+            Text('Keep going — your first group milestone is on its way.',
                 style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4), height: 1.4))
           else ...[
             ...ms.milestones.take(3).map((m) => Padding(
@@ -483,7 +483,7 @@ class _OverviewTab extends StatelessWidget {
         const Icon(Icons.groups_rounded, size: 16, color: MyWalkColor.golden),
         const SizedBox(width: 10),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Circle habit milestone!',
+          const Text('Group habit milestone!',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
           const SizedBox(height: 2),
           Text(m.displayLabel,
@@ -606,7 +606,7 @@ class _OverviewTab extends StatelessWidget {
         child: Row(children: [
           const Icon(Icons.logout_rounded, size: 16, color: MyWalkColor.warmCoral),
           const SizedBox(width: 10),
-          const Expanded(child: Text('Leave Circle',
+          const Expanded(child: Text('Leave Group',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.warmCoral))),
           if (isLeaving)
             const SizedBox(width: 16, height: 16,

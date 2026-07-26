@@ -33,7 +33,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: const Text('New memorization circle'),
+        title: const Text('New memorization group'),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
       ),
@@ -44,7 +44,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Label('Circle name'),
+              _Label('Group name'),
               const SizedBox(height: 8),
               _Field(
                 controller: _nameCtrl,
@@ -128,7 +128,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: MyWalkColor.charcoal),
                         )
-                      : const Text('Create circle'),
+                      : const Text('Create group'),
                 ),
               ),
             ],

@@ -159,7 +159,7 @@ class GroupPrayerListTab extends StatelessWidget {
             style:
                 TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
         const SizedBox(height: 6),
-        Text('Ask your circle admin to give you access.',
+        Text('Ask your group admin to give you access.',
             style: TextStyle(
                 fontSize: 13, color: Colors.white.withValues(alpha: 0.3))),
       ]),
@@ -193,7 +193,7 @@ class _NoListState extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           isAdmin
-              ? 'Create a list to share curated prayer items with your circle.'
+              ? 'Create a list to share curated prayer items with your group.'
               : 'Your admin hasn\'t created a prayer list yet.',
           textAlign: TextAlign.center,
           style:
@@ -390,7 +390,7 @@ class _ListBody extends StatelessWidget {
               maxLines: 3,
               style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'What should the circle pray for?',
+                hintText: 'What should the group pray for?',
                 hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
                 filled: true,
@@ -1104,7 +1104,7 @@ class _VisibilityPickerSheetState extends State<_VisibilityPickerSheet> {
                       await widget.onSave(_selected.toList());
                       notifProvider?.sendAnnouncement(
                         circleId: widget.circleId,
-                        message: 'Your circle\'s Group Prayer List is ready — check the Prayer tab.',
+                        message: 'Your group\'s Group Prayer List is ready — check the Prayer tab.',
                       ).catchError((_) {});
                       nav.pop();
                     } catch (_) {

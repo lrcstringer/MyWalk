@@ -8,15 +8,11 @@ import '../../providers/store_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../../domain/repositories/circle_repository.dart';
 import '../../../data/datasources/remote/auth_service.dart';
-import '../../../domain/services/engagement_service.dart';
 import '../../../domain/services/week_cycle_manager.dart';
 import '../../theme/app_theme.dart';
 import '../circles/share_gratitude_sheet.dart';
-import '../habits/add_habit_view.dart';
 import '../habits/habit_check_in_card_view.dart';
-import '../shared/engagement_banner_view.dart';
 import '../shared/golden_pulse_view.dart';
-import '../shared/mywalk_paywall_view.dart';
 import '../shared/appbar_actions.dart';
 import '../help/today_help_view.dart';
 import '../week/week_strip_view.dart';
@@ -41,11 +37,6 @@ class TodayView extends StatefulWidget {
 
 class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
   DateTime _selectedDate = DateTime.now();
-  EngagementMessage? _engagementMessage;
-  bool _showEngagementBanner = false;
-
-  static const _freeHabitLimit = 2;
-
   bool get _isRetroactive {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
@@ -58,7 +49,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _selectedDate = DateTime.now();
-    _loadEngagementMessage();
   }
 
   @override
@@ -82,28 +72,11 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _loadEngagementMessage() async {
-    final habits = context.read<HabitProvider>().habits;
-    final isPremium = context.read<StoreProvider>().isPremium;
-    final engagement = context.read<EngagementService>();
-    engagement.isPremium = isPremium;
-    await engagement.evaluateMessage(habits.toList());
-    final msg = engagement.currentMessage;
-    if (msg != null && mounted) {
-      setState(() {
-        _engagementMessage = msg;
-        _showEngagementBanner = true;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final habitProvider = context.watch<HabitProvider>();
-    final store = context.watch<StoreProvider>();
     final catProvider = context.watch<HabitCategoryProvider>();
     final habits = habitProvider.sortedHabits;
-    final isPremium = store.isPremium;
 
     // habits may be empty during initial load — guard before any .first access.
     if (habits.isEmpty) {
@@ -117,8 +90,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
       orElse: () => habits.first,
     );
     final userHabits = habits.where((h) => !h.isBuiltIn).toList();
-
-    final atLimit = !isPremium && userHabits.length >= _freeHabitLimit;
 
     final imageHeight = MediaQuery.of(context).size.width * 0.65;
 
@@ -223,19 +194,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                         child: _titleSection(),
                       ),
 
-                      // Engagement banner
-                      if (_showEngagementBanner && _engagementMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                          child: EngagementBannerView(
-                            message: _engagementMessage!,
-                            onDismiss: () {
-                              setState(() => _showEngagementBanner = false);
-                              context.read<EngagementService>().dismissCurrentMessage();
-                            },
-                          ),
-                        ),
-
                       // Auto carry banner
                       if (widget.showAutoCarryBanner)
                         _autoCarryBanner(),
@@ -271,9 +229,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                         catProvider,
                       ),
 
-                      // Add habit / limit section
-                      _addHabitSection(userHabits.length, atLimit, isPremium),
-
                       const SizedBox(height: 80),
                     ],
                   ),
@@ -281,14 +236,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
               ],
           ),
         ),
-
-        // Add a habit — pinned bottom-right, hidden when at limit or in retroactive mode.
-        if (!_isRetroactive && !atLimit)
-          Positioned(
-            bottom: 24,
-            right: 20,
-            child: _addHabitButton(),
-          ),
 
       ],
     );
@@ -377,56 +324,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
     );
   }
 
-  Widget _addHabitSection(int userHabitCount, bool atLimit, bool isPremium) {
-    if (atLimit) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: GestureDetector(
-          onTap: () => _showPaywall(context),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: MyWalkColor.golden.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.2), width: 0.5),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.workspace_premium, color: MyWalkColor.golden, size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Unlock unlimited habits',
-                          style: TextStyle(fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite, fontSize: 13)),
-                      Text('Free plan includes $_freeHabitLimit habits. Upgrade to add more.',
-                          style: TextStyle(fontSize: 11, color: MyWalkColor.softGold.withValues(alpha: 0.6))),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right, color: MyWalkColor.golden.withValues(alpha: 0.5), size: 16),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
-  }
-
-  Widget _addHabitButton() {
-    return FloatingActionButton.extended(
-      onPressed: () => _showAddHabit(context),
-      backgroundColor: MyWalkColor.softGold.withValues(alpha: 0.12),
-      foregroundColor: MyWalkColor.softGold,
-      elevation: 0,
-      icon: const Icon(Icons.add_rounded, size: 18),
-      label: const Text('Add a habit', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-    );
-  }
-
   String _dayName(DateTime date) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[date.weekday - 1];
@@ -463,35 +360,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
       ));
     }
     return widgets;
-  }
-
-  void _showAddHabit(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: MyWalkColor.charcoal,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        maxChildSize: 0.95,
-        minChildSize: 0.6,
-        expand: false,
-        builder: (ctx, sc) => AddHabitView(scrollController: sc),
-      ),
-    );
-  }
-
-  void _showPaywall(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: MyWalkColor.charcoal,
-      builder: (_) => const MyWalkPaywallView(),
-    );
   }
 
 }
@@ -725,7 +593,7 @@ class _GratitudeCheckInCardState extends State<_GratitudeCheckInCard> {
                     child: ElevatedButton.icon(
                       onPressed: _complete,
                       icon: const Icon(Icons.favorite, size: 14),
-                      label: Text(_controller.text.isEmpty ? 'Thank you, Lord' : 'Give thanks'),
+                      label: Text(_controller.text.isEmpty ? 'Thank you.' : 'Give thanks'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyWalkColor.golden,
                         foregroundColor: MyWalkColor.charcoal,
@@ -742,7 +610,7 @@ class _GratitudeCheckInCardState extends State<_GratitudeCheckInCard> {
                     child: ElevatedButton.icon(
                       onPressed: _complete,
                       icon: const Icon(Icons.favorite, size: 14),
-                      label: const Text('Thank you, Lord'),
+                      label: const Text('Thank you.'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: MyWalkColor.golden,
                         foregroundColor: MyWalkColor.charcoal,

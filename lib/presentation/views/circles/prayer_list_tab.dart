@@ -82,7 +82,7 @@ class PrayerListTab extends StatelessWidget {
         Text('No prayer requests yet.',
             style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
         const SizedBox(height: 6),
-        Text('Tap + to share one with your circle.',
+        Text('Tap + to share one with your group.',
             style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.3))),
       ]),
     );
@@ -452,7 +452,7 @@ class _AddPrayerRequestSheetState extends State<AddPrayerRequestSheet> {
             maxLines: 4,
             style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'What would you like your circle to pray for?',
+              hintText: 'What would you like your group to pray for?',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
               filled: true,
               fillColor: MyWalkColor.inputBackground,
@@ -526,7 +526,7 @@ class _AddPrayerRequestSheetState extends State<AddPrayerRequestSheet> {
               child: _submitting
                   ? const SizedBox(width: 18, height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.charcoal))
-                  : const Text('Share with Circle',
+                  : const Text('Share with Group',
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             ),
           ),

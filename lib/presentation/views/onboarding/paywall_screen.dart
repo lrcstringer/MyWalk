@@ -20,19 +20,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
   StoreProvider? _store;
 
   static const _freeFeatures = [
-    (Icons.volunteer_activism, 'Daily Gratitude'),
-    (Icons.add_circle_outline, '2 Custom Habits'),
-    (Icons.calendar_today, 'Weekly View'),
-    (Icons.menu_book, 'Anchor Verses'),
+    (Icons.volunteer_activism_rounded, 'Daily Gratitude'),
+    (Icons.checklist_rounded, '2 Custom Practices'),
+    (Icons.groups_rounded, 'Groups & Community'),
+    (Icons.menu_book_rounded, 'Bible in a Year'),
+    (Icons.book_rounded, 'Journal'),
   ];
 
   static const _proFeatures = [
-    (Icons.all_inclusive_rounded, 'Unlimited Habits'),
-    (Icons.format_quote_rounded, 'Custom Purpose Statements'),
-    (Icons.bar_chart_rounded, 'Detailed Stats & Insights'),
-    (Icons.notifications_rounded, 'Smart Reminders'),
-    (Icons.shield_rounded, 'Recovery Path & Partner Support'),
-    (Icons.auto_awesome, '52-Week Year in MyWalk'),
+    (Icons.all_inclusive_rounded, 'Unlimited Practices'),
+    (Icons.auto_stories_rounded, 'Scripture Memorization'),
+    (Icons.shield_rounded, 'Full Recovery Path'),
+    (Icons.history_rounded, '52-week History'),
+    (Icons.format_quote_rounded, 'Extended Scripture Library'),
   ];
 
   @override

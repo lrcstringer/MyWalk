@@ -40,7 +40,7 @@ class _JoinCircleViewState extends State<JoinCircleView> {
       final response = await context.read<CircleRepository>().joinCircle(code);
       if (!mounted) return;
       if (response.alreadyMember) {
-        setState(() { _error = "You're already a member of this circle"; _isLoading = false; });
+        setState(() { _error = "You're already a member of this group"; _isLoading = false; });
       } else {
         setState(() { _joinedName = response.name; _isLoading = false; });
       }
@@ -55,7 +55,7 @@ class _JoinCircleViewState extends State<JoinCircleView> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text('Join Circle',
+        title: const Text('Join Group',
             style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600)),
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
@@ -144,7 +144,7 @@ class _JoinCircleViewState extends State<JoinCircleView> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Ask the circle creator for their invite code, or tap a shared invite link.',
+          'Ask the group creator for their invite code, or tap a shared invite link.',
           style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
         ),
         if (_error != null) ...[
@@ -171,7 +171,7 @@ class _JoinCircleViewState extends State<JoinCircleView> {
               child: _isLoading
                   ? const SizedBox(width: 18, height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.charcoal))
-                  : const Text('Join Circle', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  : const Text('Join Group', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
             ),
           ),
         ),

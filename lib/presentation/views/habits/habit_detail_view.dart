@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
@@ -8,11 +7,8 @@ import '../../../domain/entities/habit.dart';
 import '../../../domain/entities/scripture.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
-import '../../../domain/services/milestone_service.dart';
 import '../../theme/app_theme.dart';
-import '../shared/mywalk_paywall_view.dart';
 import 'edit_habit_view.dart';
-import 'heatmap_view.dart';
 import '../kingdom_life/bible_project_browser_view.dart';
 
 class HabitDetailView extends StatefulWidget {
@@ -26,8 +22,6 @@ class HabitDetailView extends StatefulWidget {
 }
 
 class _HabitDetailViewState extends State<HabitDetailView> {
-  static const _milestoneService = MilestoneService.instance;
-
   late Habit _liveHabit;
   late HabitProvider _habitProvider;
   QuillController? _notesController;
@@ -85,11 +79,6 @@ class _HabitDetailViewState extends State<HabitDetailView> {
     }
   }
 
-  Color _accentColor() =>
-      _habit.trackingType == HabitTrackingType.abstain
-          ? MyWalkColor.sage
-          : MyWalkColor.golden;
-
   List<DateTime> _currentWeekDates() {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
@@ -103,10 +92,6 @@ class _HabitDetailViewState extends State<HabitDetailView> {
   @override
   Widget build(BuildContext context) {
     final isPremium = context.watch<StoreProvider>().isPremium;
-    final accent = _accentColor();
-    final lifetimeStat = _milestoneService.lifetimeStat(_habit);
-    final milestones = _milestoneService.milestones(_habit);
-    final habitAge = _milestoneService.habitAge(_habit);
     final verse = ScriptureLibrary.completionVerse(_habit.category, DateTime.now(), isPremium: isPremium);
 
     return Scaffold(
@@ -132,13 +117,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
         controller: widget.scrollController,
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         children: [
-          _lifetimeStatSection(lifetimeStat, accent),
-          const SizedBox(height: 20),
           _weekBreakdownSection(),
-          const SizedBox(height: 20),
-          _heatmapSection(isPremium, accent),
-          const SizedBox(height: 20),
-          _milestoneSection(milestones, accent),
           const SizedBox(height: 20),
           if (_habit.trigger.isNotEmpty || _habit.copingPlan.isNotEmpty) ...[
             _anchoringSection(),
@@ -160,61 +139,13 @@ class _HabitDetailViewState extends State<HabitDetailView> {
           const SizedBox(height: 20),
           _verseSection(verse),
           const SizedBox(height: 20),
-          _habitInfoSection(habitAge),
+          _habitInfoSection(),
         ],
       ),
     );
   }
 
-  Widget _lifetimeStatSection(LifetimeStat stat, Color accent) {
-    return Column(
-      children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [accent.withValues(alpha: 0.25), accent.withValues(alpha: 0.04)],
-            ),
-          ),
-          child: Icon(_habitIcon(), color: accent, size: 32),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          stat.primaryValue,
-          style: TextStyle(
-            fontSize: 56,
-            fontWeight: FontWeight.w800,
-            color: accent,
-            height: 1.0,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          stat.description,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: MyWalkColor.softGold),
-        ),
-        if (stat.detail != null) ...[
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (_habit.trackingType == HabitTrackingType.abstain)
-                Icon(Icons.shield_outlined, size: 13, color: MyWalkColor.sage.withValues(alpha: 0.6)),
-              if (_habit.trackingType == HabitTrackingType.abstain)
-                const SizedBox(width: 4),
-              Text(
-                stat.detail!,
-                style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.45)),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
+
 
   Widget _weekBreakdownSection() {
     final dates = _currentWeekDates();
@@ -399,192 +330,6 @@ class _HabitDetailViewState extends State<HabitDetailView> {
         const SizedBox(height: 4),
         const Text(' ', style: TextStyle(fontSize: 9)),
       ],
-    );
-  }
-
-  Widget _heatmapSection(bool isPremium, Color accent) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: MyWalkDecorations.card,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text('Activity',
-                      style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600, color: MyWalkColor.softGold)),
-                  const Spacer(),
-                  Text(isPremium ? 'Last 12 weeks' : 'Current week',
-                      style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
-                ],
-              ),
-              const SizedBox(height: 12),
-              HeatmapView(habit: _habit, weekCount: isPremium ? 12 : 1),
-            ],
-          ),
-        ),
-        if (isPremium) ...[
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: MyWalkDecorations.card,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text('Year in MyWalk',
-                        style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600, color: MyWalkColor.golden)),
-                    const Spacer(),
-                    Text('52 weeks',
-                        style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                HeatmapView(habit: _habit, weekCount: 52),
-              ],
-            ),
-          ),
-        ] else ...[
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: () => _showPaywall(context),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: MyWalkDecorations.card,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text('Year in MyWalk',
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: MyWalkColor.softGold)),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: MyWalkColor.golden.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.workspace_premium, size: 10, color: MyWalkColor.golden),
-                            const SizedBox(width: 3),
-                            Text('PRO',
-                                style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: MyWalkColor.golden)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ClipRect(
-                    child: SizedBox(
-                      height: 180,
-                      child: ImageFiltered(
-                        imageFilter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                        child: IgnorePointer(child: HeatmapView(habit: _habit, weekCount: 52)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(Icons.lock_outline, size: 13, color: MyWalkColor.golden),
-                      const SizedBox(width: 6),
-                      Text('Unlock with MyWalk Pro',
-                          style: TextStyle(
-                              fontSize: 12, color: MyWalkColor.softGold)),
-                      const Spacer(),
-                      Icon(Icons.chevron_right,
-                          size: 13, color: Colors.white.withValues(alpha: 0.3)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _milestoneSection(List<Milestone> milestones, Color accent) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: MyWalkDecorations.card,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Milestones',
-              style: TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: MyWalkColor.softGold)),
-          const SizedBox(height: 14),
-          ...milestones.map((m) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: m.isReached
-                        ? accent.withValues(alpha: 0.2)
-                        : MyWalkColor.surfaceOverlay,
-                  ),
-                  child: Icon(
-                    m.isReached ? Icons.star_rounded : Icons.star_outline_rounded,
-                    size: 16,
-                    color: m.isReached ? accent : Colors.white.withValues(alpha: 0.25),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        m.message,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: m.isReached
-                              ? MyWalkColor.warmWhite
-                              : Colors.white.withValues(alpha: 0.35),
-                        ),
-                      ),
-                      if (m.progressHint != null && !m.isReached)
-                        Text(
-                          m.progressHint!,
-                          style: TextStyle(
-                              fontSize: 11, color: accent.withValues(alpha: 0.6)),
-                        )
-                      else if (!m.isReached)
-                        Text('Keep going',
-                            style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.white.withValues(alpha: 0.2))),
-                    ],
-                  ),
-                ),
-                if (m.isReached)
-                  Icon(Icons.check_circle_rounded,
-                      size: 18, color: accent.withValues(alpha: 0.6)),
-              ],
-            ),
-          )),
-        ],
-      ),
     );
   }
 
@@ -958,7 +703,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
     );
   }
 
-  Widget _habitInfoSection(int habitAge) {
+  Widget _habitInfoSection() {
     final activedays = _habit.activeDaySet.toList()..sort();
     const dayNames = {1: 'Sun', 2: 'Mon', 3: 'Tue', 4: 'Wed', 5: 'Thu', 6: 'Fri', 7: 'Sat'};
     final activeDaysSummary = activedays.map((d) => dayNames[d] ?? '').where((s) => s.isNotEmpty).join(', ');
@@ -969,10 +714,6 @@ class _HabitDetailViewState extends State<HabitDetailView> {
       child: Column(
         children: [
           _infoRow('Tracking type', _habit.trackingType.name[0].toUpperCase() + _habit.trackingType.name.substring(1)),
-          const SizedBox(height: 8),
-          _infoRow('Started', '$habitAge days ago'),
-          const SizedBox(height: 8),
-          _infoRow('Total entries', '${_habit.entries.where((e) => e.isCompleted).length}'),
           if (_habit.activeDaySet.length < 7) ...[
             const SizedBox(height: 8),
             _infoRow('Active days', activeDaysSummary),
@@ -997,33 +738,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
     );
   }
 
-  IconData _habitIcon() {
-    if (_habit.trackingType == HabitTrackingType.abstain) return Icons.shield_rounded;
-    switch (_habit.category) {
-      case HabitCategory.gratitude: return Icons.auto_awesome;
-      case HabitCategory.scripture: return Icons.menu_book;
-      case HabitCategory.exercise: return Icons.fitness_center;
-      case HabitCategory.rest: return Icons.bedtime;
-      case HabitCategory.fasting: return Icons.no_food;
-      case HabitCategory.study: return Icons.school;
-      case HabitCategory.service: return Icons.volunteer_activism;
-      case HabitCategory.connection: return Icons.people;
-      case HabitCategory.health: return Icons.favorite;
-      case HabitCategory.abstain: return Icons.shield_rounded;
-      case HabitCategory.prayer: return Icons.self_improvement_rounded;
-      case HabitCategory.custom: return Icons.star;
-    }
-  }
 
-  void _showPaywall(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: MyWalkColor.charcoal,
-      builder: (_) => const MyWalkPaywallView(),
-    );
-  }
 
   void _showEdit(BuildContext context) {
     showModalBottomSheet(

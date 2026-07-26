@@ -78,6 +78,7 @@ export {
   rpM2UnlockReminder,
 } from './callables/recovery_path_notify';
 export { deleteAccount } from './callables/account';
+export { redeemToken } from './callables/tokens';
 
 // ── TEMP: Grant premium to all new users (remove before production launch) ──
 

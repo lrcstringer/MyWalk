@@ -259,7 +259,7 @@ class _PartnerAcceptanceScreenState extends State<PartnerAcceptanceScreen> {
           Text(
             _accepted
                 ? 'You\'ll be notified when ${_partnership?.ownerDisplayName ?? 'your partner'} reaches out.'
-                : 'You can always connect with people in your Prayer Circles.',
+                : 'You can always connect with people in your Prayer Groups.',
             textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: 14, color: MyWalkColor.softGold.withValues(alpha: 0.7),

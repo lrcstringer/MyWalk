@@ -27,10 +27,10 @@ class _CirclesAuthGateView extends StatelessWidget {
   const _CirclesAuthGateView();
 
   static const _features = [
-    (Icons.auto_awesome, 'Prayer Circles', 'Share gratitude and prayer with your community'),
-    (Icons.bar_chart_rounded, 'Shared Progress', "See your circle's collective faithfulness"),
-    (Icons.calendar_month, 'Sunday Summary', 'Weekly circle stats and encouragement'),
-    (Icons.link, 'Easy Invites', 'Share a link to grow your circle'),
+    (Icons.auto_awesome, 'Prayer Groups', 'Share gratitude and prayer with your community'),
+    (Icons.bar_chart_rounded, 'Shared Progress', "See your group's collective faithfulness"),
+    (Icons.calendar_month, 'Sunday Summary', 'Weekly group stats and encouragement'),
+    (Icons.link, 'Easy Invites', 'Share a link to grow your group'),
   ];
 
   @override
@@ -54,11 +54,11 @@ class _CirclesAuthGateView extends StatelessWidget {
                 const Icon(Icons.group_rounded, size: 32, color: MyWalkColor.golden),
               ]),
               const SizedBox(height: 20),
-              const Text('Prayer Circles',
+              const Text('Prayer Groups',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
               const SizedBox(height: 12),
               Text(
-                'Walk together in faith with your community.\nCreate or join circles to share your journey.',
+                'Walk together in faith with your community.\nCreate or join groups to share your journey.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: MyWalkColor.softGold.withValues(alpha: 0.7), height: 1.6),
               ),
@@ -92,7 +92,7 @@ class _CirclesAuthGateView extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Sign in to create and join Prayer Circles',
+                'Sign in to create and join Prayer Groups',
                 style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45)),
               ),
             ],
@@ -152,8 +152,8 @@ class _CirclesListViewState extends State<_CirclesListView> {
   Future<void> _loadCircles() async {
     setState(() { _isLoading = true; _error = null; });
     try {
-      final circles = await context.read<CircleRepository>().listCircles();
-      if (mounted) setState(() => _circles = circles);
+      final groups = await context.read<CircleRepository>().listCircles();
+      if (mounted) setState(() => _circles = groups);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     }
@@ -198,8 +198,8 @@ class _CirclesListViewState extends State<_CirclesListView> {
                 decoration: BoxDecoration(color: MyWalkColor.golden.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
                 child: const Icon(Icons.add_circle_outline, color: MyWalkColor.golden, size: 20),
               ),
-              title: const Text('Create Circle', style: TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w600)),
-              subtitle: Text('Start a new prayer circle', style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12)),
+              title: const Text('Create Group', style: TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w600)),
+              subtitle: Text('Start a new prayer group', style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12)),
               onTap: () { Navigator.pop(context); _openCreate(); },
             ),
             ListTile(
@@ -208,7 +208,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
                 decoration: BoxDecoration(color: MyWalkColor.golden.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
                 child: const Icon(Icons.group_add_outlined, color: MyWalkColor.golden, size: 20),
               ),
-              title: const Text('Join Circle', style: TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w600)),
+              title: const Text('Join Group', style: TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w600)),
               subtitle: Text('Enter an invite code', style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12)),
               onTap: () { Navigator.pop(context); _openJoin(); },
             ),
@@ -282,7 +282,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Circles',
+                            'Groups',
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.w700,
@@ -333,8 +333,11 @@ class _CirclesListViewState extends State<_CirclesListView> {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: _CircleCard(
                       circle: circle,
-                      onTap: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => CircleDetailView(circleId: circle.id))),
+                      onTap: () async {
+                        await Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => CircleDetailView(circleId: circle.id)));
+                        if (mounted) _loadCircles();
+                      },
                     ),
                   );
                 }, childCount: _circles.length),
@@ -360,7 +363,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
     return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       Icon(Icons.wifi_off_rounded, size: 48, color: Colors.white.withValues(alpha: 0.2)),
       const SizedBox(height: 16),
-      const Text("Couldn't load circles",
+      const Text("Couldn't load groups",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
       const SizedBox(height: 8),
       Text('Check your connection and try again.',
@@ -382,10 +385,10 @@ class _CirclesListViewState extends State<_CirclesListView> {
         child: Icon(Icons.group_rounded, size: 36, color: MyWalkColor.golden.withValues(alpha: 0.6)),
       ),
       const SizedBox(height: 20),
-      const Text('No Circles Yet',
+      const Text('No Groups Yet',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
       const SizedBox(height: 8),
-      Text('Create a circle to pray with friends,\nor join one with an invite code.',
+      Text('Create a group to pray with friends,\nor join one with an invite code.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.45))),
       const SizedBox(height: 32),
@@ -401,7 +404,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text('Create a Circle', style: TextStyle(fontWeight: FontWeight.w600)),
+              child: const Text('Create a Group', style: TextStyle(fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(height: 12),

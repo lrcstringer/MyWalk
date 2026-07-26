@@ -15,7 +15,7 @@ class MemorizationCirclesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: const Text('Memorization Circles'),
+        title: const Text('Memorization Groups'),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
       ),
@@ -23,7 +23,7 @@ class MemorizationCirclesScreen extends StatelessWidget {
         backgroundColor: MyWalkColor.golden,
         foregroundColor: MyWalkColor.charcoal,
         icon: const Icon(Icons.group_add_outlined),
-        label: const Text('New circle'),
+        label: const Text('New group'),
         onPressed: () => Navigator.of(context).push<void>(
           MaterialPageRoute(builder: (_) => const CreateCircleScreen()),
         ),
@@ -233,7 +233,7 @@ class _EmptyState extends StatelessWidget {
             ElevatedButton.icon(
               style: MyWalkButtonStyle.primary(),
               icon: const Icon(Icons.group_add_outlined),
-              label: const Text('Create a circle'),
+              label: const Text('Create a group'),
               onPressed: onCreate,
             ),
           ],

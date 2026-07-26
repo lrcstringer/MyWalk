@@ -92,7 +92,7 @@ class ActivityTab extends StatelessWidget {
       Text('Nothing here yet.',
           style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
       const SizedBox(height: 6),
-      Text('Tap ♥ to encourage someone in your circle.',
+      Text('Tap ♥ to encourage someone in your group.',
           style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.3))),
     ]),
   );
@@ -125,7 +125,7 @@ class _EncouragementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final senderLabel = enc.isAnonymous ? 'Anonymous' : (enc.senderDisplayName ?? 'Circle Member');
+    final senderLabel = enc.isAnonymous ? 'Anonymous' : (enc.senderDisplayName ?? 'Group Member');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (isReceived && !enc.isRead) {
@@ -489,7 +489,7 @@ class _CheckInBanner extends StatelessWidget {
         const Text('How are you doing this week?',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
         const SizedBox(height: 4),
-        Text('Your circle wants to know. This helps them pray for you.',
+        Text('Your group wants to know. This helps them pray for you.',
             style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.5), height: 1.4)),
         const SizedBox(height: 14),
         GestureDetector(
@@ -605,7 +605,7 @@ class _ResponseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = response.isAnonymous ? 'Anonymous' : (response.userDisplayName ?? 'Circle Member');
+    final name = response.isAnonymous ? 'Anonymous' : (response.userDisplayName ?? 'Group Member');
     final color = _statusColor(response.status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -653,7 +653,7 @@ class _PulseCheckInSheetState extends State<PulseCheckInSheet> {
           const Text('How are you doing this week?',
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
           const SizedBox(height: 4),
-          Text('Your circle will see your check-in.',
+          Text('Your group will see your check-in.',
               style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.45))),
           const SizedBox(height: 16),
           ...PulseStatus.values.map((s) {

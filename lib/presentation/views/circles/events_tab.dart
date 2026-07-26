@@ -78,7 +78,7 @@ class EventsTab extends StatelessWidget {
               style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
           const SizedBox(height: 6),
           Text(canCreate
-              ? 'Tap + to create an event for your circle.'
+              ? 'Tap + to create an event for your group.'
               : 'Your admin hasn\'t created any events yet.',
               style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.3)),
               textAlign: TextAlign.center),

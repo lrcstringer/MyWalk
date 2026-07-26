@@ -83,7 +83,7 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text('Circle Settings',
+        title: const Text('Group Settings',
             style: TextStyle(
                 color: MyWalkColor.warmWhite,
                 fontSize: 17,
@@ -111,10 +111,10 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
         children: [
 
           // ── Circle Details ──────────────────────────────────────────────
-          _sectionHeader('Circle Details'),
+          _sectionHeader('Group Details'),
           const SizedBox(height: 8),
           _inputCard(
-            label: 'Circle Name',
+            label: 'Group Name',
             controller: _nameCtrl,
             hint: 'e.g. Sunday Morning Group',
           ),
@@ -153,7 +153,7 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
             icon: Icons.event_rounded,
             iconColor: MyWalkColor.sage,
             title: 'Events',
-            subtitle: 'Schedule events for your circle.',
+            subtitle: 'Schedule events for your group.',
             value: _eventsEnabled,
             onChanged: (v) => _updateToggle(() => _eventsEnabled = v),
           ),
@@ -161,8 +161,8 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
           _switchCard(
             icon: Icons.check_circle_outline_rounded,
             iconColor: MyWalkColor.golden,
-            title: 'Circle Habits',
-            subtitle: 'Create shared habits for your circle.',
+            title: 'Group Habits',
+            subtitle: 'Create shared habits for your group.',
             value: _habitsEnabled,
             onChanged: (v) => _updateToggle(() => _habitsEnabled = v),
           ),
@@ -171,7 +171,7 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
             icon: Icons.favorite_rounded,
             iconColor: MyWalkColor.warmCoral,
             title: 'Encouragement Prompts',
-            subtitle: 'Sunday nudge to encourage a circle member.',
+            subtitle: 'Sunday nudge to encourage a group member.',
             value: _encouragementsEnabled,
             onChanged: (v) => _updateToggle(() => _encouragementsEnabled = v),
           ),
@@ -236,7 +236,7 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    final text = 'Join my Prayer Circle "${widget.circleName}" on MyWalk!\n\n'
+                    final text = 'Join my Prayer Group "${widget.circleName}" on MyWalk!\n\n'
                         'Tap to join: https://mywalk.faith/join?code=${widget.inviteCode}\n\n'
                         'Or enter invite code "${widget.inviteCode}" manually in the app.';
                     Share.share(text);
@@ -272,8 +272,8 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
           const SizedBox(height: 8),
           _dangerButton(
             icon: Icons.delete_forever_rounded,
-            label: 'Delete Circle',
-            subtitle: 'Permanently removes the circle and all its data',
+            label: 'Delete Group',
+            subtitle: 'Permanently removes the group and all its data',
             onTap: _confirmDelete,
             loading: _deleting,
           ),
@@ -548,7 +548,7 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'Circle name cannot be empty.');
+      setState(() => _error = 'Group name cannot be empty.');
       return;
     }
     setState(() { _saving = true; _error = null; });
@@ -598,7 +598,7 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
         content: Text(
           isAdmin
               ? 'Remove admin privileges from ${m.displayName}? They will become a regular member.'
-              : 'Give ${m.displayName} admin privileges? They will be able to manage habits, events, and circle settings.',
+              : 'Give ${m.displayName} admin privileges? They will be able to manage habits, events, and group settings.',
           style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
         ),
         actions: [
@@ -626,7 +626,7 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: MyWalkColor.cardBackground,
-        title: const Text('Delete Circle?',
+        title: const Text('Delete Group?',
             style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
         content: Text(
           'This will permanently delete "${widget.circleName}" and all its data — '
@@ -642,7 +642,7 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
           ),
           TextButton(
             onPressed: () { Navigator.pop(context); _deleteCircle(); },
-            child: const Text('Delete Circle',
+            child: const Text('Delete Group',
                 style: TextStyle(color: MyWalkColor.warmCoral, fontWeight: FontWeight.w600)),
           ),
         ],

@@ -130,7 +130,7 @@ class _SettingsViewState extends State<SettingsView> {
         backgroundColor: MyWalkColor.cardBackground,
         title: const Text('Reset All Data', style: TextStyle(color: MyWalkColor.warmWhite)),
         content: Text(
-          'This will permanently delete all your habits, journal entries, scripture memorization, and circle memberships. This cannot be undone.',
+          'This will permanently delete all your habits, journal entries, scripture memorization, and group memberships. This cannot be undone.',
           style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
         ),
         actions: [
@@ -217,7 +217,7 @@ class _SettingsViewState extends State<SettingsView> {
           backgroundColor: MyWalkColor.cardBackground,
           title: const Text('Data Reset', style: TextStyle(color: MyWalkColor.warmWhite)),
           content: Text(
-            'All your data has been cleared — habits, journal entries, scripture memorization, and circles. Your account and subscription are unchanged.',
+            'All your data has been cleared — habits, journal entries, scripture memorization, and groups. Your account and subscription are unchanged.',
             style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
           ),
           actions: [
@@ -272,7 +272,7 @@ class _SettingsViewState extends State<SettingsView> {
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     const Text('MyWalk',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: MyWalkColor.golden)),
-                    Text('Track your habits. Give them to God.',
+                    Text('Daily discipleship. Walk with God.',
                         style: TextStyle(fontSize: 14, color: MyWalkColor.softGold.withValues(alpha: 0.7))),
                   ]),
                 ),
@@ -303,7 +303,7 @@ class _SettingsViewState extends State<SettingsView> {
                 const SizedBox(height: 8),
                 _statsSection(totalCheckIns, totalMinutes, totalCleanDays, totalCount, milestoneCount, habits.length),
                 const SizedBox(height: 20),
-                _sectionHeader('Circle Notifications'),
+                _sectionHeader('Group Notifications'),
                 const SizedBox(height: 8),
                 _circleNotificationsSection(),
                 const SizedBox(height: 20),
@@ -392,7 +392,7 @@ class _SettingsViewState extends State<SettingsView> {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Sign in with Apple',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
-          Text('Required for Prayer Circles & backup',
+          Text('Required for Prayer Groups & backup',
               style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4))),
         ])),
         auth.isLoading
@@ -447,7 +447,7 @@ class _SettingsViewState extends State<SettingsView> {
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('Upgrade to Pro',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
-                Text('Unlimited habits, Recovery Path, analytics & more',
+                Text('Unlimited practices, Recovery Path, analytics & more',
                     style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4))),
               ])),
               Icon(Icons.chevron_right, size: 16, color: Colors.white.withValues(alpha: 0.3)),
@@ -694,7 +694,7 @@ class _SettingsViewState extends State<SettingsView> {
           Divider(height: 1, color: MyWalkColor.warmWhite.withValues(alpha: 0.06)),
           _circleNotifToggle(
             label: 'Announcements',
-            subtitle: 'Admin announcements for your circles',
+            subtitle: 'Admin announcements for your groups',
             value: _circleNotifAnnouncement,
             onChanged: (val) {
               setState(() => _circleNotifAnnouncement = val);
@@ -781,7 +781,7 @@ class _SettingsViewState extends State<SettingsView> {
         backgroundColor: MyWalkColor.cardBackground,
         title: const Text('Delete Account', style: TextStyle(color: MyWalkColor.warmWhite)),
         content: Text(
-          'This permanently deletes your account and all your data — habits, journal entries, scripture memorization, circles, and all media. '
+          'This permanently deletes your account and all your data — habits, journal entries, scripture memorization, groups, and all media. '
           'This cannot be undone.',
           style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
         ),

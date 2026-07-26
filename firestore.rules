@@ -94,6 +94,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ─── tokens ───────────────────────────────────────────────────────────────
+    // Promo tokens for granting 12-month premium at sign-up. Managed manually
+    // in the Firebase console. All validation and writes go through the
+    // redeemToken Cloud Function (Admin SDK). No client access permitted.
+    match /tokens/{tokenCode} {
+      allow read, write: if false;
+    }
+
     // ─── collectionGroup: members ─────────────────────────────────────────
     // Allows listCircles() to query collectionGroup('members').where('userId', ==, uid).
     // Rule must check the userId FIELD (not the document ID) so Firestore can validate

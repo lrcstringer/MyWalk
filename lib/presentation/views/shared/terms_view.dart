@@ -62,7 +62,7 @@ class _TermsContent extends StatelessWidget {
         _body(
           'MyWalk is a faith-based habit and spiritual practice tracking app. It '
           'allows you to log daily habits, track abstinence, time spiritual '
-          'activities, record progress, join Prayer Circles, and reflect on your '
+          'activities, record progress, join Prayer Groups, and reflect on your '
           'walk with God. Some features require an account and an active internet '
           'connection.',
         ),
@@ -86,11 +86,11 @@ class _TermsContent extends StatelessWidget {
           '• Use the App for any unlawful purpose.',
         ),
 
-        _heading('5. Prayer Circles & User Content'),
+        _heading('5. Prayer Groups & User Content'),
         _body(
-          'Prayer Circles allow you to share prayer requests and encouragements '
+          'Prayer Groups allow you to share prayer requests and encouragements '
           'with other members you invite. You retain ownership of any content you '
-          'submit. By sharing content in a Prayer Circle, you grant other circle '
+          'submit. By sharing content in a Prayer Group, you grant other group '
           'members the right to view it within the App. You are solely responsible '
           'for the content you share. We reserve the right to remove content that '
           'violates these Terms.',
@@ -158,7 +158,7 @@ class _TermsContent extends StatelessWidget {
           '• Habit & practice data: The habits and spiritual practices you '
           'create, your daily check-in entries, timed sessions, counts, and '
           'streak progress.\n\n'
-          '• Prayer Circle data: Prayer requests, encouragements, and '
+          '• Prayer Group data: Prayer requests, encouragements, and '
           'participation activity within circles you join or create.\n\n'
           '• App preferences: Notification settings, reminder times, and '
           'onboarding completion status.\n\n'
@@ -194,7 +194,7 @@ class _TermsContent extends StatelessWidget {
         _body(
           'Your data is stored securely in Google Firebase Firestore, protected '
           'by Firebase Security Rules that ensure only you (and members of your '
-          'Prayer Circles) can access your data. Data is encrypted in transit '
+          'Prayer Groups) can access your data. Data is encrypted in transit '
           'using industry-standard TLS encryption.',
         ),
 

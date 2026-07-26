@@ -56,7 +56,7 @@ class _CircleInvitationDialogState extends State<CircleInvitationDialog> {
       if (mounted) {
         setState(() {
           _state = _JoinState.error;
-          _errorMessage = 'Could not join the circle. Please check the invite link and try again.';
+          _errorMessage = 'Could not join the group. Please check the invite link and try again.';
         });
       }
     }
@@ -108,7 +108,7 @@ class _CircleInvitationDialogState extends State<CircleInvitationDialog> {
         const SizedBox(height: 20),
         // Title
         Text(
-          'You\'ve been invited to a Prayer Circle',
+          'You\'ve been invited to a Prayer Group',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: MyWalkColor.warmWhite,
@@ -135,7 +135,7 @@ class _CircleInvitationDialogState extends State<CircleInvitationDialog> {
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12)),
           ),
-          child: const Text('Join the Circle',
+          child: const Text('Join the Group',
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
         ),
         const SizedBox(height: 12),
@@ -174,7 +174,7 @@ class _CircleInvitationDialogState extends State<CircleInvitationDialog> {
         Text(
           _circleName != null
               ? 'You\'ve joined "$_circleName"'
-              : 'You\'ve joined the circle!',
+              : 'You\'ve joined the group!',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: MyWalkColor.warmWhite,

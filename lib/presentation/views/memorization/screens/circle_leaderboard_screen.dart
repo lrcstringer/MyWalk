@@ -501,7 +501,7 @@ class _CommentSection extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
-                  'Be the first to encourage your circle!',
+                  'Be the first to encourage your group!',
                   style: TextStyle(
                     color: MyWalkColor.warmWhite.withValues(alpha: 0.3),
                     fontSize: 13,
@@ -622,7 +622,7 @@ class _CommentInput extends StatelessWidget {
               maxLines: null,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
-                hintText: 'Encourage your circle…',
+                hintText: 'Encourage your group…',
                 hintStyle: TextStyle(
                     color: MyWalkColor.warmWhite.withValues(alpha: 0.3),
                     fontSize: 14),

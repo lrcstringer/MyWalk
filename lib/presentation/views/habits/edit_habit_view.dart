@@ -16,7 +16,6 @@ import 'package:share_plus/share_plus.dart';
 import '../../../domain/entities/accountability_partnership.dart';
 import '../../providers/accountability_provider.dart';
 import '../shared/fruit_tag_chip.dart';
-import '../shared/mywalk_paywall_view.dart';
 
 class EditHabitView extends StatefulWidget {
   final Habit habit;
@@ -173,7 +172,7 @@ class _EditHabitViewState extends State<EditHabitView> {
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
-        title: const Text('Edit Habit',
+        title: const Text('Edit Practice',
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
@@ -300,7 +299,7 @@ class _EditHabitViewState extends State<EditHabitView> {
             maxLength: 200,
             style: const TextStyle(fontSize: 14, color: MyWalkColor.warmWhite),
             decoration: InputDecoration(
-              hintText: 'Why does this habit matter to you spiritually?',
+              hintText: 'Why does this practice matter to you spiritually?',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
               filled: true,
               fillColor: MyWalkColor.cardBackground,
@@ -841,7 +840,7 @@ class _EditHabitViewState extends State<EditHabitView> {
         ),
         child: const Center(
           child: Text(
-            'Delete Habit',
+            'Delete Practice',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: MyWalkColor.warmCoral),
           ),
         ),
@@ -936,7 +935,7 @@ class _EditHabitViewState extends State<EditHabitView> {
 
   Widget _nameSection() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Habit Name',
+      Text('Practice Name',
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
               color: MyWalkColor.softGold.withValues(alpha: 0.6))),
       const SizedBox(height: 8),
@@ -957,7 +956,7 @@ class _EditHabitViewState extends State<EditHabitView> {
           onChanged: (_) => setState(() {}),
           style: const TextStyle(fontSize: 16, color: MyWalkColor.warmWhite),
           decoration: InputDecoration(
-            hintText: 'Habit name',
+            hintText: 'Practice name',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
             filled: true,
             fillColor: MyWalkColor.cardBackground,
@@ -970,65 +969,23 @@ class _EditHabitViewState extends State<EditHabitView> {
 
   Widget _purposeSection(bool isPremium) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        Text('Your Why',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-                color: MyWalkColor.softGold.withValues(alpha: 0.6))),
-        if (!isPremium) ...[
-          const Spacer(),
-          GestureDetector(
-            onTap: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              useSafeArea: true,
-              backgroundColor: MyWalkColor.charcoal,
-              builder: (_) => const MyWalkPaywallView(
-                contextTitle: 'Custom purpose statements',
-                contextMessage: "Write your own \u2018why\u2019 for each habit. Make it personal and God-centred.",
-              ),
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: MyWalkColor.golden.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.workspace_premium_rounded, size: 8, color: MyWalkColor.golden),
-                const SizedBox(width: 3),
-                const Text('Customise',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: MyWalkColor.golden)),
-              ]),
-            ),
-          ),
-        ],
-      ]),
+      Text('Your Why',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+              color: MyWalkColor.softGold.withValues(alpha: 0.6))),
       const SizedBox(height: 8),
-      if (isPremium)
-        TextField(
-          controller: _purposeController,
-          maxLines: 4,
-          style: const TextStyle(fontSize: 15, color: MyWalkColor.warmWhite),
-          decoration: InputDecoration(
-            hintText: 'Why does this matter to you and to God?',
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-            filled: true,
-            fillColor: MyWalkColor.cardBackground,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.all(12),
-          ),
-        )
-      else
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: MyWalkColor.cardBackground,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text(_purposeController.text,
-              style: TextStyle(fontSize: 15, color: MyWalkColor.softGold.withValues(alpha: 0.7))),
+      TextField(
+        controller: _purposeController,
+        maxLines: 4,
+        style: const TextStyle(fontSize: 15, color: MyWalkColor.warmWhite),
+        decoration: InputDecoration(
+          hintText: 'Why does this matter to you and to God?',
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+          filled: true,
+          fillColor: MyWalkColor.cardBackground,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+          contentPadding: const EdgeInsets.all(12),
         ),
+      ),
     ]);
   }
 

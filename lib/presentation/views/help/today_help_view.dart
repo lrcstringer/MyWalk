@@ -28,7 +28,7 @@ class TodayHelpView extends StatelessWidget {
               accentColor: accent,
               title: 'Today',
               subtitle:
-                  'Your daily hub for gratitude,\nhabit check-ins, and spiritual consistency.',
+                  'Your daily hub for gratitude,\npractice check-ins, and spiritual consistency.',
             ),
 
             // ── Features ─────────────────────────────────────────────────
@@ -47,9 +47,9 @@ class TodayHelpView extends StatelessWidget {
                   icon: Icons.check_circle_outline,
                   iconColor: sage,
                   iconBg: Color(0x267A9E7E),
-                  title: 'Habit Check-ins',
+                  title: 'Practice Check-ins',
                   description:
-                      'Tap each habit card when you\'ve completed it for the day.',
+                      'Tap each practice card when you\'ve completed it for the day.',
                 ),
                 HelpFeatureCard(
                   icon: Icons.calendar_view_week_outlined,
@@ -63,9 +63,9 @@ class TodayHelpView extends StatelessWidget {
                   icon: Icons.add_circle_outline,
                   iconColor: MyWalkColor.warmCoral,
                   iconBg: Color(0x1AD4836B),
-                  title: 'Add Habits',
+                  title: 'Add Practices',
                   description:
-                      'Tap the + button to create new habits and grow your daily practice.',
+                      'Tap the + button to add a new daily practice.',
                 ),
               ],
             ),
@@ -97,9 +97,9 @@ class TodayHelpView extends StatelessWidget {
               number: 3,
               icon: Icons.check_circle_outline,
               accentColor: sage,
-              title: 'Check off your habits',
+              title: 'Check off your practices',
               description:
-                  'Tap a habit card once you\'ve completed it. It will animate to show it\'s done.',
+                  'Tap a practice card once you\'ve completed it. It will animate to show it\'s done.',
             ),
             const HelpStep(
               number: 4,
@@ -113,9 +113,9 @@ class TodayHelpView extends StatelessWidget {
               number: 5,
               icon: Icons.add_circle_outline,
               accentColor: MyWalkColor.warmCoral,
-              title: 'Add a new habit',
+              title: 'Add a new practice',
               description:
-                  'Tap the + button (bottom-right) to add a habit. Free plan allows 2 habits; upgrade for unlimited.',
+                  'Tap the + button (bottom-right) to add a practice. Free plan allows 2 practices; upgrade for unlimited.',
               isLast: true,
             ),
 
@@ -156,13 +156,13 @@ class _ScreenDiagram extends StatelessWidget {
             _DiagramRow(
               icon: Icons.check_circle_outline,
               color: MyWalkColor.sage,
-              label: 'Habit cards grouped by category',
+              label: 'Practice cards grouped by category',
             ),
             _divider(),
             _DiagramRow(
               icon: Icons.add_circle_outline,
               color: MyWalkColor.warmCoral,
-              label: '+ FAB — add a new habit',
+              label: '+ FAB — add a new practice',
             ),
           ],
         ),

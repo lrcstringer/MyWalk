@@ -65,8 +65,8 @@ class BeatitudesView extends StatelessWidget {
                         Text(
                           'Matthew 5:3\u201312',
                           style: TextStyle(
-                            fontSize: 14,
-                            color: MyWalkColor.golden.withValues(alpha: 0.85),
+                            fontSize: 13,
+                            color: _kAccent.withValues(alpha: 0.9),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -125,7 +125,7 @@ class BeatitudesView extends StatelessWidget {
                           'Learn more about the Beatitudes',
                           style: TextStyle(
                             fontSize: 13,
-                            color: MyWalkColor.golden.withValues(alpha: 0.85),
+                            color: _kAccent.withValues(alpha: 0.85),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -133,7 +133,7 @@ class BeatitudesView extends StatelessWidget {
                         Icon(
                           Icons.chevron_right,
                           size: 16,
-                          color: MyWalkColor.golden.withValues(alpha: 0.7),
+                          color: _kAccent.withValues(alpha: 0.7),
                         ),
                       ],
                     ),
@@ -353,7 +353,7 @@ class _BibleProjectVideoCardState extends State<_BibleProjectVideoCard> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: MyWalkColor.golden.withValues(alpha: 0.3),
+              color: _kAccent.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -407,8 +407,8 @@ class _BibleProjectVideoCardState extends State<_BibleProjectVideoCard> {
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => BibleProjectBrowserView.openOrPrompt(context),
-              child: const Text('Watch on BibleProject',
-                  style: TextStyle(fontSize: 12, color: MyWalkColor.golden)),
+              child: Text('Watch on BibleProject',
+                  style: TextStyle(fontSize: 12, color: _kAccent)),
             ),
           ],
         ),
@@ -505,6 +505,7 @@ class _BeatitudeCard extends StatelessWidget {
                 child: Image.asset(
                   beatitude.imagePath,
                   fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
                 ),
               ),
               Container(
@@ -529,7 +530,7 @@ class _BeatitudeCard extends StatelessWidget {
                       beatitude.verseRef,
                       style: TextStyle(
                         fontSize: 10,
-                        color: _kAccent.withValues(alpha: 0.75),
+                        color: _kAccent.withValues(alpha: 0.7),
                       ),
                     ),
                   ],

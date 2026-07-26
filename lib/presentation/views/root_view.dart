@@ -10,7 +10,7 @@ import '../../data/services/pending_partner_token_service.dart';
 import '../../domain/repositories/user_preferences_repository.dart';
 import '../../domain/services/week_cycle_manager.dart';
 import 'content_view.dart';
-import 'onboarding/onboarding_container_view.dart';
+import 'onboarding/auth_screen.dart';
 
 class RootView extends StatefulWidget {
   const RootView({super.key});
@@ -181,7 +181,7 @@ class _RootViewState extends State<RootView> {
       duration: const Duration(milliseconds: 500),
       child: _onboardingComplete
           ? ContentView(key: const ValueKey('content'))
-          : OnboardingContainerView(
+          : AuthScreen(
               key: const ValueKey('onboarding'),
               onComplete: _completeOnboarding,
             ),

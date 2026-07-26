@@ -174,7 +174,7 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
           Row(children: [
             Text(
               item.isAnonymous
-                  ? 'Someone in your circle'
+                  ? 'Someone in your group'
                   : (item.displayName?.split(' ').first ?? 'Member'),
               style: TextStyle(
                   fontSize: 13, fontWeight: FontWeight.w600,
@@ -199,7 +199,7 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
       backgroundColor: MyWalkColor.cardBackground,
       title: const Text('Delete Gratitude', style: TextStyle(color: MyWalkColor.warmWhite)),
       content: Text(
-        'This gratitude will be removed from the wall for all circle members.',
+        'This gratitude will be removed from the wall for all group members.',
         style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
       ),
       actions: [

@@ -14,13 +14,14 @@ import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import '../shared/day_of_week_picker.dart';
 import '../shared/fruit_tag_chip.dart';
-import '../shared/mywalk_paywall_view.dart';
 
 class AddHabitView extends StatefulWidget {
   final ScrollController? scrollController;
   final String? prefilledCategoryId;
   final String? prefilledCategoryName;
   final String? prefilledSubcategoryName;
+  final HabitCategoryModel? startCategoryModel;
+  final bool forBreakingFree;
 
   const AddHabitView({
     super.key,
@@ -28,6 +29,8 @@ class AddHabitView extends StatefulWidget {
     this.prefilledCategoryId,
     this.prefilledCategoryName,
     this.prefilledSubcategoryName,
+    this.startCategoryModel,
+    this.forBreakingFree = false,
   });
 
   @override
@@ -49,13 +52,35 @@ class _AddHabitViewState extends State<AddHabitView> {
   // Legacy enum kept for backward-compat with trigger chips / purpose defaults
   HabitCategory _selectedCategory = HabitCategory.custom;
 
-  bool get _isPreFilled => widget.prefilledCategoryId != null;
+  bool get _isPreFilled =>
+      widget.prefilledCategoryId != null || widget.forBreakingFree;
 
   @override
   void initState() {
     super.initState();
     _notesController = QuillController.basic();
-    if (widget.prefilledCategoryId != null) {
+    if (widget.forBreakingFree) {
+      _selectedCategory = HabitCategory.abstain;
+      _trackingType = HabitTrackingType.abstain;
+      _subcategoryId = 'breaking_habits';
+      _categoryName = 'Breaking Free';
+      _purposeStatement = HabitCategory.abstain.defaultPurpose;
+      _step = 3;
+    } else if (widget.startCategoryModel != null) {
+      final cat = widget.startCategoryModel!;
+      _selectedCategoryModel = cat;
+      _selectedCategory = _toOldEnum(cat.id, null);
+      if (cat.isCustom) {
+        _categoryId = cat.id;
+        _subcategoryId = 'custom';
+        _categoryName = cat.name;
+        _subcategoryName = '';
+        _purposeStatement = HabitCategory.custom.defaultPurpose;
+        _step = 3;
+      } else {
+        _step = 2;
+      }
+    } else if (widget.prefilledCategoryId != null) {
       _categoryId = widget.prefilledCategoryId;
       _categoryName = widget.prefilledCategoryName;
       _subcategoryId = 'custom';
@@ -101,7 +126,7 @@ class _AddHabitViewState extends State<AddHabitView> {
     Widget leading;
 
     if (_step == 1) {
-      title = 'Choose a Habit';
+      title = 'Choose a Practice';
       leading = IconButton(
         icon: const Icon(Icons.close, color: MyWalkColor.warmWhite),
         onPressed: () => Navigator.pop(context),
@@ -361,7 +386,7 @@ class _AddHabitViewState extends State<AddHabitView> {
           _subcategoryContentCard(_selectedSubcategoryModel!),
 
         // Name
-        _label('Habit Name'),
+        _label('Practice Name'),
         const SizedBox(height: 8),
         _textField(
           hint: 'e.g. Morning run',
@@ -371,57 +396,14 @@ class _AddHabitViewState extends State<AddHabitView> {
         const SizedBox(height: 20),
 
         // Purpose
-        Row(
-          children: [
-            _label('Your Why', inline: true),
-            if (!isPremium) ...[
-              const Spacer(),
-              GestureDetector(
-                onTap: () => _showPaywall(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: MyWalkColor.golden.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.workspace_premium, size: 10, color: MyWalkColor.golden),
-                      const SizedBox(width: 3),
-                      Text('Customise',
-                          style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: MyWalkColor.golden)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
+        _label('Your Why', inline: true),
         const SizedBox(height: 8),
-        if (isPremium)
-          _textField(
-            hint: 'Why does this matter to you and to God?',
-            value: _purposeStatement,
-            onChanged: (v) => setState(() => _purposeStatement = v),
-            maxLines: 3,
-          )
-        else
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: MyWalkColor.surfaceOverlay,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              _purposeStatement,
-              style:
-                  TextStyle(fontSize: 14, color: MyWalkColor.softGold.withValues(alpha: 0.7)),
-            ),
-          ),
+        _textField(
+          hint: 'Why does this matter to you and to God?',
+          value: _purposeStatement,
+          onChanged: (v) => setState(() => _purposeStatement = v),
+          maxLines: 3,
+        ),
         const SizedBox(height: 20),
 
         // Fruit tags
@@ -593,7 +575,7 @@ class _AddHabitViewState extends State<AddHabitView> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            child: const Text('Set this habit',
+            child: const Text('Set this practice',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
           ),
         ),
@@ -1568,16 +1550,6 @@ class _AddHabitViewState extends State<AddHabitView> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showPaywall(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: MyWalkColor.charcoal,
-      builder: (_) => const MyWalkPaywallView(),
     );
   }
 

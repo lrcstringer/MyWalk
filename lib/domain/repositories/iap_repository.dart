@@ -1,3 +1,13 @@
+/// Result of a promo-token redemption attempt.
+enum TokenRedemptionResult {
+  success,
+  invalidToken,
+  notYetActive,
+  expired,
+  fullyRedeemed,
+  networkError,
+}
+
 /// Domain interface for In-App Purchase status and server validation.
 ///
 /// Clean Architecture: this interface lives in the domain layer.
@@ -34,4 +44,11 @@ abstract class IAPRepository {
     String? purchaseToken,
     String? receiptData,
   });
+
+  /// Calls the [redeemToken] Cloud Function to grant 12 months of premium.
+  ///
+  /// Returns [TokenRedemptionResult.success] on success. On failure returns a
+  /// typed result — never throws — so callers can handle errors without
+  /// try/catch.
+  Future<TokenRedemptionResult> redeemToken(String tokenCode);
 }

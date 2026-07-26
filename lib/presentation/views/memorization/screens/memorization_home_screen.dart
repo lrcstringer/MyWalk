@@ -46,7 +46,7 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.groups_2_outlined),
-            tooltip: 'Circles',
+            tooltip: 'Groups',
             onPressed: () => Navigator.of(context).push<void>(
               MaterialPageRoute(
                 builder: (_) => const MemorizationCirclesScreen(),

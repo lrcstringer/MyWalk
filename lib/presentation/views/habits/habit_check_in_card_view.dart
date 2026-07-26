@@ -5,14 +5,12 @@ import '../../../domain/entities/habit.dart';
 import '../../../domain/entities/scripture.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
-import '../../../domain/services/milestone_service.dart';
 import '../../theme/app_theme.dart';
 import '../../../domain/entities/accountability_partnership.dart';
 import '../../providers/accountability_provider.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../shared/fruit_tag_row.dart';
 import '../shared/golden_pulse_view.dart';
-import '../shared/milestone_celebration_view.dart';
 import 'habit_detail_view.dart';
 import '../journal/journal_entry_composer.dart';
 
@@ -33,14 +31,11 @@ class HabitCheckInCardView extends StatefulWidget {
 }
 
 class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
-  static const _milestoneService = MilestoneService.instance;
-
   bool _showPulse = false;
   bool _isCompleted = false;
   double _timedMinutes = 0;
   double _countValue = 0;
   Scripture? _completionVerse;
-  Milestone? _celebrationMilestone;
 
   // Write-serialization token: incremented on every timed/count update so
   // only the most-recent async write commits its post-await setState.
@@ -94,7 +89,6 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   Future<void> _checkIn() async {
     final provider = context.read<HabitProvider>();
     final storeProvider = context.read<StoreProvider>();
-    final previousTotal = _habit.totalCompletedDays().toDouble();
     setState(() {
       _showPulse = true;
       _isCompleted = true;
@@ -105,19 +99,6 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     setState(() {
       _completionVerse = ScriptureLibrary.completionVerse(_habit.category, _targetDate, isPremium: isPremium);
     });
-    if (!widget.isRetroactive) {
-      final newTotal = previousTotal + 1;
-      final milestone = _milestoneService.checkForNewMilestone(
-        _habit,
-        previousValue: previousTotal,
-        newValue: newTotal,
-      );
-      if (milestone != null) {
-        await Future.delayed(const Duration(milliseconds: 1800));
-        if (mounted) setState(() { _showPulse = false; _celebrationMilestone = milestone; });
-        return;
-      }
-    }
     await Future.delayed(const Duration(milliseconds: 1500));
     if (mounted) setState(() => _showPulse = false);
   }
@@ -192,14 +173,6 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                   if (mounted) setState(() => _showPulse = false);
                 }),
               ),
-            ),
-          ),
-        if (_celebrationMilestone != null)
-          Positioned.fill(
-            child: MilestoneCelebrationView(
-              milestone: _celebrationMilestone!,
-              trackingType: _habit.trackingType,
-              onDismiss: () => setState(() => _celebrationMilestone = null),
             ),
           ),
       ],
@@ -827,7 +800,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         final unit = _habit.targetUnit.isEmpty ? '' : ' ${_habit.targetUnit}';
         return '${_countValue.toInt()}$unit completed';
       case HabitTrackingType.checkIn:
-        return '${_habit.totalCompletedDays()} days total';
+        return 'Completed today';
       case HabitTrackingType.abstain:
         return 'I walked freely today \u2713';
     }

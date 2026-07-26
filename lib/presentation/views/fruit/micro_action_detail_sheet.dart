@@ -230,7 +230,7 @@ class _MicroActionDetailSheetState extends State<MicroActionDetailSheet> {
                           valueColor: AlwaysStoppedAnimation(MyWalkColor.charcoal),
                         ),
                       )
-                    : const Text('Add this habit',
+                    : const Text('Add this practice',
                         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
               ),
             ),

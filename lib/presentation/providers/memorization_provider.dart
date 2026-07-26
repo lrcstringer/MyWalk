@@ -7,9 +7,6 @@ import '../../domain/entities/memorization_circle.dart';
 import '../../domain/entities/memorization_item.dart';
 import '../../domain/repositories/memorization_repository.dart';
 
-// Free-tier limits
-const _freeItemLimit = 3;
-const _freeModes = {ReviewMode.flipCard, ReviewMode.cloze};
 
 class MemorizationProvider extends ChangeNotifier {
   final MemorizationRepository _repository;
@@ -42,11 +39,9 @@ class MemorizationProvider extends ChangeNotifier {
   List<MemorizationItem> get masteredItems =>
       _items.where((i) => i.status == MemorizationStatus.mastered).toList();
 
-  bool get canAddItem =>
-      _isPremium() || activeItems.length < _freeItemLimit;
+  bool get canAddItem => _isPremium();
 
-  bool canUseMode(ReviewMode mode) =>
-      _isPremium() || _freeModes.contains(mode);
+  bool canUseMode(ReviewMode mode) => _isPremium();
 
   bool get showAnalyticsDashboard => _isPremium();
 

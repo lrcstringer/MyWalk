@@ -1,29 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../kingdom_life/bible_project_browser_view.dart';
-import '../memorization/memorization_router.dart';
 import '../settings/settings_view.dart';
 import 'notification_bell.dart';
-import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 
-/// Standard AppBar actions for Today, Progress, Kingdom Life, and Circles screens.
-/// Order: Bible | Memorization (Premium) | Notifications | Settings | ⋮ (Help)
+/// Standard AppBar actions for Today, Practices, Kingdom Life, and Circles screens.
+/// Order: Bible | Notifications | Settings | ⋮ (Help)
 List<Widget> standardAppBarActions(BuildContext context, {Widget? helpView}) {
   final iconColor = MyWalkColor.warmWhite.withValues(alpha: 0.7);
-  final isPremium = context.watch<StoreProvider>().isPremium;
   return [
     IconButton(
       icon: Icon(Icons.menu_book_outlined, color: iconColor),
       onPressed: () => BibleProjectBrowserView.openOrPrompt(context),
       tooltip: 'Bible',
     ),
-    if (isPremium)
-      IconButton(
-        icon: Icon(Icons.psychology, color: iconColor),
-        onPressed: () => MemorizationRouter.pushHome(context),
-        tooltip: 'Memorization',
-      ),
     const NotificationBell(),
     IconButton(
       icon: Icon(Icons.settings_outlined, color: iconColor),
