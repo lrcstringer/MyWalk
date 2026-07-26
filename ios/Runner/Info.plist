@@ -89,5 +89,15 @@
 		<string>Record voice notes for your journal entries.</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
 		<string>Dictate text into your journal entries using your voice.</string>
+		<!-- Calendar: add circle events to the device calendar -->
+		<key>NSCalendarsUsageDescription</key>
+		<string>Add MyWalk circle events to your calendar.</string>
+		<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+		<string>Add MyWalk circle events to your calendar.</string>
+		<!-- Push notifications: background delivery via Firebase Cloud Messaging -->
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
 	</dict>
 </plist>
