@@ -297,11 +297,21 @@ class _AddHabitViewState extends State<AddHabitView> {
                 end: Alignment.bottomRight,
                 colors: [
                   MyWalkColor.cardBackground,
-                  catColor.withValues(alpha: 0.12),
+                  catColor.withValues(alpha: 0.22),
                 ],
               ),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: catColor.withValues(alpha: 0.40), width: 1.5),
+              border: Border.all(
+                color: catColor.withValues(alpha: 0.65),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: catColor.withValues(alpha: 0.18),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
