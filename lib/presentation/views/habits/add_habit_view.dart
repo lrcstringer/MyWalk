@@ -297,23 +297,23 @@ class _AddHabitViewState extends State<AddHabitView> {
                 end: Alignment.bottomRight,
                 colors: [
                   MyWalkColor.cardBackground,
-                  catColor.withValues(alpha: 0.08),
+                  catColor.withValues(alpha: 0.12),
                 ],
               ),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: catColor.withValues(alpha: 0.30), width: 1),
+              border: Border.all(color: catColor.withValues(alpha: 0.40), width: 1.5),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: catColor.withValues(alpha: 0.12),
+                    color: catColor.withValues(alpha: 0.15),
                   ),
-                  child: Icon(iconForKey(cat.iconKey), size: 22, color: catColor),
+                  child: Icon(iconForKey(cat.iconKey), size: 24, color: catColor),
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -322,7 +322,7 @@ class _AddHabitViewState extends State<AddHabitView> {
                   maxLines: 3,
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: MyWalkColor.warmWhite,
                   ),
                 ),

@@ -108,9 +108,13 @@ class AppTheme {
 // Reusable decoration helpers
 class MyWalkDecorations {
   static BoxDecoration get card => BoxDecoration(
-    color: MyWalkColor.cardBackground,
+    gradient: const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [Color(0xFF2C2C42), Color(0xFF222234)],
+    ),
     borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+    border: Border.all(color: const Color(0x1FFFFFFF), width: 1.0),
   );
 
   static BoxDecoration get inputField => BoxDecoration(

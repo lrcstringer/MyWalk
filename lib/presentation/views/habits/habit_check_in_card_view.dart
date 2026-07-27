@@ -141,7 +141,22 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
           onTap: () => _showDetail(context),
           child: Container(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-            decoration: MyWalkDecorations.card,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  MyWalkColor.cardBackground,
+                  accentColor.withValues(alpha: _isCompleted ? 0.10 : 0.06),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: accentColor.withValues(
+                    alpha: _isCompleted ? 0.30 : 0.18),
+                width: 1.0,
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
