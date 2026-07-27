@@ -376,22 +376,45 @@ class _CategoryDiscoveryGrid extends StatelessWidget {
       itemCount: categories.length,
       itemBuilder: (_, i) {
         final cat = categories[i];
+        final catColor = _hexColor(cat.colourHex);
         return GestureDetector(
           onTap: () => _openAddPractice(context, cat),
           child: Container(
             padding:
                 const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
             decoration: BoxDecoration(
-              color: MyWalkColor.cardBackground,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  MyWalkColor.cardBackground,
+                  catColor.withValues(alpha: 0.22),
+                ],
+              ),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                  color: MyWalkColor.cardBorder, width: 0.5),
+                  color: catColor.withValues(alpha: 0.65), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: catColor.withValues(alpha: 0.18),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(iconForKey(cat.iconKey),
-                    size: 24, color: MyWalkColor.golden),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: catColor.withValues(alpha: 0.15),
+                  ),
+                  child: Icon(iconForKey(cat.iconKey),
+                      size: 24, color: catColor),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   cat.name,
@@ -399,7 +422,7 @@ class _CategoryDiscoveryGrid extends StatelessWidget {
                   maxLines: 3,
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: MyWalkColor.warmWhite,
                   ),
                 ),
@@ -409,6 +432,11 @@ class _CategoryDiscoveryGrid extends StatelessWidget {
         );
       },
     );
+  }
+
+  Color _hexColor(String hex) {
+    final h = hex.replaceAll('#', '');
+    return Color(int.parse('FF$h', radix: 16));
   }
 
   void _openAddPractice(BuildContext context, HabitCategoryModel category) {

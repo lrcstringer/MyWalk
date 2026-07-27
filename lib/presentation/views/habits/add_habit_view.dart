@@ -136,7 +136,13 @@ class _AddHabitViewState extends State<AddHabitView> {
       title = _selectedCategoryModel?.name ?? '';
       leading = IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: MyWalkColor.warmWhite, size: 18),
-        onPressed: () => setState(() => _step = 1),
+        onPressed: () {
+          if (widget.startCategoryModel != null) {
+            Navigator.pop(context);
+          } else {
+            setState(() => _step = 1);
+          }
+        },
       );
     } else {
       title = 'Set It Up';
@@ -360,15 +366,33 @@ class _AddHabitViewState extends State<AddHabitView> {
   }
 
   Widget _subcategoryCard(HabitSubcategoryModel sub) {
+    final catColor = _selectedCategoryModel != null
+        ? Color(int.parse(
+            'FF${_selectedCategoryModel!.colourHex.replaceAll('#', '')}',
+            radix: 16))
+        : MyWalkColor.golden;
+
     return GestureDetector(
       onTap: () => _selectSubcategory(sub),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: MyWalkColor.cardBackground,
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              catColor.withValues(alpha: 0.10),
+              MyWalkColor.cardBackground,
+            ],
+          ),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+          border: Border(
+            left: BorderSide(color: catColor.withValues(alpha: 0.75), width: 3),
+            top: BorderSide(color: catColor.withValues(alpha: 0.15), width: 0.5),
+            right: BorderSide(color: catColor.withValues(alpha: 0.15), width: 0.5),
+            bottom: BorderSide(color: catColor.withValues(alpha: 0.15), width: 0.5),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,8 +400,16 @@ class _AddHabitViewState extends State<AddHabitView> {
             // Title row
             Row(
               children: [
-                Icon(iconForKey(sub.iconKey), size: 20, color: MyWalkColor.golden),
-                const SizedBox(width: 10),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: catColor.withValues(alpha: 0.12),
+                  ),
+                  child: Icon(iconForKey(sub.iconKey), size: 18, color: catColor),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     sub.name,
