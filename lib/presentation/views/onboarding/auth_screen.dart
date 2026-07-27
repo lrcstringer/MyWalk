@@ -24,7 +24,6 @@ class _AuthScreenState extends State<AuthScreen> {
   _Plan _selectedPlan = _Plan.free;
   bool _processing = false;
   bool _showNameField = false;
-  bool _showTokenField = false;
   final _nameCtrl = TextEditingController();
   final _tokenCtrl = TextEditingController();
   String? _tokenError;
@@ -246,79 +245,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // Promo code toggle
-            GestureDetector(
-              onTap: () => setState(() {
-                _showTokenField = !_showTokenField;
-                if (!_showTokenField) _tokenCtrl.clear();
-              }),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Have a promo code?',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: MyWalkColor.softGold.withValues(alpha: 0.65),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    _showTokenField
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    size: 16,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.65),
-                  ),
-                ],
-              ),
-            ),
-
-            if (_showTokenField) ...[
-              const SizedBox(height: 12),
-              TextField(
-                controller: _tokenCtrl,
-                textCapitalization: TextCapitalization.characters,
-                style: const TextStyle(
-                  color: MyWalkColor.warmWhite,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 2,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'ENTER CODE',
-                  hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    letterSpacing: 2,
-                    fontWeight: FontWeight.w400,
-                  ),
-                  filled: true,
-                  fillColor: MyWalkColor.cardBackground,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide:
-                        BorderSide(color: MyWalkColor.cardBorder, width: 0.5),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide:
-                        BorderSide(color: MyWalkColor.cardBorder, width: 0.5),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: MyWalkColor.golden.withValues(alpha: 0.5),
-                      width: 1.5,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 14),
-                ),
-              ),
-            ],
-
             const SizedBox(height: 24),
           ] else
             const SizedBox(height: 8),
@@ -581,8 +507,51 @@ class _AuthScreenState extends State<AuthScreen> {
                   horizontal: 18, vertical: 16),
             ),
           ),
+          const SizedBox(height: 20),
+          TextField(
+            controller: _tokenCtrl,
+            textCapitalization: TextCapitalization.characters,
+            style: const TextStyle(
+              color: MyWalkColor.warmWhite,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 2,
+            ),
+            decoration: InputDecoration(
+              labelText: 'Promo code (optional)',
+              labelStyle: TextStyle(
+                color: Colors.white.withValues(alpha: 0.35),
+                fontSize: 13,
+                letterSpacing: 0.5,
+              ),
+              hintText: 'ENTER CODE',
+              hintStyle: TextStyle(
+                color: Colors.white.withValues(alpha: 0.2),
+                letterSpacing: 2,
+                fontWeight: FontWeight.w400,
+              ),
+              filled: true,
+              fillColor: MyWalkColor.cardBackground,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: MyWalkColor.cardBorder, width: 0.5),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: MyWalkColor.cardBorder, width: 0.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: MyWalkColor.golden.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            ),
+          ),
           if (_tokenError != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               _tokenError!,
               style: const TextStyle(

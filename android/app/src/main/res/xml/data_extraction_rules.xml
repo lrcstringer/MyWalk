@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android Auto Backup and D2D transfer rules (Android 12+).
+  Cloud backup excludes session keys that must not survive reinstall.
+  Device-to-device transfer includes everything (moving to a new phone is
+  a legitimate restore scenario where the session should carry over).
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="tribute_device_registered"/>
+        <exclude domain="sharedpref" path="com.google.firebase.auth.api.Store"/>
+    </cloud-backup>
+</data-extraction-rules>

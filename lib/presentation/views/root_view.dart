@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/habit_provider.dart';
 import '../../data/datasources/remote/auth_service.dart';
 import '../../data/datasources/local/notification_service.dart'; // used in _loadOnboardingState
@@ -119,8 +120,14 @@ class _RootViewState extends State<RootView> {
   Future<void> _loadOnboardingState() async {
     final userPrefs = context.read<UserPreferencesRepository>();
     final onboardingComplete = await userPrefs.getBool('tribute_onboarding_complete');
+    // tribute_device_registered is stored only in SharedPreferences and is
+    // excluded from Android Auto Backup (see backup_rules.xml). Its absence
+    // means a fresh install (or reinstall after deletion), so we always show
+    // AuthScreen even if Firebase restored a valid session from the keystore.
+    final prefs = await SharedPreferences.getInstance();
+    final deviceRegistered = prefs.getBool('tribute_device_registered') ?? false;
     setState(() {
-      _onboardingComplete = onboardingComplete ?? false;
+      _onboardingComplete = (onboardingComplete ?? false) && deviceRegistered;
       _ready = true;
     });
 
@@ -148,9 +155,6 @@ class _RootViewState extends State<RootView> {
   }
 
   Future<void> _completeOnboarding() async {
-    // Notification permission and scheduling are handled by NotificationPreferencesScreen
-    // (step 8 of onboarding). Do not repeat them here — a second requestAuthorization()
-    // call can throw and would prevent the app from ever transitioning out of onboarding.
     try {
       final wcm = context.read<WeekCycleManager>();
       final userPrefs = context.read<UserPreferencesRepository>();
@@ -162,6 +166,10 @@ class _RootViewState extends State<RootView> {
         await userPrefs.setInt('tribute_onboarding_date', DateTime.now().millisecondsSinceEpoch);
         await wcm.dedicateCurrentWeek();
       }
+      // Mark this device as registered. Stored locally only — excluded from
+      // Android Auto Backup so reinstall always re-shows the auth screen.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('tribute_device_registered', true);
     } catch (_) {
       // Always complete onboarding — errors here must not leave the user stuck.
     }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android Auto Backup exclusions (Android 11 and below).
+  Excluded keys must not survive app deletion/reinstall so that the auth
+  screen is always shown on a fresh install.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="tribute_device_registered"/>
+    <exclude domain="sharedpref" path="com.google.firebase.auth.api.Store"/>
+</full-backup-content>
