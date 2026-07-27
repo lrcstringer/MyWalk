@@ -14,6 +14,7 @@ import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import '../shared/day_of_week_picker.dart';
 import '../shared/fruit_tag_chip.dart';
+import '../practices/breaking_free_intro_screen.dart';
 
 class AddHabitView extends StatefulWidget {
   final ScrollController? scrollController;
@@ -176,7 +177,7 @@ class _AddHabitViewState extends State<AddHabitView> {
         controller: widget.scrollController,
         padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
         child: _step == 1
-            ? _categoryGrid()
+            ? _step1Content()
             : _step == 2
                 ? _subcategoryPicker()
                 : _habitDetails(isPremium),
@@ -184,7 +185,88 @@ class _AddHabitViewState extends State<AddHabitView> {
     );
   }
 
-  // ── Step 1: Category grid ────────────────────────────────────────────────
+  // ── Step 1: Category grid + Breaking Patterns card ──────────────────────
+
+  Widget _step1Content() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _categoryGrid(),
+        const SizedBox(height: 12),
+        _breakingPatternsCard(),
+      ],
+    );
+  }
+
+  Widget _breakingPatternsCard() {
+    return GestureDetector(
+      onTap: () {
+        final nav = Navigator.of(context);
+        nav.pop();
+        nav.push(MaterialPageRoute(
+          builder: (_) => const BreakingFreeIntroScreen(),
+        ));
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              MyWalkColor.cardBackground,
+              MyWalkColor.sage.withValues(alpha: 0.08),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: MyWalkColor.sage.withValues(alpha: 0.3), width: 1),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: MyWalkColor.sage.withValues(alpha: 0.12),
+              ),
+              child: const Icon(Icons.shield_rounded,
+                  color: MyWalkColor.sage, size: 20),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Breaking Patterns & Freedom Journey Plan',
+                    style: TextStyle(
+                      color: MyWalkColor.warmWhite,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Overcome challenges with accountability and a recovery path',
+                    style: TextStyle(
+                      color: MyWalkColor.sage,
+                      fontSize: 11,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right,
+                color: MyWalkColor.sage.withValues(alpha: 0.6), size: 20),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _categoryGrid() {
     const hiddenCategoryIds = {'fruit_of_the_spirit', 'the_beatitudes'};
@@ -201,34 +283,54 @@ class _AddHabitViewState extends State<AddHabitView> {
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       childAspectRatio: 1.2,
-      children: categories.map((cat) => GestureDetector(
-        onTap: () => _selectCategoryModel(cat),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          decoration: BoxDecoration(
-            color: MyWalkColor.cardBackground,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(iconForKey(cat.iconKey), size: 24, color: MyWalkColor.golden),
-              const SizedBox(height: 8),
-              Text(
-                cat.name,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: MyWalkColor.warmWhite,
-                ),
+      children: categories.map((cat) {
+        final catColor = Color(
+          int.parse('FF${cat.colourHex.replaceAll('#', '')}', radix: 16),
+        );
+        return GestureDetector(
+          onTap: () => _selectCategoryModel(cat),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  MyWalkColor.cardBackground,
+                  catColor.withValues(alpha: 0.08),
+                ],
               ),
-            ],
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: catColor.withValues(alpha: 0.30), width: 1),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: catColor.withValues(alpha: 0.12),
+                  ),
+                  child: Icon(iconForKey(cat.iconKey), size: 22, color: catColor),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  cat.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: MyWalkColor.warmWhite,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      )).toList(),
+        );
+      }).toList(),
     );
   }
 

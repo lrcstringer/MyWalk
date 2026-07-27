@@ -16,6 +16,7 @@ class AuthService extends ChangeNotifier {
   AuthService._();
 
   bool _isAuthenticated = false;
+  bool _isNewUser = false;
   String? _userId;
   String? _displayName;
   String? _givenName;
@@ -29,6 +30,10 @@ class AuthService extends ChangeNotifier {
   bool _initCalled = false;
 
   bool get isAuthenticated => _isAuthenticated;
+  /// True immediately after a sign-in that created a brand-new Firebase account.
+  /// Firebase sets this via additionalUserInfo.isNewUser and it is reliable
+  /// regardless of what's in local SharedPreferences or Firestore.
+  bool get isNewUser => _isNewUser;
   String? get userId => _userId;
   String? get displayName => _displayName;
   /// First name only — use for personalisation ("What is God working on in your life, Lance?").
@@ -147,6 +152,7 @@ class AuthService extends ChangeNotifier {
 
       final user = userCredential.user;
       if (user == null) throw StateError('Apple sign-in completed but Firebase returned a null user');
+      _isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
 
       // Apple only provides name on the very first sign-in
       String? displayName;
@@ -223,6 +229,7 @@ class AuthService extends ChangeNotifier {
 
       final user = userCredential.user;
       if (user == null) throw StateError('Google sign-in completed but Firebase returned a null user');
+      _isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
 
       final displayName = googleUser.displayName;
       final givenName = displayName?.split(' ').firstOrNull;
@@ -257,6 +264,7 @@ class AuthService extends ChangeNotifier {
     APIService.shared.setFirebaseToken(null);
     _userId = null;
     _isAuthenticated = false;
+    _isNewUser = false;
     _displayName = null;
     _givenName = null;
     _email = null;
@@ -270,6 +278,8 @@ class AuthService extends ChangeNotifier {
     await prefs.remove('tribute_photo_url');
     await prefs.remove('tribute_surname');
     await prefs.remove('tribute_phone');
+    await prefs.remove('tribute_onboarding_complete');
+    await prefs.remove('tribute_onboarding_date');
     notifyListeners();
   }
 

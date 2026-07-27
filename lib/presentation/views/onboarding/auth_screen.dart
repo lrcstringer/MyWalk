@@ -13,7 +13,12 @@ enum _Plan { free, premium }
 
 class AuthScreen extends StatefulWidget {
   final Future<void> Function() onComplete;
-  const AuthScreen({super.key, required this.onComplete});
+  final Future<void> Function() onBeginOnboarding;
+  const AuthScreen({
+    super.key,
+    required this.onComplete,
+    required this.onBeginOnboarding,
+  });
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -62,20 +67,25 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _handleAuthComplete() async {
     if (!mounted) return;
     try {
-      final userPrefs = context.read<UserPreferencesRepository>();
-      final isComplete =
-          await userPrefs.getBool('tribute_onboarding_complete') ?? false;
+      final auth = context.read<AuthService>();
 
-      if (isComplete) {
-        if (!mounted) return;
-        setState(() => _processing = false);
-        await widget.onComplete();
-        return;
+      // Firebase tells us definitively whether this is a brand-new account.
+      // When true, always show the name screen regardless of any local cache.
+      if (!auth.isNewUser) {
+        final userPrefs = context.read<UserPreferencesRepository>();
+        await userPrefs.init();
+        final isComplete =
+            await userPrefs.getBool('tribute_onboarding_complete') ?? false;
+        if (isComplete) {
+          if (!mounted) return;
+          setState(() => _processing = false);
+          await widget.onComplete();
+          return;
+        }
       }
 
-      // New user — always capture first name before proceeding.
+      // New user (or returning user with incomplete onboarding) — capture name.
       if (!mounted) return;
-      final auth = context.read<AuthService>();
       _nameCtrl.text = auth.givenName ?? '';
       setState(() {
         _processing = false;
@@ -114,7 +124,7 @@ class _AuthScreenState extends State<AuthScreen> {
           return;
         }
         // Success — Firestore stream updates StoreProvider.isPremium automatically.
-        await widget.onComplete();
+        await widget.onBeginOnboarding();
         return;
       }
 
@@ -134,7 +144,7 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
 
-      if (mounted) await widget.onComplete();
+      if (mounted) await widget.onBeginOnboarding();
     } catch (_) {
       if (mounted) setState(() => _processing = false);
     }
@@ -437,16 +447,39 @@ class _AuthScreenState extends State<AuthScreen> {
 
   // ── Name capture view ─────────────────────────────────────────────────────
 
+  Widget _dotRow() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(6, (i) {
+        final isActive = i == 0;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 3.5),
+          width: isActive ? 10 : 7,
+          height: isActive ? 10 : 7,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive
+                ? MyWalkColor.golden
+                : Colors.white.withValues(alpha: 0.18),
+          ),
+        );
+      }),
+    );
+  }
+
   Widget _nameView() {
     final buttonLabel =
         _tokenError != null ? 'Continue as Free' : 'Continue';
 
     return Padding(
       key: const ValueKey('name'),
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Center(child: _dotRow()),
+          const SizedBox(height: 28),
           const Text(
             'What should we\ncall you?',
             style: TextStyle(

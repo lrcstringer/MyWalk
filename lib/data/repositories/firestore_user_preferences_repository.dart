@@ -45,11 +45,29 @@ class FirestoreUserPreferencesRepository implements UserPreferencesRepository {
   ///   1. On app startup (handles already-authenticated returning users).
   ///   2. After each sign-in (handles reinstalls and new-device sign-ins).
   Future<void> init() async {
-    final doc = _doc;
-    if (doc == null) return; // not signed in — nothing to pull
+    final uid = _uid;
+    if (uid == null) return; // not signed in — nothing to pull
     try {
-      final snap = await doc.get();
-      if (!snap.exists || snap.data() == null) return;
+      // Force server fetch — bypasses the Firestore offline-persistence cache.
+      // Without Source.server, the SDK may return stale cached data at startup
+      // before the WebSocket connection is established, masking deleted documents
+      // and causing tribute_onboarding_complete to remain true even after the
+      // users collection was wiped.
+      final userSnap = await _db
+          .collection('users')
+          .doc(uid)
+          .get(const GetOptions(source: Source.server));
+      if (!userSnap.exists) {
+        await _cache.remove('tribute_onboarding_complete');
+        await _cache.remove('tribute_onboarding_date');
+        return;
+      }
+      final snap = await _doc!.get(const GetOptions(source: Source.server));
+      if (!snap.exists || snap.data() == null) {
+        await _cache.remove('tribute_onboarding_complete');
+        await _cache.remove('tribute_onboarding_date');
+        return;
+      }
       for (final entry in snap.data()!.entries) {
         final v = entry.value;
         if (v is int) {
@@ -60,8 +78,19 @@ class FirestoreUserPreferencesRepository implements UserPreferencesRepository {
           await _cache.setString(entry.key, v);
         }
       }
+    } on FirebaseException catch (e) {
+      if (e.code == 'unavailable' || e.code == 'network-request-failed') {
+        // Genuinely offline — leave local SharedPreferences as-is.
+        return;
+      }
+      // Any other Firebase error (permission-denied, etc.) — clear the gate
+      // keys so a broken server state never permanently locks the user into
+      // ContentView without having completed onboarding.
+      await _cache.remove('tribute_onboarding_complete');
+      await _cache.remove('tribute_onboarding_date');
     } catch (_) {
-      // Offline at startup — local cache already contains the last-known values.
+      await _cache.remove('tribute_onboarding_complete');
+      await _cache.remove('tribute_onboarding_date');
     }
   }
 

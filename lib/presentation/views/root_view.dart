@@ -12,6 +12,7 @@ import '../../domain/repositories/user_preferences_repository.dart';
 import '../../domain/services/week_cycle_manager.dart';
 import 'content_view.dart';
 import 'onboarding/auth_screen.dart';
+import 'onboarding/onboarding_flow.dart';
 
 class RootView extends StatefulWidget {
   const RootView({super.key});
@@ -22,7 +23,9 @@ class RootView extends StatefulWidget {
 
 class _RootViewState extends State<RootView> {
   bool _onboardingComplete = false;
+  bool _showOnboardingFlow = false;
   bool _ready = false;
+  bool _rehydrating = false;
   StreamSubscription<Uri>? _linkSub;
 
   @override
@@ -112,13 +115,23 @@ class _RootViewState extends State<RootView> {
   }
 
   Future<void> _rehydrateAndCheck() async {
-    final userPrefs = context.read<UserPreferencesRepository>();
-    await userPrefs.init();
-    if (mounted) await _loadOnboardingState();
+    if (_rehydrating) return;
+    _rehydrating = true;
+    try {
+      if (mounted) await _loadOnboardingState();
+    } finally {
+      _rehydrating = false;
+    }
   }
 
   Future<void> _loadOnboardingState() async {
     final userPrefs = context.read<UserPreferencesRepository>();
+    // Sync the local SharedPreferences cache from Firestore before reading.
+    // This ensures a manually-deleted Firestore collection (or a fresh account
+    // after deletion) clears the stale local 'tribute_onboarding_complete' flag
+    // rather than silently skipping onboarding. For unauthenticated users or
+    // offline starts, init() is a no-op / falls back to the local cache.
+    await userPrefs.init();
     final onboardingComplete = await userPrefs.getBool('tribute_onboarding_complete');
     // tribute_device_registered is stored only in SharedPreferences and is
     // excluded from Android Auto Backup (see backup_rules.xml). Its absence
@@ -126,6 +139,7 @@ class _RootViewState extends State<RootView> {
     // AuthScreen even if Firebase restored a valid session from the keystore.
     final prefs = await SharedPreferences.getInstance();
     final deviceRegistered = prefs.getBool('tribute_device_registered') ?? false;
+    if (!mounted) return;
     setState(() {
       _onboardingComplete = (onboardingComplete ?? false) && deviceRegistered;
       _ready = true;
@@ -152,6 +166,10 @@ class _RootViewState extends State<RootView> {
       }
     }
     habitProvider.addListener(listener);
+  }
+
+  Future<void> _beginOnboarding() async {
+    if (mounted) setState(() => _showOnboardingFlow = true);
   }
 
   Future<void> _completeOnboarding() async {
@@ -189,10 +207,16 @@ class _RootViewState extends State<RootView> {
       duration: const Duration(milliseconds: 500),
       child: _onboardingComplete
           ? ContentView(key: const ValueKey('content'))
-          : AuthScreen(
-              key: const ValueKey('onboarding'),
-              onComplete: _completeOnboarding,
-            ),
+          : _showOnboardingFlow
+              ? OnboardingFlow(
+                  key: const ValueKey('onboarding_flow'),
+                  onComplete: _completeOnboarding,
+                )
+              : AuthScreen(
+                  key: const ValueKey('auth'),
+                  onComplete: _completeOnboarding,
+                  onBeginOnboarding: _beginOnboarding,
+                ),
     );
   }
 }
