@@ -278,14 +278,17 @@ class AuthService extends ChangeNotifier {
   /// Calls the `deleteAccount` Cloud Function, which permanently deletes all
   /// Firestore data, Storage files, and the Firebase Auth account server-side
   /// (no re-authentication required). Clears local state on success.
-  Future<void> deleteAccount() async {
+  ///
+  /// Returns `true` on success. On failure sets [error] and returns `false`.
+  /// Does NOT call [notifyListeners] on success — the caller shows an "Account
+  /// Deleted" dialog and exits the app, so navigation from auth state is moot.
+  Future<bool> deleteAccount() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
       final fn = FirebaseFunctions.instanceFor(region: 'us-central1');
       await fn.httpsCallable('deleteAccount').call<void>();
-      // Auth account is now deleted server-side — clear the local session.
       await FirebaseAuth.instance.signOut();
       if (!isApplePlatform) await GoogleSignIn().signOut();
       APIService.shared.setFirebaseToken(null);
@@ -299,13 +302,18 @@ class AuthService extends ChangeNotifier {
       _phone = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
+      _isLoading = false;
+      return true;
     } on FirebaseFunctionsException catch (e) {
       _error = e.message ?? 'Account deletion failed. Please try again.';
-    } catch (e) {
-      _error = 'Account deletion failed. Please try again.';
-    } finally {
       _isLoading = false;
       notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Account deletion failed. Please try again.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 

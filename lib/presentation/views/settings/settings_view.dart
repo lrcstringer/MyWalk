@@ -1,3 +1,5 @@
+import 'dart:io' show exit;
+
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -804,10 +806,70 @@ class _SettingsViewState extends State<SettingsView> {
 
   Future<void> _deleteAccount() async {
     final auth = context.read<AuthService>();
-    await auth.deleteAccount();
-    // On success, AuthService notifyListeners() triggers root_view.dart to pop
-    // all routes and show the onboarding screen automatically. On failure,
-    // auth.error is non-null and displayed in the account section.
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: MyWalkColor.cardBackground,
+        content: Row(children: [
+          const CircularProgressIndicator(color: MyWalkColor.warmCoral),
+          const SizedBox(width: 16),
+          Text('Deleting account…',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
+        ]),
+      ),
+    );
+
+    final success = await auth.deleteAccount();
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // dismiss loading dialog
+
+    if (!success) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: MyWalkColor.cardBackground,
+          title: const Text('Error',
+              style: TextStyle(color: MyWalkColor.warmWhite)),
+          content: Text(
+            auth.error ?? 'Account deletion failed. Please try again.',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('OK',
+                  style:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: MyWalkColor.cardBackground,
+        title: const Text('Account Deleted',
+            style: TextStyle(color: MyWalkColor.warmWhite)),
+        content: const Text(
+          'Your account and all your data have been permanently deleted.',
+          style: TextStyle(color: Colors.white60),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => exit(0),
+            child: const Text('Close',
+                style: TextStyle(color: MyWalkColor.warmCoral)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _resetBibleReadingButton() {
