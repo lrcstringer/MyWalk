@@ -22,6 +22,7 @@ class AddHabitView extends StatefulWidget {
   final String? prefilledCategoryName;
   final String? prefilledSubcategoryName;
   final HabitCategoryModel? startCategoryModel;
+  final HabitSubcategoryModel? startSubcategoryModel;
   final bool forBreakingFree;
 
   const AddHabitView({
@@ -31,6 +32,7 @@ class AddHabitView extends StatefulWidget {
     this.prefilledCategoryName,
     this.prefilledSubcategoryName,
     this.startCategoryModel,
+    this.startSubcategoryModel,
     this.forBreakingFree = false,
   });
 
@@ -71,7 +73,27 @@ class _AddHabitViewState extends State<AddHabitView> {
       final cat = widget.startCategoryModel!;
       _selectedCategoryModel = cat;
       _selectedCategory = _toOldEnum(cat.id, null);
-      if (cat.isCustom) {
+      final sub = widget.startSubcategoryModel;
+      if (sub != null) {
+        final legacyEnum = _toOldEnum(cat.id, sub.id);
+        final trackingType = _trackingTypeFromSuggestion(sub.trackingTypeSuggestion);
+        _selectedSubcategoryModel = sub;
+        _categoryId = cat.id;
+        _subcategoryId = sub.id;
+        _categoryName = cat.name;
+        _subcategoryName = sub.isCustom ? '' : sub.name;
+        _selectedCategory = legacyEnum;
+        _trackingType = trackingType;
+        _dailyTarget = sub.defaultTargetMinutes?.toDouble() ?? _defaultTarget(legacyEnum);
+        _targetUnit = trackingType == HabitTrackingType.timed ? 'minutes' : '';
+        _habitName = sub.isCustom ? '' : sub.name;
+        _purposeStatement = sub.yourWhy.isNotEmpty ? sub.yourWhy : legacyEnum.defaultPurpose;
+        _suggestedFruits = FruitSuggestionService.suggestForSubcategory(sub.id);
+        if (_suggestedFruits.isEmpty) {
+          _suggestedFruits = FruitSuggestionService.suggest(legacyEnum);
+        }
+        _step = 3;
+      } else if (cat.isCustom) {
         _categoryId = cat.id;
         _subcategoryId = 'custom';
         _categoryName = cat.name;
@@ -149,7 +171,7 @@ class _AddHabitViewState extends State<AddHabitView> {
       leading = IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: MyWalkColor.warmWhite, size: 18),
         onPressed: () {
-          if (_isPreFilled) {
+          if (_isPreFilled || widget.startSubcategoryModel != null) {
             Navigator.pop(context);
           } else {
             setState(() {
@@ -373,7 +395,20 @@ class _AddHabitViewState extends State<AddHabitView> {
         : MyWalkColor.golden;
 
     return GestureDetector(
-      onTap: () => _selectSubcategory(sub),
+      onTap: () {
+        if (sub.id == 'breaking_habits') {
+          final nav = Navigator.of(context);
+          nav.pop();
+          nav.push(MaterialPageRoute(
+            builder: (_) => BreakingFreeIntroScreen(
+              categoryModel: _selectedCategoryModel,
+              subcategoryModel: sub,
+            ),
+          ));
+        } else {
+          _selectSubcategory(sub);
+        }
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),

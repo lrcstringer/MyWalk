@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../domain/entities/habit_category_model.dart';
+import '../../providers/habit_category_provider.dart';
 import '../../theme/app_theme.dart';
 import '../habits/add_habit_view.dart';
 
 class BreakingFreeIntroScreen extends StatelessWidget {
-  const BreakingFreeIntroScreen({super.key});
+  final HabitCategoryModel? categoryModel;
+  final HabitSubcategoryModel? subcategoryModel;
+
+  const BreakingFreeIntroScreen({
+    super.key,
+    this.categoryModel,
+    this.subcategoryModel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +183,20 @@ class BreakingFreeIntroScreen extends StatelessWidget {
   }
 
   void _startPractice(BuildContext context) {
+    HabitCategoryModel? catModel = categoryModel;
+    HabitSubcategoryModel? subModel = subcategoryModel;
+
+    if (catModel == null || subModel == null) {
+      final provider = context.read<HabitCategoryProvider>();
+      final catMatches = provider.categories.where((c) => c.id == 'caring_for_myself');
+      catModel = catMatches.isEmpty ? null : catMatches.first;
+      if (catModel != null) {
+        final subMatches = provider.subcategoriesFor('caring_for_myself')
+            .where((s) => s.id == 'breaking_habits');
+        subModel = subMatches.isEmpty ? null : subMatches.first;
+      }
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -186,8 +210,12 @@ class BreakingFreeIntroScreen extends StatelessWidget {
         maxChildSize: 0.95,
         minChildSize: 0.6,
         expand: false,
-        builder: (ctx, sc) =>
-            AddHabitView(scrollController: sc, forBreakingFree: true),
+        builder: (ctx, sc) => AddHabitView(
+          scrollController: sc,
+          startCategoryModel: catModel,
+          startSubcategoryModel: subModel,
+          forBreakingFree: catModel == null,
+        ),
       ),
     );
   }
