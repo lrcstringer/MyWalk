@@ -182,7 +182,7 @@ class BreakingFreeIntroScreen extends StatelessWidget {
     );
   }
 
-  void _startPractice(BuildContext context) {
+  Future<void> _startPractice(BuildContext context) async {
     HabitCategoryModel? catModel = categoryModel;
     HabitSubcategoryModel? subModel = subcategoryModel;
 
@@ -197,7 +197,7 @@ class BreakingFreeIntroScreen extends StatelessWidget {
       }
     }
 
-    showModalBottomSheet(
+    final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -218,5 +218,9 @@ class BreakingFreeIntroScreen extends StatelessWidget {
         ),
       ),
     );
+
+    if (saved == true && context.mounted) {
+      Navigator.pop(context);
+    }
   }
 }

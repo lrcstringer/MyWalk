@@ -1467,7 +1467,7 @@ class _AddHabitViewState extends State<AddHabitView> {
     if (_selectedFruits.isNotEmpty) {
       context.read<FruitPortfolioProvider>().onHabitTagsChanged([], _selectedFruits);
     }
-    Navigator.pop(context);
+    Navigator.pop(context, true);
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
