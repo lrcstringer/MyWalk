@@ -473,7 +473,7 @@ class _EditHabitViewState extends State<EditHabitView> {
                   habitName: widget.habit.name,
                 );
                 if (!mounted) return;
-                await _sharePartnerLink(result.shareUrl, result.shortCode);
+                await _sharePartnerLink(result.shareUrl, result.shortCode, widget.habit.name);
               } catch (e) {
                 debugPrint('createInvite failed: $e');
                 if (!mounted) return;
@@ -548,7 +548,7 @@ class _EditHabitViewState extends State<EditHabitView> {
                     habitName: widget.habit.name,
                   );
                   if (!mounted) return;
-                  await _sharePartnerLink(result.shareUrl, result.shortCode);
+                  await _sharePartnerLink(result.shareUrl, result.shortCode, widget.habit.name);
                 } catch (e) {
                   debugPrint('createInvite (resend) failed: $e');
                 }
@@ -600,11 +600,20 @@ class _EditHabitViewState extends State<EditHabitView> {
     ]);
   }
 
-  Future<void> _sharePartnerLink(String url, String shortCode) async {
+  Future<void> _sharePartnerLink(String url, String shortCode, String habitName) async {
     await Share.share(
-        'Please walk with me on my journey — open MyWalk on your phone '
-        'and accept my prayer partner invite. If you don\'t have MyWalk, '
-        'download it and tap this link: $url\n\nOr enter code $shortCode in the app.');
+      'Please walk with me on my $habitName journey.\n\n'
+      'If you already have MyWalk on your mobile:\n\n'
+      '1) Tap this link: $url\n\n'
+      'Or\n\n'
+      '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: $shortCode\n\n\n'
+      'If you don\'t have MyWalk installed on your mobile:\n\n'
+      'Download it from the Google Play Store or Apple Store.\n\n'
+      'Then either:\n\n'
+      '1) Come back to this email and tap this link: $url\n\n'
+      'Or\n\n'
+      '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: $shortCode',
+    );
   }
 
   // ── Recovery Path teaser card ─────────────────────────────────────────────
