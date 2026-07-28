@@ -19,16 +19,6 @@ class NotificationInboxView extends StatelessWidget {
         foregroundColor: MyWalkColor.warmWhite,
         title: const Text('Notifications'),
         centerTitle: false,
-        actions: [
-          TextButton(
-            onPressed: () => _showEnterCodeDialog(context),
-            child: Text(
-              'Enter code',
-              style: TextStyle(
-                  color: MyWalkColor.sage.withValues(alpha: 0.85), fontSize: 13),
-            ),
-          ),
-        ],
       ),
       body: Consumer<CircleNotificationProvider>(
         builder: (context, provider, _) {
@@ -39,8 +29,9 @@ class NotificationInboxView extends StatelessWidget {
               onRefresh: provider.refresh,
               child: ListView(
                 children: [
+                  const _EnterCodeCard(),
                   SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.5,
+                    height: MediaQuery.of(context).size.height * 0.4,
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -70,8 +61,9 @@ class NotificationInboxView extends StatelessWidget {
               onRefresh: provider.refresh,
               child: ListView(
                 children: [
+                  const _EnterCodeCard(),
                   SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.5,
+                    height: MediaQuery.of(context).size.height * 0.4,
                     child: Center(
                       child: Text(
                         'Could not load notifications',
@@ -90,14 +82,17 @@ class NotificationInboxView extends StatelessWidget {
             backgroundColor: MyWalkColor.cardBackground,
             onRefresh: provider.refresh,
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: provider.notifications.length,
-              separatorBuilder: (_, _) => Divider(
-                height: 1,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.06),
-              ),
+              padding: const EdgeInsets.only(bottom: 8),
+              itemCount: provider.notifications.length + 1,
+              separatorBuilder: (_, i) => i == 0
+                  ? const SizedBox.shrink()
+                  : Divider(
+                      height: 1,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.06),
+                    ),
               itemBuilder: (context, i) {
-                final notif = provider.notifications[i];
+                if (i == 0) return const _EnterCodeCard();
+                final notif = provider.notifications[i - 1];
                 return _NotificationTile(
                   notification: notif,
                   onMarkRead: () => provider.markRead(notif.id),
@@ -111,89 +106,166 @@ class NotificationInboxView extends StatelessWidget {
     );
   }
 
-  void _showEnterCodeDialog(BuildContext context) {
-    final codeController = TextEditingController();
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: MyWalkColor.charcoal,
-        title: const Text('Enter invite code',
+}
+
+void _showEnterCodeDialog(BuildContext context) {
+  final codeController = TextEditingController();
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: MyWalkColor.charcoal,
+      title: const Text('Enter invite code',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite,
+              fontWeight: FontWeight.w600,
+              fontSize: 16)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Enter the 6-character code from your partner\'s invitation.',
             style: TextStyle(
-                color: MyWalkColor.warmWhite,
-                fontWeight: FontWeight.w600,
-                fontSize: 16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Enter the 6-character code from your partner\'s invitation.',
-              style: TextStyle(
-                  color: MyWalkColor.warmWhite, fontSize: 13, height: 1.5),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: codeController,
-              textCapitalization: TextCapitalization.characters,
-              maxLength: 6,
-              style: const TextStyle(
-                  color: MyWalkColor.warmWhite,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 4),
-              decoration: InputDecoration(
-                hintText: 'ABC123',
-                hintStyle: TextStyle(
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.3),
-                    letterSpacing: 4,
-                    fontWeight: FontWeight.w400),
-                counterText: '',
-                enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.2))),
-                focusedBorder: const UnderlineInputBorder(
-                    borderSide: BorderSide(color: MyWalkColor.sage)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style: TextStyle(
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.5))),
+                color: MyWalkColor.warmWhite, fontSize: 13, height: 1.5),
           ),
-          TextButton(
-            onPressed: () async {
-              final code = codeController.text.trim().toUpperCase();
-              if (code.length != 6) return;
-              Navigator.pop(ctx);
-              if (!context.mounted) return;
-              final accountabilityProv = context.read<AccountabilityProvider>();
-              final partnership =
-                  await accountabilityProv.findByShortCode(code);
-              if (!context.mounted) return;
-              if (partnership == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text(
-                          'Code not found or already used. Check with your partner.')),
-                );
-                return;
-              }
-              Navigator.of(context).push(MaterialPageRoute(
-                fullscreenDialog: true,
-                builder: (_) =>
-                    PartnerAcceptanceScreen(token: partnership.inviteToken),
-              ));
-            },
-            child: const Text('Find invite',
-                style: TextStyle(color: MyWalkColor.sage)),
+          const SizedBox(height: 14),
+          TextField(
+            controller: codeController,
+            textCapitalization: TextCapitalization.characters,
+            maxLength: 6,
+            style: const TextStyle(
+                color: MyWalkColor.warmWhite,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 4),
+            decoration: InputDecoration(
+              hintText: 'ABC123',
+              hintStyle: TextStyle(
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.3),
+                  letterSpacing: 4,
+                  fontWeight: FontWeight.w400),
+              counterText: '',
+              enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.2))),
+              focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: MyWalkColor.sage)),
+            ),
           ),
         ],
       ),
-    ).then((_) => codeController.dispose());
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text('Cancel',
+              style: TextStyle(
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.5))),
+        ),
+        TextButton(
+          onPressed: () async {
+            final code = codeController.text.trim().toUpperCase();
+            if (code.length != 6) return;
+            Navigator.pop(ctx);
+            if (!context.mounted) return;
+            final accountabilityProv = context.read<AccountabilityProvider>();
+            final partnership = await accountabilityProv.findByShortCode(code);
+            if (!context.mounted) return;
+            if (partnership == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text(
+                        'Code not found or already used. Check with your partner.')),
+              );
+              return;
+            }
+            Navigator.of(context).push(MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) =>
+                  PartnerAcceptanceScreen(token: partnership.inviteToken),
+            ));
+          },
+          child: const Text('Find invite',
+              style: TextStyle(color: MyWalkColor.sage)),
+        ),
+      ],
+    ),
+  ).then((_) => codeController.dispose());
+}
+
+// ── Enter code card ───────────────────────────────────────────────────────────
+
+class _EnterCodeCard extends StatelessWidget {
+  const _EnterCodeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: GestureDetector(
+        onTap: () => _showEnterCodeDialog(context),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                MyWalkColor.cardBackground,
+                MyWalkColor.sage.withValues(alpha: 0.08),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: MyWalkColor.sage.withValues(alpha: 0.35),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: MyWalkColor.sage.withValues(alpha: 0.12),
+                ),
+                child: const Icon(Icons.link_rounded,
+                    color: MyWalkColor.sage, size: 20),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Have an invite code?',
+                      style: TextStyle(
+                        color: MyWalkColor.warmWhite,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Enter the 6-character code your partner sent you',
+                      style: TextStyle(
+                        color: MyWalkColor.sage,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: MyWalkColor.sage.withValues(alpha: 0.6)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
