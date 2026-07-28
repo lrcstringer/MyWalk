@@ -140,11 +140,25 @@ class _PartnershipDetailScreenState extends State<PartnershipDetailScreen> {
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              size: 18, color: MyWalkColor.warmWhite),
-          onPressed: () => Navigator.of(context).pop(),
+        leading: GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(width: 8),
+              Icon(Icons.arrow_back_ios_new_rounded,
+                  size: 16, color: MyWalkColor.golden),
+              SizedBox(width: 2),
+              Text('Back',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: MyWalkColor.golden,
+                  )),
+            ],
+          ),
         ),
+        leadingWidth: 72,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
