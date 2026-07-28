@@ -492,7 +492,7 @@ class _EditHabitViewState extends State<EditHabitView> {
           child: Text(
             accountability.isLoading
                 ? 'Creating invite…'
-                : 'Invite a prayer partner',
+                : 'Invite a support partner',
             style: TextStyle(
                 fontSize: 14,
                 color: MyWalkColor.sage.withValues(alpha: 0.9),

@@ -7,6 +7,7 @@ import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../../domain/entities/accountability_partnership.dart';
+import '../../../domain/repositories/accountability_repository.dart';
 import '../../providers/accountability_provider.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../shared/fruit_tag_row.dart';
@@ -84,6 +85,22 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
       final isPremium = context.read<StoreProvider>().isPremium;
       _completionVerse = ScriptureLibrary.completionVerse(_habit.category, _targetDate, isPremium: isPremium);
     }
+  }
+
+  Future<void> _doShare(InviteResult result, String habitName) async {
+    await Share.share(
+      'Please walk with me on my $habitName journey.\n\n'
+      'If you already have MyWalk on your mobile:\n\n'
+      '1) Tap this link: ${result.shareUrl}\n\n'
+      'Or\n\n'
+      '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${result.shortCode}\n\n\n'
+      'If you don\'t have MyWalk installed on your mobile:\n\n'
+      'Download it from the Google Play Store or Apple Store.\n\n'
+      'Then either:\n\n'
+      '1) Come back to this email and tap this link: ${result.shareUrl}\n\n'
+      'Or\n\n'
+      '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${result.shortCode}',
+    );
   }
 
   Future<void> _checkIn() async {
@@ -353,7 +370,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                   context: context,
                   builder: (ctx) => AlertDialog(
                     backgroundColor: MyWalkColor.charcoal,
-                    title: const Text('Invite a prayer partner',
+                    title: const Text('Invite a support partner',
                         style: TextStyle(
                             color: MyWalkColor.warmWhite,
                             fontWeight: FontWeight.w600,
@@ -363,7 +380,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Enter their MyWalk email address and they\'ll receive an in-app notification immediately.',
+                          'If you know their MyWalk email address, enter it and they will receive an in-app notification immediately.',
                           style: TextStyle(
                               color: MyWalkColor.warmWhite, fontSize: 13, height: 1.5),
                         ),
@@ -373,7 +390,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                           keyboardType: TextInputType.emailAddress,
                           style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: 'their@email.com (optional)',
+                            hintText: 'their@email (optional)',
                             hintStyle: TextStyle(
                                 color: MyWalkColor.warmWhite.withValues(alpha: 0.35),
                                 fontSize: 13),
@@ -385,12 +402,10 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          'No email? We\'ll create a link you can share via WhatsApp, email, or SMS.',
+                        const Text(
+                          'If you don\'t have their email address, that is OK. Just tap Continue and a link will be created that you can share via WhatsApp, Email or SMS.',
                           style: TextStyle(
-                              color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
-                              fontSize: 11,
-                              height: 1.4),
+                              color: MyWalkColor.warmWhite, fontSize: 13, height: 1.5),
                         ),
                       ],
                     ),
@@ -432,20 +447,46 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                       ),
                     );
                   } else {
-                    // No MyWalk account found — share the link.
-                    await Share.share(
-                      'Please walk with me on my ${_habit.name} journey.\n\n'
-                      'If you already have MyWalk on your mobile:\n\n'
-                      '1) Tap this link: ${result.shareUrl}\n\n'
-                      'Or\n\n'
-                      '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${result.shortCode}\n\n\n'
-                      'If you don\'t have MyWalk installed on your mobile:\n\n'
-                      'Download it from the Google Play Store or Apple Store.\n\n'
-                      'Then either:\n\n'
-                      '1) Come back to this email and tap this link: ${result.shareUrl}\n\n'
-                      'Or\n\n'
-                      '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${result.shortCode}',
-                    );
+                    // No MyWalk account found (or no email given) — share the link.
+                    if (email.isNotEmpty && context.mounted) {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: MyWalkColor.charcoal,
+                          title: const Text('No account found',
+                              style: TextStyle(
+                                  color: MyWalkColor.warmWhite,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16)),
+                          content: const Text(
+                            'We couldn\'t find a MyWalk account with that email. Here\'s a link you can share instead.',
+                            style: TextStyle(
+                                color: MyWalkColor.warmWhite,
+                                fontSize: 13,
+                                height: 1.5),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: Text('Cancel',
+                                  style: TextStyle(
+                                      color: MyWalkColor.warmWhite
+                                          .withValues(alpha: 0.5))),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Share link',
+                                  style: TextStyle(color: MyWalkColor.sage)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true && context.mounted) {
+                        await _doShare(result, _habit.name);
+                      }
+                    } else {
+                      await _doShare(result, _habit.name);
+                    }
                   }
                 } catch (e) {
                   debugPrint('createInvite failed: $e');
