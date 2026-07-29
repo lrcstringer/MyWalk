@@ -57,6 +57,7 @@ abstract class CircleRepository {
     required String reference,
     required String passageText,
     required String translation,
+    String? message,
   });
   Future<void> closeThread(String circleId, String threadId);
   Future<void> deleteThread(String circleId, String threadId);

@@ -87,7 +87,7 @@ class ActivityTab extends StatelessWidget {
   Widget _emptyState() => Padding(
     padding: const EdgeInsets.only(top: 60),
     child: Column(children: [
-      Icon(Icons.favorite_border_rounded, size: 40, color: Colors.white.withValues(alpha: 0.15)),
+      Icon(Icons.favorite_border_rounded, size: 40, color: MyWalkColor.softGold.withValues(alpha: 0.5)),
       const SizedBox(height: 12),
       Text('Nothing here yet.',
           style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
@@ -98,8 +98,8 @@ class ActivityTab extends StatelessWidget {
   );
 
   Widget _sectionHeader(String title) => Text(title.toUpperCase(),
-      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-          color: Colors.white.withValues(alpha: 0.4), letterSpacing: 1.2));
+      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+          color: MyWalkColor.softGold, letterSpacing: 1.2));
 
   void _showSendSheet(BuildContext context) {
     final otherMembers = members.where((m) => m.userId != AuthService.shared.userId).toList();
@@ -134,12 +134,22 @@ class _EncouragementCard extends StatelessWidget {
     });
 
     return Container(
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: MyWalkColor.softGold,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+      margin: const EdgeInsets.only(left: 3),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isReceived && !enc.isRead
             ? MyWalkColor.softGold.withValues(alpha: 0.05)
             : MyWalkColor.cardBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        ),
         border: Border.all(
           color: isReceived && !enc.isRead
               ? MyWalkColor.softGold.withValues(alpha: 0.15)
@@ -169,6 +179,7 @@ class _EncouragementCard extends StatelessWidget {
           Container(width: 7, height: 7,
               decoration: const BoxDecoration(shape: BoxShape.circle, color: MyWalkColor.softGold)),
       ]),
+      ),
     );
   }
 }
@@ -204,6 +215,7 @@ class _SendEncouragementSheetState extends State<SendEncouragementSheet> {
         backgroundColor: MyWalkColor.charcoal,
         title: const Text('Send Encouragement',
             style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17)),
+        leadingWidth: 72,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
@@ -213,10 +225,14 @@ class _SendEncouragementSheetState extends State<SendEncouragementSheet> {
             onPressed: _sending ? null : _send,
             child: _sending
                 ? const SizedBox(width: 16, height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.golden))
-                : const Text('Send', style: TextStyle(color: MyWalkColor.golden, fontWeight: FontWeight.w600)),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.softGold))
+                : const Text('Send', style: TextStyle(color: MyWalkColor.softGold, fontWeight: FontWeight.w600)),
           ),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.softGold)),
+        ),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(16, 12, 16,

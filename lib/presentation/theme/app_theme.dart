@@ -18,6 +18,7 @@ class MyWalkColor {
   static const warmCoral = Color(0xFFD4836B);
   static const softGold = Color(0xFFE8D5A3);
   static const mutedSage = Color(0xFFC5D8C7);
+  static const eventPurple = Color(0xFF7B8EC8);
 
   static const cardBackground = Color(0xFF262638);
   static const cardBorder = Color(0x0FFFFFFF); // white 6% opacity

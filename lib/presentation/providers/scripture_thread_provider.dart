@@ -86,12 +86,14 @@ class ScriptureThreadProvider extends ChangeNotifier {
     required String reference,
     required String passageText,
     required String translation,
+    String? message,
   }) =>
       _repo.createThread(
         circleId: circleId,
         reference: reference,
         passageText: passageText,
         translation: translation,
+        message: message,
       );
 
   Future<void> closeThread(String circleId, String threadId) =>

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/datasources/remote/auth_service.dart';
 import '../../providers/store_provider.dart';
 import '../../providers/prayer_list_provider.dart';
@@ -12,6 +13,7 @@ import '../../providers/circle_habit_milestone_provider.dart';
 import '../../providers/weekly_pulse_provider.dart';
 import '../../providers/circle_events_provider.dart';
 import '../../providers/group_prayer_list_provider.dart';
+import '../../providers/scripture_thread_provider.dart';
 import '../../../domain/repositories/circle_repository.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
@@ -46,28 +48,104 @@ class _CircleDetailViewState extends State<CircleDetailView>
   bool _milestonesFailed = false;
 
   late final TabController _tabController;
+  final Map<int, int> _lastVisitedMs = {};
 
-  static final _tabs = [
-    ('Overview', Icons.home_rounded),
-    ('Prayer', Icons.volunteer_activism_rounded),
-    ('Scripture', Icons.menu_book_rounded),
-    ('Habits', Icons.check_circle_outline_rounded),
-    ('Encouragement', Icons.favorite_rounded),
-    ('Events', Icons.event_rounded),
+  static const _tabs = [
+    ('Overview',      Icons.home_rounded,                 MyWalkColor.golden),
+    ('Prayer',        Icons.volunteer_activism_rounded,   MyWalkColor.sage),
+    ('Scripture',     Icons.menu_book_rounded,            MyWalkColor.golden),
+    ('Activities',    Icons.check_circle_outline_rounded, MyWalkColor.warmCoral),
+    ('Encouragement', Icons.favorite_rounded,             MyWalkColor.softGold),
+    ('Events',        Icons.event_rounded,                MyWalkColor.eventPurple),
   ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _loadDetail();
     _loadHeatmap();
     _loadMilestones();
     _loadProviders();
+    _loadLastVisitedAt();
+  }
+
+  void _onTabChanged() {
+    if (!_tabController.indexIsChanging) {
+      final index = _tabController.index;
+      final ms = DateTime.now().millisecondsSinceEpoch;
+      setState(() => _lastVisitedMs[index] = ms);
+      _persistVisit(index, ms);
+    }
+  }
+
+  Future<void> _loadLastVisitedAt() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    bool anyExists = false;
+    final map = <int, int>{};
+    for (var i = 0; i < _tabs.length; i++) {
+      final ms = prefs.getInt('circle_tab_visited_${widget.circleId}_$i');
+      if (ms != null) { map[i] = ms; anyExists = true; }
+    }
+    if (!anyExists) {
+      // First open: treat all tabs as visited now so old content doesn't badge.
+      for (var i = 0; i < _tabs.length; i++) {
+        map[i] = nowMs;
+        prefs.setInt('circle_tab_visited_${widget.circleId}_$i', nowMs);
+      }
+    }
+    if (mounted) setState(() => _lastVisitedMs.addAll(map));
+  }
+
+  Future<void> _persistVisit(int index, int ms) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('circle_tab_visited_${widget.circleId}_$index', ms);
+  }
+
+  bool _tabHasNew(BuildContext context, int tabIndex) {
+    if (_lastVisitedMs.isEmpty) return false;
+    final lastMs = _lastVisitedMs[tabIndex] ?? 0;
+    DateTime? latestAt;
+    switch (tabIndex) {
+      case 1:
+        final items = context.watch<PrayerListProvider>().activeFor(widget.circleId);
+        latestAt = _maxIsoDate(items.map((r) => r.createdAt));
+      case 2:
+        final threads = context.watch<ScriptureThreadProvider>().threadsFor(widget.circleId);
+        latestAt = _maxIsoDate(threads.where((t) => t.isOpen).map((t) => t.createdAt));
+      case 3:
+        final habits = context.watch<CircleHabitsProvider>().habitsFor(widget.circleId);
+        latestAt = _maxIsoDate(habits.map((h) => h.createdAt));
+      case 4:
+        final enc = context.watch<EncouragementProvider>().receivedFor(widget.circleId);
+        latestAt = _maxIsoDate(enc.map((e) => e.createdAt));
+      case 5:
+        final events = context.watch<CircleEventsProvider>().eventsFor(widget.circleId);
+        latestAt = _maxIsoDate(events.map((e) => e.createdAt));
+      default:
+        return false;
+    }
+    if (latestAt == null) return false;
+    return latestAt.millisecondsSinceEpoch > lastMs;
+  }
+
+  DateTime? _maxIsoDate(Iterable<String> isoStrings) {
+    DateTime? max;
+    for (final s in isoStrings) {
+      try {
+        final dt = DateTime.parse(s);
+        if (max == null || dt.isAfter(max)) max = dt;
+      } catch (_) {}
+    }
+    return max;
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -224,19 +302,40 @@ class _CircleDetailViewState extends State<CircleDetailView>
             controller: _tabController,
             isScrollable: true,
             tabAlignment: TabAlignment.start,
-            labelColor: MyWalkColor.golden,
-            unselectedLabelColor: MyWalkColor.softGold,
-            indicatorColor: MyWalkColor.golden,
+            labelColor: _tabs[_tabController.index].$3,
+            unselectedLabelColor: Colors.white.withValues(alpha: 0.4),
+            indicatorColor: _tabs[_tabController.index].$3,
             indicatorSize: TabBarIndicatorSize.label,
             labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             unselectedLabelStyle: const TextStyle(fontSize: 12),
-            tabs: _tabs.map((t) => Tab(
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(t.$2, size: 14),
-                const SizedBox(width: 5),
-                Text(t.$1),
-              ]),
-            )).toList(),
+            tabs: _tabs.asMap().entries.map((entry) {
+              final i = entry.key;
+              final t = entry.value;
+              final hasNew = _tabHasNew(context, i);
+              return Tab(
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Stack(clipBehavior: Clip.none, children: [
+                    Icon(t.$2, size: 14),
+                    if (hasNew)
+                      Positioned(
+                        top: -3,
+                        right: -5,
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: t.$3,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: MyWalkColor.charcoal, width: 1),
+                          ),
+                        ),
+                      ),
+                  ]),
+                  const SizedBox(width: 5),
+                  Text(t.$1),
+                ]),
+              );
+            }).toList(),
           ),
         ),
       ],
@@ -489,7 +588,7 @@ class _OverviewTab extends StatelessWidget {
         const Icon(Icons.groups_rounded, size: 16, color: MyWalkColor.golden),
         const SizedBox(width: 10),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Group habit milestone!',
+          const Text('Group activity milestone!',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
           const SizedBox(height: 2),
           Text(m.displayLabel,

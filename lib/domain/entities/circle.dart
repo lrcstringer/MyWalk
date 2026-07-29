@@ -275,6 +275,7 @@ class ScriptureThread {
   final String createdAt;
   final String? closedAt;
   final int commentCount;
+  final String? message;
 
   const ScriptureThread({
     required this.id,
@@ -288,6 +289,7 @@ class ScriptureThread {
     required this.createdAt,
     this.closedAt,
     this.commentCount = 0,
+    this.message,
   });
 
   bool get isOpen => status == 'open';

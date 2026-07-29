@@ -311,7 +311,7 @@ class APIService {
   Future<void> registerPushToken(String token) async {
     if (userId == null) return;
     try {
-      await _postMutation<Map<String, dynamic>>('auth.registerPushToken', body: {'userId': userId, 'pushToken': token}, fromJson: (j) => j);
+      await _postMutation<Map<String, dynamic>>('auth.registerPushToken', body: {'fcmToken': token}, fromJson: (j) => j);
     } catch (_) {}
   }
 

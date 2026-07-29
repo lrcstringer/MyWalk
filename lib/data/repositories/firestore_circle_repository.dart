@@ -573,6 +573,7 @@ class FirestoreCircleRepository implements CircleRepository {
     required String reference,
     required String passageText,
     required String translation,
+    String? message,
   }) async {
     final displayName =
         _auth.currentUser?.displayName ?? 'Circle Member';
@@ -586,6 +587,7 @@ class FirestoreCircleRepository implements CircleRepository {
       'status': 'open',
       'createdAt': FieldValue.serverTimestamp(),
       'commentCount': 0,
+      if (message != null && message.isNotEmpty) 'message': message,
     });
   }
 
@@ -1008,6 +1010,7 @@ class FirestoreCircleRepository implements CircleRepository {
       createdAt: _tsToIso(d['createdAt']),
       closedAt: d['closedAt'] != null ? _tsToIso(d['closedAt']) : null,
       commentCount: d['commentCount'] as int? ?? 0,
+      message: d['message'] as String?,
     );
   }
 

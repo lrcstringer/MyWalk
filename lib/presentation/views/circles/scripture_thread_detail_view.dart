@@ -172,6 +172,7 @@ class _ScriptureThreadDetailViewState
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
     final parentId = _replyingTo?.id;
+    final messenger = ScaffoldMessenger.of(context);
     setState(() {
       _posting = true;
       _replyingTo = null;
@@ -185,8 +186,12 @@ class _ScriptureThreadDetailViewState
         parentId: parentId,
       );
     } catch (_) {
-      // Restore the typed text so the user can retry.
-      if (mounted) _commentController.text = text;
+      if (mounted) {
+        _commentController.text = text;
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Could not post comment. Please try again.')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _posting = false);
     }
@@ -247,6 +252,19 @@ class _PassageCard extends StatelessWidget {
             ),
           ),
         ),
+        if (thread.message != null && thread.message!.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
+          const SizedBox(height: 14),
+          Text(
+            thread.message!,
+            style: TextStyle(
+              fontSize: 14,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
+              height: 1.5,
+            ),
+          ),
+        ],
       ]),
     );
   }

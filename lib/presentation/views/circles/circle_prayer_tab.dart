@@ -69,9 +69,9 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
           Expanded(
             child: TabBar(
               controller: _tabController,
-              labelColor: MyWalkColor.golden,
-              unselectedLabelColor: MyWalkColor.softGold,
-              indicatorColor: MyWalkColor.golden,
+              labelColor: MyWalkColor.sage,
+              unselectedLabelColor: Colors.white.withValues(alpha: 0.4),
+              indicatorColor: MyWalkColor.sage,
               indicatorSize: TabBarIndicatorSize.label,
               labelStyle:
                   const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
@@ -185,7 +185,7 @@ class _NoListState extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
       child: Column(children: [
         Icon(Icons.format_list_bulleted_rounded,
-            size: 40, color: Colors.white.withValues(alpha: 0.15)),
+            size: 40, color: MyWalkColor.sage.withValues(alpha: 0.4)),
         const SizedBox(height: 12),
         Text('No group prayer list yet.',
             style:
@@ -205,7 +205,7 @@ class _NoListState extends StatelessWidget {
             onPressed: () =>
                 _showCreateListSheet(context, circleId, members),
             style: ElevatedButton.styleFrom(
-              backgroundColor: MyWalkColor.golden,
+              backgroundColor: MyWalkColor.sage,
               foregroundColor: MyWalkColor.charcoal,
               padding:
                   const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
@@ -334,7 +334,7 @@ class _ListBody extends StatelessWidget {
       padding: const EdgeInsets.only(top: 60),
       child: Column(children: [
         Icon(Icons.volunteer_activism_rounded,
-            size: 40, color: Colors.white.withValues(alpha: 0.15)),
+            size: 40, color: MyWalkColor.sage.withValues(alpha: 0.4)),
         const SizedBox(height: 12),
         Text(
           isAdmin
@@ -415,7 +415,7 @@ class _ListBody extends StatelessWidget {
                       .addItem(circleId, text);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: MyWalkColor.golden,
+                  backgroundColor: MyWalkColor.sage,
                   foregroundColor: MyWalkColor.charcoal,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -511,12 +511,22 @@ class _PrayerItemCardState extends State<_PrayerItemCard> {
     final isAnswered = item.status == PrayerItemStatus.answered;
 
     return Container(
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: MyWalkColor.sage,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+      margin: const EdgeInsets.only(left: 3),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isAnswered
             ? MyWalkColor.sage.withValues(alpha: 0.05)
             : MyWalkColor.cardBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        ),
         border: Border.all(
           color: isAnswered
               ? MyWalkColor.sage.withValues(alpha: 0.18)
@@ -636,6 +646,7 @@ class _PrayerItemCardState extends State<_PrayerItemCard> {
           ]),
         ],
       ]),
+      ),
     );
   }
 
@@ -1104,7 +1115,7 @@ class _VisibilityPickerSheetState extends State<_VisibilityPickerSheet> {
                       await widget.onSave(_selected.toList());
                       notifProvider?.sendAnnouncement(
                         circleId: widget.circleId,
-                        message: 'Your group\'s Group Prayer List is ready — check the Prayer tab.',
+                        message: 'Your group\'s Prayer List is ready — check the Prayer tab.',
                       ).catchError((_) {});
                       nav.pop();
                     } catch (_) {

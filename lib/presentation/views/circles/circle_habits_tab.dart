@@ -26,7 +26,7 @@ class CircleHabitsTab extends StatelessWidget {
           floatingActionButton: isAdmin
               ? FloatingActionButton.small(
                   onPressed: () => _showCreateSheet(context),
-                  backgroundColor: MyWalkColor.golden,
+                  backgroundColor: MyWalkColor.warmCoral,
                   foregroundColor: MyWalkColor.charcoal,
                   child: const Icon(Icons.add),
                 )
@@ -62,9 +62,9 @@ class CircleHabitsTab extends StatelessWidget {
       padding: const EdgeInsets.only(top: 60),
       child: Column(children: [
         Icon(Icons.check_circle_outline_rounded, size: 40,
-            color: Colors.white.withValues(alpha: 0.15)),
+            color: MyWalkColor.warmCoral.withValues(alpha: 0.4)),
         const SizedBox(height: 12),
-        Text('No group habits yet.',
+        Text('No group activities yet.',
             style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
         const SizedBox(height: 6),
         Text(isAdmin
@@ -80,7 +80,7 @@ class CircleHabitsTab extends StatelessWidget {
     showModalBottomSheet(
       context: context, isScrollControlled: true, useSafeArea: true,
       backgroundColor: MyWalkColor.charcoal,
-      builder: (_) => CreateCircleHabitSheet(circleId: circleId),
+      builder: (_) => CreateCircleHabitSheet(circleId: circleId, isAdmin: isAdmin),
     );
   }
 }
@@ -111,12 +111,22 @@ class _CircleHabitCard extends StatelessWidget {
     final scheduled = habit.isScheduledFor(DateTime.now().weekday % 7);
 
     return Container(
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: MyWalkColor.warmCoral,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+      margin: const EdgeInsets.only(left: 3),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: hasCompleted
             ? MyWalkColor.sage.withValues(alpha: 0.06)
             : MyWalkColor.cardBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        ),
         border: Border.all(
           color: hasCompleted
               ? MyWalkColor.sage.withValues(alpha: 0.2)
@@ -193,6 +203,7 @@ class _CircleHabitCard extends StatelessWidget {
                 style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
         ]),
       ]),
+      ),
     );
   }
 
@@ -455,19 +466,23 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: MyWalkColor.golden))
+                        strokeWidth: 2, color: MyWalkColor.warmCoral))
                 : const Text('Save',
                     style: TextStyle(
-                        color: MyWalkColor.golden,
+                        color: MyWalkColor.warmCoral,
                         fontWeight: FontWeight.w600)),
           ),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.warmCoral)),
+        ),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
             16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 40),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _label('Habit Name'),
+          _label('Activity Name'),
           const SizedBox(height: 6),
           TextField(
               controller: _nameController,
@@ -480,7 +495,7 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
               controller: _descController,
               maxLines: 2,
               style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
-              decoration: _inputDec('What is this habit about?')),
+              decoration: _inputDec('What is this activity about?')),
           const SizedBox(height: 14),
           _label('Tracking Type'),
           const SizedBox(height: 8),
@@ -503,7 +518,7 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
               maxLines: 2,
               style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
               decoration:
-                  _inputDec('Why is this habit important for your group?')),
+                  _inputDec('Why this activity is important to your group?')),
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!,
@@ -702,7 +717,8 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
 
 class CreateCircleHabitSheet extends StatefulWidget {
   final String circleId;
-  const CreateCircleHabitSheet({super.key, required this.circleId});
+  final bool isAdmin;
+  const CreateCircleHabitSheet({super.key, required this.circleId, this.isAdmin = false});
 
   @override
   State<CreateCircleHabitSheet> createState() => _CreateCircleHabitSheetState();
@@ -733,8 +749,9 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text('New Group Habit',
+        title: const Text('New Group Activity',
             style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17)),
+        leadingWidth: 72,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
@@ -744,17 +761,21 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
             onPressed: _submitting ? null : _submit,
             child: _submitting
                 ? const SizedBox(width: 16, height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.golden))
+                    child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.warmCoral))
                 : const Text('Create',
-                    style: TextStyle(color: MyWalkColor.golden, fontWeight: FontWeight.w600)),
+                    style: TextStyle(color: MyWalkColor.warmCoral, fontWeight: FontWeight.w600)),
           ),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.warmCoral)),
+        ),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(16, 12, 16,
             MediaQuery.of(context).viewInsets.bottom + 40),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _label('Habit Name'),
+          _label('Activity Name'),
           const SizedBox(height: 6),
           TextField(controller: _nameController,
               style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
@@ -764,7 +785,7 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
           const SizedBox(height: 6),
           TextField(controller: _descController, maxLines: 2,
               style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
-              decoration: _inputDec('What is this habit about?')),
+              decoration: _inputDec('What is this activity about?')),
           const SizedBox(height: 14),
           _label('Tracking Type'),
           const SizedBox(height: 8),
@@ -784,9 +805,11 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
           const SizedBox(height: 6),
           TextField(controller: _purposeController, maxLines: 2,
               style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
-              decoration: _inputDec('Why is this habit important for your circle?')),
-          const SizedBox(height: 14),
-          _notifyRow(),
+              decoration: _inputDec('Why this activity is important to your group?')),
+          if (widget.isAdmin) ...[
+            const SizedBox(height: 14),
+            _notifyRow(),
+          ],
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!, style: const TextStyle(fontSize: 12, color: MyWalkColor.warmCoral)),
@@ -797,11 +820,11 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
             child: ElevatedButton(
               onPressed: _submitting ? null : _submit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: MyWalkColor.golden, foregroundColor: MyWalkColor.charcoal,
+                backgroundColor: MyWalkColor.warmCoral, foregroundColor: MyWalkColor.charcoal,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Create Habit',
+              child: const Text('Create Activity',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             ),
           ),
@@ -973,7 +996,7 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
       );
       notifProvider?.sendAnnouncement(
         circleId: widget.circleId,
-        message: 'New group habit: $name — check the Habits tab.',
+        message: 'New group activity: $name — check the Activities tab.',
       ).catchError((_) {});
       if (mounted) Navigator.pop(context);
     } catch (e) {

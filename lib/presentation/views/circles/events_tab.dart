@@ -37,7 +37,7 @@ class EventsTab extends StatelessWidget {
           floatingActionButton: canCreate
               ? FloatingActionButton.small(
                   onPressed: () => _showCreateSheet(context),
-                  backgroundColor: MyWalkColor.golden,
+                  backgroundColor: MyWalkColor.eventPurple,
                   foregroundColor: MyWalkColor.charcoal,
                   child: const Icon(Icons.add),
                 )
@@ -72,7 +72,7 @@ class EventsTab extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(40),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.event_rounded, size: 40, color: Colors.white.withValues(alpha: 0.15)),
+          Icon(Icons.event_rounded, size: 40, color: MyWalkColor.eventPurple.withValues(alpha: 0.5)),
           const SizedBox(height: 12),
           Text('No upcoming events.',
               style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
@@ -120,10 +120,20 @@ class _EventCard extends StatelessWidget {
     final canDelete = isAdmin || event.isAuthor(uid);
 
     return Container(
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: MyWalkColor.eventPurple,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Container(
+      margin: const EdgeInsets.only(left: 3),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: MyWalkColor.cardBackground,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(14),
+          bottomRight: Radius.circular(14),
+        ),
         border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -131,13 +141,13 @@ class _EventCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: MyWalkColor.sage.withValues(alpha: 0.1),
+              color: MyWalkColor.eventPurple.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               _formatDateShort(eventDt),
               style: const TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.sage),
+                  fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.eventPurple),
             ),
           ),
           const Spacer(),
@@ -199,6 +209,7 @@ class _EventCard extends StatelessWidget {
           ),
         ],
       ]),
+      ),
     );
   }
 
@@ -314,6 +325,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         backgroundColor: MyWalkColor.charcoal,
         title: const Text('New Event',
             style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17)),
+        leadingWidth: 72,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
@@ -326,12 +338,16 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: MyWalkColor.golden))
+                        strokeWidth: 2, color: MyWalkColor.eventPurple))
                 : const Text('Create',
                     style: TextStyle(
-                        color: MyWalkColor.golden, fontWeight: FontWeight.w600)),
+                        color: MyWalkColor.eventPurple, fontWeight: FontWeight.w600)),
           ),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.eventPurple)),
+        ),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -447,7 +463,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         value: _notifyMembers,
         onChanged: (v) => setState(() => _notifyMembers = v),
         activeTrackColor: MyWalkColor.golden,
-      activeThumbColor: Colors.white,
+        activeThumbColor: Colors.white,
       ),
     ]),
   );
@@ -613,12 +629,16 @@ class _EditEventSheetState extends State<EditEventSheet> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: MyWalkColor.golden))
+                        strokeWidth: 2, color: MyWalkColor.eventPurple))
                 : const Text('Save',
                     style: TextStyle(
-                        color: MyWalkColor.golden, fontWeight: FontWeight.w600)),
+                        color: MyWalkColor.eventPurple, fontWeight: FontWeight.w600)),
           ),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.eventPurple)),
+        ),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(

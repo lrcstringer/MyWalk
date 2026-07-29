@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
 import '../../providers/scripture_thread_provider.dart';
-import '../../providers/circle_notification_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
 import '../bible/bible_browser_view.dart';
@@ -88,7 +87,7 @@ class _ScriptureThreadsTabState extends State<ScriptureThreadsTab> {
         padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.menu_book_rounded,
-              size: 40, color: Colors.white.withValues(alpha: 0.15)),
+              size: 40, color: MyWalkColor.golden.withValues(alpha: 0.5)),
           const SizedBox(height: 12),
           Text('No threads yet.',
               style: TextStyle(
@@ -223,12 +222,24 @@ class _ThreadCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        clipBehavior: isClosed ? Clip.none : Clip.hardEdge,
+        decoration: BoxDecoration(
+          color: isClosed ? null : MyWalkColor.golden,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Container(
+        margin: isClosed ? null : const EdgeInsets.only(left: 3),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isClosed
               ? MyWalkColor.cardBackground.withValues(alpha: 0.5)
               : MyWalkColor.golden.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: isClosed
+              ? BorderRadius.circular(14)
+              : const BorderRadius.only(
+                  topRight: Radius.circular(14),
+                  bottomRight: Radius.circular(14),
+                ),
           border: Border.all(
             color: isClosed
                 ? Colors.white.withValues(alpha: 0.08)
@@ -325,6 +336,7 @@ class _ThreadCard extends StatelessWidget {
                     fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
           ]),
         ]),
+        ),
       ),
     );
   }
@@ -372,7 +384,7 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
   final _refController = TextEditingController();
   late final QuillController _textController;
   final _textFocusNode = FocusNode();
-  bool _notifyMembers = false;
+  final _messageController = TextEditingController();
   bool _submitting = false;
   String? _error;
 
@@ -387,6 +399,7 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
     _refController.dispose();
     _textController.dispose();
     _textFocusNode.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
@@ -398,6 +411,7 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
         backgroundColor: MyWalkColor.charcoal,
         title: const Text('New Scripture Thread',
             style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17)),
+        leadingWidth: 72,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text('Cancel',
@@ -418,6 +432,10 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
                         fontWeight: FontWeight.w600)),
           ),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.golden)),
+        ),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
@@ -464,10 +482,16 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
             placeholder: 'Paste or type the passage text…',
             minHeight: 120,
           ),
-          if (widget.isAdmin) ...[
-            const SizedBox(height: 14),
-            _notifyRow(),
-          ],
+          const SizedBox(height: 14),
+          _label('Your Message (optional)'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _messageController,
+            style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
+            maxLines: 4,
+            minLines: 3,
+            decoration: _inputDec('Add a message or reflection…'),
+          ),
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!,
@@ -516,28 +540,6 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
     );
   }
 
-  Widget _notifyRow() => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-    decoration: BoxDecoration(
-      color: MyWalkColor.cardBackground,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(children: [
-      const Icon(Icons.notifications_outlined, size: 18, color: MyWalkColor.softGold),
-      const SizedBox(width: 10),
-      const Expanded(
-        child: Text('Notify members',
-            style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite)),
-      ),
-      Switch(
-        value: _notifyMembers,
-        onChanged: (v) => setState(() => _notifyMembers = v),
-        activeTrackColor: MyWalkColor.golden,
-        activeThumbColor: Colors.white,
-      ),
-    ]),
-  );
-
   Future<void> _submit() async {
     final ref = _refController.text.trim();
     final textPlain = _textController.document.toPlainText().trim();
@@ -553,22 +555,17 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
       _submitting = true;
       _error = null;
     });
-    final notifProvider = _notifyMembers && widget.isAdmin
-        ? context.read<CircleNotificationProvider>()
-        : null;
     final passageJson =
         jsonEncode(_textController.document.toDelta().toJson());
     try {
+      final msg = _messageController.text.trim();
       await context.read<ScriptureThreadProvider>().createThread(
             circleId: widget.circleId,
             reference: ref,
             passageText: passageJson,
             translation: 'WEB',
+            message: msg.isEmpty ? null : msg,
           );
-      notifProvider?.sendAnnouncement(
-        circleId: widget.circleId,
-        message: 'New scripture thread: $ref — join the discussion.',
-      ).catchError((_) {});
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
