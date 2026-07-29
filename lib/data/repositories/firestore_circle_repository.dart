@@ -136,6 +136,18 @@ class FirestoreCircleRepository implements CircleRepository {
         .where('userId', isEqualTo: uid));
     if (memberSnaps.docs.isEmpty) return [];
 
+    // Self-heal: if any of the current user's member docs are missing displayName,
+    // write it now so other members see the correct name.
+    final currentDisplayName = _auth.currentUser?.displayName;
+    if (currentDisplayName != null && currentDisplayName.isNotEmpty) {
+      final docsWithoutName = memberSnaps.docs.where(
+        (d) => d.data()['displayName'] == null,
+      );
+      for (final doc in docsWithoutName) {
+        doc.reference.update({'displayName': currentDisplayName}).catchError((_) {});
+      }
+    }
+
     final circleIds =
         memberSnaps.docs.map((d) => d.reference.parent.parent!.id).toList();
     final circleSnaps =

@@ -18,6 +18,10 @@
       {
         "source": "/accountability/accept/**",
         "destination": "/accountability/accept/index.html"
+      },
+      {
+        "source": "/join",
+        "destination": "/join/index.html"
       }
     ]
   },

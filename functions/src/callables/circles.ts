@@ -41,6 +41,9 @@ export const circleCreate = onCall(
     const circleId = crypto.randomUUID();
     const inviteCode = generateInviteCode();
 
+    const creatorDoc = await db.collection('users').doc(uid).get();
+    const creatorName = (creatorDoc.data()?.['displayName'] as string | undefined) ?? null;
+
     const batch = db.batch();
     batch.set(circlesCol().doc(circleId), {
       id: circleId, name: name.trim(), description,
@@ -51,6 +54,7 @@ export const circleCreate = onCall(
     });
     batch.set(membersCol(circleId).doc(uid), {
       userId: uid, role: 'admin', joinedAt: Timestamp.now(), sosContactIds: [],
+      ...(creatorName ? { displayName: creatorName } : {}),
     });
     await batch.commit();
 
@@ -91,9 +95,13 @@ export const circleJoin = onCall(
       throw new HttpsError('resource-exhausted', 'This prayer circle has reached its maximum capacity');
     }
 
+    const joinerDoc = await db.collection('users').doc(uid).get();
+    const joinerName = (joinerDoc.data()?.['displayName'] as string | undefined) ?? null;
+
     const batch = db.batch();
     batch.set(membersCol(circleId).doc(uid), {
       userId: uid, role: 'member', joinedAt: Timestamp.now(), sosContactIds: [],
+      ...(joinerName ? { displayName: joinerName } : {}),
     });
     batch.update(circlesCol().doc(circleId), { memberCount: FieldValue.increment(1) });
     await batch.commit();
@@ -104,11 +112,9 @@ export const circleJoin = onCall(
       .map((d) => d.data()['userId'] as string)
       .filter((id) => id !== uid);
     if (adminIds.length > 0) {
-      const joinerDoc = await db.collection('users').doc(uid).get();
-      const joinerName = (joinerDoc.data()?.['displayName'] as string | undefined) ?? 'Someone';
       sendPushToUsers(adminIds, {
         title: circle.name as string,
-        body: `${joinerName} joined the circle`,
+        body: `${joinerName ?? 'Someone'} joined the circle`,
         data: { type: 'circle_member_joined', circleId },
         channelId: 'circles',
       }).catch(() => { /* non-fatal */ });

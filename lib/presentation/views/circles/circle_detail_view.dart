@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -94,6 +95,11 @@ class _CircleDetailViewState extends State<CircleDetailView>
       final detail = await context.read<CircleRepository>().getCircleDetail(widget.circleId);
       if (mounted) setState(() { _detail = detail; _isLoading = false; });
     } catch (e) {
+      if (e is FirebaseException && e.code == 'permission-denied') {
+        // Circle was deleted — pop back; circles list will refresh automatically.
+        if (mounted) Navigator.of(context).pop();
+        return;
+      }
       final offline = await _isOffline();
       if (mounted) {
         setState(() {

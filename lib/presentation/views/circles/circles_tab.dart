@@ -11,12 +11,14 @@ import '../shared/appbar_actions.dart';
 import '../help/circles_help_view.dart';
 
 class CirclesTab extends StatelessWidget {
-  const CirclesTab({super.key});
+  const CirclesTab({super.key, this.refreshTrigger = 0});
+
+  final int refreshTrigger;
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
-    if (auth.isAuthenticated) return const _CirclesListView();
+    if (auth.isAuthenticated) return _CirclesListView(refreshTrigger: refreshTrigger);
     return const _CirclesAuthGateView();
   }
 }
@@ -131,7 +133,9 @@ class _CirclesAuthGateView extends StatelessWidget {
 // ─── Circles list ────────────────────────────────────────────────────────────
 
 class _CirclesListView extends StatefulWidget {
-  const _CirclesListView();
+  const _CirclesListView({this.refreshTrigger = 0});
+
+  final int refreshTrigger;
 
   @override
   State<_CirclesListView> createState() => _CirclesListViewState();
@@ -147,6 +151,12 @@ class _CirclesListViewState extends State<_CirclesListView> {
   void initState() {
     super.initState();
     _loadCircles();
+  }
+
+  @override
+  void didUpdateWidget(_CirclesListView old) {
+    super.didUpdateWidget(old);
+    if (widget.refreshTrigger != old.refreshTrigger) _loadCircles();
   }
 
   Future<void> _loadCircles() async {

@@ -128,56 +128,6 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
 
           const SizedBox(height: 24),
 
-          // ── Feature Toggles ─────────────────────────────────────────────
-          _sectionHeader('Features'),
-          const SizedBox(height: 8),
-          _settingCard(
-            title: 'Who can set Scripture focus?',
-            subtitle: 'Controls who can choose the weekly passage.',
-            child: _permissionToggle(
-              value: _scriptureFocusPermission,
-              onChanged: (v) => _updateToggle(() => _scriptureFocusPermission = v),
-            ),
-          ),
-          const SizedBox(height: 8),
-          _switchCard(
-            icon: Icons.people_rounded,
-            iconColor: _softPurple,
-            title: 'Weekly Pulse',
-            subtitle: 'Allow members to check in weekly.',
-            value: _pulseEnabled,
-            onChanged: (v) => _updateToggle(() => _pulseEnabled = v),
-          ),
-          const SizedBox(height: 8),
-          _switchCard(
-            icon: Icons.event_rounded,
-            iconColor: MyWalkColor.sage,
-            title: 'Events',
-            subtitle: 'Schedule events for your group.',
-            value: _eventsEnabled,
-            onChanged: (v) => _updateToggle(() => _eventsEnabled = v),
-          ),
-          const SizedBox(height: 8),
-          _switchCard(
-            icon: Icons.check_circle_outline_rounded,
-            iconColor: MyWalkColor.golden,
-            title: 'Group Habits',
-            subtitle: 'Create shared habits for your group.',
-            value: _habitsEnabled,
-            onChanged: (v) => _updateToggle(() => _habitsEnabled = v),
-          ),
-          const SizedBox(height: 8),
-          _switchCard(
-            icon: Icons.favorite_rounded,
-            iconColor: MyWalkColor.warmCoral,
-            title: 'Encouragement Prompts',
-            subtitle: 'Sunday nudge to encourage a group member.',
-            value: _encouragementsEnabled,
-            onChanged: (v) => _updateToggle(() => _encouragementsEnabled = v),
-          ),
-
-          const SizedBox(height: 24),
-
           // ── Invite ──────────────────────────────────────────────────────
           _sectionHeader('Invite'),
           const SizedBox(height: 8),
@@ -236,9 +186,9 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    final text = 'Join my Prayer Group "${widget.circleName}" on MyWalk!\n\n'
+                    final text = 'Join my Group "${widget.circleName}" on MyWalk!\n\n'
                         'Tap to join: https://mywalk.faith/join?code=${widget.inviteCode}\n\n'
-                        'Or enter invite code "${widget.inviteCode}" manually in the app.';
+                        'Or enter invite code "${widget.inviteCode}" manually in the app by tapping on the big yellow button in the bottom left of the Groups screen and then on "Join Group"';
                     Share.share(text);
                   },
                   icon: const Icon(Icons.share_rounded, size: 16),
@@ -253,6 +203,56 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
                 ),
               ),
             ]),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── Feature Toggles ─────────────────────────────────────────────
+          _sectionHeader('Features'),
+          const SizedBox(height: 8),
+          _settingCard(
+            title: 'Who can set Scripture focus?',
+            subtitle: 'Controls who can choose the weekly passage.',
+            child: _permissionToggle(
+              value: _scriptureFocusPermission,
+              onChanged: (v) => _updateToggle(() => _scriptureFocusPermission = v),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _switchCard(
+            icon: Icons.people_rounded,
+            iconColor: _softPurple,
+            title: 'Weekly Pulse',
+            subtitle: 'Allow members to check in weekly.',
+            value: _pulseEnabled,
+            onChanged: (v) => _updateToggle(() => _pulseEnabled = v),
+          ),
+          const SizedBox(height: 8),
+          _switchCard(
+            icon: Icons.event_rounded,
+            iconColor: MyWalkColor.sage,
+            title: 'Events',
+            subtitle: 'Schedule events for your group.',
+            value: _eventsEnabled,
+            onChanged: (v) => _updateToggle(() => _eventsEnabled = v),
+          ),
+          const SizedBox(height: 8),
+          _switchCard(
+            icon: Icons.check_circle_outline_rounded,
+            iconColor: MyWalkColor.golden,
+            title: 'Group Habits',
+            subtitle: 'Create shared habits for your group.',
+            value: _habitsEnabled,
+            onChanged: (v) => _updateToggle(() => _habitsEnabled = v),
+          ),
+          const SizedBox(height: 8),
+          _switchCard(
+            icon: Icons.favorite_rounded,
+            iconColor: MyWalkColor.warmCoral,
+            title: 'Encouragement Prompts',
+            subtitle: 'Sunday nudge to encourage a group member.',
+            value: _encouragementsEnabled,
+            onChanged: (v) => _updateToggle(() => _encouragementsEnabled = v),
           ),
 
           const SizedBox(height: 24),

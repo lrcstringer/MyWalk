@@ -120,7 +120,11 @@ service cloud.firestore {
       // members subcollection
       match /members/{userId} {
         allow read: if isCircleMember(circleId);
-        allow write: if false; // Admin SDK only
+        allow write: if false; // Admin SDK only (create/delete)
+        // Member may patch only their own displayName (self-healing for legacy docs)
+        allow update: if isSignedIn()
+          && userId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']);
       }
 
       // gratitudes subcollection

@@ -31,6 +31,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
   bool _showingDedication = false;
   bool _showAutoCarryBanner = false;
   bool _hasNewGratitudes = false;
+  int _circlesRefreshTrigger = 0;
   bool _checkingGratitudes = false;
   bool _prevAuthenticated = false;
   StreamSubscription<String>? _inviteSub;
@@ -102,9 +103,16 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
 
   Future<void> _showInviteDialog(String code) async {
     if (!mounted) return;
-    await CircleInvitationDialog.show(context, code);
-    // Refresh gratitude badge in case the user just joined a new circle.
-    if (mounted) _checkNewGratitudes();
+    final joined = await CircleInvitationDialog.show(context, code);
+    if (!mounted) return;
+    if (joined == true) {
+      setState(() {
+        _circlesRefreshTrigger++;
+        _selectedTab = 4;
+      });
+      _pageController.jumpToPage(4);
+    }
+    _checkNewGratitudes();
   }
 
   @override
@@ -187,7 +195,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
               _KeepAlivePage(child: PracticesView(weekCycleManager: wcm)),
               const _KeepAlivePage(child: JournalTab()),
               const _KeepAlivePage(child: KingdomLifeView()),
-              const _KeepAlivePage(child: CirclesTab()),
+              _KeepAlivePage(child: CirclesTab(refreshTrigger: _circlesRefreshTrigger)),
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
