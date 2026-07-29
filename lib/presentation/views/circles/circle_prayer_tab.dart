@@ -264,13 +264,13 @@ class _ListBody extends StatelessWidget {
       floatingActionButton: isAdmin
           ? FloatingActionButton.small(
               onPressed: () => _showAddItemSheet(context),
-              backgroundColor: MyWalkColor.golden,
+              backgroundColor: MyWalkColor.sage,
               foregroundColor: MyWalkColor.charcoal,
               child: const Icon(Icons.add),
             )
           : null,
       body: RefreshIndicator(
-        color: MyWalkColor.golden,
+        color: MyWalkColor.sage,
         backgroundColor: MyWalkColor.cardBackground,
         onRefresh: () =>
             context.read<GroupPrayerListProvider>().load(circleId),
@@ -520,17 +520,13 @@ class _PrayerItemCardState extends State<_PrayerItemCard> {
       margin: const EdgeInsets.only(left: 3),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isAnswered
-            ? MyWalkColor.sage.withValues(alpha: 0.05)
-            : MyWalkColor.cardBackground,
+        color: MyWalkColor.cardBackground,
         borderRadius: const BorderRadius.only(
           topRight: Radius.circular(12),
           bottomRight: Radius.circular(12),
         ),
         border: Border.all(
-          color: isAnswered
-              ? MyWalkColor.sage.withValues(alpha: 0.18)
-              : MyWalkColor.cardBorder,
+          color: MyWalkColor.cardBorder,
           width: 0.5,
         ),
       ),
@@ -906,17 +902,17 @@ class _GratitudeShareSheetState extends State<_GratitudeShareSheet> {
                 height: 20,
                 decoration: BoxDecoration(
                   color: _anonymous
-                      ? MyWalkColor.golden.withValues(alpha: 0.15)
+                      ? MyWalkColor.sage.withValues(alpha: 0.15)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
                     color: _anonymous
-                        ? MyWalkColor.golden
+                        ? MyWalkColor.sage
                         : Colors.white.withValues(alpha: 0.3),
                   ),
                 ),
                 child: _anonymous
-                    ? const Icon(Icons.check, size: 14, color: MyWalkColor.golden)
+                    ? const Icon(Icons.check, size: 14, color: MyWalkColor.sage)
                     : null,
               ),
               const SizedBox(width: 10),
@@ -1056,18 +1052,18 @@ class _VisibilityPickerSheetState extends State<_VisibilityPickerSheet> {
                     height: 22,
                     decoration: BoxDecoration(
                       color: selected
-                          ? MyWalkColor.golden.withValues(alpha: 0.15)
+                          ? MyWalkColor.sage.withValues(alpha: 0.15)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
                         color: selected
-                            ? MyWalkColor.golden
+                            ? MyWalkColor.sage
                             : Colors.white.withValues(alpha: 0.3),
                       ),
                     ),
                     child: selected
                         ? const Icon(Icons.check,
-                            size: 14, color: MyWalkColor.golden)
+                            size: 14, color: MyWalkColor.sage)
                         : null,
                   ),
                 ),
@@ -1093,7 +1089,7 @@ class _VisibilityPickerSheetState extends State<_VisibilityPickerSheet> {
               Switch(
                 value: _notifyMembers,
                 onChanged: (v) => setState(() => _notifyMembers = v),
-                activeTrackColor: MyWalkColor.golden,
+                activeTrackColor: MyWalkColor.sage,
                 activeThumbColor: Colors.white,
               ),
             ]),
@@ -1123,7 +1119,7 @@ class _VisibilityPickerSheetState extends State<_VisibilityPickerSheet> {
                     }
                   },
             style: ElevatedButton.styleFrom(
-              backgroundColor: MyWalkColor.golden,
+              backgroundColor: MyWalkColor.sage,
               foregroundColor: MyWalkColor.charcoal,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(

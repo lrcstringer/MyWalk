@@ -233,7 +233,7 @@ class _ThreadCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isClosed
               ? MyWalkColor.cardBackground.withValues(alpha: 0.5)
-              : MyWalkColor.golden.withValues(alpha: 0.06),
+              : MyWalkColor.cardBackground,
           borderRadius: isClosed
               ? BorderRadius.circular(14)
               : const BorderRadius.only(
@@ -241,9 +241,7 @@ class _ThreadCard extends StatelessWidget {
                   bottomRight: Radius.circular(14),
                 ),
           border: Border.all(
-            color: isClosed
-                ? Colors.white.withValues(alpha: 0.08)
-                : MyWalkColor.golden.withValues(alpha: 0.2),
+            color: MyWalkColor.cardBorder,
             width: 0.5,
           ),
         ),

@@ -105,6 +105,10 @@ class _ScriptureThreadDetailViewState
                 onPressed: () => BibleProjectBrowserView.openOrPrompt(context, reference: widget.thread.reference),
               ),
             ],
+            bottom: const PreferredSize(
+              preferredSize: Size.fromHeight(1),
+              child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.golden)),
+            ),
           ),
           body: Column(children: [
             Expanded(
@@ -365,18 +369,16 @@ class _CommentBubble extends StatelessWidget {
       );
     }
 
-    return Container(
+    final inner = Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       decoration: BoxDecoration(
-        color: isReply
-            ? MyWalkColor.inputBackground
-            : MyWalkColor.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: isReply
-            ? Border(
-                left: BorderSide(
-                    color: MyWalkColor.golden.withValues(alpha: 0.3), width: 2))
-            : null,
+        color: isReply ? MyWalkColor.inputBackground : MyWalkColor.cardBackground,
+        borderRadius: isReply
+            ? const BorderRadius.only(
+                topRight: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              )
+            : BorderRadius.circular(12),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -422,6 +424,20 @@ class _CommentBubble extends StatelessWidget {
               height: 1.45),
         ),
       ]),
+    );
+
+    if (!isReply) return inner;
+
+    return Container(
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: MyWalkColor.golden.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(left: 2),
+        child: inner,
+      ),
     );
   }
 

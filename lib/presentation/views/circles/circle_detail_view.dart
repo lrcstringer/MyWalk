@@ -51,7 +51,7 @@ class _CircleDetailViewState extends State<CircleDetailView>
   final Map<int, int> _lastVisitedMs = {};
 
   static const _tabs = [
-    ('Overview',      Icons.home_rounded,                 MyWalkColor.golden),
+    // Overview removed — habit-tracker era UI, preserved in _OverviewTab below
     ('Prayer',        Icons.volunteer_activism_rounded,   MyWalkColor.sage),
     ('Scripture',     Icons.menu_book_rounded,            MyWalkColor.golden),
     ('Activities',    Icons.check_circle_outline_rounded, MyWalkColor.warmCoral),
@@ -65,8 +65,8 @@ class _CircleDetailViewState extends State<CircleDetailView>
     _tabController = TabController(length: _tabs.length, vsync: this);
     _tabController.addListener(_onTabChanged);
     _loadDetail();
-    _loadHeatmap();
-    _loadMilestones();
+    // _loadHeatmap();    // Overview tab removed — preserved for future use
+    // _loadMilestones(); // Overview tab removed — preserved for future use
     _loadProviders();
     _loadLastVisitedAt();
   }
@@ -110,19 +110,19 @@ class _CircleDetailViewState extends State<CircleDetailView>
     final lastMs = _lastVisitedMs[tabIndex] ?? 0;
     DateTime? latestAt;
     switch (tabIndex) {
-      case 1:
+      case 0:
         final items = context.watch<PrayerListProvider>().activeFor(widget.circleId);
         latestAt = _maxIsoDate(items.map((r) => r.createdAt));
-      case 2:
+      case 1:
         final threads = context.watch<ScriptureThreadProvider>().threadsFor(widget.circleId);
         latestAt = _maxIsoDate(threads.where((t) => t.isOpen).map((t) => t.createdAt));
-      case 3:
+      case 2:
         final habits = context.watch<CircleHabitsProvider>().habitsFor(widget.circleId);
         latestAt = _maxIsoDate(habits.map((h) => h.createdAt));
-      case 4:
+      case 3:
         final enc = context.watch<EncouragementProvider>().receivedFor(widget.circleId);
         latestAt = _maxIsoDate(enc.map((e) => e.createdAt));
-      case 5:
+      case 4:
         final events = context.watch<CircleEventsProvider>().eventsFor(widget.circleId);
         latestAt = _maxIsoDate(events.map((e) => e.createdAt));
       default:
@@ -291,68 +291,59 @@ class _CircleDetailViewState extends State<CircleDetailView>
                   ),
                 ),
               ),
-            if (detail.members.any((m) => m.userId == AuthService.shared.userId && m.isAdmin))
-              IconButton(
-                icon: const Icon(Icons.settings_rounded, size: 20, color: MyWalkColor.softGold),
-                onPressed: () => _openSettings(detail),
-              ),
+            IconButton(
+              icon: const Icon(Icons.settings_rounded, size: 20, color: MyWalkColor.softGold),
+              tooltip: 'Settings',
+              onPressed: () => _showGroupSettings(detail),
+            ),
           ],
           pinned: true,
-          bottom: TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            labelColor: _tabs[_tabController.index].$3,
-            unselectedLabelColor: Colors.white.withValues(alpha: 0.4),
-            indicatorColor: _tabs[_tabController.index].$3,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            unselectedLabelStyle: const TextStyle(fontSize: 12),
-            tabs: _tabs.asMap().entries.map((entry) {
-              final i = entry.key;
-              final t = entry.value;
-              final hasNew = _tabHasNew(context, i);
-              return Tab(
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Stack(clipBehavior: Clip.none, children: [
-                    Icon(t.$2, size: 14),
-                    if (hasNew)
-                      Positioned(
-                        top: -3,
-                        right: -5,
-                        child: Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: t.$3,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: MyWalkColor.charcoal, width: 1),
+          bottom: _FadingTabBar(
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              labelColor: _tabs[_tabController.index].$3,
+              unselectedLabelColor: Colors.white.withValues(alpha: 0.4),
+              indicatorColor: _tabs[_tabController.index].$3,
+              indicatorSize: TabBarIndicatorSize.label,
+              labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              unselectedLabelStyle: const TextStyle(fontSize: 12),
+              tabs: _tabs.asMap().entries.map((entry) {
+                final i = entry.key;
+                final t = entry.value;
+                final hasNew = _tabHasNew(context, i);
+                return Tab(
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Stack(clipBehavior: Clip.none, children: [
+                      Icon(t.$2, size: 14),
+                      if (hasNew)
+                        Positioned(
+                          top: -3,
+                          right: -5,
+                          child: Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: t.$3,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: MyWalkColor.charcoal, width: 1),
+                            ),
                           ),
                         ),
-                      ),
+                    ]),
+                    const SizedBox(width: 5),
+                    Text(t.$1),
                   ]),
-                  const SizedBox(width: 5),
-                  Text(t.$1),
-                ]),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
         ),
       ],
       body: TabBarView(
         controller: _tabController,
         children: [
-          _OverviewTab(
-            circleId: widget.circleId,
-            detail: detail,
-            heatmap: _heatmap,
-            heatmapFailed: _heatmapFailed,
-            milestones: _milestones,
-            milestonesFailed: _milestonesFailed,
-            onSummaryTap: () => _showSundaySummary(detail),
-            onLeaveTap: _confirmLeave,
-            isLeaving: _isLeaving,
-          ),
           CirclePrayerTab(
             circleId: widget.circleId,
             isAdmin: detail.members.any(
@@ -408,6 +399,32 @@ class _CircleDetailViewState extends State<CircleDetailView>
       // Settings/name may have changed — reload
       _loadDetail();
     }
+  }
+
+  void _showGroupSettings(CircleDetails detail) {
+    final isAdmin = detail.members
+        .any((m) => m.userId == AuthService.shared.userId && m.isAdmin);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: MyWalkColor.cardBackground,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) => _GroupSettingsSheet(
+        detail: detail,
+        isAdmin: isAdmin,
+        isLeaving: _isLeaving,
+        onEditSettings: () {
+          Navigator.pop(context);
+          _openSettings(detail);
+        },
+        onLeaveTap: () {
+          Navigator.pop(context);
+          _confirmLeave();
+        },
+      ),
+    );
   }
 
   void _confirmLeave() {
@@ -862,6 +879,158 @@ class _CircleHeatmapGrid extends StatelessWidget {
                   }).toList(),
                 )),
               ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Group Settings Sheet ─────────────────────────────────────────────────────
+
+class _GroupSettingsSheet extends StatelessWidget {
+  final CircleDetails detail;
+  final bool isAdmin;
+  final bool isLeaving;
+  final VoidCallback onEditSettings;
+  final VoidCallback onLeaveTap;
+
+  const _GroupSettingsSheet({
+    required this.detail,
+    required this.isAdmin,
+    required this.isLeaving,
+    required this.onEditSettings,
+    required this.onLeaveTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Center(
+          child: Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        if (isAdmin) ...[
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: onEditSettings,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: MyWalkDecorations.card,
+              child: Row(children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: MyWalkColor.softGold.withValues(alpha: 0.12)),
+                  child: const Icon(Icons.tune_rounded, size: 16, color: MyWalkColor.softGold),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Edit Group Settings',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500,
+                        color: MyWalkColor.warmWhite))),
+                Icon(Icons.chevron_right, size: 16, color: Colors.white.withValues(alpha: 0.3)),
+              ]),
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
+        Text('Members (${detail.members.length})'.toUpperCase(),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                color: Colors.white.withValues(alpha: 0.4), letterSpacing: 1.2)),
+        const SizedBox(height: 10),
+        ...detail.members.map((m) {
+          final isSelf = m.userId == AuthService.shared.userId;
+          final color = m.isAdmin ? MyWalkColor.golden : MyWalkColor.sage;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: MyWalkDecorations.card,
+              child: Row(children: [
+                Container(width: 36, height: 36,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle, color: color.withValues(alpha: 0.12)),
+                  child: Icon(Icons.person_rounded, size: 14, color: color)),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(isSelf ? 'You' : m.displayName,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.warmWhite)),
+                  Text(m.isAdmin ? 'Admin' : 'Member',
+                      style: TextStyle(fontSize: 11,
+                          color: m.isAdmin ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.4))),
+                ])),
+              ]),
+            ),
+          );
+        }),
+        const SizedBox(height: 20),
+        GestureDetector(
+          onTap: isLeaving ? null : onLeaveTap,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: MyWalkColor.warmCoral.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: MyWalkColor.warmCoral.withValues(alpha: 0.15), width: 0.5),
+            ),
+            child: Row(children: [
+              const Icon(Icons.logout_rounded, size: 16, color: MyWalkColor.warmCoral),
+              const SizedBox(width: 10),
+              const Expanded(child: Text('Leave Group',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500,
+                      color: MyWalkColor.warmCoral))),
+              if (isLeaving)
+                const SizedBox(width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.warmCoral)),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ─── Fading tab bar ───────────────────────────────────────────────────────────
+
+class _FadingTabBar extends StatelessWidget implements PreferredSizeWidget {
+  final TabBar child;
+  const _FadingTabBar({required this.child});
+
+  @override
+  Size get preferredSize => child.preferredSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        child,
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: 48,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    MyWalkColor.charcoal.withValues(alpha: 0),
+                    MyWalkColor.charcoal,
+                  ],
+                ),
+              ),
             ),
           ),
         ),

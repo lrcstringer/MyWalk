@@ -120,9 +120,7 @@ class _CircleHabitCard extends StatelessWidget {
       margin: const EdgeInsets.only(left: 3),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: hasCompleted
-            ? MyWalkColor.sage.withValues(alpha: 0.06)
-            : MyWalkColor.cardBackground,
+        color: MyWalkColor.cardBackground,
         borderRadius: const BorderRadius.only(
           topRight: Radius.circular(12),
           bottomRight: Radius.circular(12),
@@ -176,9 +174,9 @@ class _CircleHabitCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
-                  color: MyWalkColor.sage.withValues(alpha: 0.12),
+                  color: MyWalkColor.warmCoral.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: MyWalkColor.sage.withValues(alpha: 0.3)),
+                  border: Border.all(color: MyWalkColor.warmCoral.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   habit.trackingType == CircleHabitTrackingType.count
@@ -188,15 +186,15 @@ class _CircleHabitCard extends StatelessWidget {
                           : 'Done Today',
                   style: const TextStyle(
                       fontSize: 12, fontWeight: FontWeight.w500,
-                      color: MyWalkColor.sage),
+                      color: MyWalkColor.warmCoral),
                 ),
               ),
             )
           else if (hasCompleted)
             Row(children: [
-              const Icon(Icons.check_circle_rounded, size: 14, color: MyWalkColor.sage),
+              const Icon(Icons.check_circle_rounded, size: 14, color: MyWalkColor.warmCoral),
               const SizedBox(width: 4),
-              const Text('Done', style: TextStyle(fontSize: 12, color: MyWalkColor.sage)),
+              const Text('Done', style: TextStyle(fontSize: 12, color: MyWalkColor.warmCoral)),
             ])
           else
             Text('Not scheduled today',
@@ -273,7 +271,7 @@ class _CircleHabitCard extends StatelessWidget {
             },
             child: const Text('Log',
                 style: TextStyle(
-                    color: MyWalkColor.golden, fontWeight: FontWeight.w600)),
+                    color: MyWalkColor.warmCoral, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -295,7 +293,7 @@ class _CircleHabitCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 12),
           ListTile(
-            leading: const Icon(Icons.edit_outlined, color: MyWalkColor.golden),
+            leading: const Icon(Icons.edit_outlined, color: MyWalkColor.warmCoral),
             title: const Text('Edit Habit',
                 style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 15)),
             onTap: () {
@@ -587,12 +585,12 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
             padding: const EdgeInsets.symmetric(vertical: 9),
             decoration: BoxDecoration(
               color: selected
-                  ? MyWalkColor.golden.withValues(alpha: 0.12)
+                  ? MyWalkColor.warmCoral.withValues(alpha: 0.12)
                   : MyWalkColor.inputBackground,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                   color: selected
-                      ? MyWalkColor.golden.withValues(alpha: 0.4)
+                      ? MyWalkColor.warmCoral.withValues(alpha: 0.4)
                       : Colors.transparent),
             ),
             child: Center(
@@ -601,7 +599,7 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: selected
-                            ? MyWalkColor.golden
+                            ? MyWalkColor.warmCoral
                             : Colors.white.withValues(alpha: 0.5)))),
           ),
         ),
@@ -621,12 +619,12 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
             padding: const EdgeInsets.symmetric(vertical: 9),
             decoration: BoxDecoration(
               color: selected
-                  ? MyWalkColor.sage.withValues(alpha: 0.12)
+                  ? MyWalkColor.warmCoral.withValues(alpha: 0.12)
                   : MyWalkColor.inputBackground,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                   color: selected
-                      ? MyWalkColor.sage.withValues(alpha: 0.4)
+                      ? MyWalkColor.warmCoral.withValues(alpha: 0.4)
                       : Colors.transparent),
             ),
             child: Center(
@@ -635,7 +633,7 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: selected
-                            ? MyWalkColor.sage
+                            ? MyWalkColor.warmCoral
                             : Colors.white.withValues(alpha: 0.5)))),
           ),
         ),
@@ -843,13 +841,13 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
             margin: const EdgeInsets.only(right: 6),
             padding: const EdgeInsets.symmetric(vertical: 9),
             decoration: BoxDecoration(
-              color: selected ? MyWalkColor.golden.withValues(alpha: 0.12) : MyWalkColor.inputBackground,
+              color: selected ? MyWalkColor.warmCoral.withValues(alpha: 0.12) : MyWalkColor.inputBackground,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: selected ? MyWalkColor.golden.withValues(alpha: 0.4) : Colors.transparent),
+              border: Border.all(color: selected ? MyWalkColor.warmCoral.withValues(alpha: 0.4) : Colors.transparent),
             ),
             child: Center(child: Text(_trackingLabel(t),
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-                    color: selected ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.5)))),
+                    color: selected ? MyWalkColor.warmCoral : Colors.white.withValues(alpha: 0.5)))),
           ),
         ),
       );
@@ -866,13 +864,13 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
             margin: const EdgeInsets.only(right: 6),
             padding: const EdgeInsets.symmetric(vertical: 9),
             decoration: BoxDecoration(
-              color: selected ? MyWalkColor.sage.withValues(alpha: 0.12) : MyWalkColor.inputBackground,
+              color: selected ? MyWalkColor.warmCoral.withValues(alpha: 0.12) : MyWalkColor.inputBackground,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: selected ? MyWalkColor.sage.withValues(alpha: 0.4) : Colors.transparent),
+              border: Border.all(color: selected ? MyWalkColor.warmCoral.withValues(alpha: 0.4) : Colors.transparent),
             ),
             child: Center(child: Text(_frequencyLabel(f),
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-                    color: selected ? MyWalkColor.sage : Colors.white.withValues(alpha: 0.5)))),
+                    color: selected ? MyWalkColor.warmCoral : Colors.white.withValues(alpha: 0.5)))),
           ),
         ),
       );

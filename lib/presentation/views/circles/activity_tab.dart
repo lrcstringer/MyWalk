@@ -4,8 +4,10 @@ import '../../../data/datasources/remote/auth_service.dart';
 import '../../providers/encouragement_provider.dart';
 import '../../providers/milestone_share_provider.dart';
 import '../../providers/weekly_pulse_provider.dart';
+import '../../providers/group_prayer_list_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
+import 'gratitude_wall_view.dart' show GratitudeWallWidget;
 
 class ActivityTab extends StatelessWidget {
   final String circleId;
@@ -42,6 +44,10 @@ class ActivityTab extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                     children: [
+                      _gratitudeHeader(context),
+                      const SizedBox(height: 8),
+                      GratitudeWallWidget(circleId: circleId),
+                      const SizedBox(height: 20),
                       if (shares.isEmpty && received.isEmpty && sent.isEmpty)
                         _emptyState()
                       else ...[
@@ -101,6 +107,29 @@ class ActivityTab extends StatelessWidget {
       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
           color: MyWalkColor.softGold, letterSpacing: 1.2));
 
+  Widget _gratitudeHeader(BuildContext context) => Row(children: [
+    const Expanded(child: Text('GRATITUDE WALL',
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+            color: MyWalkColor.softGold, letterSpacing: 1.2))),
+    GestureDetector(
+      onTap: () => _showGratitudeSheet(context),
+      child: Row(children: [
+        const Icon(Icons.add, size: 14, color: MyWalkColor.softGold),
+        const SizedBox(width: 4),
+        const Text('Share', style: TextStyle(
+            fontSize: 12, color: MyWalkColor.softGold, fontWeight: FontWeight.w500)),
+      ]),
+    ),
+  ]);
+
+  void _showGratitudeSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, useSafeArea: true,
+      backgroundColor: MyWalkColor.charcoal,
+      builder: (_) => _GratitudeComposeSheet(circleId: circleId),
+    );
+  }
+
   void _showSendSheet(BuildContext context) {
     final otherMembers = members.where((m) => m.userId != AuthService.shared.userId).toList();
     showModalBottomSheet(
@@ -143,17 +172,13 @@ class _EncouragementCard extends StatelessWidget {
       margin: const EdgeInsets.only(left: 3),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isReceived && !enc.isRead
-            ? MyWalkColor.softGold.withValues(alpha: 0.05)
-            : MyWalkColor.cardBackground,
+        color: MyWalkColor.cardBackground,
         borderRadius: const BorderRadius.only(
           topRight: Radius.circular(12),
           bottomRight: Radius.circular(12),
         ),
         border: Border.all(
-          color: isReceived && !enc.isRead
-              ? MyWalkColor.softGold.withValues(alpha: 0.15)
-              : MyWalkColor.cardBorder,
+          color: MyWalkColor.cardBorder,
           width: 0.5,
         ),
       ),
@@ -272,7 +297,7 @@ class _SendEncouragementSheetState extends State<SendEncouragementSheet> {
             GestureDetector(
               onTap: () => setState(() => _useCustom = !_useCustom),
               child: Text(_useCustom ? 'Use Preset' : 'Write Custom',
-                  style: const TextStyle(fontSize: 12, color: MyWalkColor.golden)),
+                  style: const TextStyle(fontSize: 12, color: MyWalkColor.softGold)),
             ),
           ]),
           const SizedBox(height: 8),
@@ -314,7 +339,7 @@ class _SendEncouragementSheetState extends State<SendEncouragementSheet> {
             onTap: () => setState(() => _isAnonymous = !_isAnonymous),
             child: Row(children: [
               Icon(_isAnonymous ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                  size: 18, color: _isAnonymous ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.4)),
+                  size: 18, color: _isAnonymous ? MyWalkColor.softGold : Colors.white.withValues(alpha: 0.4)),
               const SizedBox(width: 8),
               Text('Send anonymously',
                   style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6))),
@@ -374,15 +399,15 @@ class _MilestoneCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: MyWalkColor.golden.withValues(alpha: 0.04),
+        color: MyWalkColor.softGold.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.12), width: 0.5),
+        border: Border.all(color: MyWalkColor.softGold.withValues(alpha: 0.12), width: 0.5),
       ),
       child: Row(children: [
         Container(width: 44, height: 44,
           decoration: BoxDecoration(shape: BoxShape.circle,
-              color: MyWalkColor.golden.withValues(alpha: 0.1)),
-          child: const Icon(Icons.star_rounded, size: 20, color: MyWalkColor.golden)),
+              color: MyWalkColor.softGold.withValues(alpha: 0.1)),
+          child: const Icon(Icons.star_rounded, size: 20, color: MyWalkColor.softGold)),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(isAuthor ? 'You hit a milestone!' : '${share.userDisplayName} hit a milestone!',
@@ -393,7 +418,7 @@ class _MilestoneCard extends StatelessWidget {
           if (share.celebrationCount > 0) ...[
             const SizedBox(height: 4),
             Text('🎉 ${share.celebrationCount} celebrated',
-                style: TextStyle(fontSize: 11, color: MyWalkColor.golden.withValues(alpha: 0.7))),
+                style: TextStyle(fontSize: 11, color: MyWalkColor.softGold.withValues(alpha: 0.7))),
           ],
         ])),
         if (!isAuthor)
@@ -404,13 +429,13 @@ class _MilestoneCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 color: hasCelebrated
-                    ? MyWalkColor.golden.withValues(alpha: 0.1)
+                    ? MyWalkColor.softGold.withValues(alpha: 0.1)
                     : MyWalkColor.inputBackground,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(hasCelebrated ? '🎉' : 'Celebrate',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-                      color: hasCelebrated ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.5))),
+                      color: hasCelebrated ? MyWalkColor.softGold : Colors.white.withValues(alpha: 0.5))),
             ),
           ),
       ]),
@@ -700,7 +725,7 @@ class _PulseCheckInSheetState extends State<PulseCheckInSheet> {
             onTap: () => setState(() => _isAnonymous = !_isAnonymous),
             child: Row(children: [
               Icon(_isAnonymous ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                  size: 18, color: _isAnonymous ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.4)),
+                  size: 18, color: _isAnonymous ? MyWalkColor.softGold : Colors.white.withValues(alpha: 0.4)),
               const SizedBox(width: 8),
               Text('Share anonymously',
                   style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6))),
@@ -777,3 +802,119 @@ String _statusLabel(PulseStatus s) {
 
 // softBlue is not in the brand palette — use a local constant.
 const _softBlue = Color(0xFF6B9BB8);
+
+// ─── Gratitude Compose Sheet ──────────────────────────────────────────────────
+
+class _GratitudeComposeSheet extends StatefulWidget {
+  final String circleId;
+  const _GratitudeComposeSheet({required this.circleId});
+
+  @override
+  State<_GratitudeComposeSheet> createState() => _GratitudeComposeSheetState();
+}
+
+class _GratitudeComposeSheetState extends State<_GratitudeComposeSheet> {
+  final _controller = TextEditingController();
+  bool _anonymous = false;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      appBar: AppBar(
+        backgroundColor: MyWalkColor.charcoal,
+        title: const Text('Share Gratitude',
+            style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600)),
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: MyWalkColor.warmWhite),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _submitting ? null : _submit,
+            child: _submitting
+                ? const SizedBox(width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.softGold))
+                : const Text('Share',
+                    style: TextStyle(color: MyWalkColor.softGold, fontWeight: FontWeight.w600)),
+          ),
+        ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.softGold)),
+        ),
+      ),
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          TextField(
+            controller: _controller,
+            maxLength: 500,
+            maxLines: 5,
+            autofocus: true,
+            style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'What are you grateful for?',
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
+              filled: true,
+              fillColor: MyWalkColor.inputBackground,
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              counterStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () => setState(() => _anonymous = !_anonymous),
+            child: Row(children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 20, height: 20,
+                decoration: BoxDecoration(
+                  color: _anonymous
+                      ? MyWalkColor.softGold.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: _anonymous ? MyWalkColor.softGold : Colors.white.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: _anonymous
+                    ? const Icon(Icons.check, size: 14, color: MyWalkColor.softGold)
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Text('Share anonymously',
+                  style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.7))),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _submitting = true);
+    final provider = context.read<GroupPrayerListProvider>();
+    final nav = Navigator.of(context);
+    try {
+      await provider.shareGratitude(
+        circleId: widget.circleId,
+        text: text,
+        isAnonymous: _anonymous,
+      );
+      nav.pop();
+    } catch (_) {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+}
