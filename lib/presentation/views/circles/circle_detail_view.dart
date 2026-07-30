@@ -506,48 +506,107 @@ class _CircleDetailViewState extends State<CircleDetailView> {
 
 // ─── Hero Header ──────────────────────────────────────────────────────────────
 
-class _HeroHeader extends StatelessWidget {
+class _HeroHeader extends StatefulWidget {
   final CircleDetails detail;
   const _HeroHeader({required this.detail});
 
   @override
+  State<_HeroHeader> createState() => _HeroHeaderState();
+}
+
+class _HeroHeaderState extends State<_HeroHeader>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+  late final Animation<double> _dotAlpha;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 2500))
+      ..repeat(reverse: true);
+    _dotAlpha = Tween<double>(begin: 1.0, end: 0.45).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final detail = widget.detail;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        gradient: RadialGradient(
+          center: const Alignment(-0.8, -1.5),
+          radius: 1.4,
           colors: [
-            MyWalkColor.sage.withValues(alpha: 0.14),
+            MyWalkColor.sage.withValues(alpha: 0.20),
+            MyWalkColor.sage.withValues(alpha: 0.04),
             MyWalkColor.charcoal,
           ],
+          stops: const [0.0, 0.45, 0.75],
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Container(
-              width: 7, height: 7,
-              decoration: const BoxDecoration(color: MyWalkColor.sage, shape: BoxShape.circle),
+          // "My Circle" capsule chip with pulsing dot
+          Container(
+            padding: const EdgeInsets.fromLTRB(7, 3, 10, 3),
+            decoration: BoxDecoration(
+              color: MyWalkColor.sage.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: MyWalkColor.sage.withValues(alpha: 0.25), width: 1),
             ),
-            const SizedBox(width: 7),
-            Text('Faith Community',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: MyWalkColor.sage.withValues(alpha: 0.85),
-                letterSpacing: 0.4,
-              )),
-          ]),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              AnimatedBuilder(
+                animation: _dotAlpha,
+                builder: (_, _) => Container(
+                  width: 7, height: 7,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: MyWalkColor.sage.withValues(alpha: _dotAlpha.value),
+                    boxShadow: [BoxShadow(
+                      color: MyWalkColor.sage.withValues(alpha: 0.5 * _dotAlpha.value),
+                      blurRadius: 6)],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Text('My Circle',
+                style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8, color: MyWalkColor.sage)),
+            ]),
+          ),
           const SizedBox(height: 10),
+          // Circle name in serif
           Text(detail.name,
             style: const TextStyle(
-              fontSize: 26, fontWeight: FontWeight.w700,
-              color: MyWalkColor.warmWhite, height: 1.1)),
+              fontFamily: 'Georgia',
+              fontSize: 27, fontWeight: FontWeight.w700,
+              color: MyWalkColor.warmWhite,
+              letterSpacing: -0.4, height: 1.15)),
           const SizedBox(height: 14),
-          _AvatarRow(members: detail.members, memberCount: detail.memberCount),
+          // Meta: avatars left, member count right
+          Row(
+            children: [
+              _AvatarRow(members: detail.members, memberCount: detail.memberCount),
+              const Spacer(),
+              Text(
+                '${detail.memberCount} '
+                '${detail.memberCount == 1 ? "member" : "members"}',
+                style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w500,
+                  color: Colors.white.withValues(alpha: 0.45))),
+            ],
+          ),
         ],
       ),
     );
@@ -633,9 +692,6 @@ class _AvatarRow extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 10),
-        Text('$memberCount ${memberCount == 1 ? "member" : "members"}',
-          style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.45))),
       ],
     );
   }
