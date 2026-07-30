@@ -502,6 +502,20 @@ class FirestoreCircleRepository implements CircleRepository {
   }
 
   @override
+  Future<List<PrayerRequest>> getIndividualPrayerRequests(
+      String circleId, String uid) async {
+    final snap = await _queryWithFallback(
+      _prayerRequests(circleId).where('individual', isEqualTo: true),
+    );
+    return snap.docs
+        .map((d) =>
+            _parsePrayerRequest(d.id, d.data() as Map<String, dynamic>, uid))
+        .where((r) => r.authorId == uid || r.recipientIds.contains(uid))
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
+  @override
   Future<void> createPrayerRequest({
     required String circleId,
     required String requestText,
@@ -993,6 +1007,13 @@ class FirestoreCircleRepository implements CircleRepository {
       createdAt: _tsToIso(d['createdAt']),
       answeredAt: d['answeredAt'] != null ? _tsToIso(d['answeredAt']) : null,
       expiresAt: d['expiresAt'] != null ? _tsToIso(d['expiresAt']) : null,
+      isIndividual: (d['individual'] as bool?) ?? false,
+      recipientIds:
+          List<String>.from((d['recipientIds'] as List<dynamic>?) ?? []),
+      responses: Map<String, String>.from(
+          (d['responses'] as Map<String, dynamic>?)
+              ?.map((k, v) => MapEntry(k, v as String)) ??
+              {}),
     );
   }
 

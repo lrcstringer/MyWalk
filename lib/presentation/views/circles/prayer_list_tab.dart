@@ -11,6 +11,230 @@ Future<bool> _isOffline() async {
   return r.every((c) => c == ConnectivityResult.none);
 }
 
+String _relativeTime(String iso) {
+  final date = DateTime.tryParse(iso);
+  if (date == null) return '';
+  final diff = DateTime.now().difference(date);
+  if (diff.inMinutes < 1) return 'Just now';
+  if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+  if (diff.inDays < 1) return '${diff.inHours}h ago';
+  if (diff.inDays == 1) return 'Yesterday';
+  return '${diff.inDays}d ago';
+}
+
+void _showMarkAnsweredDialogFor(
+    BuildContext context, String circleId, String requestId, String requestText) {
+  final noteController = TextEditingController();
+  showDialog(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: MyWalkColor.cardBackground,
+      title: const Text('Mark as Answered',
+          style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
+      content: TextField(
+        controller: noteController,
+        maxLength: 200,
+        style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
+        decoration: InputDecoration(
+          hintText: 'Share how God answered this (optional)',
+          hintStyle:
+              TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
+          filled: true,
+          fillColor: MyWalkColor.inputBackground,
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+          counterStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+        ),
+        maxLines: 3,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: Text('Cancel',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+        ),
+        TextButton(
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            final dialogNav = Navigator.of(dialogContext);
+            final provider = context.read<PrayerListProvider>();
+            final note =
+                noteController.text.trim().isEmpty ? null : noteController.text.trim();
+            if (await _isOffline()) {
+              dialogNav.pop();
+              messenger.showSnackBar(const SnackBar(
+                  content: Text(
+                      'No internet connection. Please connect and try again.')));
+              return;
+            }
+            dialogNav.pop();
+            provider.markAnswered(circleId, requestId, answeredNote: note);
+            // ignore: use_build_context_synchronously
+            _promptGratitudeShareFor(context, circleId, note ?? requestText);
+          },
+          child: const Text('Mark Answered',
+              style: TextStyle(
+                  color: MyWalkColor.sage, fontWeight: FontWeight.w600)),
+        ),
+      ],
+    ),
+  ).whenComplete(noteController.dispose);
+}
+
+void _promptGratitudeShareFor(
+    BuildContext context, String circleId, String prayerText) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: MyWalkColor.cardBackground,
+      title: const Text('Praise God!',
+          style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
+      content: Text(
+        'Would you like to share this answered prayer on the Gratitude Wall?',
+        style: TextStyle(color: Colors.white.withValues(alpha: 0.7), height: 1.5),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text('Not now',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(ctx);
+            _showGratitudeShareSheetFor(context, circleId, prayerText);
+          },
+          child: const Text('Share',
+              style: TextStyle(
+                  color: MyWalkColor.sage, fontWeight: FontWeight.w600)),
+        ),
+      ],
+    ),
+  );
+}
+
+void _showGratitudeShareSheetFor(
+    BuildContext context, String circleId, String prayerText) {
+  final textController =
+      TextEditingController(text: 'God answered my prayer: $prayerText');
+  bool anonymous = false;
+  bool submitting = false;
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: MyWalkColor.charcoal,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setModalState) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Center(
+                child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 16),
+            const Text('Share to Gratitude Wall',
+                style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: MyWalkColor.warmWhite)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: textController,
+              maxLength: 500,
+              maxLines: 4,
+              style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: MyWalkColor.inputBackground,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none),
+                counterStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => setModalState(() => anonymous = !anonymous),
+              child: Row(children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: anonymous
+                        ? MyWalkColor.golden.withValues(alpha: 0.15)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                        color: anonymous
+                            ? MyWalkColor.golden
+                            : Colors.white.withValues(alpha: 0.3)),
+                  ),
+                  child: anonymous
+                      ? const Icon(Icons.check, size: 14, color: MyWalkColor.golden)
+                      : null,
+                ),
+                const SizedBox(width: 10),
+                Text('Share anonymously',
+                    style: TextStyle(
+                        fontSize: 13, color: Colors.white.withValues(alpha: 0.7))),
+              ]),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: submitting
+                    ? null
+                    : () async {
+                        final text = textController.text.trim();
+                        if (text.isEmpty) return;
+                        setModalState(() => submitting = true);
+                        final provider = context.read<PrayerListProvider>();
+                        final nav = Navigator.of(ctx);
+                        try {
+                          await provider.shareGratitude(
+                            circleId: circleId,
+                            text: text,
+                            isAnonymous: anonymous,
+                          );
+                          nav.pop();
+                        } catch (_) {
+                          setModalState(() => submitting = false);
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MyWalkColor.sage,
+                  foregroundColor: MyWalkColor.charcoal,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: submitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: MyWalkColor.charcoal))
+                    : const Text('Share Gratitude',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    ),
+  ).whenComplete(textController.dispose);
+}
+
 class PrayerListTab extends StatelessWidget {
   final String circleId;
   const PrayerListTab({super.key, required this.circleId});
@@ -22,17 +246,12 @@ class PrayerListTab extends StatelessWidget {
         final uid = AuthService.shared.userId ?? '';
         final active = provider.activeFor(circleId);
         final answered = provider.answeredFor(circleId);
+        final individual = provider.individualFor(circleId);
         final isLoading = provider.isLoading(circleId);
 
         return Scaffold(
           backgroundColor: MyWalkColor.charcoal,
-          floatingActionButton: FloatingActionButton.small(
-            onPressed: () => _showAddSheet(context),
-            backgroundColor: MyWalkColor.golden,
-            foregroundColor: MyWalkColor.charcoal,
-            child: const Icon(Icons.add),
-          ),
-          body: isLoading && active.isEmpty
+          body: isLoading && active.isEmpty && individual.isEmpty
               ? const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
               : RefreshIndicator(
                   color: MyWalkColor.golden,
@@ -41,9 +260,19 @@ class PrayerListTab extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                     children: [
-                      if (active.isEmpty && answered.isEmpty)
+                      if (active.isEmpty && answered.isEmpty && individual.isEmpty)
                         _emptyState()
                       else ...[
+                        if (individual.isNotEmpty) ...[
+                          _sectionHeader('Individual (${individual.length})'),
+                          const SizedBox(height: 8),
+                          ...individual.map((r) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _IndividualRequestCard(
+                              request: r, uid: uid, circleId: circleId),
+                          )),
+                          const SizedBox(height: 8),
+                        ],
                         if (active.isNotEmpty) ...[
                           _sectionHeader('Active (${active.length})'),
                           const SizedBox(height: 8),
@@ -94,13 +323,6 @@ class PrayerListTab extends StatelessWidget {
             color: Colors.white.withValues(alpha: 0.4), letterSpacing: 1.2));
   }
 
-  void _showAddSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context, isScrollControlled: true, useSafeArea: true,
-      backgroundColor: MyWalkColor.charcoal,
-      builder: (_) => AddPrayerRequestSheet(circleId: circleId),
-    );
-  }
 }
 
 // ─── Prayer Request Card ──────────────────────────────────────────────────────
@@ -229,183 +451,176 @@ class _PrayerRequestCard extends StatelessWidget {
 
   Widget _markAnsweredButton(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showMarkAnsweredDialog(context),
+      onTap: () => _showMarkAnsweredDialogFor(
+          context, circleId, request.id, request.requestText),
       child: Text('Mark Answered',
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
               color: MyWalkColor.sage.withValues(alpha: 0.8))),
     );
   }
+}
 
-  void _showMarkAnsweredDialog(BuildContext context) {
-    final noteController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: MyWalkColor.cardBackground,
-        title: const Text('Mark as Answered', style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
-        content: TextField(
-          controller: noteController,
-          maxLength: 200,
-          style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
-          decoration: InputDecoration(
-            hintText: 'Share how God answered this (optional)',
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
-            filled: true,
-            fillColor: MyWalkColor.inputBackground,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-            counterStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-          ),
-          maxLines: 3,
+// ─── Individual Request Card ──────────────────────────────────────────────────
+
+class _IndividualRequestCard extends StatelessWidget {
+  final PrayerRequest request;
+  final String uid;
+  final String circleId;
+
+  const _IndividualRequestCard({
+    required this.request,
+    required this.uid,
+    required this.circleId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isAuthor = request.isAuthor(uid);
+    final isAnswered = request.status == PrayerRequestStatus.answered;
+    final count = request.recipientIds.length;
+    final directionLabel = isAuthor
+        ? 'You asked $count member${count == 1 ? '' : 's'}'
+        : '${request.authorDisplayName} asked you';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isAnswered
+            ? MyWalkColor.sage.withValues(alpha: 0.06)
+            : MyWalkColor.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isAnswered
+              ? MyWalkColor.sage.withValues(alpha: 0.2)
+              : MyWalkColor.cardBorder,
+          width: 0.5,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.person_outline_rounded, size: 13,
+              color: (isAuthor ? MyWalkColor.golden : MyWalkColor.softGold)
+                  .withValues(alpha: 0.7)),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(directionLabel,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                    color: isAuthor ? MyWalkColor.golden : MyWalkColor.softGold)),
           ),
-          TextButton(
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              final dialogNav = Navigator.of(dialogContext);
-              final provider = context.read<PrayerListProvider>();
-              final note = noteController.text.trim().isEmpty ? null : noteController.text.trim();
-              if (await _isOffline()) {
-                dialogNav.pop();
-                messenger.showSnackBar(const SnackBar(
-                    content: Text('No internet connection. Please connect and try again.')));
-                return;
-              }
-              dialogNav.pop();
-              provider.markAnswered(circleId, request.id, answeredNote: note);
-              // ignore: use_build_context_synchronously
-              _promptGratitudeShare(context, note ?? request.requestText);
-            },
-            child: const Text('Mark Answered', style: TextStyle(color: MyWalkColor.sage, fontWeight: FontWeight.w600)),
+          if (isAnswered)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: MyWalkColor.sage.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text('Answered',
+                  style: TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.w600, color: MyWalkColor.sage)),
+            ),
+          const SizedBox(width: 4),
+          Text(_relativeTime(request.createdAt),
+              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+        ]),
+        const SizedBox(height: 8),
+        Text(request.requestText,
+            style: TextStyle(
+                fontSize: 14,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.9),
+                height: 1.45)),
+        if (isAnswered && request.answeredNote != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: MyWalkColor.sage.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(request.answeredNote!,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: MyWalkColor.sage.withValues(alpha: 0.85),
+                    height: 1.4)),
           ),
         ],
-      ),
-    ).whenComplete(noteController.dispose);
-  }
-
-  void _promptGratitudeShare(BuildContext context, String prayerText) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: MyWalkColor.cardBackground,
-        title: const Text('Praise God!',
-            style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
-        content: Text(
-          'Would you like to share this answered prayer on the Gratitude Wall?',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Not now', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _showGratitudeShareSheet(context, prayerText);
-            },
-            child: const Text('Share', style: TextStyle(color: MyWalkColor.sage, fontWeight: FontWeight.w600)),
-          ),
+        if (isAuthor) ...[
+          if (request.responses.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${request.responses.length} of ${request.recipientIds.length} responded',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: MyWalkColor.softGold.withValues(alpha: 0.7)),
+            ),
+          ],
+          if (!isAnswered) ...[
+            const SizedBox(height: 10),
+            Row(children: [
+              const Spacer(),
+              GestureDetector(
+                onTap: () => _showMarkAnsweredDialogFor(
+                    context, circleId, request.id, request.requestText),
+                child: Text('Mark Answered',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+                        color: MyWalkColor.sage.withValues(alpha: 0.8))),
+              ),
+            ]),
+          ],
+        ] else if (!isAnswered) ...[
+          const SizedBox(height: 10),
+          _responseRow(context),
         ],
-      ),
+      ]),
     );
   }
 
-  void _showGratitudeShareSheet(BuildContext context, String prayerText) {
-    final textController = TextEditingController(text: 'God answered my prayer: $prayerText');
-    bool anonymous = false;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: MyWalkColor.charcoal,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Center(child: Container(width: 36, height: 4,
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 16),
-              const Text('Share to Gratitude Wall',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: textController,
-                maxLength: 500,
-                maxLines: 4,
-                style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: MyWalkColor.inputBackground,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  counterStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11),
-                ),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => setModalState(() => anonymous = !anonymous),
-                child: Row(children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    width: 20, height: 20,
-                    decoration: BoxDecoration(
-                      color: anonymous ? MyWalkColor.golden.withValues(alpha: 0.15) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: anonymous ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.3)),
-                    ),
-                    child: anonymous ? const Icon(Icons.check, size: 14, color: MyWalkColor.golden) : null,
-                  ),
-                  const SizedBox(width: 10),
-                  Text('Share anonymously', style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.7))),
-                ]),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final text = textController.text.trim();
-                    if (text.isEmpty) return;
-                    final provider = context.read<PrayerListProvider>();
-                    final nav = Navigator.of(ctx);
-                    await provider.shareGratitude(
-                      circleId: circleId,
-                      text: text,
-                      isAnonymous: anonymous,
-                    );
-                    nav.pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: MyWalkColor.sage,
-                    foregroundColor: MyWalkColor.charcoal,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Share Gratitude', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                ),
-              ),
-            ]),
-          ),
-        ),
-      ),
-    ).whenComplete(textController.dispose);
+  Widget _responseRow(BuildContext context) {
+    final myResponse = request.responses[uid];
+    if (myResponse != null) {
+      final label = myResponse == 'im_here' ? "You're here for them" : 'You prayed';
+      return Row(children: [
+        Icon(Icons.check_circle_outline_rounded, size: 14, color: MyWalkColor.golden),
+        const SizedBox(width: 5),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w500, color: MyWalkColor.golden)),
+      ]);
+    }
+    return Row(children: [
+      _actionButton(context, 'Pray', 'pray'),
+      const SizedBox(width: 8),
+      _actionButton(context, "I'm Here", 'im_here'),
+    ]);
   }
 
-  String _relativeTime(String iso) {
-    final date = DateTime.tryParse(iso);
-    if (date == null) return '';
-    final diff = DateTime.now().difference(date);
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
-    if (diff.inDays < 1) return '${diff.inHours}h ago';
-    if (diff.inDays == 1) return 'Yesterday';
-    return '${diff.inDays}d ago';
+  Widget _actionButton(BuildContext context, String label, String action) {
+    return GestureDetector(
+      onTap: () async {
+        if (await _isOffline()) {
+          // ignore: use_build_context_synchronously
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                  'No internet connection. Please connect and try again.')));
+          return;
+        }
+        // ignore: use_build_context_synchronously
+        context
+            .read<PrayerListProvider>()
+            .respondToIndividualRequest(circleId, request.id, uid, action);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: MyWalkColor.inputBackground,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withValues(alpha: 0.5))),
+      ),
+    );
   }
 }
 

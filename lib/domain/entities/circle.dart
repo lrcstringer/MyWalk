@@ -240,6 +240,9 @@ class PrayerRequest {
   final String createdAt;
   final String? answeredAt;
   final String? expiresAt;
+  final bool isIndividual;
+  final List<String> recipientIds;
+  final Map<String, String> responses;
 
   const PrayerRequest({
     required this.id,
@@ -255,10 +258,14 @@ class PrayerRequest {
     required this.createdAt,
     this.answeredAt,
     this.expiresAt,
+    this.isIndividual = false,
+    this.recipientIds = const [],
+    this.responses = const {},
   });
 
   bool hasPrayed(String uid) => prayedByUserIds.contains(uid);
   bool isAuthor(String uid) => authorId == uid;
+  bool hasResponded(String uid) => responses.containsKey(uid);
 }
 
 // ── Feature 2: Scripture Focus ────────────────────────────────────────────────

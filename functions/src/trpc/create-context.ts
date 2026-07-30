@@ -12,7 +12,8 @@ export const createContext = async (opts: FetchCreateContextFnOptions) => {
     try {
       const decoded = await auth.verifyIdToken(token);
       userId = decoded.uid;
-    } catch {
+    } catch (e) {
+      console.error('[auth] verifyIdToken failed:', e instanceof Error ? e.message : String(e));
       // Token invalid or expired — userId stays null
       // protectedProcedure will throw UNAUTHORIZED
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../data/datasources/remote/api_service.dart';
 import '../../data/datasources/remote/auth_service.dart';
 import '../../domain/entities/circle.dart';
 import '../../domain/repositories/circle_repository.dart';
@@ -12,6 +13,7 @@ class PrayerListProvider extends ChangeNotifier {
 
   final Map<String, List<PrayerRequest>> _activeByCircle = {};
   final Map<String, List<PrayerRequest>> _answeredByCircle = {};
+  final Map<String, List<PrayerRequest>> _individualByCircle = {};
   final Map<String, bool> _loadingByCircle = {};
   String? error;
 
@@ -28,6 +30,7 @@ class PrayerListProvider extends ChangeNotifier {
   void _clearAll() {
     _activeByCircle.clear();
     _answeredByCircle.clear();
+    _individualByCircle.clear();
     _loadingByCircle.clear();
     error = null;
     notifyListeners();
@@ -39,6 +42,9 @@ class PrayerListProvider extends ChangeNotifier {
   List<PrayerRequest> answeredFor(String circleId) =>
       _answeredByCircle[circleId] ?? [];
 
+  List<PrayerRequest> individualFor(String circleId) =>
+      _individualByCircle[circleId] ?? [];
+
   bool isLoading(String circleId) => _loadingByCircle[circleId] ?? false;
 
   Future<void> load(String circleId) async {
@@ -49,13 +55,19 @@ class PrayerListProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final all = await _repo.getPrayerRequests(circleId);
-      _activeByCircle[circleId] = all
-          .where((r) => r.status == PrayerRequestStatus.active)
-          .toList();
-      _answeredByCircle[circleId] = all
-          .where((r) => r.status == PrayerRequestStatus.answered)
-          .toList();
+      final uid = AuthService.shared.userId ?? '';
+      final results = await Future.wait<List<PrayerRequest>>([
+        _repo.getPrayerRequests(circleId),
+        uid.isNotEmpty
+            ? _repo.getIndividualPrayerRequests(circleId, uid)
+            : Future.value(<PrayerRequest>[]),
+      ]);
+      final grouped = results[0].where((r) => !r.isIndividual).toList();
+      _activeByCircle[circleId] =
+          grouped.where((r) => r.status == PrayerRequestStatus.active).toList();
+      _answeredByCircle[circleId] =
+          grouped.where((r) => r.status == PrayerRequestStatus.answered).toList();
+      _individualByCircle[circleId] = results[1];
     } catch (e) {
       error = e.toString();
     } finally {
@@ -99,6 +111,8 @@ class PrayerListProvider extends ChangeNotifier {
         createdAt: r.createdAt,
         answeredAt: r.answeredAt,
         expiresAt: r.expiresAt,
+        isIndividual: r.isIndividual,
+        recipientIds: r.recipientIds,
       );
     });
     notifyListeners();
@@ -118,6 +132,39 @@ class PrayerListProvider extends ChangeNotifier {
     await load(circleId);
   }
 
+  Future<void> respondToIndividualRequest(
+      String circleId, String requestId, String uid, String action) async {
+    _updateIndividualRequest(circleId, requestId, (r) {
+      final newResponses = Map<String, String>.from(r.responses)..[uid] = action;
+      return PrayerRequest(
+        id: r.id,
+        circleId: r.circleId,
+        authorId: r.authorId,
+        authorDisplayName: r.authorDisplayName,
+        requestText: r.requestText,
+        duration: r.duration,
+        status: r.status,
+        answeredNote: r.answeredNote,
+        prayerCount: r.prayerCount,
+        prayedByUserIds: r.prayedByUserIds,
+        createdAt: r.createdAt,
+        answeredAt: r.answeredAt,
+        expiresAt: r.expiresAt,
+        isIndividual: r.isIndividual,
+        recipientIds: r.recipientIds,
+        responses: newResponses,
+      );
+    });
+    notifyListeners();
+
+    try {
+      await APIService.shared.respondToIndividualPrayerRequest(
+          circleId: circleId, requestId: requestId, action: action);
+    } catch (_) {
+      await load(circleId);
+    }
+  }
+
   Future<void> shareGratitude({
     required String circleId,
     required String text,
@@ -128,6 +175,17 @@ class PrayerListProvider extends ChangeNotifier {
         gratitudeText: text,
         isAnonymous: isAnonymous,
       );
+
+  void _updateIndividualRequest(String circleId, String requestId,
+      PrayerRequest Function(PrayerRequest) updater) {
+    final individual = _individualByCircle[circleId];
+    if (individual == null) return;
+    final idx = individual.indexWhere((r) => r.id == requestId);
+    if (idx < 0) return;
+    final updated = [...individual];
+    updated[idx] = updater(individual[idx]);
+    _individualByCircle[circleId] = updated;
+  }
 
   void _updateRequest(String circleId, String requestId,
       PrayerRequest Function(PrayerRequest) updater) {

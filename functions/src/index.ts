@@ -125,7 +125,7 @@ export const expireNotifications = onSchedule(
 // Convert Firebase's Express-style req/res into a Fetch API Request,
 // run it through the Hono app, and pipe the Response back out.
 export const api = onRequest(
-  { region: 'us-central1', memory: '512MiB', timeoutSeconds: 60 },
+  { region: 'us-central1', memory: '512MiB', timeoutSeconds: 60, invoker: 'public' },
   async (req: IncomingMessage & { rawBody?: Buffer; url?: string; method?: string; hostname?: string; headers: Record<string, string | string[] | undefined> }, res: ServerResponse) => {
     const protocol = 'https';
     const host = (req.headers['host'] as string) ?? 'localhost';

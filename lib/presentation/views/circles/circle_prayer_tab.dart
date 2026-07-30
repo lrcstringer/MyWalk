@@ -35,6 +35,7 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() { if (mounted) setState(() {}); });
     // circle_detail_view._loadProviders() already calls load() before this
     // widget builds, so no second call needed here.
   }
@@ -62,47 +63,137 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      Container(
-        color: MyWalkColor.charcoal,
-        child: Row(children: [
-          Expanded(
-            child: TabBar(
-              controller: _tabController,
-              labelColor: MyWalkColor.sage,
-              unselectedLabelColor: Colors.white.withValues(alpha: 0.4),
-              indicatorColor: MyWalkColor.sage,
-              indicatorSize: TabBarIndicatorSize.label,
-              labelStyle:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              unselectedLabelStyle: const TextStyle(fontSize: 13),
-              tabs: const [
-                Tab(text: 'Requests'),
-                Tab(text: 'List'),
-              ],
-            ),
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton.small(
+              onPressed: () => _showPrayerActionsSheet(context),
+              backgroundColor: MyWalkColor.sage,
+              foregroundColor: MyWalkColor.charcoal,
+              child: const Icon(Icons.add),
+            )
+          : null,
+      body: Column(children: [
+        Container(
+          color: MyWalkColor.charcoal,
+          child: TabBar(
+            controller: _tabController,
+            labelColor: MyWalkColor.sage,
+            unselectedLabelColor: Colors.white.withValues(alpha: 0.4),
+            indicatorColor: MyWalkColor.sage,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            unselectedLabelStyle: const TextStyle(fontSize: 13),
+            tabs: const [
+              Tab(text: 'Requests'),
+              Tab(text: 'List'),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.send_rounded, size: 18, color: MyWalkColor.softGold),
-            tooltip: 'Send Prayer Request',
-            onPressed: () => _openPrayerRequestCompose(context),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              PrayerListTab(circleId: widget.circleId),
+              GroupPrayerListTab(
+                circleId: widget.circleId,
+                isAdmin: widget.isAdmin,
+                members: widget.members,
+              ),
+            ],
           ),
-        ]),
-      ),
-      Expanded(
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            PrayerListTab(circleId: widget.circleId),
-            GroupPrayerListTab(
-              circleId: widget.circleId,
-              isAdmin: widget.isAdmin,
-              members: widget.members,
+        ),
+      ]),
+    );
+  }
+
+  void _showPrayerActionsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: MyWalkColor.cardBackground,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(2)),
+              ),
             ),
-          ],
+            const SizedBox(height: 20),
+            _prayerActionRow(
+              context: context,
+              icon: Icons.volunteer_activism_rounded,
+              title: 'Add a Prayer Request',
+              subtitle: 'Share with your group and ask for prayer',
+              onTap: () {
+                Navigator.pop(context);
+                showModalBottomSheet(
+                  context: context, isScrollControlled: true, useSafeArea: true,
+                  backgroundColor: MyWalkColor.charcoal,
+                  builder: (_) => AddPrayerRequestSheet(circleId: widget.circleId),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            _prayerActionRow(
+              context: context,
+              icon: Icons.send_rounded,
+              title: 'Send to a Member',
+              subtitle: 'Ask someone specifically to pray for you',
+              onTap: () {
+                Navigator.pop(context);
+                _openPrayerRequestCompose(context);
+              },
+            ),
+            const SizedBox(height: 8),
+          ]),
         ),
       ),
-    ]);
+    );
+  }
+
+  Widget _prayerActionRow({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: MyWalkColor.sage.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: MyWalkColor.sage.withValues(alpha: 0.15), width: 0.5),
+        ),
+        child: Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: MyWalkColor.sage.withValues(alpha: 0.12)),
+            child: Icon(icon, size: 18, color: MyWalkColor.sage),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
+            const SizedBox(height: 2),
+            Text(subtitle,
+                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45))),
+          ])),
+        ]),
+      ),
+    );
   }
 }
 

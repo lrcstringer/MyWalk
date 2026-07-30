@@ -46,7 +46,7 @@ class ActivityTab extends StatelessWidget {
                     children: [
                       _gratitudeHeader(context),
                       const SizedBox(height: 8),
-                      GratitudeWallWidget(circleId: circleId),
+                      GratitudeWallWidget(circleId: circleId, showHeader: false),
                       const SizedBox(height: 20),
                       if (shares.isEmpty && received.isEmpty && sent.isEmpty)
                         _emptyState()

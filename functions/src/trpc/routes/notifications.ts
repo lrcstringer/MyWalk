@@ -147,31 +147,36 @@ export const notificationsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'One or more recipients are not members of this circle' });
       }
 
-      const [senderName, circleName] = await Promise.all([
-        getSenderName(ctx.userId),
-        getCircleName(input.circleId),
-      ]);
+      const senderName = await getSenderName(ctx.userId);
 
       const recipients = input.recipientIds.filter((id) => id !== ctx.userId);
 
-      const notifId = await fanOutNotifications(recipients, {
-        type: 'prayer_request',
-        circleId: input.circleId,
-        circleName,
-        senderUid: ctx.userId,
-        senderName,
-        message: input.message,
-        suppressActions: false,
-      });
+      const prayerDocId = crypto.randomUUID();
+      await db.collection('circles').doc(input.circleId)
+        .collection('prayer_requests').doc(prayerDocId).set({
+          id: prayerDocId,
+          circleId: input.circleId,
+          authorId: ctx.userId,
+          authorDisplayName: senderName,
+          requestText: input.message,
+          individual: true,
+          recipientIds: recipients,
+          duration: 'ONGOING',
+          status: 'ACTIVE',
+          prayerCount: 0,
+          prayedByUserIds: [],
+          responses: {},
+          createdAt: Timestamp.now(),
+        });
 
       sendPushToUsers(recipients, {
         title: `${senderName} needs prayer`,
         body: input.message,
-        data: { notifId, type: 'prayer_request', circleId: input.circleId },
+        data: { requestId: prayerDocId, circleId: input.circleId, type: 'prayer_request' },
         channelId: 'circles',
       }).catch(() => undefined);
 
-      return { notifId, recipientCount: recipients.length };
+      return { requestId: prayerDocId, recipientCount: recipients.length };
     }),
 
   // Record an action (Pray / I'm Here) against a notification
@@ -187,8 +192,89 @@ export const notificationsRouter = createTRPCRouter({
       const doc = await ref.get();
       if (!doc.exists) throw new TRPCError({ code: 'NOT_FOUND' });
 
+      const data = doc.data()!;
       await ref.update({ actionTaken: input.action, isRead: true });
+
+      // Notify the original prayer requester that someone responded.
+      const originalSenderUid = data.senderUid as string | undefined;
+      console.log('[recordAction] actor:', ctx.userId, 'notifId:', input.notifId, 'action:', input.action, 'type:', data.type, 'originalSenderUid:', originalSenderUid);
+      if (
+        originalSenderUid &&
+        originalSenderUid !== ctx.userId &&
+        (data.type as string) === 'prayer_request'
+      ) {
+        const [actorName] = await Promise.all([getSenderName(ctx.userId)]);
+        const actionLabel = input.action === 'im_here' ? 'is here for you' : 'is praying for you';
+        console.log('[recordAction] fanning out response to:', originalSenderUid, 'message:', `${actorName} ${actionLabel}`);
+        const responseNotifId = await fanOutNotifications([originalSenderUid], {
+          type: 'prayer_request',
+          circleId: data.circleId as string,
+          circleName: data.circleName as string,
+          senderUid: ctx.userId,
+          senderName: actorName,
+          message: `${actorName} ${actionLabel}`,
+          suppressActions: true,
+        });
+        console.log('[recordAction] responseNotifId written:', responseNotifId);
+        sendPushToUsers([originalSenderUid], {
+          title: data.circleName as string,
+          body: `${actorName} ${actionLabel}`,
+          data: { notifId: responseNotifId, type: 'prayer_request', circleId: data.circleId as string },
+          channelId: 'circles',
+        }).catch(() => undefined);
+      }
+
       return { notifId: input.notifId, action: input.action };
+    }),
+
+  // Record a Pray / I'm Here response to an individual prayer request
+  respondToIndividualRequest: protectedProcedure
+    .input(
+      z.object({
+        circleId: z.string(),
+        requestId: z.string(),
+        action: z.enum(['pray', 'im_here']),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const ref = db.collection('circles').doc(input.circleId)
+        .collection('prayer_requests').doc(input.requestId);
+      const doc = await ref.get();
+      if (!doc.exists) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      const data = doc.data()!;
+      const recipientIds = (data.recipientIds as string[]) ?? [];
+      if (!recipientIds.includes(ctx.userId)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a recipient' });
+      }
+
+      await ref.update({ [`responses.${ctx.userId}`]: input.action });
+
+      const authorId = data.authorId as string | undefined;
+      if (authorId && authorId !== ctx.userId) {
+        const [actorName, circleName] = await Promise.all([
+          getSenderName(ctx.userId),
+          getCircleName(input.circleId),
+        ]);
+        const actionLabel = input.action === 'im_here' ? 'is here for you' : 'is praying for you';
+        const responseNotifId = await fanOutNotifications([authorId], {
+          type: 'prayer_request',
+          circleId: input.circleId,
+          circleName,
+          senderUid: ctx.userId,
+          senderName: actorName,
+          message: `${actorName} ${actionLabel}`,
+          suppressActions: true,
+        });
+        sendPushToUsers([authorId], {
+          title: circleName,
+          body: `${actorName} ${actionLabel}`,
+          data: { notifId: responseNotifId, type: 'prayer_request', circleId: input.circleId },
+          channelId: 'circles',
+        }).catch(() => undefined);
+      }
+
+      return { requestId: input.requestId, action: input.action };
     }),
 
   // Mark a single notification as read

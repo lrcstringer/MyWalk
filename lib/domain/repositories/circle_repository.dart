@@ -34,6 +34,7 @@ abstract class CircleRepository {
 
   // ── Feature 1: Prayer List ──────────────────────────────────────────────────
   Future<List<PrayerRequest>> getPrayerRequests(String circleId);
+  Future<List<PrayerRequest>> getIndividualPrayerRequests(String circleId, String uid);
   Future<void> createPrayerRequest({
     required String circleId,
     required String requestText,

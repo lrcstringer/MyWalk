@@ -7,7 +7,8 @@ import '../../theme/app_theme.dart';
 /// Embeddable gratitude wall widget (used inside CircleDetailView).
 class GratitudeWallWidget extends StatefulWidget {
   final String circleId;
-  const GratitudeWallWidget({super.key, required this.circleId});
+  final bool showHeader;
+  const GratitudeWallWidget({super.key, required this.circleId, this.showHeader = true});
 
   @override
   State<GratitudeWallWidget> createState() => _GratitudeWallWidgetState();
@@ -99,10 +100,12 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('GRATITUDE WALL',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.4), letterSpacing: 1.2)),
-      const SizedBox(height: 10),
+      if (widget.showHeader) ...[
+        Text('GRATITUDE WALL',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                color: Colors.white.withValues(alpha: 0.4), letterSpacing: 1.2)),
+        const SizedBox(height: 10),
+      ],
       if (_isLoading)
         const Center(child: Padding(
           padding: EdgeInsets.all(16),

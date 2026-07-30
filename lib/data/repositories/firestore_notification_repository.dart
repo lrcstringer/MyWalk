@@ -32,7 +32,16 @@ class FirestoreNotificationRepository implements NotificationRepository {
         .orderBy('createdAt', descending: true)
         .limit(100)
         .snapshots()
-        .map((snap) => snap.docs.map(_docToNotification).toList());
+        .map((snap) => snap.docs
+            .map((doc) {
+              try {
+                return _docToNotification(doc);
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<CircleNotification>()
+            .toList());
   }
 
   // ── Queries ────────────────────────────────────────────────────────────────
@@ -136,12 +145,11 @@ class FirestoreNotificationRepository implements NotificationRepository {
     required String message,
     required List<String> recipientIds,
   }) =>
-      _sendQueue.enqueue({
-        'type': 'prayer_request',
-        'circleId': circleId,
-        'message': message,
-        'recipientIds': recipientIds,
-      });
+      APIService.shared.sendPrayerRequest(
+        circleId: circleId,
+        message: message,
+        recipientIds: recipientIds,
+      );
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 

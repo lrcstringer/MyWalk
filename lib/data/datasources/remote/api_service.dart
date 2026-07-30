@@ -254,7 +254,7 @@ class APIService {
 
   static const String _baseURL = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://your-backend-url.com',
+    defaultValue: 'https://api-ibhdgxv5ea-uc.a.run.app',
   );
 
   Future<void> init() async {
@@ -359,6 +359,9 @@ class APIService {
   Future<void> sendPrayerRequest({required String circleId, required String message, required List<String> recipientIds}) =>
       _postMutation<Map<String, dynamic>>('notifications.sendPrayerRequest', body: {'circleId': circleId, 'message': message, 'recipientIds': recipientIds}, fromJson: (j) => j);
 
+  Future<void> respondToIndividualPrayerRequest({required String circleId, required String requestId, required String action}) =>
+      _postMutation<Map<String, dynamic>>('notifications.respondToIndividualRequest', body: {'circleId': circleId, 'requestId': requestId, 'action': action}, fromJson: (j) => j);
+
   // Private HTTP helpers
 
   Future<T> _getQuery<T>(String procedure, {Map<String, dynamic>? input, required T Function(dynamic) fromJson}) async {
@@ -377,16 +380,24 @@ class APIService {
   Future<T> _postMutation<T>(String procedure, {required Map<String, dynamic> body, required T Function(Map<String, dynamic>) fromJson}) async {
     final uri = Uri.parse('$_baseURL/api/trpc/$procedure');
     final authHeaders = await _buildAuthHeaders();
-    final response = await http.post(uri, headers: {'Content-Type': 'application/json', ...authHeaders}, body: jsonEncode(body));
+    // tRPC server uses superjson transformer — wrap body in {"json": ...} so the
+    // server's superjson.deserialize() receives a valid SuperJSONResult.
+    final response = await http.post(uri, headers: {'Content-Type': 'application/json', ...authHeaders}, body: jsonEncode({'json': body}));
     _checkStatus(response);
     final responseBody = jsonDecode(response.body) as Map<String, dynamic>;
-    return fromJson(responseBody['result']['data'] as Map<String, dynamic>);
+    // Server response is superjson-encoded: { result: { data: { json: ..., meta: ... } } }
+    final data = responseBody['result']['data'];
+    final unwrapped = (data is Map<String, dynamic> && data.containsKey('json'))
+        ? data['json'] as Map<String, dynamic>
+        : data as Map<String, dynamic>;
+    return fromJson(unwrapped);
   }
 
   Future<Map<String, String>> _buildAuthHeaders() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return {};
-    final token = await user.getIdToken();
+    if (user == null) throw APIError.unauthorized;
+    // forceRefresh=true ensures the token is never stale (Firebase ID tokens expire after 1h).
+    final token = await user.getIdToken(true);
     return {'Authorization': 'Bearer $token'};
   }
 
