@@ -293,6 +293,15 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     ];
 
     final hasNew = List.generate(_sections.length, (i) => _sectionHasNew(context, i));
+    final now = DateTime.now();
+    final upcomingCount = events.where((e) => e.eventDateTime.isAfter(now)).length;
+    final badgeCounts = <int?>[
+      prayerCount > 0 ? prayerCount : null,
+      null,
+      null,
+      null,
+      upcomingCount > 0 ? upcomingCount : null,
+    ];
 
     return SafeArea(
       top: false,
@@ -302,9 +311,22 @@ class _CircleDetailViewState extends State<CircleDetailView> {
             backgroundColor: MyWalkColor.charcoal,
             pinned: true,
             elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded, size: 18, color: MyWalkColor.warmWhite),
-              onPressed: () => Navigator.pop(context),
+            leadingWidth: 100,
+            leading: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: const Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.arrow_back_ios_rounded, size: 14, color: MyWalkColor.golden),
+                    SizedBox(width: 3),
+                    Text('Groups',
+                      style: TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.golden)),
+                  ],
+                ),
+              ),
             ),
             actions: [
               if (isAdmin)
@@ -338,6 +360,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
                     accent: _sections[i].$3,
                     stat: stats[i],
                     hasNew: hasNew[i],
+                    badgeCount: badgeCounts[i],
                     onTap: () => _pushSection(context, i, detail),
                   ),
                 ),
@@ -626,6 +649,7 @@ class _SectionCard extends StatelessWidget {
   final Color accent;
   final String stat;
   final bool hasNew;
+  final int? badgeCount;
   final VoidCallback onTap;
 
   const _SectionCard({
@@ -634,18 +658,20 @@ class _SectionCard extends StatelessWidget {
     required this.accent,
     required this.stat,
     required this.hasNew,
+    this.badgeCount,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final showBadge = badgeCount != null && badgeCount! > 0;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: MyWalkColor.cardBackground,
+          color: accent.withValues(alpha: 0.09),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+          border: Border.all(color: accent.withValues(alpha: 0.20), width: 1),
         ),
         child: IntrinsicHeight(
           child: Row(
@@ -663,14 +689,14 @@ class _SectionCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              // Icon
+              // Icon — neutral container so the accent bar + background carry the colour
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 15),
                 child: Container(
-                  width: 42, height: 42,
+                  width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(11),
                   ),
                   child: Icon(icon, size: 20, color: accent),
                 ),
@@ -679,30 +705,50 @@ class _SectionCard extends StatelessWidget {
               // Label + stat
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Row(children: [
-                        Text(label,
-                          style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w600,
-                            color: MyWalkColor.warmWhite)),
-                        if (hasNew) ...[
-                          const SizedBox(width: 7),
-                          Container(
-                            width: 7, height: 7,
-                            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-                          ),
-                        ],
-                      ]),
+                      Text(label,
+                        style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600,
+                          color: MyWalkColor.warmWhite, letterSpacing: -0.1)),
                       const SizedBox(height: 3),
                       Text(stat,
                         style: TextStyle(
-                          fontSize: 12, color: Colors.white.withValues(alpha: 0.42))),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: accent.withValues(alpha: 0.72)),
+                        overflow: TextOverflow.ellipsis),
                     ],
                   ),
+                ),
+              ),
+              // Badge pill or new-content dot
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Center(
+                  child: showBadge
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          height: 20,
+                          constraints: const BoxConstraints(minWidth: 20),
+                          decoration: BoxDecoration(
+                            color: accent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(child: Text('$badgeCount',
+                            style: const TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w700,
+                              color: Color(0xFF0C0C18)))),
+                        )
+                      : hasNew
+                          ? Container(
+                              width: 7, height: 7,
+                              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                            )
+                          : const SizedBox(width: 7),
                 ),
               ),
               // Chevron
@@ -741,26 +787,33 @@ class _SectionScreenWrapper extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 18, color: MyWalkColor.warmWhite),
-          onPressed: () => Navigator.pop(context),
+        leadingWidth: 180,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.arrow_back_ios_rounded, size: 14, color: MyWalkColor.golden),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(circleName,
+                    style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.golden),
+                    overflow: TextOverflow.ellipsis, maxLines: 1),
+                ),
+              ],
+            ),
+          ),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(sectionName,
-              style: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
-            Text(circleName,
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
-          ],
-        ),
+        title: Text(sectionName,
+          style: const TextStyle(
+            fontSize: 16, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
+        centerTitle: true,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(2),
-          child: Container(
-            height: 2,
-            color: accent.withValues(alpha: 0.55),
-          ),
+          child: Container(height: 2, color: accent.withValues(alpha: 0.55)),
         ),
       ),
       body: body,
