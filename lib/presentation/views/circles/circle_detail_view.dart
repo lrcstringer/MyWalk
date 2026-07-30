@@ -35,23 +35,24 @@ class CircleDetailView extends StatefulWidget {
   State<CircleDetailView> createState() => _CircleDetailViewState();
 }
 
-class _CircleDetailViewState extends State<CircleDetailView>
-    with SingleTickerProviderStateMixin {
+class _CircleDetailViewState extends State<CircleDetailView> {
   CircleDetails? _detail;
   bool _isLoading = true;
   String? _error;
   bool _wasOffline = false;
   bool _isLeaving = false;
+  // ignore: unused_field
   CircleHeatmap? _heatmap;
+  // ignore: unused_field
   bool _heatmapFailed = false;
+  // ignore: unused_field
   CollectiveMilestones? _milestones;
+  // ignore: unused_field
   bool _milestonesFailed = false;
 
-  late final TabController _tabController;
   final Map<int, int> _lastVisitedMs = {};
 
-  static const _tabs = [
-    // Overview removed — habit-tracker era UI, preserved in _OverviewTab below
+  static const _sections = [
     ('Prayer',        Icons.volunteer_activism_rounded,   MyWalkColor.sage),
     ('Scripture',     Icons.menu_book_rounded,            MyWalkColor.golden),
     ('Activities',    Icons.check_circle_outline_rounded, MyWalkColor.warmCoral),
@@ -62,22 +63,11 @@ class _CircleDetailViewState extends State<CircleDetailView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController.addListener(_onTabChanged);
     _loadDetail();
     // _loadHeatmap();    // Overview tab removed — preserved for future use
     // _loadMilestones(); // Overview tab removed — preserved for future use
     _loadProviders();
     _loadLastVisitedAt();
-  }
-
-  void _onTabChanged() {
-    if (!_tabController.indexIsChanging) {
-      final index = _tabController.index;
-      final ms = DateTime.now().millisecondsSinceEpoch;
-      setState(() => _lastVisitedMs[index] = ms);
-      _persistVisit(index, ms);
-    }
   }
 
   Future<void> _loadLastVisitedAt() async {
@@ -86,13 +76,13 @@ class _CircleDetailViewState extends State<CircleDetailView>
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     bool anyExists = false;
     final map = <int, int>{};
-    for (var i = 0; i < _tabs.length; i++) {
+    for (var i = 0; i < _sections.length; i++) {
       final ms = prefs.getInt('circle_tab_visited_${widget.circleId}_$i');
       if (ms != null) { map[i] = ms; anyExists = true; }
     }
     if (!anyExists) {
-      // First open: treat all tabs as visited now so old content doesn't badge.
-      for (var i = 0; i < _tabs.length; i++) {
+      // First open: treat all sections as visited now so old content doesn't badge.
+      for (var i = 0; i < _sections.length; i++) {
         map[i] = nowMs;
         prefs.setInt('circle_tab_visited_${widget.circleId}_$i', nowMs);
       }
@@ -105,11 +95,11 @@ class _CircleDetailViewState extends State<CircleDetailView>
     await prefs.setInt('circle_tab_visited_${widget.circleId}_$index', ms);
   }
 
-  bool _tabHasNew(BuildContext context, int tabIndex) {
+  bool _sectionHasNew(BuildContext context, int index) {
     if (_lastVisitedMs.isEmpty) return false;
-    final lastMs = _lastVisitedMs[tabIndex] ?? 0;
+    final lastMs = _lastVisitedMs[index] ?? 0;
     DateTime? latestAt;
-    switch (tabIndex) {
+    switch (index) {
       case 0:
         final items = context.watch<PrayerListProvider>().activeFor(widget.circleId);
         latestAt = _maxIsoDate(items.map((r) => r.createdAt));
@@ -145,8 +135,6 @@ class _CircleDetailViewState extends State<CircleDetailView>
 
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -171,7 +159,14 @@ class _CircleDetailViewState extends State<CircleDetailView>
     setState(() { _isLoading = true; _error = null; });
     try {
       final detail = await context.read<CircleRepository>().getCircleDetail(widget.circleId);
-      if (mounted) setState(() { _detail = detail; _isLoading = false; });
+      if (mounted) {
+        setState(() { _detail = detail; _isLoading = false; });
+        // Start Scripture stream early so badge dot is live before user taps in.
+        final isAdmin = detail.members.any(
+            (m) => m.userId == AuthService.shared.userId && m.isAdmin);
+        context.read<ScriptureThreadProvider>().watchThreads(
+          widget.circleId, isAdmin: isAdmin);
+      }
     } catch (e) {
       if (e is FirebaseException && e.code == 'permission-denied') {
         // Circle was deleted — pop back; circles list will refresh automatically.
@@ -191,6 +186,7 @@ class _CircleDetailViewState extends State<CircleDetailView>
     }
   }
 
+  // ignore: unused_element
   Future<void> _loadHeatmap() async {
     final isPremium = context.read<StoreProvider>().isPremium;
     try {
@@ -202,6 +198,7 @@ class _CircleDetailViewState extends State<CircleDetailView>
     }
   }
 
+  // ignore: unused_element
   Future<void> _loadMilestones() async {
     try {
       final milestones = await context.read<CircleRepository>().getCircleMilestones(widget.circleId);
@@ -260,117 +257,151 @@ class _CircleDetailViewState extends State<CircleDetailView>
         ]),
       );
     }
-    return _buildTabView(_detail!);
+    return _buildHomeScreen(_detail!);
   }
 
-  Widget _buildTabView(CircleDetails detail) {
+  Widget _buildHomeScreen(CircleDetails detail) {
+    final isAdmin = detail.members.any(
+        (m) => m.userId == AuthService.shared.userId && m.isAdmin);
+
+    // Pre-compute all watched data at the build-context level.
+    final prayerProvider = context.watch<PrayerListProvider>();
+    final prayerCount = prayerProvider.activeFor(widget.circleId).length
+        + prayerProvider.individualFor(widget.circleId).length;
+    final threadCount = context.watch<ScriptureThreadProvider>()
+        .threadsFor(widget.circleId).where((t) => t.isOpen).length;
+    final habitCount = context.watch<CircleHabitsProvider>()
+        .habitsFor(widget.circleId).length;
+    final receivedCount = context.watch<EncouragementProvider>()
+        .receivedFor(widget.circleId).length;
+    final events = context.watch<CircleEventsProvider>().eventsFor(widget.circleId);
+
+    final stats = [
+      prayerCount > 0
+          ? '$prayerCount active ${prayerCount == 1 ? "request" : "requests"}'
+          : 'No requests yet',
+      threadCount > 0
+          ? '$threadCount open ${threadCount == 1 ? "thread" : "threads"}'
+          : 'Start a discussion',
+      habitCount > 0
+          ? '$habitCount ${habitCount == 1 ? "practice" : "practices"}'
+          : 'No practices yet',
+      receivedCount > 0
+          ? '$receivedCount received · Gratitude Wall'
+          : 'Wall · Personal notes',
+      _nextEventStat(events),
+    ];
+
+    final hasNew = List.generate(_sections.length, (i) => _sectionHasNew(context, i));
+
     return SafeArea(
       top: false,
-      child: NestedScrollView(
-      headerSliverBuilder: (context, _) => [
-        SliverAppBar(
-          backgroundColor: MyWalkColor.charcoal,
-          title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(detail.name,
-                style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 18, fontWeight: FontWeight.w700)),
-            Text('${detail.memberCount} members',
-                style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
-          ]),
-          actions: [
-            if (detail.members.any((m) => m.userId == AuthService.shared.userId && m.isAdmin))
-              IconButton(
-                icon: const Icon(Icons.campaign_rounded, size: 20, color: MyWalkColor.softGold),
-                tooltip: 'Announce',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
+      child: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: MyWalkColor.charcoal,
+            pinned: true,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_rounded, size: 18, color: MyWalkColor.warmWhite),
+              onPressed: () => Navigator.pop(context),
+            ),
+            actions: [
+              if (isAdmin)
+                IconButton(
+                  icon: const Icon(Icons.campaign_rounded, size: 20, color: MyWalkColor.softGold),
+                  tooltip: 'Announce',
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(
                     builder: (_) => AnnouncementComposeView(
-                      circleId: widget.circleId,
-                      circleName: detail.name,
-                    ),
+                      circleId: widget.circleId, circleName: detail.name),
+                  )),
+                ),
+              IconButton(
+                icon: const Icon(Icons.settings_rounded, size: 20, color: MyWalkColor.softGold),
+                tooltip: 'Settings',
+                onPressed: () => _showGroupSettings(detail),
+              ),
+            ],
+          ),
+          SliverToBoxAdapter(
+            child: _HeroHeader(detail: detail),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (_, i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _SectionCard(
+                    label: _sections[i].$1,
+                    icon: _sections[i].$2,
+                    accent: _sections[i].$3,
+                    stat: stats[i],
+                    hasNew: hasNew[i],
+                    onTap: () => _pushSection(context, i, detail),
                   ),
                 ),
+                childCount: _sections.length,
               ),
-            IconButton(
-              icon: const Icon(Icons.settings_rounded, size: 20, color: MyWalkColor.softGold),
-              tooltip: 'Settings',
-              onPressed: () => _showGroupSettings(detail),
             ),
-          ],
-          pinned: true,
-          bottom: _FadingTabBar(
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              labelColor: _tabs[_tabController.index].$3,
-              unselectedLabelColor: Colors.white.withValues(alpha: 0.4),
-              indicatorColor: _tabs[_tabController.index].$3,
-              indicatorSize: TabBarIndicatorSize.label,
-              labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-              unselectedLabelStyle: const TextStyle(fontSize: 12),
-              tabs: _tabs.asMap().entries.map((entry) {
-                final i = entry.key;
-                final t = entry.value;
-                final hasNew = _tabHasNew(context, i);
-                return Tab(
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Stack(clipBehavior: Clip.none, children: [
-                      Icon(t.$2, size: 14),
-                      if (hasNew)
-                        Positioned(
-                          top: -3,
-                          right: -5,
-                          child: Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: t.$3,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: MyWalkColor.charcoal, width: 1),
-                            ),
-                          ),
-                        ),
-                    ]),
-                    const SizedBox(width: 5),
-                    Text(t.$1),
-                  ]),
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-      ],
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          CirclePrayerTab(
-            circleId: widget.circleId,
-            isAdmin: detail.members.any(
-                (m) => m.userId == AuthService.shared.userId && m.isAdmin),
-            members: detail.members,
-          ),
-          ScriptureThreadsTab(
-            circleId: widget.circleId,
-            settings: detail.settings,
-            isAdmin: detail.members.any(
-                (m) => m.userId == AuthService.shared.userId && m.isAdmin),
-          ),
-          CircleHabitsTab(circleId: widget.circleId, isAdmin: detail.members.any(
-              (m) => m.userId == AuthService.shared.userId && m.isAdmin)),
-          ActivityTab(circleId: widget.circleId, members: detail.members),
-          EventsTab(
-            circleId: widget.circleId,
-            isAdmin: detail.members.any(
-                (m) => m.userId == AuthService.shared.userId && m.isAdmin),
-            settings: detail.settings,
           ),
         ],
       ),
-    ),
     );
   }
 
+  String _nextEventStat(List<CircleEvent> events) {
+    final now = DateTime.now();
+    final upcoming = events.where((e) => e.eventDateTime.isAfter(now)).toList()
+      ..sort((a, b) => a.eventDateTime.compareTo(b.eventDateTime));
+    if (upcoming.isEmpty) return 'No upcoming events';
+    final next = upcoming.first;
+    final diff = next.eventDateTime.difference(now).inDays;
+    if (diff == 0) return 'Today · ${next.title}';
+    if (diff == 1) return 'Tomorrow · ${next.title}';
+    return 'In $diff days · ${next.title}';
+  }
+
+  Future<void> _pushSection(BuildContext context, int index, CircleDetails detail) async {
+    final isAdmin = detail.members.any(
+        (m) => m.userId == AuthService.shared.userId && m.isAdmin);
+
+    final ms = DateTime.now().millisecondsSinceEpoch;
+    setState(() => _lastVisitedMs[index] = ms);
+    _persistVisit(index, ms);
+
+    final section = _sections[index];
+    Widget body;
+    switch (index) {
+      case 0:
+        body = CirclePrayerTab(
+          circleId: widget.circleId, isAdmin: isAdmin, members: detail.members);
+      case 1:
+        body = ScriptureThreadsTab(
+          circleId: widget.circleId, settings: detail.settings, isAdmin: isAdmin);
+      case 2:
+        body = CircleHabitsTab(circleId: widget.circleId, isAdmin: isAdmin);
+      case 3:
+        body = ActivityTab(circleId: widget.circleId, members: detail.members);
+      case 4:
+        body = EventsTab(
+          circleId: widget.circleId, isAdmin: isAdmin, settings: detail.settings);
+      default:
+        return;
+    }
+
+    if (!context.mounted) return;
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => _SectionScreenWrapper(
+        circleName: detail.name,
+        sectionName: section.$1,
+        accent: section.$3,
+        body: body,
+      ),
+    ));
+  }
+
+  // ignore: unused_element
   void _showSundaySummary(CircleDetails detail) {
     showModalBottomSheet(
       context: context, isScrollControlled: true, useSafeArea: true,
@@ -393,10 +424,8 @@ class _CircleDetailViewState extends State<CircleDetailView>
     ));
     if (!mounted) return;
     if (result == 'deleted') {
-      // Circle was deleted — pop back to the circles list
       Navigator.pop(context);
     } else {
-      // Settings/name may have changed — reload
       _loadDetail();
     }
   }
@@ -452,8 +481,296 @@ class _CircleDetailViewState extends State<CircleDetailView>
   }
 }
 
+// ─── Hero Header ──────────────────────────────────────────────────────────────
+
+class _HeroHeader extends StatelessWidget {
+  final CircleDetails detail;
+  const _HeroHeader({required this.detail});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            MyWalkColor.sage.withValues(alpha: 0.14),
+            MyWalkColor.charcoal,
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(
+              width: 7, height: 7,
+              decoration: const BoxDecoration(color: MyWalkColor.sage, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 7),
+            Text('Faith Community',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: MyWalkColor.sage.withValues(alpha: 0.85),
+                letterSpacing: 0.4,
+              )),
+          ]),
+          const SizedBox(height: 10),
+          Text(detail.name,
+            style: const TextStyle(
+              fontSize: 26, fontWeight: FontWeight.w700,
+              color: MyWalkColor.warmWhite, height: 1.1)),
+          const SizedBox(height: 14),
+          _AvatarRow(members: detail.members, memberCount: detail.memberCount),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Avatar Row ───────────────────────────────────────────────────────────────
+
+class _AvatarRow extends StatelessWidget {
+  final List<CircleMember> members;
+  final int memberCount;
+  const _AvatarRow({required this.members, required this.memberCount});
+
+  static const _avatarColors = [
+    MyWalkColor.sage,
+    MyWalkColor.golden,
+    MyWalkColor.warmCoral,
+    MyWalkColor.softGold,
+    MyWalkColor.eventPurple,
+  ];
+
+  static const _maxShow = 5;
+  static const _stride = 22.0;
+  static const _size = 32.0;
+
+  String _initials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2 && parts.last.isNotEmpty) {
+      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+    }
+    if (parts.first.isNotEmpty) return parts.first[0].toUpperCase();
+    return '?';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = members.take(_maxShow).toList();
+    final extra = memberCount - shown.length;
+    final totalSlots = shown.length + (extra > 0 ? 1 : 0);
+    final stackWidth = totalSlots > 0 ? totalSlots * _stride + (_size - _stride) : _size;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (totalSlots > 0) SizedBox(
+          width: stackWidth,
+          height: _size,
+          child: Stack(
+            children: [
+              ...shown.asMap().entries.map((e) {
+                final color = _avatarColors[e.key % _avatarColors.length];
+                return Positioned(
+                  left: e.key * _stride,
+                  child: Container(
+                    width: _size, height: _size,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color.withValues(alpha: 0.2),
+                      border: Border.all(color: MyWalkColor.charcoal, width: 2),
+                    ),
+                    child: Center(child: Text(_initials(e.value.displayName),
+                      style: TextStyle(
+                        fontSize: 10, fontWeight: FontWeight.w700, color: color))),
+                  ),
+                );
+              }),
+              if (extra > 0)
+                Positioned(
+                  left: shown.length * _stride,
+                  child: Container(
+                    width: _size, height: _size,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.07),
+                      border: Border.all(color: MyWalkColor.charcoal, width: 2),
+                    ),
+                    child: Center(child: Text('+$extra',
+                      style: TextStyle(
+                        fontSize: 9, fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.55)))),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text('$memberCount ${memberCount == 1 ? "member" : "members"}',
+          style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.45))),
+      ],
+    );
+  }
+}
+
+// ─── Section Card ─────────────────────────────────────────────────────────────
+
+class _SectionCard extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color accent;
+  final String stat;
+  final bool hasNew;
+  final VoidCallback onTap;
+
+  const _SectionCard({
+    required this.label,
+    required this.icon,
+    required this.accent,
+    required this.stat,
+    required this.hasNew,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: MyWalkColor.cardBackground,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left accent bar
+              Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(13),
+                    bottomLeft: Radius.circular(13),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              // Icon
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Container(
+                  width: 42, height: 42,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, size: 20, color: accent),
+                ),
+              ),
+              const SizedBox(width: 14),
+              // Label + stat
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(children: [
+                        Text(label,
+                          style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600,
+                            color: MyWalkColor.warmWhite)),
+                        if (hasNew) ...[
+                          const SizedBox(width: 7),
+                          Container(
+                            width: 7, height: 7,
+                            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                          ),
+                        ],
+                      ]),
+                      const SizedBox(height: 3),
+                      Text(stat,
+                        style: TextStyle(
+                          fontSize: 12, color: Colors.white.withValues(alpha: 0.42))),
+                    ],
+                  ),
+                ),
+              ),
+              // Chevron
+              Padding(
+                padding: const EdgeInsets.only(right: 14),
+                child: Icon(Icons.chevron_right_rounded, size: 18,
+                    color: Colors.white.withValues(alpha: 0.28)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Section Screen Wrapper ───────────────────────────────────────────────────
+
+class _SectionScreenWrapper extends StatelessWidget {
+  final String circleName;
+  final String sectionName;
+  final Color accent;
+  final Widget body;
+
+  const _SectionScreenWrapper({
+    required this.circleName,
+    required this.sectionName,
+    required this.accent,
+    required this.body,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      appBar: AppBar(
+        backgroundColor: MyWalkColor.charcoal,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, size: 18, color: MyWalkColor.warmWhite),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(sectionName,
+              style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
+            Text(circleName,
+              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
+          ],
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(2),
+          child: Container(
+            height: 2,
+            color: accent.withValues(alpha: 0.55),
+          ),
+        ),
+      ),
+      body: body,
+    );
+  }
+}
+
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 
+// ignore: unused_element
 class _OverviewTab extends StatelessWidget {
   final String circleId;
   final CircleDetails detail;
@@ -996,45 +1313,6 @@ class _GroupSettingsSheet extends StatelessWidget {
           ),
         ),
       ]),
-    );
-  }
-}
-
-// ─── Fading tab bar ───────────────────────────────────────────────────────────
-
-class _FadingTabBar extends StatelessWidget implements PreferredSizeWidget {
-  final TabBar child;
-  const _FadingTabBar({required this.child});
-
-  @override
-  Size get preferredSize => child.preferredSize;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        child,
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: 48,
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    MyWalkColor.charcoal.withValues(alpha: 0),
-                    MyWalkColor.charcoal,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
