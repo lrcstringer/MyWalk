@@ -1,6 +1,6 @@
 enum CircleNotificationType { sos, prayerRequest, announcement, partnershipInvite, partnerMessage, partnershipAccepted, event, groupActivity, encouragement }
 
-enum NotificationAction { pray, imHere, accept, decline, illBeThere, unableToMakeIt, countMeIn, unableToDo }
+enum NotificationAction { pray, imHere, accept, decline, illBeThere, unableToMakeIt, countMeIn, unableToDo, gotIt, thankYou }
 
 class CircleNotification {
   final String id;
@@ -80,6 +80,8 @@ class CircleNotification {
     if (s == 'unable_to_make_it') return NotificationAction.unableToMakeIt;
     if (s == 'count_me_in') return NotificationAction.countMeIn;
     if (s == 'unable_to_do') return NotificationAction.unableToDo;
+    if (s == 'got_it') return NotificationAction.gotIt;
+    if (s == 'thank_you') return NotificationAction.thankYou;
     return null;
   }
 

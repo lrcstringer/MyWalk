@@ -123,6 +123,8 @@ class FirestoreNotificationRepository implements NotificationRepository {
       NotificationAction.unableToMakeIt => 'unable_to_make_it',
       NotificationAction.countMeIn => 'count_me_in',
       NotificationAction.unableToDo => 'unable_to_do',
+      NotificationAction.gotIt => 'got_it',
+      NotificationAction.thankYou => 'thank_you',
     };
     // Local write for immediate UI feedback.
     await _inbox(uid)

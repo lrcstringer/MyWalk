@@ -104,7 +104,7 @@ export const circleSendEncouragement = onCall(
         expiresAt: exp,
         isRead: false,
         actionTaken: null,
-        suppressActions: true,
+        suppressActions: false,
       });
     }
 

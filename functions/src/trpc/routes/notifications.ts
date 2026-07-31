@@ -196,7 +196,7 @@ export const notificationsRouter = createTRPCRouter({
     .input(
       z.object({
         notifId: z.string(),
-        action: z.enum(['pray', 'im_here', 'ill_be_there', 'unable_to_make_it', 'count_me_in', 'unable_to_do']),
+        action: z.enum(['pray', 'im_here', 'ill_be_there', 'unable_to_make_it', 'count_me_in', 'unable_to_do', 'got_it', 'thank_you']),
       })
     )
     .mutation(async ({ ctx, input }) => {

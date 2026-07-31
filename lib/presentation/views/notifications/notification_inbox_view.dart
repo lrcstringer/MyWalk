@@ -598,6 +598,8 @@ class _CircleActionRow extends StatelessWidget {
     NotificationAction.unableToMakeIt => 'Unable to make it — sent',
     NotificationAction.countMeIn => 'Count me in — sent',
     NotificationAction.unableToDo => 'Unable to do — sent',
+    NotificationAction.gotIt => 'Got it',
+    NotificationAction.thankYou => 'Thank you — sent',
     _ => 'Responded',
   };
 
@@ -642,6 +644,20 @@ class _CircleActionRow extends StatelessWidget {
               icon: Icons.cancel_outlined,
               color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
               onTap: () => onAction(NotificationAction.unableToDo)),
+        ]),
+      CircleNotificationType.announcement => Row(children: [
+          _ActionButton(
+              label: 'Got it',
+              icon: Icons.check_rounded,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              onTap: () => onAction(NotificationAction.gotIt)),
+        ]),
+      CircleNotificationType.encouragement => Row(children: [
+          _ActionButton(
+              label: 'Thank you!',
+              icon: Icons.favorite_rounded,
+              color: MyWalkColor.softGold.withValues(alpha: 0.8),
+              onTap: () => onAction(NotificationAction.thankYou)),
         ]),
       _ => Row(children: [
           _ActionButton(
