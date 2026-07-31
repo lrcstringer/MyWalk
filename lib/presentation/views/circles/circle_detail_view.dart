@@ -506,38 +506,12 @@ class _CircleDetailViewState extends State<CircleDetailView> {
 
 // ─── Hero Header ──────────────────────────────────────────────────────────────
 
-class _HeroHeader extends StatefulWidget {
+class _HeroHeader extends StatelessWidget {
   final CircleDetails detail;
   const _HeroHeader({required this.detail});
 
   @override
-  State<_HeroHeader> createState() => _HeroHeaderState();
-}
-
-class _HeroHeaderState extends State<_HeroHeader>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse;
-  late final Animation<double> _dotAlpha;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulse = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 2500))
-      ..repeat(reverse: true);
-    _dotAlpha = Tween<double>(begin: 1.0, end: 0.45).animate(
-      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final detail = widget.detail;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       decoration: BoxDecoration(
@@ -555,37 +529,6 @@ class _HeroHeaderState extends State<_HeroHeader>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // "My Circle" capsule chip with pulsing dot
-          Container(
-            padding: const EdgeInsets.fromLTRB(7, 3, 10, 3),
-            decoration: BoxDecoration(
-              color: MyWalkColor.sage.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: MyWalkColor.sage.withValues(alpha: 0.25), width: 1),
-            ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              AnimatedBuilder(
-                animation: _dotAlpha,
-                builder: (_, _) => Container(
-                  width: 7, height: 7,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: MyWalkColor.sage.withValues(alpha: _dotAlpha.value),
-                    boxShadow: [BoxShadow(
-                      color: MyWalkColor.sage.withValues(alpha: 0.5 * _dotAlpha.value),
-                      blurRadius: 6)],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(detail.name,
-                style: const TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8, color: MyWalkColor.sage)),
-            ]),
-          ),
-          const SizedBox(height: 10),
           // Circle name in serif
           Text(detail.name,
             style: const TextStyle(
