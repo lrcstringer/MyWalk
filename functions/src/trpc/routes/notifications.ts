@@ -44,7 +44,7 @@ async function getCircleName(circleId: string): Promise<string> {
 async function fanOutNotifications(
   recipientIds: string[],
   payload: {
-    type: 'sos' | 'prayer_request' | 'announcement' | 'event' | 'group_activity';
+    type: 'sos' | 'prayer_request' | 'announcement' | 'event' | 'group_activity' | 'encouragement';
     circleId: string;
     circleName: string;
     senderUid: string;
@@ -207,19 +207,28 @@ export const notificationsRouter = createTRPCRouter({
       const data = doc.data()!;
       await ref.update({ actionTaken: input.action, isRead: true });
 
-      // Notify the original prayer requester that someone responded.
+      // Notify the original sender that someone responded.
+      const ACTION_LABELS: Partial<Record<string, string>> = {
+        pray: 'is praying for you',
+        im_here: 'is here for you',
+        ill_be_there: 'will be there',
+        unable_to_make_it: "can't make it",
+        count_me_in: 'is joining in',
+        unable_to_do: "can't do it this time",
+        got_it: 'got it',
+        thank_you: 'says thank you!',
+        // accept/decline are partnership actions — no circle response needed
+      };
+      const RESPONSE_TYPES = ['prayer_request', 'announcement', 'event', 'group_activity', 'encouragement'];
+
       const originalSenderUid = data.senderUid as string | undefined;
-      console.log('[recordAction] actor:', ctx.userId, 'notifId:', input.notifId, 'action:', input.action, 'type:', data.type, 'originalSenderUid:', originalSenderUid);
-      if (
-        originalSenderUid &&
-        originalSenderUid !== ctx.userId &&
-        (data.type as string) === 'prayer_request'
-      ) {
-        const [actorName] = await Promise.all([getSenderName(ctx.userId)]);
-        const actionLabel = input.action === 'im_here' ? 'is here for you' : 'is praying for you';
-        console.log('[recordAction] fanning out response to:', originalSenderUid, 'message:', `${actorName} ${actionLabel}`);
-        const responseNotifId = await fanOutNotifications([originalSenderUid], {
-          type: 'prayer_request',
+      const notifType = data.type as string;
+      const actionLabel = ACTION_LABELS[input.action];
+
+      if (originalSenderUid && originalSenderUid !== ctx.userId && actionLabel && RESPONSE_TYPES.includes(notifType)) {
+        const actorName = await getSenderName(ctx.userId);
+        await fanOutNotifications([originalSenderUid], {
+          type: notifType as 'sos' | 'prayer_request' | 'announcement' | 'event' | 'group_activity' | 'encouragement',
           circleId: data.circleId as string,
           circleName: data.circleName as string,
           senderUid: ctx.userId,
@@ -227,13 +236,6 @@ export const notificationsRouter = createTRPCRouter({
           message: `${actorName} ${actionLabel}`,
           suppressActions: true,
         });
-        console.log('[recordAction] responseNotifId written:', responseNotifId);
-        sendPushToUsers([originalSenderUid], {
-          title: data.circleName as string,
-          body: `${actorName} ${actionLabel}`,
-          data: { notifId: responseNotifId, type: 'prayer_request', circleId: data.circleId as string },
-          channelId: 'circles',
-        }).catch(() => undefined);
       }
 
       return { notifId: input.notifId, action: input.action };

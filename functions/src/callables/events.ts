@@ -204,26 +204,6 @@ export const sendEventReminders = onSchedule(
 
     if (eventsSnap.empty) return;
 
-    for (const eventDoc of eventsSnap.docs) {
-      const event = eventDoc.data();
-      const circleId = event['circleId'] as string;
-      const title = event['title'] as string;
-      const eventDate = (event['eventDate'] as FirebaseFirestore.Timestamp).toDate();
-
-      const membersSnap = await membersCol(circleId).get();
-      const memberIds = membersSnap.docs.map((d) => d.data()['userId'] as string);
-
-      if (memberIds.length === 0) continue;
-    }
   }
 );
 
-// ── Internal helpers ──────────────────────────────────────────────────────────
-
-function _formatEventDate(date: Date): string {
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-}
-
-function _formatEventTime(date: Date): string {
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-}
