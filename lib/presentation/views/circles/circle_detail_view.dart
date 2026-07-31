@@ -522,8 +522,9 @@ class _HeroHeader extends StatelessWidget {
             MyWalkColor.sage.withValues(alpha: 0.18),
             MyWalkColor.sage.withValues(alpha: 0.05),
             Colors.transparent,
+            Colors.transparent,
           ],
-          stops: const [0.0, 0.5, 1.0],
+          stops: const [0.0, 0.38, 0.65, 1.0],
         ),
       ),
       child: Column(
