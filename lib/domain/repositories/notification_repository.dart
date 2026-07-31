@@ -20,6 +20,7 @@ abstract class NotificationRepository {
   Future<void> sendAnnouncement({
     required String circleId,
     required String message,
+    String? notifType,
   });
 
   /// Send a help / prayer request to chosen recipients.

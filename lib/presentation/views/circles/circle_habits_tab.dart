@@ -990,6 +990,7 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
       notifProvider?.sendAnnouncement(
         circleId: widget.circleId,
         message: 'New group activity: $name — check the Activities tab.',
+        notifType: 'group_activity',
       ).catchError((_) {});
       if (mounted) Navigator.pop(context);
     } catch (e) {

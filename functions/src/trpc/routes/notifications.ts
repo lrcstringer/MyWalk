@@ -44,7 +44,7 @@ async function getCircleName(circleId: string): Promise<string> {
 async function fanOutNotifications(
   recipientIds: string[],
   payload: {
-    type: 'sos' | 'prayer_request' | 'announcement';
+    type: 'sos' | 'prayer_request' | 'announcement' | 'event' | 'group_activity';
     circleId: string;
     circleName: string;
     senderUid: string;
@@ -90,6 +90,7 @@ export const notificationsRouter = createTRPCRouter({
       z.object({
         circleId: z.string(),
         message: z.string().min(1).max(500),
+        notifType: z.enum(['announcement', 'event', 'group_activity']).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -106,8 +107,10 @@ export const notificationsRouter = createTRPCRouter({
 
       const recipients = memberIds.filter((id) => id !== ctx.userId);
 
+      const notifType = input.notifType ?? 'announcement';
+
       const notifId = await fanOutNotifications(recipients, {
-        type: 'announcement',
+        type: notifType,
         circleId: input.circleId,
         circleName,
         senderUid: ctx.userId,
@@ -119,7 +122,7 @@ export const notificationsRouter = createTRPCRouter({
       sendPushToUsers(recipients, {
         title: `${circleName} — Announcement`,
         body: input.message,
-        data: { notifId, type: 'announcement', circleId: input.circleId },
+        data: { notifId, type: notifType, circleId: input.circleId },
         channelId: 'circles',
       }).catch(() => undefined);
 
@@ -179,12 +182,12 @@ export const notificationsRouter = createTRPCRouter({
       return { requestId: prayerDocId, recipientCount: recipients.length };
     }),
 
-  // Record an action (Pray / I'm Here) against a notification
+  // Record an action against a notification
   recordAction: protectedProcedure
     .input(
       z.object({
         notifId: z.string(),
-        action: z.enum(['pray', 'im_here']),
+        action: z.enum(['pray', 'im_here', 'ill_be_there', 'unable_to_make_it', 'count_me_in', 'unable_to_do']),
       })
     )
     .mutation(async ({ ctx, input }) => {

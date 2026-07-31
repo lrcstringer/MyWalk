@@ -85,11 +85,12 @@ class CircleNotificationProvider extends ChangeNotifier {
   Future<void> sendAnnouncement({
     required String circleId,
     required String message,
+    String? notifType,
   }) async {
     _loading = true;
     notifyListeners();
     try {
-      await _repo.sendAnnouncement(circleId: circleId, message: message);
+      await _repo.sendAnnouncement(circleId: circleId, message: message, notifType: notifType);
     } finally {
       _loading = false;
       notifyListeners();

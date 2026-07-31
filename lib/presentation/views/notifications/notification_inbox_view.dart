@@ -421,6 +421,7 @@ class _NotificationTileState extends State<_NotificationTile> {
                       )
                     else
                       _CircleActionRow(
+                        type: n.type,
                         actionTaken: n.actionTaken,
                         onAction: widget.onAction,
                       ),
@@ -455,6 +456,10 @@ class _NotificationTileState extends State<_NotificationTile> {
       case CircleNotificationType.partnerMessage:
       case CircleNotificationType.partnershipAccepted:
         return MyWalkColor.sage;
+      case CircleNotificationType.event:
+        return MyWalkColor.eventPurple;
+      case CircleNotificationType.groupActivity:
+        return MyWalkColor.golden;
     }
   }
 
@@ -472,6 +477,10 @@ class _NotificationTileState extends State<_NotificationTile> {
         return Icons.chat_bubble_outline_rounded;
       case CircleNotificationType.partnershipAccepted:
         return Icons.handshake_rounded;
+      case CircleNotificationType.event:
+        return Icons.event_rounded;
+      case CircleNotificationType.groupActivity:
+        return Icons.directions_run_rounded;
     }
   }
 
@@ -489,6 +498,10 @@ class _NotificationTileState extends State<_NotificationTile> {
         return 'PARTNER MESSAGE';
       case CircleNotificationType.partnershipAccepted:
         return 'PARTNER ACCEPTED';
+      case CircleNotificationType.event:
+        return 'NEW EVENT';
+      case CircleNotificationType.groupActivity:
+        return 'NEW ACTIVITY';
     }
   }
 
@@ -562,25 +575,34 @@ class _PartnerActionRow extends StatelessWidget {
   }
 }
 
-// ── Circle actions (Pray / I'm Here) ─────────────────────────────────────────
+// ── Circle actions (type-aware) ───────────────────────────────────────────────
 
 class _CircleActionRow extends StatelessWidget {
+  final CircleNotificationType type;
   final NotificationAction? actionTaken;
   final void Function(NotificationAction) onAction;
 
   const _CircleActionRow(
-      {required this.actionTaken, required this.onAction});
+      {required this.type, required this.actionTaken, required this.onAction});
+
+  String _confirmedLabel() => switch (actionTaken) {
+    NotificationAction.pray => 'Prayed',
+    NotificationAction.imHere => "I'm Here — sent",
+    NotificationAction.illBeThere => "I'll be there — sent",
+    NotificationAction.unableToMakeIt => 'Unable to make it — sent',
+    NotificationAction.countMeIn => 'Count me in — sent',
+    NotificationAction.unableToDo => 'Unable to do — sent',
+    _ => 'Responded',
+  };
 
   @override
   Widget build(BuildContext context) {
     if (actionTaken != null) {
-      final label =
-          actionTaken == NotificationAction.pray ? 'Prayed' : "I'm Here — sent";
       return Row(children: [
         Icon(Icons.check_circle_outline,
             size: 14, color: MyWalkColor.softGold.withValues(alpha: 0.7)),
         const SizedBox(width: 4),
-        Text(label,
+        Text(_confirmedLabel(),
             style: TextStyle(
                 fontSize: 12,
                 color: MyWalkColor.softGold.withValues(alpha: 0.7),
@@ -588,19 +610,47 @@ class _CircleActionRow extends StatelessWidget {
       ]);
     }
 
-    return Row(children: [
-      _ActionButton(
-          label: 'Pray',
-          icon: Icons.favorite_border_rounded,
-          color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
-          onTap: () => onAction(NotificationAction.pray)),
-      const SizedBox(width: 8),
-      _ActionButton(
-          label: "I'm Here",
-          icon: Icons.handshake_outlined,
-          color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
-          onTap: () => onAction(NotificationAction.imHere)),
-    ]);
+    return switch (type) {
+      CircleNotificationType.event => Row(children: [
+          _ActionButton(
+              label: "I'll be there",
+              icon: Icons.event_available_rounded,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              onTap: () => onAction(NotificationAction.illBeThere)),
+          const SizedBox(width: 8),
+          _ActionButton(
+              label: 'Unable to make it',
+              icon: Icons.event_busy_rounded,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              onTap: () => onAction(NotificationAction.unableToMakeIt)),
+        ]),
+      CircleNotificationType.groupActivity => Row(children: [
+          _ActionButton(
+              label: 'Count me in',
+              icon: Icons.check_circle_outline_rounded,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              onTap: () => onAction(NotificationAction.countMeIn)),
+          const SizedBox(width: 8),
+          _ActionButton(
+              label: 'Unable to do',
+              icon: Icons.cancel_outlined,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              onTap: () => onAction(NotificationAction.unableToDo)),
+        ]),
+      _ => Row(children: [
+          _ActionButton(
+              label: 'Pray',
+              icon: Icons.favorite_border_rounded,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              onTap: () => onAction(NotificationAction.pray)),
+          const SizedBox(width: 8),
+          _ActionButton(
+              label: "I'm Here",
+              icon: Icons.handshake_outlined,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              onTap: () => onAction(NotificationAction.imHere)),
+        ]),
+    };
   }
 }
 

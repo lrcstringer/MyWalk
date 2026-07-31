@@ -82,6 +82,7 @@ class PendingNotificationSendQueue {
         await APIService.shared.sendAnnouncement(
           circleId: payload['circleId'] as String,
           message: payload['message'] as String,
+          notifType: payload['notifType'] as String?,
         );
       case 'prayer_request':
         await APIService.shared.sendPrayerRequest(

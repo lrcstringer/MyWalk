@@ -119,6 +119,10 @@ class FirestoreNotificationRepository implements NotificationRepository {
       NotificationAction.imHere => 'im_here',
       NotificationAction.accept => 'accept',
       NotificationAction.decline => 'decline',
+      NotificationAction.illBeThere => 'ill_be_there',
+      NotificationAction.unableToMakeIt => 'unable_to_make_it',
+      NotificationAction.countMeIn => 'count_me_in',
+      NotificationAction.unableToDo => 'unable_to_do',
     };
     // Local write for immediate UI feedback.
     await _inbox(uid)
@@ -132,11 +136,13 @@ class FirestoreNotificationRepository implements NotificationRepository {
   Future<void> sendAnnouncement({
     required String circleId,
     required String message,
+    String? notifType,
   }) =>
       _sendQueue.enqueue({
         'type': 'announcement',
         'circleId': circleId,
         'message': message,
+        'notifType': ?notifType,
       });
 
   @override

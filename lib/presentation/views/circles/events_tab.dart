@@ -587,6 +587,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
       notifProvider?.sendAnnouncement(
         circleId: widget.circleId,
         message: 'New event: $title — ${_formatFull(_eventDate!)}',
+        notifType: 'event',
       ).catchError((_) {});
       nav.pop();
     } catch (e) {

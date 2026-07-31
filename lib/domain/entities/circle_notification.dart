@@ -1,6 +1,6 @@
-enum CircleNotificationType { sos, prayerRequest, announcement, partnershipInvite, partnerMessage, partnershipAccepted }
+enum CircleNotificationType { sos, prayerRequest, announcement, partnershipInvite, partnerMessage, partnershipAccepted, event, groupActivity }
 
-enum NotificationAction { pray, imHere, accept, decline }
+enum NotificationAction { pray, imHere, accept, decline, illBeThere, unableToMakeIt, countMeIn, unableToDo }
 
 class CircleNotification {
   final String id;
@@ -60,6 +60,10 @@ class CircleNotification {
         return CircleNotificationType.partnerMessage;
       case 'partnership_accepted':
         return CircleNotificationType.partnershipAccepted;
+      case 'event':
+        return CircleNotificationType.event;
+      case 'group_activity':
+        return CircleNotificationType.groupActivity;
       default:
         return CircleNotificationType.announcement;
     }
@@ -70,6 +74,10 @@ class CircleNotification {
     if (s == 'im_here') return NotificationAction.imHere;
     if (s == 'accept') return NotificationAction.accept;
     if (s == 'decline') return NotificationAction.decline;
+    if (s == 'ill_be_there') return NotificationAction.illBeThere;
+    if (s == 'unable_to_make_it') return NotificationAction.unableToMakeIt;
+    if (s == 'count_me_in') return NotificationAction.countMeIn;
+    if (s == 'unable_to_do') return NotificationAction.unableToDo;
     return null;
   }
 
