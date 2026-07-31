@@ -101,6 +101,7 @@ class CircleNotificationProvider extends ChangeNotifier {
     required String circleId,
     required String message,
     required List<String> recipientIds,
+    bool notifyViaInbox = true,
   }) async {
     _loading = true;
     notifyListeners();
@@ -109,6 +110,7 @@ class CircleNotificationProvider extends ChangeNotifier {
         circleId: circleId,
         message: message,
         recipientIds: recipientIds,
+        notifyViaInbox: notifyViaInbox,
       );
     } finally {
       _loading = false;

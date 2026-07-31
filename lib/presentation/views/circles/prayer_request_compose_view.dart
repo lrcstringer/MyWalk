@@ -22,6 +22,7 @@ class PrayerRequestComposeView extends StatefulWidget {
 class _PrayerRequestComposeViewState extends State<PrayerRequestComposeView> {
   final _controller = TextEditingController();
   final Set<String> _selectedIds = {};
+  bool _notifyViaInbox = true;
   bool _sending = false;
 
   @override
@@ -41,6 +42,7 @@ class _PrayerRequestComposeViewState extends State<PrayerRequestComposeView> {
             circleId: widget.circleId,
             message: _controller.text.trim(),
             recipientIds: _selectedIds.toList(),
+            notifyViaInbox: _notifyViaInbox,
           );
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -177,6 +179,24 @@ class _PrayerRequestComposeViewState extends State<PrayerRequestComposeView> {
                     },
                   );
                 },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              child: GestureDetector(
+                onTap: () => setState(() => _notifyViaInbox = !_notifyViaInbox),
+                child: Row(children: [
+                  Icon(
+                    _notifyViaInbox ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                    size: 18,
+                    color: _notifyViaInbox ? MyWalkColor.sage : MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Notify recipients in app',
+                    style: TextStyle(fontSize: 13, color: MyWalkColor.warmWhite.withValues(alpha: 0.6)),
+                  ),
+                ]),
               ),
             ),
             Padding(

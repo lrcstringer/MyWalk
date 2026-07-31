@@ -415,6 +415,7 @@ class _SendEncouragementSheetState extends State<SendEncouragementSheet> {
   String? _selectedPresetKey;
   final _customController = TextEditingController();
   bool _isAnonymous = false;
+  bool _notifyViaInbox = true;
   bool _useCustom = false;
   bool _sending = false;
   String? _error;
@@ -527,6 +528,17 @@ class _SendEncouragementSheetState extends State<SendEncouragementSheet> {
                   style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6))),
             ]),
           ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => setState(() => _notifyViaInbox = !_notifyViaInbox),
+            child: Row(children: [
+              Icon(_notifyViaInbox ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                  size: 18, color: _notifyViaInbox ? MyWalkColor.softGold : Colors.white.withValues(alpha: 0.4)),
+              const SizedBox(width: 8),
+              Text('Notify recipient in app',
+                  style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6))),
+            ]),
+          ),
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!, style: const TextStyle(fontSize: 12, color: MyWalkColor.warmCoral)),
@@ -575,6 +587,7 @@ class _SendEncouragementSheetState extends State<SendEncouragementSheet> {
           presetKey: isCustom ? null : _selectedPresetKey,
           customText: isCustom ? text : null,
           isAnonymous: _isAnonymous,
+          notifyViaInbox: _notifyViaInbox,
         );
       }
       if (mounted) Navigator.pop(context);

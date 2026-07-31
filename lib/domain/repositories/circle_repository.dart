@@ -120,6 +120,7 @@ abstract class CircleRepository {
     String? presetKey,
     String? customText,
     required bool isAnonymous,
+    bool notifyViaInbox,
   });
   Future<void> markEncouragementRead(String circleId, String encouragementId);
 

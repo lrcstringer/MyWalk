@@ -7,7 +7,6 @@ import {
   eventsCol,
   Timestamp,
 } from '../lib/firestore';
-import { sendPushToUsers } from '../lib/fcm';
 
 const MAX_ACTIVE_EVENTS = 10;
 
@@ -215,12 +214,6 @@ export const sendEventReminders = onSchedule(
       const memberIds = membersSnap.docs.map((d) => d.data()['userId'] as string);
 
       if (memberIds.length === 0) continue;
-
-      sendPushToUsers(memberIds, {
-        title: 'Event reminder',
-        body: `${title} is tomorrow at ${_formatEventTime(eventDate)}.`,
-        data: { type: 'EVENT_REMINDER', circleId, eventId: eventDoc.id },
-      }).catch(() => { /* non-fatal */ });
     }
   }
 );

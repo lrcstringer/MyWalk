@@ -815,6 +815,7 @@ class FirestoreCircleRepository implements CircleRepository {
     String? presetKey,
     String? customText,
     required bool isAnonymous,
+    bool notifyViaInbox = true,
   }) =>
       _sendQueue.enqueue({
         'type': 'encouragement',
@@ -823,6 +824,7 @@ class FirestoreCircleRepository implements CircleRepository {
         'presetType': presetKey,     // _dispatch translates → 'type' for CF
         'customMessage': customText, // matches CF field name
         'isAnonymous': isAnonymous,
+        'notifyViaInbox': notifyViaInbox,
       });
 
   @override

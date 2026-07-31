@@ -75,6 +75,7 @@ class EncouragementProvider extends ChangeNotifier {
     String? presetKey,
     String? customText,
     required bool isAnonymous,
+    bool notifyViaInbox = true,
   }) async {
     _sending = true;
     error = null;
@@ -88,6 +89,7 @@ class EncouragementProvider extends ChangeNotifier {
         presetKey: presetKey,
         customText: customText,
         isAnonymous: isAnonymous,
+        notifyViaInbox: notifyViaInbox,
       );
     } catch (e) {
       error = e.toString();

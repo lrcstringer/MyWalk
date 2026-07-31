@@ -136,6 +136,7 @@ export const notificationsRouter = createTRPCRouter({
         circleId: z.string(),
         message: z.string().min(1).max(500),
         recipientIds: z.array(z.string()).min(1).max(50),
+        notifyViaInbox: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -150,7 +151,10 @@ export const notificationsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'One or more recipients are not members of this circle' });
       }
 
-      const senderName = await getSenderName(ctx.userId);
+      const [senderName, circleName] = await Promise.all([
+        getSenderName(ctx.userId),
+        getCircleName(input.circleId),
+      ]);
 
       const recipients = input.recipientIds.filter((id) => id !== ctx.userId);
 
@@ -172,12 +176,17 @@ export const notificationsRouter = createTRPCRouter({
           createdAt: Timestamp.now(),
         });
 
-      sendPushToUsers(recipients, {
-        title: `${senderName} needs prayer`,
-        body: input.message,
-        data: { requestId: prayerDocId, circleId: input.circleId, type: 'prayer_request' },
-        channelId: 'circles',
-      }).catch(() => undefined);
+      if (input.notifyViaInbox && recipients.length > 0) {
+        await fanOutNotifications(recipients, {
+          type: 'prayer_request',
+          circleId: input.circleId,
+          circleName,
+          senderUid: ctx.userId,
+          senderName,
+          message: input.message,
+          suppressActions: false,
+        });
+      }
 
       return { requestId: prayerDocId, recipientCount: recipients.length };
     }),

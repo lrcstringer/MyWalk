@@ -150,11 +150,13 @@ class FirestoreNotificationRepository implements NotificationRepository {
     required String circleId,
     required String message,
     required List<String> recipientIds,
+    bool? notifyViaInbox,
   }) =>
       APIService.shared.sendPrayerRequest(
         circleId: circleId,
         message: message,
         recipientIds: recipientIds,
+        notifyViaInbox: notifyViaInbox,
       );
 
   // ── Helpers ────────────────────────────────────────────────────────────────

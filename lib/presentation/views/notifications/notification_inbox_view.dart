@@ -460,6 +460,8 @@ class _NotificationTileState extends State<_NotificationTile> {
         return MyWalkColor.eventPurple;
       case CircleNotificationType.groupActivity:
         return MyWalkColor.golden;
+      case CircleNotificationType.encouragement:
+        return MyWalkColor.softGold;
     }
   }
 
@@ -481,6 +483,8 @@ class _NotificationTileState extends State<_NotificationTile> {
         return Icons.event_rounded;
       case CircleNotificationType.groupActivity:
         return Icons.directions_run_rounded;
+      case CircleNotificationType.encouragement:
+        return Icons.favorite_rounded;
     }
   }
 
@@ -502,6 +506,8 @@ class _NotificationTileState extends State<_NotificationTile> {
         return 'NEW EVENT';
       case CircleNotificationType.groupActivity:
         return 'NEW ACTIVITY';
+      case CircleNotificationType.encouragement:
+        return 'ENCOURAGEMENT';
     }
   }
 

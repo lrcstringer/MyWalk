@@ -359,8 +359,11 @@ class APIService {
     return _postMutation<Map<String, dynamic>>('notifications.sendAnnouncement', body: body, fromJson: (j) => j);
   }
 
-  Future<void> sendPrayerRequest({required String circleId, required String message, required List<String> recipientIds}) =>
-      _postMutation<Map<String, dynamic>>('notifications.sendPrayerRequest', body: {'circleId': circleId, 'message': message, 'recipientIds': recipientIds}, fromJson: (j) => j);
+  Future<void> sendPrayerRequest({required String circleId, required String message, required List<String> recipientIds, bool? notifyViaInbox}) {
+    final body = <String, dynamic>{'circleId': circleId, 'message': message, 'recipientIds': recipientIds};
+    if (notifyViaInbox != null) body['notifyViaInbox'] = notifyViaInbox;
+    return _postMutation<Map<String, dynamic>>('notifications.sendPrayerRequest', body: body, fromJson: (j) => j);
+  }
 
   Future<void> respondToIndividualPrayerRequest({required String circleId, required String requestId, required String action}) =>
       _postMutation<Map<String, dynamic>>('notifications.respondToIndividualRequest', body: {'circleId': circleId, 'requestId': requestId, 'action': action}, fromJson: (j) => j);

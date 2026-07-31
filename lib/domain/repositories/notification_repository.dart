@@ -28,5 +28,6 @@ abstract class NotificationRepository {
     required String circleId,
     required String message,
     required List<String> recipientIds,
+    bool? notifyViaInbox,
   });
 }

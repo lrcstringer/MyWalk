@@ -4,6 +4,7 @@ import {
   db,
   membersCol,
   encouragementsCol,
+  userNotificationsCol,
   Timestamp,
 } from '../lib/firestore';
 import { sendPushToUsers } from '../lib/fcm';
@@ -29,13 +30,14 @@ export const circleSendEncouragement = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
 
-    const { circleId, recipientId, type, customMessage, isAnonymous = false } =
+    const { circleId, recipientId, type, customMessage, isAnonymous = false, notifyViaInbox = false } =
       request.data as {
         circleId: string;
         recipientId: string;
         type: EncouragementType;
         customMessage?: string;
         isAnonymous?: boolean;
+        notifyViaInbox?: boolean;
       };
 
     if (!circleId?.trim()) throw new HttpsError('invalid-argument', 'circleId required');
@@ -79,16 +81,32 @@ export const circleSendEncouragement = onCall(
       createdAt: Timestamp.now(),
     });
 
-    // Notify recipient (non-fatal).
     const senderLabel = isAnonymous ? 'Someone in your circle' : senderDisplayName;
     const body = customMessage?.trim()
       ? `${senderLabel}: ${customMessage.trim()}`
       : `${senderLabel}: ${TYPE_PRESET_TEXT[type]}`;
-    sendPushToUsers([recipientId], {
-      title: 'Encouragement from your circle',
-      body,
-      data: { type: 'ENCOURAGEMENT', circleId, encouragementId: ref.id },
-    }).catch(() => { /* non-fatal */ });
+
+    if (notifyViaInbox) {
+      const circleSnap = await db.collection('circles').doc(circleId).get();
+      const circleName = (circleSnap.data()?.['name'] as string | undefined) ?? 'Your circle';
+      const notifId = crypto.randomUUID();
+      const now2 = Timestamp.now();
+      const exp = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+      await userNotificationsCol(recipientId).doc(notifId).set({
+        id: notifId,
+        type: 'encouragement',
+        circleId,
+        circleName,
+        senderUid: uid,
+        senderName: senderLabel,
+        message: body,
+        createdAt: now2,
+        expiresAt: exp,
+        isRead: false,
+        actionTaken: null,
+        suppressActions: true,
+      });
+    }
 
     return { id: ref.id };
   }
