@@ -443,18 +443,23 @@ class _CircleCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
-          color: MyWalkColor.cardBackground,
+          color: MyWalkColor.golden,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isAdmin
-                ? MyWalkColor.golden.withValues(alpha: 0.25)
-                : MyWalkColor.cardBorder,
-            width: isAdmin ? 1.0 : 0.5,
-          ),
         ),
-        child: Row(children: [
+        child: Container(
+          margin: const EdgeInsets.only(left: 3),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+          decoration: BoxDecoration(
+            color: MyWalkColor.cardBackground,
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(16),
+              bottomRight: Radius.circular(16),
+            ),
+            border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+          ),
+          child: Row(children: [
           // Avatar
           Container(
             width: 52, height: 52,
@@ -509,6 +514,7 @@ class _CircleCard extends StatelessWidget {
                 color: MyWalkColor.golden.withValues(alpha: 0.6)),
           ),
         ]),
+        ),
       ),
     );
   }

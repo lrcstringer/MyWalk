@@ -179,16 +179,7 @@ class _EditHabitViewState extends State<EditHabitView> {
           child: const Text('Cancel', style: TextStyle(color: MyWalkColor.softGold)),
         ),
         leadingWidth: 80,
-        actions: [
-          TextButton(
-            onPressed: _nameEmpty ? null : _save,
-            child: Text('Save',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: _nameEmpty ? Colors.white.withValues(alpha: 0.3) : MyWalkColor.golden,
-                )),
-          ),
-        ],
+        actions: const [],
       ),
       body: SingleChildScrollView(
         controller: widget.scrollController,
@@ -229,6 +220,22 @@ class _EditHabitViewState extends State<EditHabitView> {
           _referenceUrlSection(),
           const SizedBox(height: 20),
           _prayerListToggle(),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _nameEmpty ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MyWalkColor.golden,
+                foregroundColor: MyWalkColor.charcoal,
+                disabledBackgroundColor: MyWalkColor.golden.withValues(alpha: 0.35),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Save Changes',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            ),
+          ),
           if (!widget.habit.isBuiltIn) ...[
             const SizedBox(height: 40),
             Row(children: [

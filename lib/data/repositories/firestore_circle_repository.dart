@@ -820,10 +820,8 @@ class FirestoreCircleRepository implements CircleRepository {
         'type': 'encouragement',
         'circleId': circleId,
         'recipientId': recipientId,
-        'messageType':
-            messageType == EncouragementMessageType.preset ? 'PRESET' : 'CUSTOM',
-        'presetKey': presetKey,
-        'customText': customText,
+        'presetType': presetKey,     // _dispatch translates → 'type' for CF
+        'customMessage': customText, // matches CF field name
         'isAnonymous': isAnonymous,
       });
 
@@ -954,7 +952,7 @@ class FirestoreCircleRepository implements CircleRepository {
     await _call('circleCreateEvent', {
       'circleId': circleId,
       'title': title,
-      'eventDate': eventDate.toIso8601String(),
+      'eventDateMs': eventDate.millisecondsSinceEpoch,
       'description': description,
       'location': location,
       'meetingLink': meetingLink,
@@ -1073,20 +1071,25 @@ class FirestoreCircleRepository implements CircleRepository {
   }
 
   static Encouragement _parseEncouragement(Map<String, dynamic> d) {
+    final rawCreatedAt = d['createdAt'];
+    final createdAt = rawCreatedAt is int
+        ? DateTime.fromMillisecondsSinceEpoch(rawCreatedAt).toIso8601String()
+        : (rawCreatedAt as String?) ?? DateTime.now().toIso8601String();
+    final type = d['type'] as String?;
     return Encouragement(
       id: d['id'] as String? ?? '',
       circleId: d['circleId'] as String? ?? '',
       senderId: d['senderId'] as String?,
       senderDisplayName: d['senderDisplayName'] as String?,
       recipientId: d['recipientId'] as String? ?? '',
-      messageType: (d['messageType'] as String?) == 'PRESET'
+      messageType: (type != null && type.isNotEmpty)
           ? EncouragementMessageType.preset
           : EncouragementMessageType.custom,
-      presetKey: d['presetKey'] as String?,
-      customText: d['customText'] as String?,
+      presetKey: (type != null && type.isNotEmpty) ? type : null,
+      customText: d['customMessage'] as String?,
       isAnonymous: d['isAnonymous'] as bool? ?? false,
       isRead: d['isRead'] as bool? ?? false,
-      createdAt: d['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+      createdAt: createdAt,
     );
   }
 

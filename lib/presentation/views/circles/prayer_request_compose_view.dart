@@ -62,27 +62,17 @@ class _PrayerRequestComposeViewState extends State<PrayerRequestComposeView> {
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
         title: const Text('Prayer Request'),
-        actions: [
-          TextButton(
-            onPressed: (_canSend && !_sending) ? _send : null,
-            child: _sending
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(
-                    'Send',
-                    style: TextStyle(
-                      color: _canSend
-                          ? MyWalkColor.softGold
-                          : MyWalkColor.softGold.withValues(alpha: 0.4),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                  ),
-          ),
-        ],
+        leadingWidth: 72,
+        leading: TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+        ),
+        actions: const [],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.sage)),
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -187,6 +177,27 @@ class _PrayerRequestComposeViewState extends State<PrayerRequestComposeView> {
                     },
                   );
                 },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: (_canSend && !_sending) ? _send : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MyWalkColor.sage,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: MyWalkColor.sage.withValues(alpha: 0.35),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: _sending
+                      ? const SizedBox(width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Send Prayer Request',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                ),
               ),
             ),
           ],

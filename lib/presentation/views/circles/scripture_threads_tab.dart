@@ -480,21 +480,7 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
           child: Text('Cancel',
               style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
         ),
-        actions: [
-          TextButton(
-            onPressed: _submitting ? null : _submit,
-            child: _submitting
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: MyWalkColor.golden))
-                : const Text('Post',
-                    style: TextStyle(
-                        color: MyWalkColor.golden,
-                        fontWeight: FontWeight.w600)),
-          ),
-        ],
+        actions: const [],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.golden)),
@@ -561,6 +547,24 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
                 style: const TextStyle(
                     fontSize: 12, color: MyWalkColor.warmCoral)),
           ],
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _submitting ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MyWalkColor.golden,
+                foregroundColor: MyWalkColor.charcoal,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _submitting
+                  ? const SizedBox(width: 18, height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.charcoal))
+                  : const Text('Post Thread',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            ),
+          ),
         ]),
       ),
     );

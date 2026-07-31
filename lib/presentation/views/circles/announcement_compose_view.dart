@@ -57,25 +57,17 @@ class _AnnouncementComposeViewState extends State<AnnouncementComposeView> {
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
         title: const Text('Send Announcement'),
-        actions: [
-          TextButton(
-            onPressed: _sending ? null : _send,
-            child: _sending
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text(
-                    'Send',
-                    style: TextStyle(
-                      color: MyWalkColor.softGold,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                  ),
-          ),
-        ],
+        leadingWidth: 72,
+        leading: TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+        ),
+        actions: const [],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.softGold)),
+        ),
       ),
       body: SafeArea(
         child: Padding(
@@ -112,6 +104,24 @@ class _AnnouncementComposeViewState extends State<AnnouncementComposeView> {
                     counterStyle: TextStyle(
                         color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _sending ? null : _send,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MyWalkColor.softGold,
+                    foregroundColor: MyWalkColor.charcoal,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: _sending
+                      ? const SizedBox(width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.charcoal))
+                      : const Text('Send Announcement',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
               ),
             ],

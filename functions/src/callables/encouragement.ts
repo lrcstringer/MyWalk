@@ -8,15 +8,18 @@ import {
 } from '../lib/firestore';
 import { sendPushToUsers } from '../lib/fcm';
 
-const VALID_TYPES = ['PRAYING', 'THINKING_OF_YOU', 'PROUD_OF_YOU', 'KEEP_GOING', 'GOD_SEES_YOU'] as const;
+const VALID_TYPES = ['PRAYING', 'THINKING', 'PROUD', 'KEEP_GOING', 'GOD_SEES', 'NOT_ALONE', 'STRENGTH', 'GRATEFUL'] as const;
 type EncouragementType = typeof VALID_TYPES[number];
 
 const TYPE_PRESET_TEXT: Record<EncouragementType, string> = {
   PRAYING: 'Praying for you today.',
-  THINKING_OF_YOU: 'Thinking of you today.',
-  PROUD_OF_YOU: 'Proud of you.',
-  KEEP_GOING: 'Keep going.',
-  GOD_SEES_YOU: 'God sees every one.',
+  THINKING: "Just wanted you to know I'm thinking of you.",
+  PROUD: 'Proud of you.',
+  KEEP_GOING: "Keep going — you're doing great.",
+  GOD_SEES: 'God sees your faithfulness.',
+  NOT_ALONE: "You're not walking alone.",
+  STRENGTH: 'Praying God gives you strength today.',
+  GRATEFUL: 'Grateful to be in community with you.',
 };
 
 // ── circleSendEncouragement ────────────────────────────────────────────────────
@@ -92,15 +95,17 @@ export const circleSendEncouragement = onCall(
 );
 
 // ── circleGetEncouragements ────────────────────────────────────────────────────
-// Returns encouragements received by the caller. Anonymous messages have
-// senderId and senderDisplayName masked before returning to the client.
+// Returns encouragements for the caller. type='received' (default) returns
+// messages where the caller is the recipient; type='sent' returns messages
+// where the caller is the sender. Anonymous sender identity is masked only
+// for received messages — the sender always knows they sent it.
 
 export const circleGetEncouragements = onCall(
   { region: 'us-central1' },
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
 
-    const { circleId } = request.data as { circleId: string };
+    const { circleId, type = 'received' } = request.data as { circleId: string; type?: string };
     if (!circleId?.trim()) throw new HttpsError('invalid-argument', 'circleId required');
 
     const uid = request.auth.uid;
@@ -108,8 +113,9 @@ export const circleGetEncouragements = onCall(
     const memberSnap = await membersCol(circleId).doc(uid).get();
     if (!memberSnap.exists) throw new HttpsError('permission-denied', 'Not a member of this circle');
 
+    const isSent = type === 'sent';
     const snap = await encouragementsCol(circleId)
-      .where('recipientId', '==', uid)
+      .where(isSent ? 'senderId' : 'recipientId', '==', uid)
       .orderBy('createdAt', 'desc')
       .limit(50)
       .get();
@@ -117,12 +123,13 @@ export const circleGetEncouragements = onCall(
     const encouragements = snap.docs.map((doc) => {
       const d = doc.data();
       const isAnon = d['isAnonymous'] as boolean;
+      // Mask sender identity only for received anonymous messages.
+      const maskSender = !isSent && isAnon;
       return {
         id: d['id'],
         circleId: d['circleId'],
-        // Privacy: mask identity for anonymous senders.
-        senderId: isAnon ? null : d['senderId'],
-        senderDisplayName: isAnon ? null : d['senderDisplayName'],
+        senderId: maskSender ? null : d['senderId'],
+        senderDisplayName: maskSender ? null : d['senderDisplayName'],
         isAnonymous: isAnon,
         type: d['type'],
         customMessage: d['customMessage'],
