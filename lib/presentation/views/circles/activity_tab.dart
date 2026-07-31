@@ -8,6 +8,7 @@ import '../../providers/group_prayer_list_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
 import '../../../domain/repositories/circle_repository.dart';
+import '../journal/journal_entry_composer.dart';
 import 'gratitude_wall_view.dart' show GratitudeWallWidget;
 
 String _relativeTime(String dateString) {
@@ -72,7 +73,7 @@ class ActivityTab extends StatelessWidget {
                           _sectionHeader('Milestones'),
                           const SizedBox(height: 8),
                           ...shares.map((s) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.only(bottom: 10),
                             child: _MilestoneCard(share: s, uid: uid, circleId: circleId),
                           )),
                           const SizedBox(height: 8),
@@ -81,7 +82,7 @@ class ActivityTab extends StatelessWidget {
                           _sectionHeader('Received (${received.length})'),
                           const SizedBox(height: 8),
                           ...received.map((e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.only(bottom: 10),
                             child: _EncouragementCard(
                               enc: e, uid: uid, circleId: circleId,
                               isReceived: true, members: members),
@@ -92,7 +93,7 @@ class ActivityTab extends StatelessWidget {
                           _sectionHeader('Sent (${sent.length})'),
                           const SizedBox(height: 8),
                           ...sent.map((e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.only(bottom: 10),
                             child: _EncouragementCard(
                               enc: e, uid: uid, circleId: circleId,
                               isReceived: false, members: members),
@@ -213,8 +214,8 @@ class _EncouragementCard extends StatelessWidget {
             child: Text(
               isReceived ? senderLabel : members.firstWhere((m) => m.userId == enc.recipientId,
                   orElse: () => CircleMember(userId: '', role: 'member', joinedAt: '')).displayName,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.85)),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                  color: MyWalkColor.softGold),
             ),
           ),
           Text(_relativeTime(enc.createdAt),
@@ -227,7 +228,25 @@ class _EncouragementCard extends StatelessWidget {
         ]),
         const SizedBox(height: 8),
         Text(enc.displayMessage,
-            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.82), height: 1.55)),
+            style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite.withValues(alpha: 0.88), height: 1.5)),
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: () => Navigator.push<void>(context, MaterialPageRoute(
+            builder: (_) => JournalEntryComposer(
+              habitName: 'Encouragement',
+              sourceType: 'group_encouragement',
+              chipIcon: Icons.groups_rounded,
+            ),
+          )),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.edit_note, size: 14,
+                color: MyWalkColor.softGold.withValues(alpha: 0.65)),
+            const SizedBox(width: 4),
+            Text('Create journal entry',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.65))),
+          ]),
+        ),
       ]),
       ),
     );
@@ -584,41 +603,67 @@ class _MilestoneCard extends StatelessWidget {
           ),
           border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
         ),
-      child: Row(children: [
-        Container(width: 44, height: 44,
-          decoration: BoxDecoration(shape: BoxShape.circle,
-              color: MyWalkColor.softGold.withValues(alpha: 0.1)),
-          child: const Icon(Icons.star_rounded, size: 20, color: MyWalkColor.softGold)),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(isAuthor ? 'You hit a milestone!' : '${share.userDisplayName} hit a milestone!',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
-          const SizedBox(height: 2),
-          Text(share.displayLabel,
-              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.55))),
-          if (share.celebrationCount > 0) ...[
-            const SizedBox(height: 4),
-            Text('🎉 ${share.celebrationCount} celebrated',
-                style: TextStyle(fontSize: 11, color: MyWalkColor.softGold.withValues(alpha: 0.7))),
-          ],
-        ])),
-        if (!isAuthor)
-          GestureDetector(
-            onTap: hasCelebrated ? null :
-                () => context.read<MilestoneShareProvider>().celebrate(circleId, share.id, uid),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: hasCelebrated
-                    ? MyWalkColor.softGold.withValues(alpha: 0.1)
-                    : MyWalkColor.inputBackground,
-                borderRadius: BorderRadius.circular(20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(width: 44, height: 44,
+            decoration: BoxDecoration(shape: BoxShape.circle,
+                color: MyWalkColor.softGold.withValues(alpha: 0.1)),
+            child: const Icon(Icons.star_rounded, size: 20, color: MyWalkColor.softGold)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Expanded(
+                child: Text(isAuthor ? 'You hit a milestone!' : '${share.userDisplayName} hit a milestone!',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
               ),
-              child: Text(hasCelebrated ? '🎉' : 'Celebrate',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-                      color: hasCelebrated ? MyWalkColor.softGold : Colors.white.withValues(alpha: 0.5))),
+              Text(_relativeTime(share.createdAt),
+                  style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+            ]),
+            const SizedBox(height: 2),
+            Text(share.displayLabel,
+                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.55))),
+            if (share.celebrationCount > 0) ...[
+              const SizedBox(height: 4),
+              Text('🎉 ${share.celebrationCount} celebrated',
+                  style: TextStyle(fontSize: 11, color: MyWalkColor.softGold.withValues(alpha: 0.7))),
+            ],
+          ])),
+          if (!isAuthor)
+            GestureDetector(
+              onTap: hasCelebrated ? null :
+                  () => context.read<MilestoneShareProvider>().celebrate(circleId, share.id, uid),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: hasCelebrated
+                      ? MyWalkColor.softGold.withValues(alpha: 0.1)
+                      : MyWalkColor.inputBackground,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(hasCelebrated ? '🎉' : 'Celebrate',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+                        color: hasCelebrated ? MyWalkColor.softGold : Colors.white.withValues(alpha: 0.5))),
+              ),
             ),
-          ),
+        ]),
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: () => Navigator.push<void>(context, MaterialPageRoute(
+            builder: (_) => JournalEntryComposer(
+              habitName: share.habitName,
+              sourceType: 'group_milestone',
+              chipIcon: Icons.groups_rounded,
+            ),
+          )),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.edit_note, size: 14,
+                color: MyWalkColor.softGold.withValues(alpha: 0.65)),
+            const SizedBox(width: 4),
+            Text('Create journal entry',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.65))),
+          ]),
+        ),
       ]),
       ),
     );

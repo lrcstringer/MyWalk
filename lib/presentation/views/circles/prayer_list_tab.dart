@@ -5,6 +5,7 @@ import '../../../data/datasources/remote/auth_service.dart';
 import '../../providers/prayer_list_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
+import '../journal/journal_entry_composer.dart';
 
 Future<bool> _isOffline() async {
   final r = await Connectivity().checkConnectivity();
@@ -20,6 +21,26 @@ String _relativeTime(String iso) {
   if (diff.inDays < 1) return '${diff.inHours}h ago';
   if (diff.inDays == 1) return 'Yesterday';
   return '${diff.inDays}d ago';
+}
+
+Widget _journalFooter(BuildContext context, String habitName) {
+  return GestureDetector(
+    onTap: () => Navigator.push<void>(context, MaterialPageRoute(
+      builder: (_) => JournalEntryComposer(
+        habitName: habitName,
+        sourceType: 'group_prayer',
+        chipIcon: Icons.groups_rounded,
+      ),
+    )),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(Icons.edit_note, size: 14,
+          color: MyWalkColor.softGold.withValues(alpha: 0.65)),
+      const SizedBox(width: 4),
+      Text('Create journal entry',
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+              color: MyWalkColor.softGold.withValues(alpha: 0.65))),
+    ]),
+  );
 }
 
 void _showMarkAnsweredDialogFor(
@@ -306,7 +327,7 @@ class PrayerListTab extends StatelessWidget {
       padding: const EdgeInsets.only(top: 60),
       child: Column(children: [
         Icon(Icons.volunteer_activism_rounded, size: 40,
-            color: Colors.white.withValues(alpha: 0.15)),
+            color: MyWalkColor.sage.withValues(alpha: 0.4)),
         const SizedBox(height: 12),
         Text('No prayer requests yet.',
             style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
@@ -383,7 +404,7 @@ class _PrayerRequestCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text('Answered',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: MyWalkColor.sage)),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: MyWalkColor.sage)),
             ),
           const SizedBox(width: 4),
           Text(_relativeTime(request.createdAt),
@@ -391,7 +412,7 @@ class _PrayerRequestCard extends StatelessWidget {
         ]),
         const SizedBox(height: 8),
         Text(request.requestText,
-            style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite.withValues(alpha: 0.9), height: 1.45)),
+            style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite.withValues(alpha: 0.88), height: 1.5)),
         if (isAnswered && request.answeredNote != null) ...[
           const SizedBox(height: 8),
           Container(
@@ -412,6 +433,8 @@ class _PrayerRequestCard extends StatelessWidget {
           if (isAuthor && !isAnswered)
             _markAnsweredButton(context),
         ]),
+        const SizedBox(height: 10),
+        _journalFooter(context, 'Group Prayer'),
         ]),
       ),
     );
@@ -494,20 +517,30 @@ class _IndividualRequestCard extends StatelessWidget {
         : '${request.authorDisplayName} asked you';
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: isAnswered
-            ? MyWalkColor.sage.withValues(alpha: 0.06)
-            : MyWalkColor.cardBackground,
+        color: MyWalkColor.sage,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isAnswered
-              ? MyWalkColor.sage.withValues(alpha: 0.2)
-              : MyWalkColor.cardBorder,
-          width: 0.5,
-        ),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Container(
+        margin: const EdgeInsets.only(left: 3),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isAnswered
+              ? MyWalkColor.sage.withValues(alpha: 0.06)
+              : MyWalkColor.cardBackground,
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          ),
+          border: Border.all(
+            color: isAnswered
+                ? MyWalkColor.sage.withValues(alpha: 0.2)
+                : MyWalkColor.cardBorder,
+            width: 0.5,
+          ),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           MyWalkAvatar(name: request.authorDisplayName, size: 26),
           const SizedBox(width: 8),
@@ -579,7 +612,10 @@ class _IndividualRequestCard extends StatelessWidget {
           const SizedBox(height: 10),
           _responseRow(context),
         ],
+        const SizedBox(height: 10),
+        _journalFooter(context, 'Group Prayer'),
       ]),
+      ),
     );
   }
 

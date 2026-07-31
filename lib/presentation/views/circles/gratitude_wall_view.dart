@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../../domain/repositories/circle_repository.dart';
 import '../../theme/app_theme.dart';
+import '../journal/journal_entry_composer.dart';
 
 /// Embeddable gratitude wall widget (used inside CircleDetailView).
 class GratitudeWallWidget extends StatefulWidget {
@@ -97,13 +98,17 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
     return days[(date.weekday - 1) % 7];
   }
 
+  Widget _sectionHeader(String title) {
+    return Text(title,
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+            color: MyWalkColor.softGold, letterSpacing: 1.2));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       if (widget.showHeader) ...[
-        const Text('GRATITUDE WALL',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                color: MyWalkColor.softGold, letterSpacing: 1.2)),
+        _sectionHeader('GRATITUDE WALL'),
         const SizedBox(height: 10),
       ],
       if (_isLoading)
@@ -123,13 +128,19 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
         )
       else if (_gratitudes.isEmpty)
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Center(
-            child: Text(
+          padding: const EdgeInsets.only(top: 16, bottom: 8),
+          child: Column(children: [
+            Icon(Icons.volunteer_activism_rounded, size: 40,
+                color: MyWalkColor.softGold.withValues(alpha: 0.4)),
+            const SizedBox(height: 12),
+            Text(
               _weeksBack == 0 ? 'No gratitudes shared this week yet' : 'No gratitudes this week',
-              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)),
+              style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4)),
             ),
-          ),
+            const SizedBox(height: 6),
+            Text('Be the first to share a moment of praise.',
+                style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.3))),
+          ]),
         )
       else ...[
         if (_showNewBadge && _newCount > 0)
@@ -196,15 +207,33 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
                       fontSize: 13, fontWeight: FontWeight.w600,
                       color: item.isAnonymous
                           ? Colors.white.withValues(alpha: 0.45)
-                          : MyWalkColor.warmWhite),
+                          : (item.isMine ? MyWalkColor.golden : MyWalkColor.softGold)),
                 ),
               ),
               Text(_relativeTime(item.sharedAt),
                   style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
             ]),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(item.gratitudeText,
-                style: const TextStyle(fontSize: 14, color: MyWalkColor.warmWhite, height: 1.5)),
+                style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite.withValues(alpha: 0.88), height: 1.5)),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => Navigator.push<void>(context, MaterialPageRoute(
+                builder: (_) => JournalEntryComposer(
+                  habitName: 'Gratitude',
+                  sourceType: 'group_encouragement',
+                  chipIcon: Icons.groups_rounded,
+                ),
+              )),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.edit_note, size: 14,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.65)),
+                const SizedBox(width: 4),
+                Text('Create journal entry',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                        color: MyWalkColor.softGold.withValues(alpha: 0.65))),
+              ]),
+            ),
           ]),
         ),
       ),

@@ -34,6 +34,7 @@ class JournalEntryComposer extends StatefulWidget {
   final String? habitName;
   final FruitType? fruitTag;
   final String sourceType;
+  final IconData? chipIcon;
 
   const JournalEntryComposer({
     super.key,
@@ -41,6 +42,7 @@ class JournalEntryComposer extends StatefulWidget {
     this.habitId,
     this.habitName,
     this.fruitTag,
+    this.chipIcon,
     this.sourceType = 'free',
   });
 
@@ -592,6 +594,7 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
                     fruitTag: fruitTag,
                     sourceType: sourceType,
                     theme: theme,
+                    chipIcon: widget.chipIcon,
                     onClear: () => setState(() => _linkedHabit = null),
                   )
                 : _LinkHabitButton(
@@ -604,6 +607,7 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
               fruitTag: fruitTag,
               sourceType: sourceType,
               theme: theme,
+              chipIcon: widget.chipIcon,
             ),
 
           // Toolbar
@@ -759,6 +763,7 @@ class _SourceChip extends StatelessWidget {
   final String sourceType;
   final JournalTheme theme;
   final VoidCallback? onClear;
+  final IconData? chipIcon;
 
   const _SourceChip({
     this.habitName,
@@ -766,6 +771,7 @@ class _SourceChip extends StatelessWidget {
     required this.sourceType,
     required this.theme,
     this.onClear,
+    this.chipIcon,
   });
 
   @override
@@ -777,7 +783,7 @@ class _SourceChip extends StatelessWidget {
     if (habitName != null) {
       chipColor = MyWalkColor.golden;
       label = habitName!;
-      icon = Icons.repeat;
+      icon = chipIcon ?? Icons.repeat;
     } else if (fruitTag != null) {
       chipColor = fruitTag!.color;
       label = fruitTag!.label;

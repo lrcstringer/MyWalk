@@ -6,8 +6,20 @@ import '../../../domain/entities/habit.dart' show PrayerItemStatus;
 import '../../providers/group_prayer_list_provider.dart';
 import '../../providers/circle_notification_provider.dart';
 import '../../theme/app_theme.dart';
+import '../journal/journal_entry_composer.dart';
 import 'prayer_list_tab.dart';
 import 'prayer_request_compose_view.dart';
+
+String _relativeTime(String iso) {
+  final date = DateTime.tryParse(iso);
+  if (date == null) return '';
+  final diff = DateTime.now().difference(date);
+  if (diff.inMinutes < 1) return 'Just now';
+  if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+  if (diff.inDays < 1) return '${diff.inHours}h ago';
+  if (diff.inDays == 1) return 'Yesterday';
+  return '${diff.inDays}d ago';
+}
 
 // ── Top-level Prayer tab: Requests | List sub-tabs ───────────────────────────
 
@@ -61,6 +73,34 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
     );
   }
 
+  Widget _pillTab(int index, String label) {
+    final selected = _tabController.index == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _tabController.animateTo(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? MyWalkColor.sage : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+              color: selected
+                  ? MyWalkColor.charcoal
+                  : Colors.white.withValues(alpha: 0.45),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,18 +116,17 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
       body: Column(children: [
         Container(
           color: MyWalkColor.charcoal,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: MyWalkColor.sage,
-            unselectedLabelColor: Colors.white.withValues(alpha: 0.4),
-            indicatorColor: MyWalkColor.sage,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            unselectedLabelStyle: const TextStyle(fontSize: 13),
-            tabs: const [
-              Tab(text: 'Requests'),
-              Tab(text: 'List'),
-            ],
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(children: [
+              _pillTab(0, 'Requests'),
+              _pillTab(1, 'List'),
+            ]),
           ),
         ),
         Expanded(
@@ -273,7 +312,7 @@ class _NoListState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+      padding: const EdgeInsets.only(top: 60),
       child: Column(children: [
         Icon(Icons.format_list_bulleted_rounded,
             size: 40, color: MyWalkColor.sage.withValues(alpha: 0.4)),
@@ -434,6 +473,11 @@ class _ListBody extends StatelessWidget {
           style:
               TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4)),
         ),
+        if (!isAdmin) ...[
+          const SizedBox(height: 6),
+          Text('Check back soon — your admin will add items.',
+              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.3))),
+        ],
       ]),
     );
   }
@@ -629,11 +673,11 @@ class _PrayerItemCardState extends State<_PrayerItemCard> {
                     fontSize: 14,
                     color: isAnswered
                         ? Colors.white.withValues(alpha: 0.45)
-                        : MyWalkColor.warmWhite,
+                        : MyWalkColor.warmWhite.withValues(alpha: 0.88),
                     decoration:
                         isAnswered ? TextDecoration.lineThrough : null,
                     decorationColor: Colors.white.withValues(alpha: 0.3),
-                    height: 1.45)),
+                    height: 1.5)),
           ),
           if (widget.isAdmin) ...[
             const SizedBox(width: 8),
@@ -651,7 +695,10 @@ class _PrayerItemCardState extends State<_PrayerItemCard> {
           else
             _statusBadge(item),
           const Spacer(),
-          if (widget.isAdmin)
+          Text(_relativeTime(item.createdAt),
+              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+          if (widget.isAdmin) ...[
+            const SizedBox(width: 8),
             GestureDetector(
               onTap: () => setState(() => _editingMemo = !_editingMemo),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -669,6 +716,7 @@ class _PrayerItemCardState extends State<_PrayerItemCard> {
                             : Colors.white.withValues(alpha: 0.3))),
               ]),
             ),
+          ],
         ]),
         if (item.memo != null && item.memo!.isNotEmpty && !_editingMemo) ...[
           const SizedBox(height: 8),
@@ -732,6 +780,24 @@ class _PrayerItemCardState extends State<_PrayerItemCard> {
             ),
           ]),
         ],
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: () => Navigator.push<void>(context, MaterialPageRoute(
+            builder: (_) => JournalEntryComposer(
+              habitName: 'Group Prayer',
+              sourceType: 'group_prayer',
+              chipIcon: Icons.groups_rounded,
+            ),
+          )),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.edit_note, size: 14,
+                color: MyWalkColor.softGold.withValues(alpha: 0.65)),
+            const SizedBox(width: 4),
+            Text('Create journal entry',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.65))),
+          ]),
+        ),
       ]),
       ),
     );

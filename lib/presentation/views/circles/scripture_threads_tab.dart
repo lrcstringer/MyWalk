@@ -7,6 +7,7 @@ import '../../providers/scripture_thread_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
 import '../bible/bible_browser_view.dart';
+import '../journal/journal_entry_composer.dart';
 import 'scripture_thread_detail_view.dart';
 
 class ScriptureThreadsTab extends StatefulWidget {
@@ -65,12 +66,7 @@ class _ScriptureThreadsTabState extends State<ScriptureThreadsTab> {
               : threads.isEmpty
               ? _emptyState()
               : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Text('THREADS',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                        color: MyWalkColor.golden, letterSpacing: 1.2)),
-                  ),
+                  _sectionHeader('THREADS'),
                   Expanded(
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
@@ -91,24 +87,30 @@ class _ScriptureThreadsTabState extends State<ScriptureThreadsTab> {
     );
   }
 
+  Widget _sectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Text(title,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+              color: MyWalkColor.golden, letterSpacing: 1.2)),
+    );
+  }
+
   Widget _emptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.menu_book_rounded,
-              size: 40, color: MyWalkColor.golden.withValues(alpha: 0.5)),
-          const SizedBox(height: 12),
-          Text('No threads yet.',
-              style: TextStyle(
-                  fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
-          const SizedBox(height: 6),
-          Text('Tap + to start a scripture discussion.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 13, color: Colors.white.withValues(alpha: 0.3))),
-        ]),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 60),
+      child: Column(children: [
+        Icon(Icons.menu_book_rounded,
+            size: 40, color: MyWalkColor.golden.withValues(alpha: 0.5)),
+        const SizedBox(height: 12),
+        Text('No threads yet.',
+            style: TextStyle(
+                fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
+        const SizedBox(height: 6),
+        Text('Tap + to start a scripture discussion.',
+            style: TextStyle(
+                fontSize: 13, color: Colors.white.withValues(alpha: 0.3))),
+      ]),
     );
   }
 
@@ -263,7 +265,7 @@ class _ThreadCard extends StatelessWidget {
                   fontSize: 13, fontWeight: FontWeight.w600,
                   color: isClosed
                       ? Colors.white.withValues(alpha: 0.45)
-                      : MyWalkColor.warmWhite,
+                      : MyWalkColor.softGold,
                 )),
             ),
             Text(_relativeTime(thread.createdAt),
@@ -316,10 +318,10 @@ class _ThreadCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text('Closed',
-                    style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.35))),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.white.withValues(alpha: 0.35))),
               ),
           ]),
           const SizedBox(height: 6),
@@ -328,10 +330,10 @@ class _ThreadCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 14,
               color: isClosed
                   ? Colors.white.withValues(alpha: 0.3)
-                  : MyWalkColor.warmWhite.withValues(alpha: 0.75),
+                  : MyWalkColor.warmWhite.withValues(alpha: 0.88),
               height: 1.5,
               fontStyle: FontStyle.italic,
             ),
@@ -366,6 +368,24 @@ class _ThreadCard extends StatelessWidget {
                     ? Colors.white.withValues(alpha: 0.2)
                     : MyWalkColor.golden.withValues(alpha: 0.5)),
           ]),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () => Navigator.push<void>(context, MaterialPageRoute(
+              builder: (_) => JournalEntryComposer(
+                habitName: thread.reference,
+                sourceType: 'group_scripture',
+                chipIcon: Icons.groups_rounded,
+              ),
+            )),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.edit_note, size: 14,
+                  color: MyWalkColor.softGold.withValues(alpha: isClosed ? 0.35 : 0.65)),
+              const SizedBox(width: 4),
+              Text('Create journal entry',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                      color: MyWalkColor.softGold.withValues(alpha: isClosed ? 0.35 : 0.65))),
+            ]),
+          ),
         ]),
         ),
       ),

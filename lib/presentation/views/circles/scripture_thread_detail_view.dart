@@ -220,10 +220,10 @@ class _PassageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: MyWalkColor.golden.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border:
             Border.all(color: MyWalkColor.golden.withValues(alpha: 0.2), width: 0.5),
       ),
@@ -264,7 +264,7 @@ class _PassageCard extends StatelessWidget {
             thread.message!,
             style: TextStyle(
               fontSize: 14,
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.88),
               height: 1.5,
             ),
           ),
@@ -382,28 +382,35 @@ class _CommentBubble extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Text(
-            isMe ? 'You' : comment.authorDisplayName,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isMe ? MyWalkColor.golden : MyWalkColor.softGold,
+          MyWalkAvatar(
+            name: isMe ? null : comment.authorDisplayName,
+            size: 26,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isMe ? 'You' : comment.authorDisplayName,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isMe ? MyWalkColor.golden : MyWalkColor.softGold,
+              ),
             ),
           ),
-          const SizedBox(width: 6),
           Text(
             _relativeTime(comment.createdAt),
             style: TextStyle(
                 fontSize: 11, color: Colors.white.withValues(alpha: 0.3)),
           ),
-          const Spacer(),
-          if (canDelete)
+          if (canDelete) ...[
+            const SizedBox(width: 6),
             GestureDetector(
               onTap: onDelete,
               child: Icon(Icons.delete_outline_rounded,
                   size: 15,
                   color: Colors.white.withValues(alpha: 0.3)),
             ),
+          ],
           if (threadOpen && !isReply) ...[
             const SizedBox(width: 10),
             GestureDetector(
@@ -421,7 +428,7 @@ class _CommentBubble extends StatelessWidget {
           style: TextStyle(
               fontSize: 14,
               color: MyWalkColor.warmWhite.withValues(alpha: 0.88),
-              height: 1.45),
+              height: 1.5),
         ),
       ]),
     );
@@ -435,7 +442,7 @@ class _CommentBubble extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Container(
-        margin: const EdgeInsets.only(left: 2),
+        margin: const EdgeInsets.only(left: 3),
         child: inner,
       ),
     );
