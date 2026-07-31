@@ -296,7 +296,7 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     final now = DateTime.now();
     final upcomingCount = events.where((e) => e.eventDateTime.isAfter(now)).length;
     final badgeCounts = <int?>[
-      prayerCount > 0 ? prayerCount : null,
+      null,
       null,
       null,
       null,
