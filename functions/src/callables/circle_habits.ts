@@ -10,7 +10,6 @@ import {
   circleHabitMilestonesCol,
   Timestamp,
 } from '../lib/firestore';
-import { sendPushToUsers } from '../lib/fcm';
 
 // ── circleCreateHabit ─────────────────────────────────────────────────────────
 
@@ -86,20 +85,6 @@ export const circleCreateHabit = onCall(
       startsAt: now,
       endsAt: null,
     });
-
-    // Notify all circle members.
-    const membersSnap = await membersCol(circleId).get();
-    const memberIds = membersSnap.docs
-      .map((d) => d.data()['userId'] as string)
-      .filter((id) => id !== uid);
-
-    if (memberIds.length > 0) {
-      sendPushToUsers(memberIds, {
-        title: 'New circle habit',
-        body: `Your circle started "${name.trim()}". Join them?`,
-        data: { type: 'CIRCLE_HABIT_CREATED', circleId, habitId: ref.id },
-      }).catch(() => { /* non-fatal */ });
-    }
 
     return { id: ref.id };
   }

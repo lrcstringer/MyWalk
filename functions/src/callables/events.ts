@@ -83,20 +83,6 @@ export const circleCreateEvent = onCall(
       createdAt: now,
     });
 
-    // Notify all other circle members (non-fatal).
-    const membersSnap = await membersCol(circleId).get();
-    const otherIds = membersSnap.docs
-      .map((d) => d.data()['userId'] as string)
-      .filter((id) => id !== uid);
-
-    if (otherIds.length > 0) {
-      sendPushToUsers(otherIds, {
-        title: 'New circle event',
-        body: `${title.trim()} — ${_formatEventDate(eventDate)}`,
-        data: { type: 'EVENT_CREATED', circleId, eventId: ref.id },
-      }).catch(() => { /* non-fatal */ });
-    }
-
     return { id: ref.id };
   }
 );
