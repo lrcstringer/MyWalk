@@ -816,7 +816,32 @@ class _SectionScreenWrapper extends StatelessWidget {
           child: Container(height: 2, color: accent.withValues(alpha: 0.55)),
         ),
       ),
-      body: body,
+      body: Stack(
+        children: [
+          body,
+          Positioned(
+            top: 0, left: 0, right: 0,
+            height: 110,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      accent.withValues(alpha: 0.18),
+                      accent.withValues(alpha: 0.05),
+                      Colors.transparent,
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.38, 0.65, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
