@@ -541,15 +541,15 @@ class _HeroHeaderState extends State<_HeroHeader>
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       decoration: BoxDecoration(
-        gradient: RadialGradient(
-          center: const Alignment(-0.8, -1.5),
-          radius: 1.4,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomCenter,
           colors: [
-            MyWalkColor.sage.withValues(alpha: 0.20),
-            MyWalkColor.sage.withValues(alpha: 0.04),
-            MyWalkColor.charcoal,
+            MyWalkColor.sage.withValues(alpha: 0.18),
+            MyWalkColor.sage.withValues(alpha: 0.05),
+            Colors.transparent,
           ],
-          stops: const [0.0, 0.45, 0.75],
+          stops: const [0.0, 0.5, 1.0],
         ),
       ),
       child: Column(
@@ -579,8 +579,8 @@ class _HeroHeaderState extends State<_HeroHeader>
                 ),
               ),
               const SizedBox(width: 6),
-              const Text('My Circle',
-                style: TextStyle(
+              Text(detail.name,
+                style: const TextStyle(
                   fontSize: 11, fontWeight: FontWeight.w600,
                   letterSpacing: 0.8, color: MyWalkColor.sage)),
             ]),

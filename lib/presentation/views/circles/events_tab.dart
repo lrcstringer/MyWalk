@@ -50,17 +50,7 @@ class EventsTab extends StatelessWidget {
                   onRefresh: () => provider.load(circleId),
                   child: events.isEmpty
                       ? _emptyState(canCreate)
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                          itemCount: events.length,
-                          separatorBuilder: (context, i) => const SizedBox(height: 12),
-                          itemBuilder: (_, i) => _EventCard(
-                            event: events[i],
-                            uid: uid,
-                            circleId: circleId,
-                            isAdmin: isAdmin,
-                          ),
-                        ),
+                      : _buildSectioned(events, uid),
                 ),
         );
       },
@@ -96,6 +86,39 @@ class EventsTab extends StatelessWidget {
       builder: (_) => CreateEventSheet(circleId: circleId, isAdmin: isAdmin),
     );
   }
+
+  Widget _buildSectioned(List<CircleEvent> events, String uid) {
+    final now = DateTime.now();
+    final upcoming = events.where((e) => !e.eventDateTime.isBefore(now)).toList();
+    final past = events.where((e) => e.eventDateTime.isBefore(now)).toList();
+    final items = <Widget>[];
+    if (upcoming.isNotEmpty) {
+      items.add(_sectionHeader('Upcoming'));
+      items.add(const SizedBox(height: 8));
+      for (final e in upcoming) {
+        items.add(_EventCard(event: e, uid: uid, circleId: circleId, isAdmin: isAdmin));
+        items.add(const SizedBox(height: 12));
+      }
+    }
+    if (past.isNotEmpty) {
+      if (items.isNotEmpty) items.add(const SizedBox(height: 4));
+      items.add(_sectionHeader('Past'));
+      items.add(const SizedBox(height: 8));
+      for (final e in past) {
+        items.add(Opacity(opacity: 0.45, child: _EventCard(event: e, uid: uid, circleId: circleId, isAdmin: isAdmin)));
+        items.add(const SizedBox(height: 12));
+      }
+    }
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      children: items,
+    );
+  }
+
+  Widget _sectionHeader(String label) => Text(label.toUpperCase(),
+      style: const TextStyle(
+          fontSize: 11, fontWeight: FontWeight.w700,
+          color: MyWalkColor.eventPurple, letterSpacing: 1.2));
 }
 
 // ─── Event Card ───────────────────────────────────────────────────────────────
@@ -123,16 +146,16 @@ class _EventCard extends StatelessWidget {
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         color: MyWalkColor.eventPurple,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Container(
       margin: const EdgeInsets.only(left: 3),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: MyWalkColor.cardBackground,
         borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(14),
-          bottomRight: Radius.circular(14),
+          topRight: Radius.circular(12),
+          bottomRight: Radius.circular(12),
         ),
         border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
       ),
@@ -169,7 +192,7 @@ class _EventCard extends StatelessWidget {
         const SizedBox(height: 10),
         Text(event.title,
             style: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
+                fontSize: 13, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
         if (event.description != null && event.description!.isNotEmpty) ...[
           const SizedBox(height: 6),
           Text(event.description!,

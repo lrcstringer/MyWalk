@@ -319,8 +319,8 @@ class PrayerListTab extends StatelessWidget {
 
   Widget _sectionHeader(String title) {
     return Text(title.toUpperCase(),
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-            color: Colors.white.withValues(alpha: 0.4), letterSpacing: 1.2));
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+            color: MyWalkColor.sage, letterSpacing: 1.2));
   }
 
 }
@@ -345,24 +345,36 @@ class _PrayerRequestCard extends StatelessWidget {
     final isAnswered = request.status == PrayerRequestStatus.answered;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: isAnswered
-            ? MyWalkColor.sage.withValues(alpha: 0.06)
-            : MyWalkColor.cardBackground,
+        color: MyWalkColor.sage,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isAnswered
-              ? MyWalkColor.sage.withValues(alpha: 0.2)
-              : MyWalkColor.cardBorder,
-          width: 0.5,
-        ),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Container(
+        margin: const EdgeInsets.only(left: 3),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isAnswered
+              ? MyWalkColor.sage.withValues(alpha: 0.06)
+              : MyWalkColor.cardBackground,
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          ),
+          border: Border.all(
+            color: isAnswered
+                ? MyWalkColor.sage.withValues(alpha: 0.2)
+                : MyWalkColor.cardBorder,
+            width: 0.5,
+          ),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
+          MyWalkAvatar(name: request.authorDisplayName, size: 26),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(request.authorDisplayName,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                     color: isAuthor ? MyWalkColor.golden : MyWalkColor.softGold)),
           ),
           if (isAnswered)
@@ -402,7 +414,8 @@ class _PrayerRequestCard extends StatelessWidget {
           if (isAuthor && !isAnswered)
             _markAnsweredButton(context),
         ]),
-      ]),
+        ]),
+      ),
     );
   }
 
@@ -498,13 +511,11 @@ class _IndividualRequestCard extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(Icons.person_outline_rounded, size: 13,
-              color: (isAuthor ? MyWalkColor.golden : MyWalkColor.softGold)
-                  .withValues(alpha: 0.7)),
-          const SizedBox(width: 5),
+          MyWalkAvatar(name: request.authorDisplayName, size: 26),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(directionLabel,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                     color: isAuthor ? MyWalkColor.golden : MyWalkColor.softGold)),
           ),
           if (isAnswered)

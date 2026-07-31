@@ -101,9 +101,9 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       if (widget.showHeader) ...[
-        Text('GRATITUDE WALL',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                color: Colors.white.withValues(alpha: 0.4), letterSpacing: 1.2)),
+        const Text('GRATITUDE WALL',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                color: MyWalkColor.softGold, letterSpacing: 1.2)),
         const SizedBox(height: 10),
       ],
       if (_isLoading)
@@ -167,32 +167,46 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
           ? () => setState(() => _deleteTarget = item)
           : null,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
-          color: const Color(0xFF2A2A3C),
+          color: MyWalkColor.softGold,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF353548), width: 1),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Text(
-              item.isAnonymous
-                  ? 'Someone in your group'
-                  : (item.displayName?.split(' ').first ?? 'Member'),
-              style: TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600,
-                  color: item.isAnonymous
-                      ? const Color(0xFF9A98A0)
-                      : MyWalkColor.warmWhite),
+        child: Container(
+          margin: const EdgeInsets.only(left: 3),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: MyWalkColor.cardBackground,
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(12),
+              bottomRight: Radius.circular(12),
             ),
-            const Spacer(),
-            Text(_relativeTime(item.sharedAt),
-                style: const TextStyle(fontSize: 11, color: Color(0xFF6B6B7B))),
+            border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              MyWalkAvatar(name: item.isAnonymous ? null : item.displayName, size: 26),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  item.isAnonymous
+                      ? 'Someone in your group'
+                      : (item.displayName?.split(' ').first ?? 'Member'),
+                  style: TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600,
+                      color: item.isAnonymous
+                          ? Colors.white.withValues(alpha: 0.45)
+                          : MyWalkColor.warmWhite),
+                ),
+              ),
+              Text(_relativeTime(item.sharedAt),
+                  style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+            ]),
+            const SizedBox(height: 6),
+            Text(item.gratitudeText,
+                style: const TextStyle(fontSize: 14, color: MyWalkColor.warmWhite, height: 1.5)),
           ]),
-          const SizedBox(height: 6),
-          Text(item.gratitudeText,
-              style: const TextStyle(fontSize: 14, color: MyWalkColor.warmWhite, height: 1.5)),
-        ]),
+        ),
       ),
     );
   }

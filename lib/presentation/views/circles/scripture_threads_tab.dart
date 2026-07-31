@@ -64,18 +64,28 @@ class _ScriptureThreadsTabState extends State<ScriptureThreadsTab> {
                   child: CircularProgressIndicator(color: MyWalkColor.golden))
               : threads.isEmpty
               ? _emptyState()
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                  itemCount: threads.length,
-                  separatorBuilder: (context, i) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) => _ThreadCard(
-                    thread: threads[i],
-                    isAdmin: widget.isAdmin,
-                    onTap: () => _openThread(context, threads[i]),
-                    onClose: () => _confirmClose(context, threads[i]),
-                    onDelete: () => _confirmDelete(context, threads[i]),
+              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Text('THREADS',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                        color: MyWalkColor.golden, letterSpacing: 1.2)),
                   ),
-                ),
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                      itemCount: threads.length,
+                      separatorBuilder: (context, i) => const SizedBox(height: 10),
+                      itemBuilder: (context, i) => _ThreadCard(
+                        thread: threads[i],
+                        isAdmin: widget.isAdmin,
+                        onTap: () => _openThread(context, threads[i]),
+                        onClose: () => _confirmClose(context, threads[i]),
+                        onDelete: () => _confirmDelete(context, threads[i]),
+                      ),
+                    ),
+                  ),
+                ]),
         );
       },
     );
@@ -222,24 +232,22 @@ class _ThreadCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        clipBehavior: isClosed ? Clip.none : Clip.hardEdge,
+        clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
-          color: isClosed ? null : MyWalkColor.golden,
-          borderRadius: BorderRadius.circular(14),
+          color: MyWalkColor.golden,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Container(
-        margin: isClosed ? null : const EdgeInsets.only(left: 3),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(left: 3),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isClosed
               ? MyWalkColor.cardBackground.withValues(alpha: 0.5)
               : MyWalkColor.cardBackground,
-          borderRadius: isClosed
-              ? BorderRadius.circular(14)
-              : const BorderRadius.only(
-                  topRight: Radius.circular(14),
-                  bottomRight: Radius.circular(14),
-                ),
+          borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            ),
           border: Border.all(
             color: MyWalkColor.cardBorder,
             width: 0.5,
@@ -247,38 +255,21 @@ class _ThreadCard extends StatelessWidget {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Icon(Icons.menu_book_rounded,
-                size: 13,
-                color: isClosed
-                    ? Colors.white.withValues(alpha: 0.3)
-                    : MyWalkColor.golden),
-            const SizedBox(width: 6),
+            MyWalkAvatar(name: thread.createdByDisplayName, size: 26),
+            const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                thread.reference,
+              child: Text(thread.createdByDisplayName,
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 13, fontWeight: FontWeight.w600,
                   color: isClosed
-                      ? Colors.white.withValues(alpha: 0.35)
-                      : MyWalkColor.golden,
-                ),
-              ),
+                      ? Colors.white.withValues(alpha: 0.45)
+                      : MyWalkColor.warmWhite,
+                )),
             ),
-            if (isClosed)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text('Closed',
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.35))),
-              )
-            else if (isAdmin)
+            Text(_relativeTime(thread.createdAt),
+                style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+            if (!isClosed && isAdmin) ...[
+              const SizedBox(width: 4),
               PopupMenuButton<_ThreadAction>(
                 icon: Icon(Icons.more_vert,
                     size: 18, color: Colors.white.withValues(alpha: 0.4)),
@@ -289,14 +280,14 @@ class _ThreadCard extends StatelessWidget {
                   if (action == _ThreadAction.delete) onDelete();
                 },
                 itemBuilder: (_) => [
-                  _menuItem(_ThreadAction.close, Icons.lock_outline_rounded,
-                      'Close Thread'),
-                  _menuItem(_ThreadAction.delete, Icons.delete_outline_rounded,
-                      'Delete Thread',
+                  _menuItem(_ThreadAction.close, Icons.lock_outline_rounded, 'Close Thread'),
+                  _menuItem(_ThreadAction.delete, Icons.delete_outline_rounded, 'Delete Thread',
                       color: MyWalkColor.warmCoral),
                 ],
               ),
-            if (isClosed && isAdmin)
+            ],
+            if (isClosed && isAdmin) ...[
+              const SizedBox(width: 4),
               IconButton(
                 icon: Icon(Icons.delete_outline_rounded,
                     size: 18, color: MyWalkColor.warmCoral.withValues(alpha: 0.7)),
@@ -305,8 +296,33 @@ class _ThreadCard extends StatelessWidget {
                 tooltip: 'Delete Thread',
                 onPressed: onDelete,
               ),
+            ],
           ]),
           const SizedBox(height: 8),
+          Row(children: [
+            Icon(Icons.menu_book_rounded,
+                size: 13,
+                color: isClosed ? Colors.white.withValues(alpha: 0.3) : MyWalkColor.golden),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(thread.reference,
+                style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600,
+                  color: isClosed ? Colors.white.withValues(alpha: 0.35) : MyWalkColor.golden,
+                )),
+            ),
+            if (isClosed)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text('Closed',
+                    style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.35))),
+              ),
+          ]),
+          const SizedBox(height: 6),
           Text(
             _passagePreview(thread.passageText),
             maxLines: 2,
@@ -326,12 +342,10 @@ class _ThreadCard extends StatelessWidget {
                 size: 12, color: Colors.white.withValues(alpha: 0.3)),
             const SizedBox(width: 4),
             Text('${thread.commentCount}',
-                style: TextStyle(
-                    fontSize: 12, color: Colors.white.withValues(alpha: 0.3))),
+                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.3))),
             const Spacer(),
-            Text('${thread.translation}  •  ${thread.createdByDisplayName}',
-                style: TextStyle(
-                    fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+            Text(thread.translation,
+                style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
           ]),
         ]),
         ),
@@ -362,6 +376,18 @@ class _ThreadCard extends StatelessWidget {
     } catch (_) {
       return raw;
     }
+  }
+
+  String _relativeTime(String dateString) {
+    final date = DateTime.tryParse(dateString);
+    if (date == null) return '';
+    final diff = DateTime.now().difference(date);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Yesterday';
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days[(date.weekday - 1) % 7];
   }
 }
 

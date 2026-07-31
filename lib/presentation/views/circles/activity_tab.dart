@@ -7,7 +7,20 @@ import '../../providers/weekly_pulse_provider.dart';
 import '../../providers/group_prayer_list_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
+import '../../../domain/repositories/circle_repository.dart';
 import 'gratitude_wall_view.dart' show GratitudeWallWidget;
+
+String _relativeTime(String dateString) {
+  final date = DateTime.tryParse(dateString);
+  if (date == null) return '';
+  final diff = DateTime.now().difference(date);
+  if (diff.inMinutes < 1) return 'Just now';
+  if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+  if (diff.inDays < 1) return '${diff.inHours}h ago';
+  if (diff.inDays == 1) return 'Yesterday';
+  final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  return days[(date.weekday - 1) % 7];
+}
 
 class ActivityTab extends StatelessWidget {
   final String circleId;
@@ -44,6 +57,10 @@ class ActivityTab extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                     children: [
+                      _sectionHeader('This Week'),
+                      const SizedBox(height: 8),
+                      _HeatmapSection(circleId: circleId, members: members),
+                      const SizedBox(height: 20),
                       _gratitudeHeader(context),
                       const SizedBox(height: 8),
                       GratitudeWallWidget(circleId: circleId, showHeader: false),
@@ -104,12 +121,12 @@ class ActivityTab extends StatelessWidget {
   );
 
   Widget _sectionHeader(String title) => Text(title.toUpperCase(),
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
           color: MyWalkColor.softGold, letterSpacing: 1.2));
 
   Widget _gratitudeHeader(BuildContext context) => Row(children: [
     const Expanded(child: Text('GRATITUDE WALL',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
             color: MyWalkColor.softGold, letterSpacing: 1.2))),
     GestureDetector(
       onTap: () => _showGratitudeSheet(context),
@@ -182,30 +199,184 @@ class _EncouragementCard extends StatelessWidget {
           width: 0.5,
         ),
       ),
-      child: Row(children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: MyWalkColor.softGold.withValues(alpha: 0.1),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          MyWalkAvatar(
+            name: isReceived
+                ? (enc.isAnonymous ? null : enc.senderDisplayName)
+                : members.firstWhere((m) => m.userId == enc.recipientId,
+                    orElse: () => CircleMember(userId: '', role: 'member', joinedAt: '')).displayName,
+            size: 26,
           ),
-          child: const Icon(Icons.favorite_rounded, size: 16, color: MyWalkColor.softGold),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(isReceived ? 'From $senderLabel' : 'To ${members.firstWhere((m) => m.userId == enc.recipientId, orElse: () => CircleMember(userId: '', role: 'member', joinedAt: '')).displayName}',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.6))),
-          const SizedBox(height: 3),
-          Text(enc.displayMessage,
-              style: const TextStyle(fontSize: 14, color: MyWalkColor.warmWhite)),
-        ])),
-        if (isReceived && !enc.isRead)
-          Container(width: 7, height: 7,
-              decoration: const BoxDecoration(shape: BoxShape.circle, color: MyWalkColor.softGold)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isReceived ? senderLabel : members.firstWhere((m) => m.userId == enc.recipientId,
+                  orElse: () => CircleMember(userId: '', role: 'member', joinedAt: '')).displayName,
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.85)),
+            ),
+          ),
+          Text(_relativeTime(enc.createdAt),
+              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+          if (isReceived && !enc.isRead) ...[
+            const SizedBox(width: 6),
+            Container(width: 7, height: 7,
+                decoration: const BoxDecoration(shape: BoxShape.circle, color: MyWalkColor.softGold)),
+          ],
+        ]),
+        const SizedBox(height: 8),
+        Text(enc.displayMessage,
+            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.82), height: 1.55)),
       ]),
       ),
     );
+  }
+}
+
+// ─── Heatmap Section ─────────────────────────────────────────────────────────
+
+class _HeatmapSection extends StatefulWidget {
+  final String circleId;
+  final List<CircleMember> members;
+  const _HeatmapSection({required this.circleId, required this.members});
+
+  @override
+  State<_HeatmapSection> createState() => _HeatmapSectionState();
+}
+
+class _HeatmapSectionState extends State<_HeatmapSection> {
+  CircleHeatmap? _heatmap;
+  CircleWeeklySummary? _summary;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final repo = context.read<CircleRepository>();
+      final results = await Future.wait([
+        repo.getCircleHeatmap(widget.circleId),
+        repo.getSundaySummary(widget.circleId),
+      ]);
+      if (mounted) {
+        setState(() {
+          _heatmap = results[0] as CircleHeatmap;
+          _summary = results[1] as CircleWeeklySummary;
+          _loaded = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _loaded = true);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_loaded || _heatmap == null) return const SizedBox.shrink();
+    final days = _heatmap!.days.take(7).toList();
+    final activeCount = _summary?.activeMembers ?? 0;
+    final totalCount = _summary?.totalMembers ?? widget.members.length;
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: MyWalkColor.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(
+            children: List.generate(days.length, (i) {
+              final day = days[i];
+              final date = DateTime.tryParse(day.date);
+              final label = date != null ? _dayLabel(date.weekday) : '';
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: i == 0 ? 0 : 5),
+                  child: Column(children: [
+                    Container(
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: MyWalkColor.warmCoral.withValues(
+                            alpha: day.intensity > 0
+                                ? (0.2 + day.intensity * 0.7).clamp(0.0, 0.9)
+                                : 0.05),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(label,
+                        style: TextStyle(
+                            fontSize: 9,
+                            color: Colors.white.withValues(alpha: 0.35),
+                            letterSpacing: 0.3)),
+                  ]),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 10),
+          Text('$activeCount of $totalCount members active this week',
+              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.55))),
+        ]),
+      ),
+      if (_summary != null && _summary!.topMembers.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        const Text('MEMBER ACTIVITY',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                color: MyWalkColor.warmCoral, letterSpacing: 1.2)),
+        const SizedBox(height: 8),
+        ..._summary!.topMembers.map((m) {
+          final member = widget.members.firstWhere(
+              (cm) => cm.userId == m.userId,
+              orElse: () => CircleMember(userId: '', role: 'member', joinedAt: ''));
+          final name = member.displayName;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: MyWalkColor.cardBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+              ),
+              child: Row(children: [
+                MyWalkAvatar(name: name.isEmpty ? null : name, size: 34),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(name.isEmpty ? 'Member' : name,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                          color: MyWalkColor.warmWhite)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: MyWalkColor.warmCoral.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text('🔥 ${m.streak} days',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                          color: MyWalkColor.warmCoral)),
+                ),
+              ]),
+            ),
+          );
+        }),
+      ],
+    ]);
+  }
+
+  static String _dayLabel(int weekday) {
+    const labels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    return labels[(weekday - 1) % 7];
   }
 }
 
@@ -397,12 +568,22 @@ class _MilestoneCard extends StatelessWidget {
     final isAuthor = share.isAuthor(uid);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: MyWalkColor.softGold.withValues(alpha: 0.04),
+        color: MyWalkColor.softGold,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: MyWalkColor.softGold.withValues(alpha: 0.12), width: 0.5),
       ),
+      child: Container(
+        margin: const EdgeInsets.only(left: 3),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: MyWalkColor.cardBackground,
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          ),
+          border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+        ),
       child: Row(children: [
         Container(width: 44, height: 44,
           decoration: BoxDecoration(shape: BoxShape.circle,
@@ -439,6 +620,7 @@ class _MilestoneCard extends StatelessWidget {
             ),
           ),
       ]),
+      ),
     );
   }
 }

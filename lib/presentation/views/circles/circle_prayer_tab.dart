@@ -440,10 +440,10 @@ class _ListBody extends StatelessWidget {
 
   Widget _sectionHeader(String title) {
     return Text(title.toUpperCase(),
-        style: TextStyle(
+        style: const TextStyle(
             fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Colors.white.withValues(alpha: 0.4),
+            fontWeight: FontWeight.w700,
+            color: MyWalkColor.sage,
             letterSpacing: 1.2));
   }
 

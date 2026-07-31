@@ -135,3 +135,59 @@ class MyWalkButtonStyle {
         textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
       );
 }
+
+class MyWalkAvatar extends StatelessWidget {
+  final String? name;
+  final double size;
+
+  const MyWalkAvatar({super.key, this.name, this.size = 26});
+
+  @override
+  Widget build(BuildContext context) {
+    if (name == null || name!.trim().isEmpty) {
+      return Container(
+        width: size, height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.08),
+        ),
+        child: Icon(Icons.person_outline_rounded,
+            size: size * 0.5, color: Colors.white.withValues(alpha: 0.3)),
+      );
+    }
+    return Container(
+      width: size, height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: _colorFor(name!)),
+      child: Center(
+        child: Text(_initials(name!),
+          style: TextStyle(
+            fontSize: size * 0.35,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _initials(String name) {
+    final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
+  }
+
+  static Color _colorFor(String name) {
+    const palette = [
+      Color(0xFF4A6FA5),
+      Color(0xFF6A5AAA),
+      Color(0xFF5A8A6A),
+      Color(0xFFA05A5A),
+      Color(0xFF7A6A50),
+      Color(0xFF556B8A),
+    ];
+    final hash = name.codeUnits.fold(0, (acc, c) => acc + c);
+    return palette[hash % palette.length];
+  }
+}
