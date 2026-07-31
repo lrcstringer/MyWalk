@@ -354,9 +354,7 @@ class _PrayerRequestCard extends StatelessWidget {
         margin: const EdgeInsets.only(left: 3),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isAnswered
-              ? MyWalkColor.sage.withValues(alpha: 0.06)
-              : MyWalkColor.cardBackground,
+          color: MyWalkColor.cardBackground,
           borderRadius: const BorderRadius.only(
             topRight: Radius.circular(12),
             bottomRight: Radius.circular(12),

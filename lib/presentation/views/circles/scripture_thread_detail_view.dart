@@ -372,7 +372,7 @@ class _CommentBubble extends StatelessWidget {
     final inner = Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       decoration: BoxDecoration(
-        color: isReply ? MyWalkColor.inputBackground : MyWalkColor.cardBackground,
+        color: MyWalkColor.cardBackground,
         borderRadius: isReply
             ? const BorderRadius.only(
                 topRight: Radius.circular(12),
