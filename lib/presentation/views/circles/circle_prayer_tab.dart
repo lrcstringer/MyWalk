@@ -1084,6 +1084,7 @@ class _VisibilityPickerSheetState extends State<_VisibilityPickerSheet> {
   late Set<String> _selected;
   bool _notifyMembers = false;
   bool _saving = false;
+  String? _error;
 
   @override
   void initState() {
@@ -1187,6 +1188,13 @@ class _VisibilityPickerSheetState extends State<_VisibilityPickerSheet> {
           ),
           const SizedBox(height: 16),
         ],
+        if (_error != null) ...[
+          const SizedBox(height: 8),
+          Text(_error!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, color: MyWalkColor.warmCoral)),
+          const SizedBox(height: 8),
+        ],
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -1205,8 +1213,13 @@ class _VisibilityPickerSheetState extends State<_VisibilityPickerSheet> {
                         message: 'Your group\'s Prayer List is ready — check the Prayer tab.',
                       ).catchError((_) {});
                       nav.pop();
-                    } catch (_) {
-                      if (mounted) setState(() => _saving = false);
+                    } catch (e) {
+                      if (mounted) {
+                        setState(() {
+                          _saving = false;
+                          _error = 'Could not save. Please try again.';
+                        });
+                      }
                     }
                   },
             style: ElevatedButton.styleFrom(

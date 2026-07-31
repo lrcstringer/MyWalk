@@ -246,6 +246,18 @@ service cloud.firestore {
         allow read: if isCircleMember(circleId);
         allow write: if false;
       }
+
+      // group_prayer_list — any member can read and write
+      match /group_prayer_list/{docId} {
+        allow read: if isCircleMember(circleId);
+        allow write: if isCircleMember(circleId);
+      }
+
+      // group_prayer_items — any member can read and write
+      match /group_prayer_items/{itemId} {
+        allow read: if isCircleMember(circleId);
+        allow write: if isCircleMember(circleId);
+      }
     }
 
     // ─── memorizations ────────────────────────────────────────────────────
