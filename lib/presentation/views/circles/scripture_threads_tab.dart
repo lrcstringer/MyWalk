@@ -339,13 +339,32 @@ class _ThreadCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(children: [
             Icon(Icons.chat_bubble_outline_rounded,
-                size: 12, color: Colors.white.withValues(alpha: 0.3)),
+                size: 12,
+                color: isClosed
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : MyWalkColor.golden.withValues(alpha: 0.65)),
             const SizedBox(width: 4),
-            Text('${thread.commentCount}',
-                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.3))),
+            Text(
+              isClosed
+                  ? '${thread.commentCount} ${thread.commentCount == 1 ? "comment" : "comments"}'
+                  : thread.commentCount == 0
+                      ? 'Be the first to comment'
+                      : '${thread.commentCount} ${thread.commentCount == 1 ? "comment" : "comments"}',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: isClosed
+                      ? Colors.white.withValues(alpha: 0.25)
+                      : MyWalkColor.golden.withValues(alpha: 0.75)),
+            ),
             const Spacer(),
             Text(thread.translation,
                 style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+            const SizedBox(width: 6),
+            Icon(Icons.arrow_forward_ios_rounded,
+                size: 11,
+                color: isClosed
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : MyWalkColor.golden.withValues(alpha: 0.5)),
           ]),
         ]),
         ),
