@@ -706,17 +706,6 @@ class _SectionCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Left accent bar
-              Container(
-                width: 4,
-                decoration: BoxDecoration(
-                  color: accent,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(13),
-                    bottomLeft: Radius.circular(13),
-                  ),
-                ),
-              ),
               const SizedBox(width: 14),
               // Icon
               Padding(

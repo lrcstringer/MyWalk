@@ -371,9 +371,6 @@ class _ThreadCard extends StatelessWidget {
                       : MyWalkColor.golden.withValues(alpha: 0.75)),
             ),
             const Spacer(),
-            Text(thread.translation,
-                style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
-            const SizedBox(width: 6),
             Icon(Icons.arrow_forward_ios_rounded,
                 size: 11,
                 color: isClosed

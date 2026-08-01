@@ -508,9 +508,9 @@ class _NotificationTileState extends State<_NotificationTile> {
       case CircleNotificationType.sos:
         return 'SOS';
       case CircleNotificationType.prayerRequest:
-        return 'PRAYER REQUEST';
+        return 'NEW PRAYER REQUEST';
       case CircleNotificationType.announcement:
-        return 'ANNOUNCEMENT';
+        return 'NEW SCRIPTURE';
       case CircleNotificationType.partnershipInvite:
         return 'PARTNER INVITE';
       case CircleNotificationType.partnerMessage:
@@ -522,7 +522,7 @@ class _NotificationTileState extends State<_NotificationTile> {
       case CircleNotificationType.groupActivity:
         return 'NEW ACTIVITY';
       case CircleNotificationType.encouragement:
-        return 'ENCOURAGEMENT';
+        return 'NEW ENCOURAGEMENT';
     }
   }
 
