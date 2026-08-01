@@ -16,7 +16,17 @@ class HowToPrayView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
         slivers: [
           // ── Header ──────────────────────────────────────────────────────────
           SliverAppBar(
@@ -55,12 +65,12 @@ class HowToPrayView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'How to Pray',
-                          style: TextStyle(
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: MyWalkColor.warmWhite,
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
                             height: 1.1,
                           ),
                         ),
@@ -105,6 +115,8 @@ class HowToPrayView extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ],
           ),
         ],
       ),
@@ -474,7 +486,7 @@ class _LordsPrayerGuideCardState extends State<_LordsPrayerGuideCard> {
       children: [
         Text(
           'More about \u201cThe Lord\u2019s Prayer\u201d',
-          style: const TextStyle(
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: MyWalkColor.warmWhite,

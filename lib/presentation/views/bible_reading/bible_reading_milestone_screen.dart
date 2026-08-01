@@ -66,6 +66,14 @@ class _BibleReadingMilestoneScreenState
         onTap: () => Navigator.of(context).pop(),
         child: Stack(
           children: [
+            const Positioned(
+              top: 0, left: 0, right: 0, height: 320,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+                ),
+              ),
+            ),
             // Light rays background
             AnimatedBuilder(
               animation: _raysAnim,

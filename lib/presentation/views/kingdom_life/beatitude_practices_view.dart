@@ -18,13 +18,23 @@ class BeatitudePracticesView extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
-        title: const Text(
+        title: Text(
           'Add a Practice',
-          style: TextStyle(
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontSize: 17, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite),
         ),
       ),
-      body: Column(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
@@ -84,6 +94,8 @@ class BeatitudePracticesView extends StatelessWidget {
                 );
               },
             ),
+          ),
+        ],
           ),
         ],
       ),

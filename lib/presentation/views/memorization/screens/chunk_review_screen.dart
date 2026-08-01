@@ -33,7 +33,10 @@ class _ChunkReviewScreenState extends State<ChunkReviewScreen> {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: const Text('Review phrases'),
+        title: Text(
+          'Review phrases',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: MyWalkColor.warmWhite),
+        ),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
         actions: [
@@ -45,8 +48,18 @@ class _ChunkReviewScreenState extends State<ChunkReviewScreen> {
             ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          Column(
+            children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Text(
@@ -104,6 +117,8 @@ class _ChunkReviewScreenState extends State<ChunkReviewScreen> {
                 ],
               ),
             ),
+          ),
+            ],
           ),
         ],
       ),

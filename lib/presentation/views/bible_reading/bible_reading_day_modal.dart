@@ -75,7 +75,7 @@ class BibleReadingDayModal extends StatelessWidget {
                         children: [
                           Text(
                             'Week ${weekIndex + 1} — $dayName',
-                            style: const TextStyle(
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               color: MyWalkColor.warmWhite,
                               fontSize: 17,
                               fontWeight: FontWeight.w600,

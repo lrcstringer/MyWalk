@@ -16,7 +16,17 @@ class FruitPortfolioView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
         slivers: [
           // ── Artistic Header ──────────────────────────────────────────────
           SliverAppBar(
@@ -54,12 +64,12 @@ class FruitPortfolioView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'The Fruit of the Spirit',
-                          style: TextStyle(
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: MyWalkColor.warmWhite,
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
                             height: 1.1,
                           ),
                         ),
@@ -224,6 +234,8 @@ class FruitPortfolioView extends StatelessWidget {
             const SliverToBoxAdapter(child: SizedBox(height: 60)),
           ],
         ],
+        ),
+        ],
       ),
     );
   }
@@ -260,13 +272,13 @@ class FruitPortfolioView extends StatelessWidget {
                 children: [
                   Icon(Icons.eco, size: 18, color: MyWalkColor.sage),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'The Fruit of the Spirit',
-                      style: TextStyle(
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: MyWalkColor.warmWhite,
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
-                        color: MyWalkColor.warmWhite,
                       ),
                     ),
                   ),

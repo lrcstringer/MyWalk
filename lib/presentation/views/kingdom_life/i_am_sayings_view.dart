@@ -351,13 +351,23 @@ class IAmSayingsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: MyWalkColor.charcoal,
-            foregroundColor: MyWalkColor.warmWhite,
-            expandedHeight: 260,
-            pinned: true,
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                backgroundColor: MyWalkColor.charcoal,
+                foregroundColor: MyWalkColor.warmWhite,
+                expandedHeight: 260,
+                pinned: true,
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
               background: Stack(
@@ -389,12 +399,12 @@ class IAmSayingsView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'The “I AM” Sayings of Jesus',
-                          style: TextStyle(
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: MyWalkColor.warmWhite,
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
                             height: 1.1,
                           ),
                         ),
@@ -502,6 +512,8 @@ class IAmSayingsView extends StatelessWidget {
                 childCount: _sayings.length,
               ),
             ),
+          ),
+        ],
           ),
         ],
       ),
@@ -690,13 +702,23 @@ class _IAmDetailViewState extends State<_IAmDetailView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: MyWalkColor.charcoal,
-            foregroundColor: MyWalkColor.warmWhite,
-            expandedHeight: 240,
-            pinned: true,
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                backgroundColor: MyWalkColor.charcoal,
+                foregroundColor: MyWalkColor.warmWhite,
+                expandedHeight: 240,
+                pinned: true,
             actions: [
               IconButton(
                 icon: const Icon(Icons.menu_book_outlined,
@@ -747,10 +769,10 @@ class _IAmDetailViewState extends State<_IAmDetailView> {
                       children: [
                         Text(
                           _saying.modalHeader,
-                          style: const TextStyle(
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: MyWalkColor.warmWhite,
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
                             height: 1.1,
                           ),
                         ),
@@ -922,6 +944,8 @@ class _IAmDetailViewState extends State<_IAmDetailView> {
                 ],
               ),
             ),
+          ),
+        ],
           ),
         ],
       ),

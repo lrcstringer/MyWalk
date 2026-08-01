@@ -45,18 +45,35 @@ class _InitialMemorizationScreenState extends State<InitialMemorizationScreen> {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: Text('Step ${_step + 1} of 4 — ${_stepTitles[_step]}'),
+        title: Text(
+          'Step ${_step + 1} of 4 — ${_stepTitles[_step]}',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: MyWalkColor.warmWhite,
+          ),
+        ),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
         automaticallyImplyLeading: _step == 0,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _StepProgress(currentStep: _step),
-            Expanded(child: _buildStep()),
-          ],
-        ),
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _StepProgress(currentStep: _step),
+                Expanded(child: _buildStep()),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

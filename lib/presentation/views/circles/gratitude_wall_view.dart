@@ -277,14 +277,28 @@ class GratitudeWallView extends StatelessWidget {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text('Gratitude Wall',
-            style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 20, fontWeight: FontWeight.w700)),
+        title: Text('Gratitude Wall',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontSize: 20, color: MyWalkColor.warmWhite)),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: GratitudeWallWidget(circleId: circleId),
-        ),
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0,
+            height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: GratitudeWallWidget(circleId: circleId),
+            ),
+          ),
+        ],
       ),
     );
   }

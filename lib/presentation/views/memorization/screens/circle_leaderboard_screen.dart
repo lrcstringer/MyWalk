@@ -34,7 +34,12 @@ class _CircleLeaderboardScreenState extends State<CircleLeaderboardScreen> {
       backgroundColor: MyWalkColor.charcoal,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text(widget.circle.name),
+        title: Text(
+          widget.circle.name,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: MyWalkColor.warmWhite,
+          ),
+        ),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
         actions: [
@@ -45,32 +50,44 @@ class _CircleLeaderboardScreenState extends State<CircleLeaderboardScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: CustomScrollView(
-              controller: _scrollCtrl,
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.all(20),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _PassageCard(circle: widget.circle),
-                      const SizedBox(height: 20),
-                      _Leaderboard(circle: widget.circle),
-                      const SizedBox(height: 24),
-                      _CommentSection(circleId: widget.circle.id),
-                      const SizedBox(height: 16),
-                    ]),
-                  ),
-                ),
-              ],
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
             ),
           ),
-          _CommentInput(
-            controller: _commentCtrl,
-            posting: _posting,
-            onPost: _postComment,
+          Column(
+            children: [
+              Expanded(
+                child: CustomScrollView(
+                  controller: _scrollCtrl,
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.all(20),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          _PassageCard(circle: widget.circle),
+                          const SizedBox(height: 20),
+                          _Leaderboard(circle: widget.circle),
+                          const SizedBox(height: 24),
+                          _CommentSection(circleId: widget.circle.id),
+                          const SizedBox(height: 16),
+                        ]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _CommentInput(
+                controller: _commentCtrl,
+                posting: _posting,
+                onPost: _postComment,
+              ),
+            ],
           ),
         ],
       ),

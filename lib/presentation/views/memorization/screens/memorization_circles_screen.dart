@@ -15,7 +15,12 @@ class MemorizationCirclesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: const Text('Memorization Groups'),
+        title: Text(
+          'Memorization Groups',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: MyWalkColor.warmWhite,
+          ),
+        ),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
       ),
@@ -28,38 +33,50 @@ class MemorizationCirclesScreen extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const CreateCircleScreen()),
         ),
       ),
-      body: StreamBuilder<List<MemorizationCircle>>(
-        stream: context.read<MemorizationProvider>().watchCircles(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child: CircularProgressIndicator(color: MyWalkColor.golden));
-          }
-
-          final circles = snapshot.data ?? [];
-
-          if (circles.isEmpty) {
-            return _EmptyState(
-              onCreate: () => Navigator.of(context).push<void>(
-                MaterialPageRoute(builder: (_) => const CreateCircleScreen()),
-              ),
-            );
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-            itemCount: circles.length,
-            separatorBuilder: (ctx, i) => const SizedBox(height: 10),
-            itemBuilder: (ctx, i) => _CircleTile(
-              circle: circles[i],
-              onTap: () => Navigator.of(context).push<void>(
-                MaterialPageRoute(
-                  builder: (_) => CircleLeaderboardScreen(circle: circles[i]),
-                ),
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
               ),
             ),
-          );
-        },
+          ),
+          StreamBuilder<List<MemorizationCircle>>(
+            stream: context.read<MemorizationProvider>().watchCircles(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                    child: CircularProgressIndicator(color: MyWalkColor.golden));
+              }
+
+              final circles = snapshot.data ?? [];
+
+              if (circles.isEmpty) {
+                return _EmptyState(
+                  onCreate: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute(builder: (_) => const CreateCircleScreen()),
+                  ),
+                );
+              }
+
+              return ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                itemCount: circles.length,
+                separatorBuilder: (ctx, i) => const SizedBox(height: 10),
+                itemBuilder: (ctx, i) => _CircleTile(
+                  circle: circles[i],
+                  onTap: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => CircleLeaderboardScreen(circle: circles[i]),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

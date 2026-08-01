@@ -56,8 +56,8 @@ class _CirclesAuthGateView extends StatelessWidget {
                 const Icon(Icons.group_rounded, size: 32, color: MyWalkColor.golden),
               ]),
               const SizedBox(height: 20),
-              const Text('Prayer Groups',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
+              Text('Prayer Groups',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 28, color: MyWalkColor.warmWhite)),
               const SizedBox(height: 12),
               Text(
                 'Walk together in faith with your community.\nCreate or join groups to share your journey.',
@@ -248,11 +248,10 @@ class _CirclesListViewState extends State<_CirclesListView> {
               foregroundColor: MyWalkColor.warmWhite,
               expandedHeight: imageHeight,
               pinned: true,
-              title: const Text(
+              title: Text(
                 'MyWalk',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: MyWalkColor.warmWhite,
                   fontSize: 20,
                 ),
               ),
@@ -284,7 +283,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
                         ),
                       ),
                     ),
-                    const Positioned(
+                    Positioned(
                       left: 20,
                       right: 20,
                       bottom: 14,
@@ -293,9 +292,8 @@ class _CirclesListViewState extends State<_CirclesListView> {
                         children: [
                           Text(
                             'Groups',
-                            style: TextStyle(
+                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                               fontSize: 28,
-                              fontWeight: FontWeight.w700,
                               color: MyWalkColor.warmWhite,
                               height: 1.1,
                             ),

@@ -272,9 +272,21 @@ class PrayerListTab extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: MyWalkColor.charcoal,
-          body: isLoading && active.isEmpty && individual.isEmpty
-              ? const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
-              : RefreshIndicator(
+          body: Stack(
+            children: [
+              const Positioned(
+                top: 0, left: 0, right: 0,
+                height: 320,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+                  ),
+                ),
+              ),
+              if (isLoading && active.isEmpty && individual.isEmpty)
+                const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
+              else
+                RefreshIndicator(
                   color: MyWalkColor.golden,
                   backgroundColor: MyWalkColor.cardBackground,
                   onRefresh: () => provider.load(circleId),
@@ -286,29 +298,29 @@ class PrayerListTab extends StatelessWidget {
                       else ...[
                         if (individual.isNotEmpty) ...[
                           _sectionHeader('Individual (${individual.length})'),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                           ...individual.map((r) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.only(bottom: 12),
                             child: _IndividualRequestCard(
                               request: r, uid: uid, circleId: circleId),
                           )),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                         ],
                         if (active.isNotEmpty) ...[
                           _sectionHeader('Active (${active.length})'),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                           ...active.map((r) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.only(bottom: 12),
                             child: _PrayerRequestCard(
                               request: r, uid: uid, circleId: circleId),
                           )),
                         ],
                         if (answered.isNotEmpty) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                           _sectionHeader('Answered (${answered.length})'),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                           ...answered.map((r) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.only(bottom: 12),
                             child: _PrayerRequestCard(
                               request: r, uid: uid, circleId: circleId),
                           )),
@@ -317,6 +329,8 @@ class PrayerListTab extends StatelessWidget {
                     ],
                   ),
                 ),
+            ],
+          ),
         );
       },
     );

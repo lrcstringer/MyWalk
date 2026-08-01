@@ -42,13 +42,23 @@ class WeekView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: SafeArea(
-        child: CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: CustomScrollView(
           slivers: [
             SliverAppBar(
               backgroundColor: MyWalkColor.charcoal,
-              title: const Text('This Week',
-                  style: TextStyle(
+              title: Text('This Week',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       color: MyWalkColor.warmWhite, fontSize: 22, fontWeight: FontWeight.w700)),
               floating: true,
               snap: true,
@@ -73,6 +83,8 @@ class WeekView extends StatelessWidget {
             ),
           ],
         ),
+          ),
+        ],
       ),
     );
   }

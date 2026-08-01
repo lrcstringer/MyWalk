@@ -33,11 +33,24 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: const Text('New memorization group'),
+        title: Text(
+          'New memorization group',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: MyWalkColor.warmWhite),
+        ),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
@@ -134,6 +147,8 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
             ],
           ),
         ),
+          ),
+        ],
       ),
     );
   }

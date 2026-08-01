@@ -11,7 +11,7 @@ class JournalColor {
 }
 
 class MyWalkColor {
-  static const charcoal = Color(0xFF1E1E2E);
+  static const charcoal = Color(0xFF1E1B1A);
   static const warmWhite = Color(0xFFFAF7F2);
   static const golden = Color(0xFFD4A843);
   static const sage = Color(0xFF7A9E7E);
@@ -20,7 +20,7 @@ class MyWalkColor {
   static const mutedSage = Color(0xFFC5D8C7);
   static const eventPurple = Color(0xFF7B8EC8);
 
-  static const cardBackground = Color(0xFF262638);
+  static const cardBackground = Color(0xFF272320);
   static const cardBorder = Color(0x0FFFFFFF); // white 6% opacity
 
   static const surfaceOverlay = Color(0x0AFFFFFF); // white 4%
@@ -112,7 +112,7 @@ class MyWalkDecorations {
     gradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFF2C2C42), Color(0xFF222234)],
+      colors: [Color(0xFF2C2823), Color(0xFF221F1B)],
     ),
     borderRadius: BorderRadius.circular(16),
     border: Border.all(color: const Color(0x1FFFFFFF), width: 1.0),

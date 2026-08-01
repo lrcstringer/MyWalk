@@ -73,7 +73,12 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
-        title: const Text('Bible in a Year'),
+        title: Text(
+          'Bible in a Year',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: MyWalkColor.warmWhite,
+          ),
+        ),
         actions: [
           if (provider.isActive && currentWeek != null)
             TextButton(
@@ -85,31 +90,43 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
             ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          _ProgressHeader(provider: provider),
-          if (provider.isPending) _PendingBanner(provider: provider),
-          Expanded(
-            child: provider.isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: MyWalkColor.golden),
-                  )
-                : provider.isNotStarted
-                    ? _NotStartedView(onStart: () => _startPlan(context, provider))
-                    : _WeekList(
-                        provider: provider,
-                        expanded: _expanded,
-                        weekKeys: _weekKeys,
-                        onToggle: (w) => setState(() {
-                          if (_expanded.contains(w)) {
-                            _expanded.remove(w);
-                          } else {
-                            _expanded.add(w);
-                          }
-                        }),
-                        onDayTap: (w, d) => _openDayModal(context, w, d),
-                        scrollController: _scrollController,
-                      ),
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          Column(
+            children: [
+              _ProgressHeader(provider: provider),
+              if (provider.isPending) _PendingBanner(provider: provider),
+              Expanded(
+                child: provider.isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(color: MyWalkColor.golden),
+                      )
+                    : provider.isNotStarted
+                        ? _NotStartedView(onStart: () => _startPlan(context, provider))
+                        : _WeekList(
+                            provider: provider,
+                            expanded: _expanded,
+                            weekKeys: _weekKeys,
+                            onToggle: (w) => setState(() {
+                              if (_expanded.contains(w)) {
+                                _expanded.remove(w);
+                              } else {
+                                _expanded.add(w);
+                              }
+                            }),
+                            onDayTap: (w, d) => _openDayModal(context, w, d),
+                            scrollController: _scrollController,
+                          ),
+              ),
+            ],
           ),
         ],
       ),
@@ -269,10 +286,10 @@ class _NotStartedView extends StatelessWidget {
           children: [
             const Icon(Icons.menu_book_rounded, color: MyWalkColor.golden, size: 48),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Bible in a Year',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                 color: MyWalkColor.warmWhite,
                 fontSize: 22,
                 fontWeight: FontWeight.w600,

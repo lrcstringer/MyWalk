@@ -61,28 +61,40 @@ class _ScriptureThreadsTabState extends State<ScriptureThreadsTab> {
                   child: const Icon(Icons.add_rounded),
                 )
               : null,
-          body: isLoading
-              ? const Center(
+          body: Stack(children: [
+            const Positioned(
+              top: 0, left: 0, right: 0,
+              height: 320,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+                ),
+              ),
+            ),
+            if (isLoading)
+              const Center(
                   child: CircularProgressIndicator(color: MyWalkColor.golden))
-              : threads.isEmpty
-              ? _emptyState()
-              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  _sectionHeader('THREADS'),
-                  Expanded(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                      itemCount: threads.length,
-                      separatorBuilder: (context, i) => const SizedBox(height: 10),
-                      itemBuilder: (context, i) => _ThreadCard(
-                        thread: threads[i],
-                        isAdmin: widget.isAdmin,
-                        onTap: () => _openThread(context, threads[i]),
-                        onClose: () => _confirmClose(context, threads[i]),
-                        onDelete: () => _confirmDelete(context, threads[i]),
-                      ),
+            else if (threads.isEmpty)
+              _emptyState()
+            else
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _sectionHeader('THREADS'),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                    itemCount: threads.length,
+                    separatorBuilder: (context, i) => const SizedBox(height: 14),
+                    itemBuilder: (context, i) => _ThreadCard(
+                      thread: threads[i],
+                      isAdmin: widget.isAdmin,
+                      onTap: () => _openThread(context, threads[i]),
+                      onClose: () => _confirmClose(context, threads[i]),
+                      onDelete: () => _confirmDelete(context, threads[i]),
                     ),
                   ),
-                ]),
+                ),
+              ]),
+          ]),
         );
       },
     );

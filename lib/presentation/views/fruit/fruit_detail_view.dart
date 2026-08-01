@@ -23,7 +23,17 @@ class FruitDetailView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
         slivers: [
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
@@ -35,10 +45,10 @@ class FruitDetailView extends StatelessWidget {
               titlePadding: const EdgeInsets.fromLTRB(56, 0, 16, 14),
               title: Text(
                 fruit.label,
-                style: const TextStyle(
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: MyWalkColor.warmWhite,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: MyWalkColor.warmWhite,
                 ),
               ),
               background: Stack(
@@ -91,10 +101,10 @@ class FruitDetailView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(fruit.label,
-                        style: const TextStyle(
+                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: MyWalkColor.warmWhite,
                             fontSize: 26,
-                            fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite)),
+                            fontWeight: FontWeight.w700)),
                     Text(
                       fruit.greekWord,
                       style: TextStyle(
@@ -269,6 +279,8 @@ class FruitDetailView extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
         ],
       ),
     );

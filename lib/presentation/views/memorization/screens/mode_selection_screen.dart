@@ -61,25 +61,42 @@ class ModeSelectionScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: const Text('Choose a review mode'),
+        title: Text(
+          'Choose a review mode',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: MyWalkColor.warmWhite,
+              ),
+        ),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _modes.length,
-        separatorBuilder: (ctx, i) => const SizedBox(height: 8),
-        itemBuilder: (context, i) {
-          final info = _modes[i];
-          final canUse = provider.canUseMode(info.mode);
-          return _ModeTile(
-            info: info,
-            locked: !canUse,
-            onTap: canUse
-                ? () => _startReview(context, info.mode)
-                : () => _showPremiumSheet(context),
-          );
-        },
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: _modes.length,
+            separatorBuilder: (ctx, i) => const SizedBox(height: 8),
+            itemBuilder: (context, i) {
+              final info = _modes[i];
+              final canUse = provider.canUseMode(info.mode);
+              return _ModeTile(
+                info: info,
+                locked: !canUse,
+                onTap: canUse
+                    ? () => _startReview(context, info.mode)
+                    : () => _showPremiumSheet(context),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

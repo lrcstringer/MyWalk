@@ -92,10 +92,8 @@ class _ScriptureThreadDetailViewState
             foregroundColor: MyWalkColor.warmWhite,
             title: Text(
               widget.thread.reference,
-              style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: MyWalkColor.golden),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontSize: 16, color: MyWalkColor.golden),
             ),
             actions: [
               IconButton(
@@ -110,7 +108,17 @@ class _ScriptureThreadDetailViewState
               child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.golden)),
             ),
           ),
-          body: Column(children: [
+          body: Stack(children: [
+            const Positioned(
+              top: 0, left: 0, right: 0,
+              height: 320,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+                ),
+              ),
+            ),
+            Column(children: [
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -151,6 +159,7 @@ class _ScriptureThreadDetailViewState
                 onCancelReply: () => setState(() => _replyingTo = null),
                 onPost: () => _postComment(context),
               ),
+            ]),
           ]),
         );
       },

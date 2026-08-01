@@ -12,7 +12,7 @@ Future<bool> _isOffline() async {
   return r.every((c) => c == ConnectivityResult.none);
 }
 
-class EventsTab extends StatelessWidget {
+class EventsTab extends StatefulWidget {
   final String circleId;
   final bool isAdmin;
   final CircleSettings settings;
@@ -24,13 +24,26 @@ class EventsTab extends StatelessWidget {
   });
 
   @override
+  State<EventsTab> createState() => _EventsTabState();
+}
+
+class _EventsTabState extends State<EventsTab> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<CircleEventsProvider>().load(widget.circleId);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<CircleEventsProvider>(
       builder: (context, provider, _) {
         final uid = AuthService.shared.userId ?? '';
-        final events = provider.eventsFor(circleId);
-        final isLoading = provider.isLoading(circleId);
-        final canCreate = isAdmin || settings.eventPermission == 'any_member';
+        final events = provider.eventsFor(widget.circleId);
+        final isLoading = provider.isLoading(widget.circleId);
+        final canCreate = widget.isAdmin || widget.settings.eventPermission == 'any_member';
 
         return Scaffold(
           backgroundColor: MyWalkColor.charcoal,
@@ -42,16 +55,28 @@ class EventsTab extends StatelessWidget {
                   child: const Icon(Icons.add),
                 )
               : null,
-          body: isLoading && events.isEmpty
-              ? const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
-              : RefreshIndicator(
-                  color: MyWalkColor.golden,
-                  backgroundColor: MyWalkColor.cardBackground,
-                  onRefresh: () => provider.load(circleId),
-                  child: events.isEmpty
-                      ? _emptyState(canCreate)
-                      : _buildSectioned(events, uid),
+          body: Stack(
+            children: [
+              const Positioned(
+                top: 0, left: 0, right: 0, height: 320,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+                  ),
                 ),
+              ),
+              isLoading && events.isEmpty
+                  ? const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
+                  : RefreshIndicator(
+                      color: MyWalkColor.golden,
+                      backgroundColor: MyWalkColor.cardBackground,
+                      onRefresh: () => provider.load(widget.circleId),
+                      child: events.isEmpty
+                          ? _emptyState(canCreate)
+                          : _buildSectioned(events, uid),
+                    ),
+            ],
+          ),
         );
       },
     );
@@ -83,7 +108,7 @@ class EventsTab extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: MyWalkColor.charcoal,
-      builder: (_) => CreateEventSheet(circleId: circleId, isAdmin: isAdmin),
+      builder: (_) => CreateEventSheet(circleId: widget.circleId, isAdmin: widget.isAdmin),
     );
   }
 
@@ -96,7 +121,7 @@ class EventsTab extends StatelessWidget {
       items.add(_sectionHeader('Upcoming'));
       items.add(const SizedBox(height: 8));
       for (final e in upcoming) {
-        items.add(_EventCard(event: e, uid: uid, circleId: circleId, isAdmin: isAdmin));
+        items.add(_EventCard(event: e, uid: uid, circleId: widget.circleId, isAdmin: widget.isAdmin));
         items.add(const SizedBox(height: 12));
       }
     }
@@ -105,7 +130,7 @@ class EventsTab extends StatelessWidget {
       items.add(_sectionHeader('Past'));
       items.add(const SizedBox(height: 8));
       for (final e in past) {
-        items.add(Opacity(opacity: 0.45, child: _EventCard(event: e, uid: uid, circleId: circleId, isAdmin: isAdmin)));
+        items.add(Opacity(opacity: 0.45, child: _EventCard(event: e, uid: uid, circleId: widget.circleId, isAdmin: widget.isAdmin)));
         items.add(const SizedBox(height: 12));
       }
     }
@@ -247,7 +272,11 @@ class _EventCard extends StatelessWidget {
       useSafeArea: true,
       backgroundColor: MyWalkColor.charcoal,
       builder: (_) => EditEventSheet(circleId: circleId, event: event, isAdmin: isAdmin),
-    );
+    ).then((_) {
+      if (context.mounted) {
+        context.read<CircleEventsProvider>().load(circleId);
+      }
+    });
   }
 
   void _confirmDelete(BuildContext context) {
@@ -427,8 +456,8 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text('New Event',
-            style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17)),
+        title: Text('New Event',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: MyWalkColor.warmWhite, fontSize: 17)),
         leadingWidth: 72,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
@@ -440,9 +469,19 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
           child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.eventPurple)),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-            16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 40),
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+                16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 40),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _label('Event Title'),
           const SizedBox(height: 6),
@@ -535,6 +574,8 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
             ),
           ),
         ]),
+          ),
+        ],
       ),
     );
   }
@@ -726,8 +767,8 @@ class _EditEventSheetState extends State<EditEventSheet> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text('Edit Event',
-            style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17)),
+        title: Text('Edit Event',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: MyWalkColor.warmWhite, fontSize: 17)),
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
@@ -738,9 +779,19 @@ class _EditEventSheetState extends State<EditEventSheet> {
           child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.eventPurple)),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-            16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 40),
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+                16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 40),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _label('Event Title'),
           const SizedBox(height: 6),
@@ -825,6 +876,8 @@ class _EditEventSheetState extends State<EditEventSheet> {
             ),
           ),
         ]),
+          ),
+        ],
       ),
     );
   }

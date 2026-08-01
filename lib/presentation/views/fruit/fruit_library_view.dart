@@ -47,9 +47,13 @@ class _FruitLibraryViewState extends State<FruitLibraryView>
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
-        title: const Text(
+        title: Text(
           'Cultivate the Fruit of the Spirit',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: MyWalkColor.warmWhite,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(44),
@@ -78,26 +82,38 @@ class _FruitLibraryViewState extends State<FruitLibraryView>
           ),
         ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(
-              'Small practices that make space for the Spirit.',
-              style: TextStyle(
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
-                color: MyWalkColor.softGold.withValues(alpha: 0.55),
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: FruitType.values.map((fruit) => _fruitPage(fruit)).toList(),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Text(
+                  'Small practices that make space for the Spirit.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.55),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: FruitType.values.map((fruit) => _fruitPage(fruit)).toList(),
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -67,8 +67,18 @@ class _ParableDetailViewState extends State<ParableDetailView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
-        slivers: [
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
+            slivers: [
           // ── Hero image app bar ─────────────────────────────────────────────
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
@@ -123,10 +133,10 @@ class _ParableDetailViewState extends State<ParableDetailView> {
                       children: [
                         Text(
                           _parable.title,
-                          style: const TextStyle(
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: MyWalkColor.warmWhite,
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
                             height: 1.1,
                           ),
                         ),
@@ -336,6 +346,8 @@ class _ParableDetailViewState extends State<ParableDetailView> {
                 ],
               ),
             ),
+          ),
+        ],
           ),
         ],
       ),

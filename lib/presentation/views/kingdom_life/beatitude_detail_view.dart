@@ -66,7 +66,17 @@ class _BeatitudeDetailViewState extends State<BeatitudeDetailView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
         slivers: [
           // ── Hero image app bar ───────────────────────────────────────────
           SliverAppBar(
@@ -116,10 +126,10 @@ class _BeatitudeDetailViewState extends State<BeatitudeDetailView> {
                       children: [
                         Text(
                           _beatitude.title,
-                          style: const TextStyle(
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: MyWalkColor.warmWhite,
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
                             height: 1.1,
                           ),
                         ),
@@ -415,6 +425,8 @@ class _BeatitudeDetailViewState extends State<BeatitudeDetailView> {
                 ],
               ),
             ),
+          ),
+        ],
           ),
         ],
       ),

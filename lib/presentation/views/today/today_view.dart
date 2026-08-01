@@ -95,6 +95,16 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
 
     return Stack(
       children: [
+        // Warm atmospheric glow from top-centre — adds depth behind all content
+        const Positioned(
+          top: 0, left: 0, right: 0,
+          height: 320,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+            ),
+          ),
+        ),
         Scaffold(
           backgroundColor: MyWalkColor.charcoal,
           body: CustomScrollView(
@@ -105,12 +115,11 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                   expandedHeight: imageHeight,
                   pinned: true,
                   automaticallyImplyLeading: false,
-                  title: const Text(
+                  title: Text(
                     'MyWalk',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontSize: 20,
+                      color: MyWalkColor.warmWhite,
                     ),
                   ),
                   actions: [
@@ -146,12 +155,10 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              const Text(
+                              Text(
                                 'MyWalk',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w700,
+                                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                                   color: MyWalkColor.warmWhite,
                                   height: 1.1,
                                 ),
@@ -190,7 +197,7 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                     children: [
                       // Greeting
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                         child: _titleSection(),
                       ),
 
@@ -267,9 +274,8 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
     final greeting = name != null ? '$base, $name' : base;
     return Text(
       greeting,
-      style: const TextStyle(
+      style: Theme.of(context).textTheme.titleLarge?.copyWith(
         fontSize: 17,
-        fontWeight: FontWeight.w600,
         color: MyWalkColor.warmWhite,
       ),
     );

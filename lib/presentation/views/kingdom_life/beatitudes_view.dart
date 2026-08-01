@@ -14,8 +14,18 @@ class BeatitudesView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
-        slivers: [
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
+            slivers: [
           // ── Artistic Header ──────────────────────────────────────────────
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
@@ -52,12 +62,12 @@ class BeatitudesView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'The Beatitudes',
-                          style: TextStyle(
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: MyWalkColor.warmWhite,
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
                             height: 1.1,
                           ),
                         ),
@@ -172,6 +182,8 @@ class BeatitudesView extends StatelessWidget {
             ),
           ),
         ],
+          ),
+        ],
       ),
     );
   }
@@ -208,13 +220,13 @@ class BeatitudesView extends StatelessWidget {
                 children: [
                   Icon(Icons.self_improvement, size: 18, color: _kAccent),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'The Beatitudes',
-                      style: TextStyle(
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: MyWalkColor.warmWhite,
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
-                        color: MyWalkColor.warmWhite,
                       ),
                     ),
                   ),

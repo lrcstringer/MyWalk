@@ -83,8 +83,8 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text('Group Settings',
-            style: TextStyle(
+        title: Text('Group Settings',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: MyWalkColor.warmWhite,
                 fontSize: 17,
                 fontWeight: FontWeight.w600)),
@@ -106,7 +106,16 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
             ),
         ],
       ),
-      body: ListView(
+      body: Stack(children: [
+        const Positioned(
+          top: 0, left: 0, right: 0, height: 320,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+            ),
+          ),
+        ),
+        ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
         children: [
 
@@ -292,7 +301,8 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
             ]),
           ],
         ],
-      ),
+        ),
+      ]),
     );
   }
 

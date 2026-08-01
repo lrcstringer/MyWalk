@@ -548,9 +548,8 @@ class _HeroHeader extends StatelessWidget {
         children: [
           // Circle name in serif
           Text(detail.name,
-            style: const TextStyle(
-              fontFamily: 'Georgia',
-              fontSize: 27, fontWeight: FontWeight.w700,
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+              fontSize: 27,
               color: MyWalkColor.warmWhite,
               letterSpacing: -0.4, height: 1.15)),
           const SizedBox(height: 14),
@@ -685,9 +684,23 @@ class _SectionCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: accent.withValues(alpha: 0.09),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              MyWalkColor.cardBackground,
+              accent.withValues(alpha: 0.22),
+            ],
+          ),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: accent.withValues(alpha: 0.20), width: 1),
+          border: Border.all(color: accent.withValues(alpha: 0.65), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.18),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: IntrinsicHeight(
           child: Row(
@@ -705,13 +718,13 @@ class _SectionCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              // Icon — neutral container so the accent bar + background carry the colour
+              // Icon
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 child: Container(
                   width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: accent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(11),
                   ),
                   child: Icon(icon, size: 20, color: accent),
@@ -824,8 +837,8 @@ class _SectionScreenWrapper extends StatelessWidget {
           ),
         ),
         title: Text(sectionName,
-          style: const TextStyle(
-            fontSize: 16, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontSize: 16, color: MyWalkColor.warmWhite)),
         centerTitle: true,
         actions: [
           bibleBrowserAction(context, MyWalkColor.warmWhite.withValues(alpha: 0.7)),

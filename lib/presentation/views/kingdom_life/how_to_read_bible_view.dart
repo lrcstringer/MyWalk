@@ -15,8 +15,18 @@ class HowToReadBibleView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
-        slivers: [
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
+            slivers: [
           // ── Header ──────────────────────────────────────────────────────────
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
@@ -47,13 +57,13 @@ class HowToReadBibleView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Positioned(
+                  Positioned(
                     left: 20,
                     right: 20,
                     bottom: 16,
                     child: Text(
                       'How to Read the Bible',
-                      style: TextStyle(
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
                         color: MyWalkColor.warmWhite,
@@ -97,6 +107,8 @@ class HowToReadBibleView extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+            ],
           ),
         ],
       ),
@@ -324,9 +336,9 @@ class _BibleGuideCardState extends State<_BibleGuideCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'More about \u201cWhat Is the Bible?\u201d',
-          style: TextStyle(
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: MyWalkColor.warmWhite,

@@ -58,8 +58,9 @@ class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text('Weekly Summary',
-            style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600)),
+        title: Text('Weekly Summary',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: MyWalkColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -68,7 +69,19 @@ class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
         ],
         automaticallyImplyLeading: false,
       ),
-      body: SafeArea(child: _buildBody()),
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          SafeArea(child: _buildBody()),
+        ],
+      ),
     );
   }
 
@@ -112,7 +125,8 @@ class _CircleSundaySummaryViewState extends State<CircleSundaySummaryView> {
         ),
         const SizedBox(height: 12),
         Text(widget.circleName,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: MyWalkColor.warmWhite, fontSize: 20, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         Text("This week's faithfulness",
             style: TextStyle(fontSize: 14, color: MyWalkColor.softGold.withValues(alpha: 0.7))),

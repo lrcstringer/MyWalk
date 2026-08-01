@@ -74,18 +74,28 @@ class ProgressView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
-          slivers: [
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
+              slivers: [
             SliverAppBar(
               backgroundColor: MyWalkColor.charcoal,
               foregroundColor: MyWalkColor.warmWhite,
               expandedHeight: imageHeight,
               pinned: true,
               automaticallyImplyLeading: false,
-              title: const Text(
+              title: Text(
                 'MyWalk',
-                style: TextStyle(
-                  color: Colors.white,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: MyWalkColor.warmWhite,
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                 ),
@@ -116,7 +126,7 @@ class ProgressView extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Positioned(
+                    Positioned(
                       left: 20,
                       right: 20,
                       bottom: 14,
@@ -125,10 +135,10 @@ class ProgressView extends StatelessWidget {
                         children: [
                           Text(
                             'Progress',
-                            style: TextStyle(
+                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                              color: MyWalkColor.warmWhite,
                               fontSize: 28,
                               fontWeight: FontWeight.w700,
-                              color: MyWalkColor.warmWhite,
                               height: 1.1,
                             ),
                           ),
@@ -193,6 +203,8 @@ class ProgressView extends StatelessWidget {
               ),
             ),
           ],
+          ),
+        ],
       ),
     );
   }

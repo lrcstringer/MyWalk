@@ -84,18 +84,32 @@ class _ProfileEditViewState extends State<ProfileEditView> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: const Text(
+        title: Text(
           'Edit Profile',
-          style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 18, fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: MyWalkColor.warmWhite,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: MyWalkColor.warmWhite),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
-          : SingleChildScrollView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          _loading
+              ? const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
+              : SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,6 +191,8 @@ class _ProfileEditViewState extends State<ProfileEditView> {
                 ],
               ),
             ),
+        ],
+      ),
     );
   }
 

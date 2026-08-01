@@ -40,7 +40,12 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: const Text('Meditating on His Word'),
+        title: Text(
+          'Meditating on His Word',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: MyWalkColor.warmWhite,
+          ),
+        ),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
         actions: [
@@ -80,7 +85,17 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
           }
         },
       ),
-      body: Consumer<MemorizationProvider>(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          Consumer<MemorizationProvider>(
         builder: (context, provider, _) {
           if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator(color: MyWalkColor.golden));
@@ -133,6 +148,8 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
             ],
           );
         },
+          ),
+        ],
       ),
     );
   }

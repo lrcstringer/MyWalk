@@ -31,7 +31,17 @@ class PracticesView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: Stack(children: [CustomScrollView(
+      body: Stack(children: [
+        const Positioned(
+          top: 0, left: 0, right: 0,
+          height: 320,
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+            ),
+          ),
+        ),
+        CustomScrollView(
         slivers: [
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
@@ -39,12 +49,10 @@ class PracticesView extends StatelessWidget {
             expandedHeight: imageHeight,
             pinned: true,
             automaticallyImplyLeading: false,
-            title: const Text(
+            title: Text(
               'MyWalk',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontSize: 20, color: MyWalkColor.warmWhite,
               ),
             ),
             actions: [
@@ -70,7 +78,7 @@ class PracticesView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Positioned(
+                  Positioned(
                     left: 20,
                     right: 20,
                     bottom: 14,
@@ -79,11 +87,8 @@ class PracticesView extends StatelessWidget {
                       children: [
                         Text(
                           'Practices',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
-                            height: 1.1,
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: MyWalkColor.warmWhite, height: 1.1,
                           ),
                         ),
                         SizedBox(height: 5),
@@ -409,14 +414,12 @@ class _MiniAppsSheet extends StatelessWidget {
                 icon: const Icon(Icons.close, color: MyWalkColor.warmWhite),
                 onPressed: () => Navigator.pop(context),
               ),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Mini-Apps',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: MyWalkColor.warmWhite,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: 17, color: MyWalkColor.warmWhite,
                   ),
                 ),
               ),
@@ -534,16 +537,14 @@ class _BibleInAYearCard extends StatelessWidget {
                       color: MyWalkColor.golden, size: 20),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Bible in a Year',
-                        style: TextStyle(
-                          color: MyWalkColor.warmWhite,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontSize: 16, color: MyWalkColor.warmWhite,
                         ),
                       ),
                       Text(
@@ -742,12 +743,11 @@ class _MemorizationCard extends StatelessWidget {
                 children: [
                   Text(
                     'Scripture Memorization',
-                    style: TextStyle(
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: isPremium
                           ? MyWalkColor.warmWhite
                           : MyWalkColor.warmWhite.withValues(alpha: 0.5),
                       fontSize: 16,
-                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(

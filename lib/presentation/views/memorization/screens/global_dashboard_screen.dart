@@ -30,11 +30,26 @@ class GlobalDashboardScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: const Text('My Progress'),
+        title: Text(
+          'My Progress',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: MyWalkColor.warmWhite,
+          ),
+        ),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
       ),
-      body: CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
         slivers: [
           SliverPadding(
             padding: const EdgeInsets.all(20),
@@ -56,6 +71,8 @@ class GlobalDashboardScreen extends StatelessWidget {
               ]),
             ),
           ),
+        ],
+      ),
         ],
       ),
     );

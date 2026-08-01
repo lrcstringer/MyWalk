@@ -100,7 +100,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
         backgroundColor: MyWalkColor.charcoal,
         title: Text(
           _habit.name,
-          style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 17, color: MyWalkColor.warmWhite),
         ),
         leading: IconButton(
           icon: const Icon(Icons.close, color: MyWalkColor.warmWhite),
@@ -113,7 +113,17 @@ class _HabitDetailViewState extends State<HabitDetailView> {
           ),
         ],
       ),
-      body: ListView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          ListView(
         controller: widget.scrollController,
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         children: [
@@ -140,6 +150,8 @@ class _HabitDetailViewState extends State<HabitDetailView> {
           _verseSection(verse),
           const SizedBox(height: 20),
           _habitInfoSection(),
+        ],
+      ),
         ],
       ),
     );

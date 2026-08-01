@@ -557,8 +557,18 @@ class _WomenOfValorViewState extends State<WomenOfValorView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
-        slivers: [
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
+            slivers: [
           // ── Hero header ────────────────────────────────────────────────
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
@@ -596,12 +606,12 @@ class _WomenOfValorViewState extends State<WomenOfValorView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Women of Valor',
-                          style: TextStyle(
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: MyWalkColor.warmWhite,
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
                             height: 1.1,
                           ),
                         ),
@@ -839,6 +849,8 @@ class _WomenOfValorViewState extends State<WomenOfValorView> {
                 ],
               ),
             ),
+          ),
+        ],
           ),
         ],
       ),

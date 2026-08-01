@@ -255,12 +255,22 @@ class _SettingsViewState extends State<SettingsView> {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
         slivers: [
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
-            title: const Text('Settings',
-                style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 22, fontWeight: FontWeight.w700)),
+            title: Text('Settings',
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: MyWalkColor.warmWhite, fontSize: 22, fontWeight: FontWeight.w700)),
             floating: true, snap: true,
           ),
           SliverPadding(
@@ -320,6 +330,8 @@ class _SettingsViewState extends State<SettingsView> {
                 _deleteAccountButton(),
               ]),
             ),
+          ),
+        ],
           ),
         ],
       ),

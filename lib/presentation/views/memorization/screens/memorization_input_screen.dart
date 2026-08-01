@@ -42,11 +42,28 @@ class _MemorizationInputScreenState extends State<MemorizationInputScreen> {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
-        title: const Text('Add verse or passage'),
+        title: Text(
+          'Add verse or passage',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: MyWalkColor.warmWhite,
+          ),
+        ),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
       ),
-      body: _isChunking ? _ChunkingLoader() : _buildForm(context),
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          _isChunking ? _ChunkingLoader() : _buildForm(context),
+        ],
+      ),
     );
   }
 

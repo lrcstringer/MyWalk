@@ -14,7 +14,17 @@ class ParablesView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          CustomScrollView(
         slivers: [
           // ── Hero header ───────────────────────────────────────────────────
           SliverAppBar(
@@ -53,9 +63,9 @@ class ParablesView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'The Parables of Jesus',
-                          style: TextStyle(
+                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
                             color: MyWalkColor.warmWhite,
@@ -176,6 +186,8 @@ class ParablesView extends StatelessWidget {
           ],
 
           const SliverToBoxAdapter(child: SizedBox(height: 60)),
+        ],
+          ),
         ],
       ),
     );

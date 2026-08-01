@@ -17,11 +17,24 @@ class NotificationInboxView extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
-        title: const Text('Notifications'),
+        title: Text(
+          'Notifications',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: MyWalkColor.warmWhite),
+        ),
         centerTitle: false,
       ),
-      body: Consumer<CircleNotificationProvider>(
-        builder: (context, provider, _) {
+      body: Stack(
+        children: [
+          const Positioned(
+            top: 0, left: 0, right: 0, height: 320,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+              ),
+            ),
+          ),
+          Consumer<CircleNotificationProvider>(
+            builder: (context, provider, _) {
           if (provider.notifications.isEmpty && provider.error == null) {
             return RefreshIndicator(
               color: MyWalkColor.golden,
@@ -102,6 +115,8 @@ class NotificationInboxView extends StatelessWidget {
             ),
           );
         },
+          ),
+        ],
       ),
     );
   }
