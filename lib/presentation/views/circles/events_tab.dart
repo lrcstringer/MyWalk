@@ -231,6 +231,10 @@ class _EventCard extends StatelessWidget {
             ]),
           ),
         ],
+        if (event.responses.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          _RsvpRow(responses: event.responses),
+        ],
       ]),
       ),
     );
@@ -247,29 +251,63 @@ class _EventCard extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context) {
+    final canCancel = isAdmin && event.isUpcoming;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: MyWalkColor.cardBackground,
-        title: const Text('Delete Event',
-            style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
-        content: Text('Remove "${event.title}"?',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          canCancel ? 'Cancel Event' : 'Delete Event',
+          style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 16),
+        ),
+        content: Text(
+          canCancel
+              ? 'Cancel "${event.title}"? Members will be notified.'
+              : 'Remove "${event.title}"?',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), height: 1.4),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+            child: Text('Keep Event', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<CircleEventsProvider>().deleteEvent(circleId, event.id);
-            },
-            child: const Text('Delete', style: TextStyle(color: MyWalkColor.warmCoral)),
-          ),
+          if (canCancel) ...[
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.read<CircleEventsProvider>().deleteEvent(circleId, event.id);
+              },
+              child: Text('Delete Quietly', style: TextStyle(color: Colors.white.withValues(alpha: 0.4))),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _cancelAndNotify(context);
+              },
+              child: const Text('Cancel & Notify Members',
+                  style: TextStyle(color: MyWalkColor.warmCoral)),
+            ),
+          ] else
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.read<CircleEventsProvider>().deleteEvent(circleId, event.id);
+              },
+              child: const Text('Delete', style: TextStyle(color: MyWalkColor.warmCoral)),
+            ),
         ],
       ),
     );
+  }
+
+  void _cancelAndNotify(BuildContext context) {
+    context.read<CircleNotificationProvider>().sendAnnouncement(
+      circleId: circleId,
+      message: 'Event cancelled: ${event.title} — ${_formatDateShort(event.eventDateTime)}',
+      notifType: 'event',
+    ).catchError((_) {});
+    context.read<CircleEventsProvider>().deleteEvent(circleId, event.id);
   }
 
   void _openLink(BuildContext context, String url) {
@@ -308,6 +346,49 @@ class _EventCard extends StatelessWidget {
     final ampm = dt.hour < 12 ? 'AM' : 'PM';
     return '$h:$m $ampm';
   }
+}
+
+// ─── RSVP Row ─────────────────────────────────────────────────────────────────
+
+class _RsvpRow extends StatelessWidget {
+  final Map<String, EventResponse> responses;
+  const _RsvpRow({required this.responses});
+
+  @override
+  Widget build(BuildContext context) {
+    final attending = responses.values
+        .where((r) => r.action == 'ill_be_there')
+        .map((r) => r.name)
+        .toList();
+    final declining = responses.values
+        .where((r) => r.action == 'unable_to_make_it')
+        .map((r) => r.name)
+        .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (attending.isNotEmpty)
+          _row(Icons.check_circle_outline_rounded,
+              Colors.greenAccent.withValues(alpha: 0.8), attending.join(', ')),
+        if (attending.isNotEmpty && declining.isNotEmpty)
+          const SizedBox(height: 4),
+        if (declining.isNotEmpty)
+          _row(Icons.cancel_outlined,
+              Colors.redAccent.withValues(alpha: 0.7), declining.join(', ')),
+      ],
+    );
+  }
+
+  Widget _row(IconData icon, Color color, String names) => Row(children: [
+        Icon(icon, size: 13, color: color),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(names,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 12, color: Colors.white.withValues(alpha: 0.55))),
+        ),
+      ]);
 }
 
 // ─── Create Event Sheet ───────────────────────────────────────────────────────
@@ -570,7 +651,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         : null;
     final nav = Navigator.of(context);
     try {
-      await eventsProvider.createEvent(
+      final eventId = await eventsProvider.createEvent(
         circleId: widget.circleId,
         title: title,
         eventDate: _eventDate!,
@@ -588,6 +669,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         circleId: widget.circleId,
         message: 'New event: $title — ${_formatFull(_eventDate!)}',
         notifType: 'event',
+        sourceId: eventId,
       ).catchError((_) {});
       nav.pop();
     } catch (e) {
@@ -877,6 +959,8 @@ class _EditEventSheetState extends State<EditEventSheet> {
       notifProvider?.sendAnnouncement(
         circleId: widget.circleId,
         message: 'Event updated: $title — ${_formatFull(_eventDate)}',
+        notifType: 'event',
+        sourceId: widget.event.id,
       ).catchError((_) {});
       nav.pop();
     } catch (e) {

@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/datasources/remote/auth_service.dart';
@@ -26,6 +28,8 @@ import 'activity_tab.dart';
 import 'events_tab.dart';
 import 'circle_settings_view.dart';
 import 'announcement_compose_view.dart';
+import '../shared/appbar_actions.dart';
+import '../shared/notification_bell.dart';
 
 class CircleDetailView extends StatefulWidget {
   final String circleId;
@@ -261,9 +265,6 @@ class _CircleDetailViewState extends State<CircleDetailView> {
   }
 
   Widget _buildHomeScreen(CircleDetails detail) {
-    final isAdmin = detail.members.any(
-        (m) => m.userId == AuthService.shared.userId && m.isAdmin);
-
     // Pre-compute all watched data at the build-context level.
     final prayerProvider = context.watch<PrayerListProvider>();
     final prayerCount = prayerProvider.activeFor(widget.circleId).length
@@ -293,20 +294,14 @@ class _CircleDetailViewState extends State<CircleDetailView> {
     ];
 
     final hasNew = List.generate(_sections.length, (i) => _sectionHasNew(context, i));
-    final now = DateTime.now();
-    final upcomingCount = events.where((e) => e.eventDateTime.isAfter(now)).length;
-    final badgeCounts = <int?>[
-      null,
-      null,
-      null,
-      null,
-      upcomingCount > 0 ? upcomingCount : null,
-    ];
+    final badgeCounts = <int?>[null, null, null, null, null];
 
-    return SafeArea(
-      top: false,
-      child: CustomScrollView(
-        slivers: [
+    return Stack(
+      children: [
+        SafeArea(
+          top: false,
+          child: CustomScrollView(
+            slivers: [
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
             pinned: true,
@@ -329,15 +324,8 @@ class _CircleDetailViewState extends State<CircleDetailView> {
               ),
             ),
             actions: [
-              if (isAdmin)
-                IconButton(
-                  icon: const Icon(Icons.campaign_rounded, size: 20, color: MyWalkColor.softGold),
-                  tooltip: 'Announce',
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => AnnouncementComposeView(
-                      circleId: widget.circleId, circleName: detail.name),
-                  )),
-                ),
+              bibleBrowserAction(context, MyWalkColor.warmWhite.withValues(alpha: 0.7)),
+              const NotificationBell(),
               IconButton(
                 icon: const Icon(Icons.settings_rounded, size: 20, color: MyWalkColor.softGold),
                 tooltip: 'Settings',
@@ -370,19 +358,34 @@ class _CircleDetailViewState extends State<CircleDetailView> {
           ),
         ],
       ),
-    );
+    ),
+    Positioned.fill(
+      child: IgnorePointer(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                MyWalkColor.sage.withValues(alpha: 0.14),
+                MyWalkColor.sage.withValues(alpha: 0.04),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.28, 0.50],
+            ),
+          ),
+        ),
+      ),
+    ),
+  ],
+);
   }
 
   String _nextEventStat(List<CircleEvent> events) {
     final now = DateTime.now();
-    final upcoming = events.where((e) => e.eventDateTime.isAfter(now)).toList()
-      ..sort((a, b) => a.eventDateTime.compareTo(b.eventDateTime));
-    if (upcoming.isEmpty) return 'No upcoming events';
-    final next = upcoming.first;
-    final diff = next.eventDateTime.difference(now).inDays;
-    if (diff == 0) return 'Today · ${next.title}';
-    if (diff == 1) return 'Tomorrow · ${next.title}';
-    return 'In $diff days · ${next.title}';
+    final count = events.where((e) => e.eventDateTime.isAfter(now)).length;
+    if (count == 0) return 'No upcoming events';
+    return '$count upcoming ${count == 1 ? "event" : "events"}';
   }
 
   Future<void> _pushSection(BuildContext context, int index, CircleDetails detail) async {
@@ -471,10 +474,36 @@ class _CircleDetailViewState extends State<CircleDetailView> {
           Navigator.pop(context);
           _openSettings(detail);
         },
+        onAnnounceTap: () {
+          Navigator.pop(context);
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => AnnouncementComposeView(
+              circleId: widget.circleId, circleName: detail.name),
+          ));
+        },
+        onInviteTap: () {
+          Navigator.pop(context);
+          _showInviteSheet(detail);
+        },
         onLeaveTap: () {
           Navigator.pop(context);
           _confirmLeave();
         },
+      ),
+    );
+  }
+
+  void _showInviteSheet(CircleDetails detail) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: MyWalkColor.cardBackground,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) => _InviteSheet(
+        inviteCode: detail.inviteCode,
+        circleName: detail.name,
       ),
     );
   }
@@ -514,19 +543,6 @@ class _HeroHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomCenter,
-          colors: [
-            MyWalkColor.sage.withValues(alpha: 0.18),
-            MyWalkColor.sage.withValues(alpha: 0.05),
-            Colors.transparent,
-            Colors.transparent,
-          ],
-          stops: const [0.0, 0.38, 0.65, 1.0],
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -811,6 +827,10 @@ class _SectionScreenWrapper extends StatelessWidget {
           style: const TextStyle(
             fontSize: 16, fontWeight: FontWeight.w700, color: MyWalkColor.warmWhite)),
         centerTitle: true,
+        actions: [
+          bibleBrowserAction(context, MyWalkColor.warmWhite.withValues(alpha: 0.7)),
+          const NotificationBell(),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(2),
           child: Container(height: 2, color: accent.withValues(alpha: 0.55)),
@@ -819,22 +839,19 @@ class _SectionScreenWrapper extends StatelessWidget {
       body: Stack(
         children: [
           body,
-          Positioned(
-            top: 0, left: 0, right: 0,
-            height: 110,
+          Positioned.fill(
             child: IgnorePointer(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topLeft,
+                    begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      accent.withValues(alpha: 0.18),
-                      accent.withValues(alpha: 0.05),
-                      Colors.transparent,
+                      accent.withValues(alpha: 0.14),
+                      accent.withValues(alpha: 0.04),
                       Colors.transparent,
                     ],
-                    stops: const [0.0, 0.38, 0.65, 1.0],
+                    stops: const [0.0, 0.28, 0.50],
                   ),
                 ),
               ),
@@ -1289,6 +1306,8 @@ class _GroupSettingsSheet extends StatelessWidget {
   final bool isAdmin;
   final bool isLeaving;
   final VoidCallback onEditSettings;
+  final VoidCallback onAnnounceTap;
+  final VoidCallback onInviteTap;
   final VoidCallback onLeaveTap;
 
   const _GroupSettingsSheet({
@@ -1296,6 +1315,8 @@ class _GroupSettingsSheet extends StatelessWidget {
     required this.isAdmin,
     required this.isLeaving,
     required this.onEditSettings,
+    required this.onAnnounceTap,
+    required this.onInviteTap,
     required this.onLeaveTap,
   });
 
@@ -1330,6 +1351,50 @@ class _GroupSettingsSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 const Expanded(child: Text('Edit Group Settings',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500,
+                        color: MyWalkColor.warmWhite))),
+                Icon(Icons.chevron_right, size: 16, color: Colors.white.withValues(alpha: 0.3)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: onAnnounceTap,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: MyWalkDecorations.card,
+              child: Row(children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: MyWalkColor.softGold.withValues(alpha: 0.12)),
+                  child: const Icon(Icons.campaign_rounded, size: 16, color: MyWalkColor.softGold),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Make an Announcement',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500,
+                        color: MyWalkColor.warmWhite))),
+                Icon(Icons.chevron_right, size: 16, color: Colors.white.withValues(alpha: 0.3)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: onInviteTap,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: MyWalkDecorations.card,
+              child: Row(children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: MyWalkColor.sage.withValues(alpha: 0.12)),
+                  child: const Icon(Icons.person_add_rounded, size: 16, color: MyWalkColor.sage),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Send Join Invite',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500,
                         color: MyWalkColor.warmWhite))),
                 Icon(Icons.chevron_right, size: 16, color: Colors.white.withValues(alpha: 0.3)),
@@ -1391,6 +1456,106 @@ class _GroupSettingsSheet extends StatelessWidget {
           ),
         ),
       ]),
+    );
+  }
+}
+
+// ─── Invite Sheet ─────────────────────────────────────────────────────────────
+
+class _InviteSheet extends StatelessWidget {
+  final String inviteCode;
+  final String circleName;
+
+  const _InviteSheet({required this.inviteCode, required this.circleName});
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, bottomInset + 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text('Invite Someone',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700,
+                  color: MyWalkColor.warmWhite)),
+          const SizedBox(height: 6),
+          Text('Share this code with anyone you want to invite:',
+              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.5))),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.golden.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.25), width: 0.5),
+                ),
+                child: Text(
+                  inviteCode,
+                  style: const TextStyle(
+                    fontSize: 22, fontWeight: FontWeight.w700,
+                    color: MyWalkColor.golden, letterSpacing: 4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: inviteCode));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Invite code copied'),
+                  backgroundColor: MyWalkColor.cardBackground,
+                  duration: Duration(seconds: 2),
+                ));
+              },
+              child: Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: MyWalkColor.golden.withValues(alpha: 0.1),
+                ),
+                child: const Icon(Icons.copy_rounded, size: 18, color: MyWalkColor.golden),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                final text = 'Join my Group "$circleName" on MyWalk!\n\n'
+                    'Tap to join: https://mywalk.faith/join?code=$inviteCode\n\n'
+                    'Or enter invite code "$inviteCode" manually in the app.';
+                Share.share(text);
+              },
+              icon: const Icon(Icons.share_rounded, size: 16),
+              label: const Text('Share Invite Link',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MyWalkColor.golden,
+                foregroundColor: MyWalkColor.charcoal,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -139,12 +139,14 @@ class FirestoreNotificationRepository implements NotificationRepository {
     required String circleId,
     required String message,
     String? notifType,
+    String? sourceId,
   }) =>
       _sendQueue.enqueue({
         'type': 'announcement',
         'circleId': circleId,
         'message': message,
         'notifType': ?notifType,
+        'sourceId': ?sourceId,
       });
 
   @override

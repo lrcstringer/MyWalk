@@ -56,7 +56,7 @@ class CircleEventsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> createEvent({
+  Future<String> createEvent({
     required String circleId,
     required String title,
     required DateTime eventDate,
@@ -69,7 +69,7 @@ class CircleEventsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _repo.createEvent(
+      final eventId = await _repo.createEvent(
         circleId: circleId,
         title: title,
         eventDate: eventDate,
@@ -78,6 +78,7 @@ class CircleEventsProvider extends ChangeNotifier {
         meetingLink: meetingLink,
       );
       await load(circleId);
+      return eventId;
     } catch (e) {
       error = e.toString();
       rethrow;

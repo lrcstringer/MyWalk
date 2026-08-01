@@ -398,33 +398,9 @@ class _CirclesListViewState extends State<_CirclesListView> {
       const Text('No Groups Yet',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
       const SizedBox(height: 8),
-      Text('Create a group to pray with friends,\nor join one with an invite code.',
+      Text('Tap + to create a group or join one\nwith an invite code.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.45))),
-      const SizedBox(height: 32),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(children: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _openCreate,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: MyWalkColor.golden, foregroundColor: MyWalkColor.charcoal,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              child: const Text('Create a Group', style: TextStyle(fontWeight: FontWeight.w600)),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: _openJoin,
-            child: const Text('Join with Code',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: MyWalkColor.golden)),
-          ),
-        ]),
-      ),
     ]);
   }
 }

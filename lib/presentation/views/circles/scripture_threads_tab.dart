@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
+import '../../providers/circle_notification_provider.dart';
 import '../../providers/scripture_thread_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
@@ -97,9 +98,8 @@ class _ScriptureThreadsTabState extends State<ScriptureThreadsTab> {
   }
 
   Widget _emptyState() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 60),
-      child: Column(children: [
+    return Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
         Icon(Icons.menu_book_rounded,
             size: 40, color: MyWalkColor.golden.withValues(alpha: 0.5)),
         const SizedBox(height: 12),
@@ -449,6 +449,7 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
   final _textFocusNode = FocusNode();
   final _messageController = TextEditingController();
   bool _submitting = false;
+  bool _notifyMembers = false;
   String? _error;
 
   @override
@@ -541,6 +542,31 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
             minLines: 3,
             decoration: _inputDec('Add a message or reflection…'),
           ),
+          if (widget.isAdmin) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: MyWalkColor.cardBackground,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(children: [
+                const Icon(Icons.notifications_outlined,
+                    size: 18, color: MyWalkColor.softGold),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text('Notify members',
+                      style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite)),
+                ),
+                Switch(
+                  value: _notifyMembers,
+                  onChanged: (v) => setState(() => _notifyMembers = v),
+                  activeTrackColor: MyWalkColor.golden,
+                  activeThumbColor: Colors.white,
+                ),
+              ]),
+            ),
+          ],
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!,
@@ -633,6 +659,12 @@ class _CreateThreadSheetState extends State<CreateThreadSheet> {
             translation: 'WEB',
             message: msg.isEmpty ? null : msg,
           );
+      if (mounted && _notifyMembers) {
+        context.read<CircleNotificationProvider>().sendAnnouncement(
+          circleId: widget.circleId,
+          message: 'New Scripture thread: $ref${msg.isNotEmpty ? ' — $msg' : ''}',
+        ).catchError((_) {});
+      }
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {

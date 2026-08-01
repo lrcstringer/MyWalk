@@ -201,7 +201,10 @@ class _BibleProjectBrowserViewState extends State<BibleProjectBrowserView> {
             _isLoading = true;
             _hasError = false;
           }),
-          onPageFinished: (_) => setState(() => _isLoading = false),
+          onPageFinished: (_) {
+            setState(() => _isLoading = false);
+            _hidePromoBanners();
+          },
           onWebResourceError: (error) {
             // Only treat main-frame errors as a full page failure.
             if (error.isForMainFrame ?? true) {
@@ -214,6 +217,35 @@ class _BibleProjectBrowserViewState extends State<BibleProjectBrowserView> {
         ),
       )
       ..loadRequest(Uri.parse(widget.initialUrl));
+  }
+
+  void _hidePromoBanners() {
+    const js = '''
+(function() {
+  function hide() {
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    var node;
+    while ((node = walker.nextNode())) {
+      if (node.nodeValue && node.nodeValue.indexOf('Explore the Bible Visually') >= 0) {
+        var el = node.parentElement;
+        while (el && el !== document.body) {
+          var s = window.getComputedStyle(el);
+          if (s.position === 'fixed' || s.position === 'sticky') {
+            el.style.setProperty('display', 'none', 'important');
+            break;
+          }
+          el = el.parentElement;
+        }
+      }
+    }
+  }
+  hide();
+  setTimeout(hide, 1000);
+  setTimeout(hide, 3000);
+  new MutationObserver(hide).observe(document.body, {childList:true, subtree:true});
+})();
+''';
+    _controller.runJavaScript(js).catchError((_) {});
   }
 
   Widget _buildOfflinePlaceholder() {

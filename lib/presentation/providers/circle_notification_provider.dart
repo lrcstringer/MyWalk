@@ -86,11 +86,17 @@ class CircleNotificationProvider extends ChangeNotifier {
     required String circleId,
     required String message,
     String? notifType,
+    String? sourceId,
   }) async {
     _loading = true;
     notifyListeners();
     try {
-      await _repo.sendAnnouncement(circleId: circleId, message: message, notifType: notifType);
+      await _repo.sendAnnouncement(
+        circleId: circleId,
+        message: message,
+        notifType: notifType,
+        sourceId: sourceId,
+      );
     } finally {
       _loading = false;
       notifyListeners();

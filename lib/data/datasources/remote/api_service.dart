@@ -353,9 +353,10 @@ class APIService {
   Future<void> recordNotificationAction(String notifId, String action) =>
       _postMutation<Map<String, dynamic>>('notifications.recordAction', body: {'notifId': notifId, 'action': action}, fromJson: (j) => j);
 
-  Future<void> sendAnnouncement({required String circleId, required String message, String? notifType}) {
+  Future<void> sendAnnouncement({required String circleId, required String message, String? notifType, String? sourceId}) {
     final body = <String, dynamic>{'circleId': circleId, 'message': message};
     if (notifType != null) body['notifType'] = notifType;
+    if (sourceId != null) body['sourceId'] = sourceId;
     return _postMutation<Map<String, dynamic>>('notifications.sendAnnouncement', body: body, fromJson: (j) => j);
   }
 

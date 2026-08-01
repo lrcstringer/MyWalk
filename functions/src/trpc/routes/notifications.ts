@@ -8,7 +8,6 @@ import {
   userNotificationsCol,
   Timestamp,
 } from '../../lib/firestore';
-import { sendPushToUsers } from '../../lib/fcm';
 
 const NOTIFICATION_TTL_DAYS = 30;
 
@@ -51,6 +50,7 @@ async function fanOutNotifications(
     senderName: string;
     message: string;
     suppressActions: boolean;
+    sourceId?: string;
   }
 ): Promise<string> {
   const notifId = crypto.randomUUID();
@@ -61,7 +61,7 @@ async function fanOutNotifications(
   // the sendPrayerRequest cap of 50 and the member-count guard keep us well under it.
   const batch = db.batch();
   for (const uid of recipientIds) {
-    batch.set(userNotificationsCol(uid).doc(notifId), {
+    const doc: Record<string, unknown> = {
       id: notifId,
       type: payload.type,
       circleId: payload.circleId,
@@ -74,7 +74,9 @@ async function fanOutNotifications(
       isRead: false,
       actionTaken: null,
       suppressActions: payload.suppressActions,
-    });
+    };
+    if (payload.sourceId) doc.sourceId = payload.sourceId;
+    batch.set(userNotificationsCol(uid).doc(notifId), doc);
   }
   await batch.commit();
   return notifId;
@@ -91,6 +93,7 @@ export const notificationsRouter = createTRPCRouter({
         circleId: z.string(),
         message: z.string().min(1).max(500),
         notifType: z.enum(['announcement', 'event', 'group_activity']).optional(),
+        sourceId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -117,14 +120,8 @@ export const notificationsRouter = createTRPCRouter({
         senderName,
         message: input.message,
         suppressActions: false,
+        sourceId: input.sourceId,
       });
-
-      sendPushToUsers(recipients, {
-        title: `${circleName} — Announcement`,
-        body: input.message,
-        data: { notifId, type: notifType, circleId: input.circleId },
-        channelId: 'circles',
-      }).catch(() => undefined);
 
       return { notifId, recipientCount: recipients.length };
     }),
@@ -225,8 +222,10 @@ export const notificationsRouter = createTRPCRouter({
       const notifType = data.type as string;
       const actionLabel = ACTION_LABELS[input.action];
 
+      let actorName: string | undefined;
+
       if (originalSenderUid && originalSenderUid !== ctx.userId && actionLabel && RESPONSE_TYPES.includes(notifType)) {
-        const actorName = await getSenderName(ctx.userId);
+        actorName = await getSenderName(ctx.userId);
         await fanOutNotifications([originalSenderUid], {
           type: notifType as 'sos' | 'prayer_request' | 'announcement' | 'event' | 'group_activity' | 'encouragement',
           circleId: data.circleId as string,
@@ -236,6 +235,20 @@ export const notificationsRouter = createTRPCRouter({
           message: `${actorName} ${actionLabel}`,
           suppressActions: true,
         });
+      }
+
+      // Write RSVP response back to the event document.
+      const sourceId = data.sourceId as string | undefined;
+      if (
+        (input.action === 'ill_be_there' || input.action === 'unable_to_make_it') &&
+        notifType === 'event' &&
+        sourceId
+      ) {
+        if (!actorName) actorName = await getSenderName(ctx.userId);
+        await db
+          .collection('circles').doc(data.circleId as string)
+          .collection('events').doc(sourceId)
+          .update({ [`responses.${ctx.userId}`]: { action: input.action, name: actorName } });
       }
 
       return { notifId: input.notifId, action: input.action };
@@ -271,7 +284,7 @@ export const notificationsRouter = createTRPCRouter({
           getCircleName(input.circleId),
         ]);
         const actionLabel = input.action === 'im_here' ? 'is here for you' : 'is praying for you';
-        const responseNotifId = await fanOutNotifications([authorId], {
+        await fanOutNotifications([authorId], {
           type: 'prayer_request',
           circleId: input.circleId,
           circleName,
@@ -280,12 +293,6 @@ export const notificationsRouter = createTRPCRouter({
           message: `${actorName} ${actionLabel}`,
           suppressActions: true,
         });
-        sendPushToUsers([authorId], {
-          title: circleName,
-          body: `${actorName} ${actionLabel}`,
-          data: { notifId: responseNotifId, type: 'prayer_request', circleId: input.circleId },
-          channelId: 'circles',
-        }).catch(() => undefined);
       }
 
       return { requestId: input.requestId, action: input.action };

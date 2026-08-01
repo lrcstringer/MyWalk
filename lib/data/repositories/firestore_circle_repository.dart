@@ -943,7 +943,7 @@ class FirestoreCircleRepository implements CircleRepository {
   }
 
   @override
-  Future<void> createEvent({
+  Future<String> createEvent({
     required String circleId,
     required String title,
     required DateTime eventDate,
@@ -951,7 +951,7 @@ class FirestoreCircleRepository implements CircleRepository {
     String? location,
     String? meetingLink,
   }) async {
-    await _call('circleCreateEvent', {
+    final result = await _call('circleCreateEvent', {
       'circleId': circleId,
       'title': title,
       'eventDateMs': eventDate.millisecondsSinceEpoch,
@@ -959,6 +959,7 @@ class FirestoreCircleRepository implements CircleRepository {
       'location': location,
       'meetingLink': meetingLink,
     });
+    return result['id'] as String;
   }
 
   @override
@@ -1144,6 +1145,14 @@ class FirestoreCircleRepository implements CircleRepository {
   }
 
   static CircleEvent _parseCircleEvent(String id, Map<String, dynamic> d) {
+    final rawResponses = d['responses'] as Map<String, dynamic>? ?? {};
+    final responses = rawResponses.map((uid, val) {
+      final r = val as Map<String, dynamic>;
+      return MapEntry(uid, EventResponse(
+        action: r['action'] as String? ?? '',
+        name: r['name'] as String? ?? '',
+      ));
+    });
     return CircleEvent(
       id: id,
       circleId: d['circleId'] as String? ?? '',
@@ -1155,6 +1164,7 @@ class FirestoreCircleRepository implements CircleRepository {
       meetingLink: d['meetingLink'] as String?,
       reminderSent: d['reminderSent'] as bool? ?? false,
       createdAt: _tsToIso(d['createdAt']),
+      responses: responses,
     );
   }
 

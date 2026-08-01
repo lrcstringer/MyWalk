@@ -21,6 +21,7 @@ abstract class NotificationRepository {
     required String circleId,
     required String message,
     String? notifType,
+    String? sourceId,
   });
 
   /// Send a help / prayer request to chosen recipients.

@@ -574,6 +574,12 @@ class CircleHabitMilestone {
 
 // ── Feature 7: Events ─────────────────────────────────────────────────────────
 
+class EventResponse {
+  final String action; // 'ill_be_there' or 'unable_to_make_it'
+  final String name;
+  const EventResponse({required this.action, required this.name});
+}
+
 class CircleEvent {
   final String id;
   final String circleId;
@@ -585,6 +591,7 @@ class CircleEvent {
   final String? meetingLink;
   final bool reminderSent;
   final String createdAt;
+  final Map<String, EventResponse> responses;
 
   const CircleEvent({
     required this.id,
@@ -597,6 +604,7 @@ class CircleEvent {
     this.meetingLink,
     required this.reminderSent,
     required this.createdAt,
+    this.responses = const {},
   });
 
   bool isAuthor(String uid) => createdById == uid;

@@ -8,7 +8,6 @@ import '../../providers/bible_provider.dart';
 import '../../theme/app_theme.dart';
 import '../memorization/screens/memorization_input_screen.dart';
 import 'bible_book_picker_sheet.dart';
-import 'bible_bookmarks_sheet.dart';
 import 'bible_search_sheet.dart';
 
 class BibleBrowserView extends StatefulWidget {
@@ -167,8 +166,6 @@ class _BibleBrowserViewState extends State<BibleBrowserView> {
           color: MyWalkColor.cardBackground,
           onSelected: (action) => _handleMenu(context, provider, action),
           itemBuilder: (_) => [
-            _menuItem(_MenuAction.bookmarks, Icons.bookmark_outline,
-                'My Bookmarks'),
             _menuItem(
                 _MenuAction.fontUp, Icons.text_increase, 'Larger Text'),
             _menuItem(
@@ -198,8 +195,6 @@ class _BibleBrowserViewState extends State<BibleBrowserView> {
   void _handleMenu(
       BuildContext context, BibleProvider provider, _MenuAction action) {
     switch (action) {
-      case _MenuAction.bookmarks:
-        _showBookmarks(context, provider);
       case _MenuAction.fontUp:
         provider.increaseFontSize();
       case _MenuAction.fontDown:
@@ -250,13 +245,10 @@ class _BibleBrowserViewState extends State<BibleBrowserView> {
                     final verse = chapter.verses[i];
                     final isHighlighted =
                         provider.highlightVerse == verse.verseNum;
-                    final isBookmarked = provider.isBookmarked(
-                        verse.bookNum, verse.chapter, verse.verseNum);
                     return _VerseRow(
                       key: _verseKeys[verse.verseNum],
                       verse: verse,
                       isHighlighted: isHighlighted,
-                      isBookmarked: isBookmarked,
                       fontSize: provider.fontSize,
                       onLongPress: () =>
                           _showVerseActions(context, provider, verse),
@@ -300,22 +292,8 @@ class _BibleBrowserViewState extends State<BibleBrowserView> {
     );
   }
 
-  void _showBookmarks(BuildContext context, BibleProvider provider) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => ChangeNotifierProvider.value(
-        value: provider,
-        child: const BibleBookmarksSheet(),
-      ),
-    );
-  }
-
   void _showVerseActions(
       BuildContext context, BibleProvider provider, BibleVerse verse) {
-    final isBookmarked =
-        provider.isBookmarked(verse.bookNum, verse.chapter, verse.verseNum);
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: MyWalkColor.cardBackground,
@@ -350,59 +328,65 @@ class _BibleBrowserViewState extends State<BibleBrowserView> {
             ),
             const Divider(
                 color: MyWalkColor.cardBackground, height: 1),
-            _ActionTile(
-              icon: Icons.copy_outlined,
-              label: 'Copy Verse',
-              onTap: () {
-                Navigator.pop(context);
-                _copyVerse(context, verse);
-              },
-            ),
-            _ActionTile(
-              icon: Icons.share_outlined,
-              label: 'Share Verse',
-              onTap: () {
-                Navigator.pop(context);
-                _shareVerse(verse);
-              },
-            ),
-            _ActionTile(
-              icon: isBookmarked
-                  ? Icons.bookmark
-                  : Icons.bookmark_border_outlined,
-              label: isBookmarked ? 'Remove Bookmark' : 'Bookmark',
-              iconColor:
-                  isBookmarked ? MyWalkColor.golden : MyWalkColor.softGold,
-              onTap: () {
-                Navigator.pop(context);
-                provider.toggleBookmark(verse);
-              },
-            ),
-            _ActionTile(
-              icon: Icons.psychology_outlined,
-              label: 'Memorize this verse',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    builder: (_) => MemorizationInputScreen(
-                      initialTitle: verse.reference,
-                      initialText: verse.text,
-                    ),
-                  ),
-                );
-              },
-            ),
-            if (widget.onVerseSelected != null)
+            if (widget.onVerseSelected != null) ...[
               _ActionTile(
-                icon: Icons.auto_stories_outlined,
-                label: 'Use as Scripture Focus',
+                icon: Icons.library_add_outlined,
+                label: 'Tap to add selected scripture for group',
                 onTap: () {
-                  Navigator.pop(context); // close action sheet
+                  Navigator.pop(context);
                   widget.onVerseSelected!(verse);
-                  Navigator.pop(context); // close BibleBrowserView
+                  Navigator.pop(context);
                 },
               ),
+              _ActionTile(
+                icon: Icons.share_outlined,
+                label: 'Share Verse',
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareVerse(verse);
+                },
+              ),
+              _ActionTile(
+                icon: Icons.copy_outlined,
+                label: 'Copy Verse',
+                onTap: () {
+                  Navigator.pop(context);
+                  _copyVerse(context, verse);
+                },
+              ),
+            ] else ...[
+              _ActionTile(
+                icon: Icons.copy_outlined,
+                label: 'Copy Verse',
+                onTap: () {
+                  Navigator.pop(context);
+                  _copyVerse(context, verse);
+                },
+              ),
+              _ActionTile(
+                icon: Icons.share_outlined,
+                label: 'Share Verse',
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareVerse(verse);
+                },
+              ),
+              _ActionTile(
+                icon: Icons.psychology_outlined,
+                label: 'Memorize this verse',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => MemorizationInputScreen(
+                        initialTitle: verse.reference,
+                        initialText: verse.text,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
             const SizedBox(height: 8),
           ],
         ),
@@ -540,7 +524,6 @@ class _ChapterHeader extends StatelessWidget {
 class _VerseRow extends StatelessWidget {
   final BibleVerse verse;
   final bool isHighlighted;
-  final bool isBookmarked;
   final double fontSize;
   final VoidCallback onLongPress;
 
@@ -548,7 +531,6 @@ class _VerseRow extends StatelessWidget {
     super.key,
     required this.verse,
     required this.isHighlighted,
-    required this.isBookmarked,
     required this.fontSize,
     required this.onLongPress,
   });
@@ -612,16 +594,6 @@ class _VerseRow extends StatelessWidget {
                 textAlign: TextAlign.justify,
               ),
             ),
-            // Bookmark indicator
-            if (isBookmarked)
-              Padding(
-                padding: const EdgeInsets.only(left: 6, top: 4),
-                child: Icon(
-                  Icons.bookmark,
-                  size: 14,
-                  color: MyWalkColor.golden.withValues(alpha: 0.7),
-                ),
-              ),
           ],
         ),
       ),
@@ -736,20 +708,17 @@ class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Color? iconColor;
 
   const _ActionTile({
     required this.icon,
     required this.label,
     required this.onTap,
-    this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon,
-          color: iconColor ?? MyWalkColor.softGold, size: 22),
+      leading: Icon(icon, color: MyWalkColor.softGold, size: 22),
       title: Text(
         label,
         style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 15),
@@ -759,4 +728,4 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
-enum _MenuAction { bookmarks, fontUp, fontDown }
+enum _MenuAction { fontUp, fontDown }

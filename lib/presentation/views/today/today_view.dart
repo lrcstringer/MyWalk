@@ -236,6 +236,24 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
               ],
           ),
         ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: IgnorePointer(
+            child: Container(
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    MyWalkColor.charcoal.withValues(alpha: 0),
+                    MyWalkColor.charcoal,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
 
       ],
     );

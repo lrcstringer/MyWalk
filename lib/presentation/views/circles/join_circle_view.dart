@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/repositories/circle_repository.dart';
@@ -45,7 +46,12 @@ class _JoinCircleViewState extends State<JoinCircleView> {
         setState(() { _joinedName = response.name; _isLoading = false; });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
+      if (mounted) {
+        final msg = e is FirebaseFunctionsException
+            ? (e.message ?? 'Could not join the group. Please try again.')
+            : 'Could not join the group. Please try again.';
+        setState(() { _error = msg; _isLoading = false; });
+      }
     }
   }
 

@@ -156,7 +156,7 @@ abstract class CircleRepository {
 
   // ── Feature 7: Events ───────────────────────────────────────────────────────
   Future<List<CircleEvent>> getUpcomingEvents(String circleId);
-  Future<void> createEvent({
+  Future<String> createEvent({
     required String circleId,
     required String title,
     required DateTime eventDate,

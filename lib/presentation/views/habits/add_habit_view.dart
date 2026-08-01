@@ -221,35 +221,26 @@ class _AddHabitViewState extends State<AddHabitView> {
       children: [
         _categoryGrid(),
         const SizedBox(height: 12),
-        _breakingPatternsCard(),
+        _createMyOwnPracticeCard(),
       ],
     );
   }
 
-  Widget _breakingPatternsCard() {
+  Widget _createMyOwnPracticeCard() {
     return GestureDetector(
       onTap: () {
-        final nav = Navigator.of(context);
-        nav.pop();
-        nav.push(MaterialPageRoute(
-          builder: (_) => const BreakingFreeIntroScreen(),
-        ));
+        final cats = context.read<HabitCategoryProvider>().categories;
+        final customCat = cats.where((c) => c.isCustom).firstOrNull;
+        if (customCat != null) _selectCategoryModel(customCat);
       },
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              MyWalkColor.cardBackground,
-              MyWalkColor.sage.withValues(alpha: 0.08),
-            ],
-          ),
+          color: MyWalkColor.cardBackground,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: MyWalkColor.sage.withValues(alpha: 0.3), width: 1),
+              color: MyWalkColor.golden.withValues(alpha: 0.25), width: 1),
         ),
         child: Row(
           children: [
@@ -258,38 +249,24 @@ class _AddHabitViewState extends State<AddHabitView> {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: MyWalkColor.sage.withValues(alpha: 0.12),
+                color: MyWalkColor.golden.withValues(alpha: 0.12),
               ),
-              child: const Icon(Icons.shield_rounded,
-                  color: MyWalkColor.sage, size: 20),
+              child: const Icon(Icons.add_circle_outline_rounded,
+                  color: MyWalkColor.golden, size: 20),
             ),
             const SizedBox(width: 14),
             const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Breaking Patterns & Freedom Journey Plan',
-                    style: TextStyle(
-                      color: MyWalkColor.warmWhite,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    'Overcome challenges with accountability and a recovery path',
-                    style: TextStyle(
-                      color: MyWalkColor.sage,
-                      fontSize: 11,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
+              child: Text(
+                'Create my own Practice',
+                style: TextStyle(
+                  color: MyWalkColor.warmWhite,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Icon(Icons.chevron_right,
-                color: MyWalkColor.sage.withValues(alpha: 0.6), size: 20),
+                color: Colors.white.withValues(alpha: 0.3), size: 20),
           ],
         ),
       ),
@@ -301,7 +278,7 @@ class _AddHabitViewState extends State<AddHabitView> {
     final categories = context
         .watch<HabitCategoryProvider>()
         .categories
-        .where((c) => !hiddenCategoryIds.contains(c.id))
+        .where((c) => !hiddenCategoryIds.contains(c.id) && !c.isCustom)
         .toList();
 
     return GridView.count(
@@ -311,64 +288,114 @@ class _AddHabitViewState extends State<AddHabitView> {
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       childAspectRatio: 1.2,
-      children: categories.map((cat) {
-        final catColor = Color(
-          int.parse('FF${cat.colourHex.replaceAll('#', '')}', radix: 16),
-        );
-        return GestureDetector(
-          onTap: () => _selectCategoryModel(cat),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  MyWalkColor.cardBackground,
-                  catColor.withValues(alpha: 0.22),
+      children: [
+        ...categories.map((cat) {
+          final catColor = Color(
+            int.parse('FF${cat.colourHex.replaceAll('#', '')}', radix: 16),
+          );
+          return GestureDetector(
+            onTap: () => _selectCategoryModel(cat),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    MyWalkColor.cardBackground,
+                    catColor.withValues(alpha: 0.22),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: catColor.withValues(alpha: 0.65),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: catColor.withValues(alpha: 0.18),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: catColor.withValues(alpha: 0.65),
-                width: 1.5,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: catColor.withValues(alpha: 0.15),
+                    ),
+                    child: Icon(iconForKey(cat.iconKey), size: 24, color: catColor),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    cat.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: MyWalkColor.warmWhite,
+                    ),
+                  ),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: catColor.withValues(alpha: 0.18),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: catColor.withValues(alpha: 0.15),
-                  ),
-                  child: Icon(iconForKey(cat.iconKey), size: 24, color: catColor),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  cat.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 3,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: MyWalkColor.warmWhite,
-                  ),
-                ),
-              ],
-            ),
+          );
+        }),
+        _breakingPatternsGridCard(),
+      ],
+    );
+  }
+
+  Widget _breakingPatternsGridCard() {
+    const color = MyWalkColor.sage;
+    return GestureDetector(
+      onTap: () {
+        final nav = Navigator.of(context);
+        nav.pop();
+        nav.push(MaterialPageRoute(builder: (_) => const BreakingFreeIntroScreen()));
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [MyWalkColor.cardBackground, color.withValues(alpha: 0.22)],
           ),
-        );
-      }).toList(),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.65), width: 1.5),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: 0.18), blurRadius: 14, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withValues(alpha: 0.15),
+              ),
+              child: const Icon(Icons.shield_rounded, size: 24, color: color),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Breaking Patterns & Freedom Journey',
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

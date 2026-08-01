@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/habit.dart';
-import '../../../domain/entities/habit_category_model.dart';
 import '../../../domain/entities/bible_reading_plan.dart';
 import '../../../domain/services/week_cycle_manager.dart';
 import '../../providers/bible_reading_provider.dart';
-import '../../providers/habit_category_provider.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../utils/category_icons.dart';
 import '../bible_reading/bible_reading_grid_view.dart';
 import '../habits/add_habit_view.dart';
 import '../habits/habit_detail_view.dart';
@@ -17,14 +14,11 @@ import '../memorization/memorization_router.dart';
 import '../shared/appbar_actions.dart';
 import '../shared/mywalk_paywall_view.dart';
 import '../help/practices_help_view.dart';
-import 'breaking_free_intro_screen.dart';
 
 class PracticesView extends StatelessWidget {
   final WeekCycleManager weekCycleManager;
 
   const PracticesView({super.key, required this.weekCycleManager});
-
-  static const _hiddenCategoryIds = {'fruit_of_the_spirit', 'the_beatitudes'};
 
   @override
   Widget build(BuildContext context) {
@@ -33,17 +27,11 @@ class PracticesView extends StatelessWidget {
         .sortedHabits
         .where((h) => !h.isBuiltIn && !h.isArchived)
         .toList();
-    final categories = context
-        .watch<HabitCategoryProvider>()
-        .categories
-        .where((c) => !_hiddenCategoryIds.contains(c.id))
-        .toList();
-    final isPremium = context.watch<StoreProvider>().isPremium;
     final imageHeight = MediaQuery.of(context).size.width * (2.0 / 3.0);
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
+      body: Stack(children: [CustomScrollView(
         slivers: [
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
@@ -100,7 +88,7 @@ class PracticesView extends StatelessWidget {
                         ),
                         SizedBox(height: 5),
                         Text(
-                          '‘Train yourself to be godly.’',
+                          "'Train yourself to be godly.'",
                           style: TextStyle(
                             fontSize: 12,
                             fontStyle: FontStyle.italic,
@@ -125,85 +113,93 @@ class PracticesView extends StatelessWidget {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // ── Your Practices (management mode) ──────────────────────
+                // ── Action pills ───────────────────────────────────────────
+                Row(children: [
+                  Expanded(
+                    child: _ActionPill(
+                      icon: Icons.add_rounded,
+                      label: 'Add a Practice',
+                      onTap: () => _openAddPractice(context),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ActionPill(
+                      icon: Icons.apps_rounded,
+                      label: 'Mini-Apps',
+                      onTap: () => _openMiniApps(context),
+                    ),
+                  ),
+                ]),
+
+                // ── Your Practices ─────────────────────────────────────────
                 if (habits.isNotEmpty) ...[
+                  const SizedBox(height: 28),
                   _sectionLabel('YOUR PRACTICES'),
                   const SizedBox(height: 10),
                   _ManagementCard(habits: habits),
-                  const SizedBox(height: 28),
                 ],
-
-                // ── Daily Practices (discovery) ────────────────────────────
-                _sectionLabel('ADD A PRACTICE'),
-                const SizedBox(height: 4),
-                Text(
-                  'Choose a discipline to add to your daily walk.',
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
-                ),
-                const SizedBox(height: 14),
-                _CategoryDiscoveryGrid(categories: categories),
-                const SizedBox(height: 12),
-                const _BreakingFreeCard(),
-                const SizedBox(height: 28),
-
-                // ── Programmes divider ─────────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 0.5,
-                        color: MyWalkColor.golden.withValues(alpha: 0.18),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.star_rounded,
-                              size: 11,
-                              color: MyWalkColor.golden.withValues(alpha: 0.45)),
-                          const SizedBox(width: 5),
-                          Text(
-                            'PROGRAMMES',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: MyWalkColor.golden.withValues(alpha: 0.45),
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Icon(Icons.star_rounded,
-                              size: 11,
-                              color: MyWalkColor.golden.withValues(alpha: 0.45)),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 0.5,
-                        color: MyWalkColor.golden.withValues(alpha: 0.18),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // ── Bible in a Year ────────────────────────────────────────
-                const _BibleInAYearCard(),
-                const SizedBox(height: 12),
-
-                // ── Scripture Memorization ─────────────────────────────────
-                _MemorizationCard(isPremium: isPremium),
               ]),
             ),
           ),
         ],
+      ),
+      Align(
+        alignment: Alignment.bottomCenter,
+        child: IgnorePointer(
+          child: Container(
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  MyWalkColor.charcoal.withValues(alpha: 0),
+                  MyWalkColor.charcoal,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ]),
+    );
+  }
+
+  void _openAddPractice(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: MyWalkColor.charcoal,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (ctx, sc) => AddHabitView(scrollController: sc),
+      ),
+    );
+  }
+
+  void _openMiniApps(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: MyWalkColor.charcoal,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.95,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (ctx, sc) => _MiniAppsSheet(scrollController: sc),
       ),
     );
   }
@@ -356,182 +352,99 @@ class _ManagementCard extends StatelessWidget {
   }
 }
 
-// ── Category discovery grid ───────────────────────────────────────────────────
+// ── Action pill ───────────────────────────────────────────────────────────────
 
-class _CategoryDiscoveryGrid extends StatelessWidget {
-  final List<HabitCategoryModel> categories;
-  const _CategoryDiscoveryGrid({required this.categories});
+class _ActionPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _ActionPill({required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.2,
-      ),
-      itemCount: categories.length,
-      itemBuilder: (_, i) {
-        final cat = categories[i];
-        final catColor = _hexColor(cat.colourHex);
-        return GestureDetector(
-          onTap: () => _openAddPractice(context, cat),
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  MyWalkColor.cardBackground,
-                  catColor.withValues(alpha: 0.22),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: catColor.withValues(alpha: 0.65), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: catColor.withValues(alpha: 0.18),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: catColor.withValues(alpha: 0.15),
-                  ),
-                  child: Icon(iconForKey(cat.iconKey),
-                      size: 24, color: catColor),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  cat.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 3,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: MyWalkColor.warmWhite,
-                  ),
-                ),
-              ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: MyWalkColor.cardBackground,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.3), width: 1),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: MyWalkColor.golden, size: 22),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: MyWalkColor.warmWhite,
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Color _hexColor(String hex) {
-    final h = hex.replaceAll('#', '');
-    return Color(int.parse('FF$h', radix: 16));
-  }
-
-  void _openAddPractice(BuildContext context, HabitCategoryModel category) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: MyWalkColor.charcoal,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        maxChildSize: 0.95,
-        minChildSize: 0.6,
-        expand: false,
-        builder: (ctx, sc) => AddHabitView(
-          scrollController: sc,
-          startCategoryModel: category,
-        ),
+        ]),
       ),
     );
   }
 }
 
-// ── Breaking Free card ────────────────────────────────────────────────────────
+// ── Mini-Apps sheet ───────────────────────────────────────────────────────────
 
-class _BreakingFreeCard extends StatelessWidget {
-  const _BreakingFreeCard();
+class _MiniAppsSheet extends StatelessWidget {
+  final ScrollController? scrollController;
+  const _MiniAppsSheet({this.scrollController});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const BreakingFreeIntroScreen()),
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              MyWalkColor.cardBackground,
-              MyWalkColor.sage.withValues(alpha: 0.08),
+    final isPremium = context.watch<StoreProvider>().isPremium;
+    return Column(
+      children: [
+        // ── Header ──────────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 12, 8, 4),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close, color: MyWalkColor.warmWhite),
+                onPressed: () => Navigator.pop(context),
+              ),
+              const Expanded(
+                child: Text(
+                  'Mini-Apps',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: MyWalkColor.warmWhite,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: MyWalkColor.softGold.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
             ],
           ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-              color: MyWalkColor.sage.withValues(alpha: 0.3), width: 1),
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: MyWalkColor.sage.withValues(alpha: 0.12),
-              ),
-              child: const Icon(Icons.shield_rounded,
-                  color: MyWalkColor.sage, size: 20),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Breaking Free',
-                    style: TextStyle(
-                      color: MyWalkColor.warmWhite,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    'Overcome challenges with accountability and a recovery path',
-                    style: TextStyle(
-                      color: MyWalkColor.sage,
-                      fontSize: 11,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right,
-                color: MyWalkColor.sage.withValues(alpha: 0.6), size: 20),
-          ],
+        // ── Content ─────────────────────────────────────────────────────────
+        Expanded(
+          child: ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+            children: [
+              const _BibleInAYearCard(),
+              const SizedBox(height: 12),
+              _MemorizationCard(isPremium: isPremium),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -21,7 +21,7 @@ class KingdomLifeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: CustomScrollView(
+      body: Stack(children: [CustomScrollView(
         slivers: [
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
@@ -253,6 +253,25 @@ class KingdomLifeView extends StatelessWidget {
           ),
         ],
       ),
+      Align(
+        alignment: Alignment.bottomCenter,
+        child: IgnorePointer(
+          child: Container(
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  MyWalkColor.charcoal.withValues(alpha: 0),
+                  MyWalkColor.charcoal,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ]),
     );
   }
 }
