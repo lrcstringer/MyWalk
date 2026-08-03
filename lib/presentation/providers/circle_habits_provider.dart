@@ -135,7 +135,7 @@ class CircleHabitsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> createHabit({
+  Future<String> createHabit({
     required String circleId,
     required String name,
     required CircleHabitTrackingType trackingType,
@@ -151,7 +151,7 @@ class CircleHabitsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _repo.createCircleHabit(
+      final habitId = await _repo.createCircleHabit(
         circleId: circleId,
         name: name,
         trackingType: trackingType,
@@ -164,6 +164,7 @@ class CircleHabitsProvider extends ChangeNotifier {
       );
       // Reload to get server-assigned ID.
       await load(circleId);
+      return habitId;
     } catch (e) {
       error = e.toString();
       rethrow;

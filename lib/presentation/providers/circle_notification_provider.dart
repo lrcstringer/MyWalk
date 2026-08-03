@@ -71,6 +71,13 @@ class CircleNotificationProvider extends ChangeNotifier {
     await _repo.markRead(notifId);
   }
 
+  Future<void> markAllRead() async {
+    if (!hasUnread) return;
+    _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+    notifyListeners();
+    await _repo.markAllRead();
+  }
+
   Future<void> recordAction(String notifId, NotificationAction action) async {
     final idx = _notifications.indexWhere((n) => n.id == notifId);
     if (idx == -1) return;

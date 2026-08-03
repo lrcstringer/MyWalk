@@ -200,6 +200,10 @@ class _CircleHabitCard extends StatelessWidget {
             Text('Not scheduled today',
                 style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
         ]),
+        if (habit.responses.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _ActivityResponseRow(responses: habit.responses),
+        ],
       ]),
       ),
     );
@@ -397,6 +401,46 @@ class _CircleHabitCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─── Activity Response Row ────────────────────────────────────────────────────
+
+class _ActivityResponseRow extends StatelessWidget {
+  final Map<String, ActivityResponse> responses;
+  const _ActivityResponseRow({required this.responses});
+
+  @override
+  Widget build(BuildContext context) {
+    final joining = responses.values
+        .where((r) => r.action == 'count_me_in')
+        .map((r) => r.name.split(' ').first)
+        .toList();
+    final unable = responses.values
+        .where((r) => r.action == 'unable_to_do')
+        .map((r) => r.name.split(' ').first)
+        .toList();
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 4,
+      children: [
+        if (joining.isNotEmpty)
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.check_circle_rounded, size: 12, color: MyWalkColor.sage),
+            const SizedBox(width: 4),
+            Text(joining.join(', '),
+                style: TextStyle(fontSize: 11, color: MyWalkColor.sage.withValues(alpha: 0.85))),
+          ]),
+        if (unable.isNotEmpty)
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.cancel_outlined, size: 12, color: Colors.white.withValues(alpha: 0.35)),
+            const SizedBox(width: 4),
+            Text(unable.join(', '),
+                style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.35))),
+          ]),
+      ],
     );
   }
 }
@@ -978,7 +1022,7 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
         ? context.read<CircleNotificationProvider>()
         : null;
     try {
-      await context.read<CircleHabitsProvider>().createHabit(
+      final habitId = await context.read<CircleHabitsProvider>().createHabit(
         circleId: widget.circleId, name: name, trackingType: _tracking,
         frequency: _frequency,
         specificDays: _frequency == CircleHabitFrequency.specificDays
@@ -991,6 +1035,7 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
         circleId: widget.circleId,
         message: 'New group activity: $name — check the Activities tab.',
         notifType: 'group_activity',
+        sourceId: habitId,
       ).catchError((_) {});
       if (mounted) Navigator.pop(context);
     } catch (e) {

@@ -93,8 +93,10 @@ class PendingNotificationSendQueue {
         );
       case 'encouragement':
         final params = Map<String, dynamic>.from(payload)..remove('type');
-        if (params.containsKey('presetType')) {
+        if (params['presetType'] != null) {
           params['type'] = params.remove('presetType');
+        } else {
+          params.remove('presetType');
         }
         await _fn.httpsCallable('circleSendEncouragement').call(params);
       default:

@@ -285,8 +285,8 @@ class _CircleDetailViewState extends State<CircleDetailView> {
           ? '$threadCount open ${threadCount == 1 ? "thread" : "threads"}'
           : 'Start a discussion',
       habitCount > 0
-          ? '$habitCount ${habitCount == 1 ? "practice" : "practices"}'
-          : 'No practices yet',
+          ? '$habitCount ${habitCount == 1 ? "activity" : "activities"}'
+          : 'No activities yet',
       receivedCount > 0
           ? '$receivedCount received · Gratitude Wall'
           : 'Wall · Personal notes',

@@ -23,10 +23,19 @@ String _relativeTime(String dateString) {
   return days[(date.weekday - 1) % 7];
 }
 
-class ActivityTab extends StatelessWidget {
+class ActivityTab extends StatefulWidget {
   final String circleId;
   final List<CircleMember> members;
   const ActivityTab({super.key, required this.circleId, required this.members});
+
+  @override
+  State<ActivityTab> createState() => _ActivityTabState();
+}
+
+class _ActivityTabState extends State<ActivityTab> {
+  int _gratitudeVersion = 0;
+  String get circleId => widget.circleId;
+  List<CircleMember> get members => widget.members;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +73,7 @@ class ActivityTab extends StatelessWidget {
                       const SizedBox(height: 20),
                       _gratitudeHeader(context),
                       const SizedBox(height: 8),
-                      GratitudeWallWidget(circleId: circleId, showHeader: false),
+                      GratitudeWallWidget(key: ValueKey(_gratitudeVersion), circleId: circleId, showHeader: false),
                       const SizedBox(height: 20),
                       if (shares.isEmpty && received.isEmpty && sent.isEmpty)
                         _emptyState()
@@ -141,11 +150,13 @@ class ActivityTab extends StatelessWidget {
   ]);
 
   void _showGratitudeSheet(BuildContext context) {
-    showModalBottomSheet(
+    showModalBottomSheet<bool>(
       context: context, isScrollControlled: true, useSafeArea: true,
       backgroundColor: MyWalkColor.charcoal,
       builder: (_) => _GratitudeComposeSheet(circleId: circleId),
-    );
+    ).then((success) {
+      if (success == true && mounted) setState(() => _gratitudeVersion++);
+    });
   }
 
   void _showSendSheet(BuildContext context) {
@@ -1094,7 +1105,7 @@ class _GratitudeComposeSheetState extends State<_GratitudeComposeSheet> {
           child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.softGold)),
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           TextField(
@@ -1173,7 +1184,7 @@ class _GratitudeComposeSheetState extends State<_GratitudeComposeSheet> {
         text: text,
         isAnonymous: _anonymous,
       );
-      nav.pop();
+      nav.pop(true);
     } catch (_) {
       if (mounted) setState(() => _submitting = false);
     }

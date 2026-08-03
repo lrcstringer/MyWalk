@@ -13,6 +13,9 @@ abstract class NotificationRepository {
   /// Mark a single notification as read.
   Future<void> markRead(String notifId);
 
+  /// Mark all unread notifications as read (called on inbox open).
+  Future<void> markAllRead();
+
   /// Record an action against a notification.
   Future<void> recordAction(String notifId, NotificationAction action);
 

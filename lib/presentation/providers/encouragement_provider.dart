@@ -54,18 +54,18 @@ class EncouragementProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final results = await Future.wait([
-        _repo.getReceivedEncouragements(circleId),
-        _repo.getSentEncouragements(circleId),
-      ]);
-      _receivedByCircle[circleId] = results[0];
-      _sentByCircle[circleId] = results[1];
+      _receivedByCircle[circleId] = await _repo.getReceivedEncouragements(circleId);
     } catch (e) {
       error = e.toString();
-    } finally {
-      _loadingByCircle[circleId] = false;
-      notifyListeners();
     }
+    try {
+      _sentByCircle[circleId] = await _repo.getSentEncouragements(circleId);
+    } catch (e) {
+      error ??= e.toString();
+    }
+
+    _loadingByCircle[circleId] = false;
+    notifyListeners();
   }
 
   Future<void> send({
@@ -98,19 +98,11 @@ class EncouragementProvider extends ChangeNotifier {
       rethrow;
     }
 
-    // Reload sent list so the new item appears. This is best-effort: when the
-    // send was queued offline the reload will fail, but that must not surface
-    // as an error — the send itself succeeded (it is queued). The list
-    // refreshes correctly on the next load() call when back online.
-    try {
-      final sent = await _repo.getSentEncouragements(circleId);
-      _sentByCircle[circleId] = sent;
-    } catch (_) {
-      // Intentionally ignored.
-    } finally {
-      _sending = false;
-      notifyListeners();
-    }
+    _sending = false;
+    notifyListeners();
+    // Reload both lists. Best-effort: if queued offline, this will return
+    // stale data — the screen refreshes correctly on the next load() call.
+    await load(circleId);
   }
 
   Future<void> markRead(String circleId, String encouragementId) async {

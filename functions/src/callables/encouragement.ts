@@ -42,7 +42,8 @@ export const circleSendEncouragement = onCall(
 
     if (!circleId?.trim()) throw new HttpsError('invalid-argument', 'circleId required');
     if (!recipientId?.trim()) throw new HttpsError('invalid-argument', 'recipientId required');
-    if (!VALID_TYPES.includes(type)) throw new HttpsError('invalid-argument', 'Invalid encouragement type');
+    if (type && !VALID_TYPES.includes(type)) throw new HttpsError('invalid-argument', 'Invalid encouragement type');
+    if (!type && !customMessage?.trim()) throw new HttpsError('invalid-argument', 'Either a preset type or a custom message is required');
     if (customMessage && customMessage.length > 200) {
       throw new HttpsError('invalid-argument', 'customMessage exceeds 200 characters');
     }
@@ -84,7 +85,7 @@ export const circleSendEncouragement = onCall(
     const senderLabel = isAnonymous ? 'Someone in your circle' : senderDisplayName;
     const body = customMessage?.trim()
       ? `${senderLabel}: ${customMessage.trim()}`
-      : `${senderLabel}: ${TYPE_PRESET_TEXT[type]}`;
+      : `${senderLabel}: ${type ? TYPE_PRESET_TEXT[type] : ''}`;
 
     if (notifyViaInbox) {
       const circleSnap = await db.collection('circles').doc(circleId).get();
@@ -107,6 +108,13 @@ export const circleSendEncouragement = onCall(
         suppressActions: false,
       });
     }
+
+    await sendPushToUsers([recipientId], {
+      title: 'Encouragement from your group',
+      body,
+      data: { type: 'encouragement', circleId },
+      channelId: 'circles',
+    }).catch(() => {});
 
     return { id: ref.id };
   }

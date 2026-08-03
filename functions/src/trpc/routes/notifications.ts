@@ -251,6 +251,19 @@ export const notificationsRouter = createTRPCRouter({
           .update({ [`responses.${ctx.userId}`]: { action: input.action, name: actorName } });
       }
 
+      // Write response back to the group activity (circle habit) document.
+      if (
+        (input.action === 'count_me_in' || input.action === 'unable_to_do') &&
+        notifType === 'group_activity' &&
+        sourceId
+      ) {
+        if (!actorName) actorName = await getSenderName(ctx.userId);
+        await db
+          .collection('circles').doc(data.circleId as string)
+          .collection('circle_habits').doc(sourceId)
+          .update({ [`responses.${ctx.userId}`]: { action: input.action, name: actorName } });
+      }
+
       return { notifId: input.notifId, action: input.action };
     }),
 

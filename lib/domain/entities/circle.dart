@@ -333,6 +333,12 @@ class ScriptureComment {
 enum CircleHabitFrequency { daily, weekly, specificDays }
 enum CircleHabitTrackingType { checkIn, timed, count }
 
+class ActivityResponse {
+  final String action; // 'count_me_in' or 'unable_to_do'
+  final String name;
+  const ActivityResponse({required this.action, required this.name});
+}
+
 class CircleHabit {
   final String id;
   final String circleId;
@@ -349,6 +355,7 @@ class CircleHabit {
   final String createdAt;
   final String startsAt;
   final String? endsAt;
+  final Map<String, ActivityResponse> responses;
 
   const CircleHabit({
     required this.id,
@@ -366,6 +373,7 @@ class CircleHabit {
     required this.createdAt,
     required this.startsAt,
     this.endsAt,
+    this.responses = const {},
   });
 
   /// Returns true if this habit is scheduled for the given weekday (0=Sun … 6=Sat).

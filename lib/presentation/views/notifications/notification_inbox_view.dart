@@ -7,8 +7,22 @@ import '../../providers/circle_notification_provider.dart';
 import '../../theme/app_theme.dart';
 import '../habits/partner_acceptance_screen.dart';
 
-class NotificationInboxView extends StatelessWidget {
+class NotificationInboxView extends StatefulWidget {
   const NotificationInboxView({super.key});
+
+  @override
+  State<NotificationInboxView> createState() => _NotificationInboxViewState();
+}
+
+class _NotificationInboxViewState extends State<NotificationInboxView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<CircleNotificationProvider>().markAllRead();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

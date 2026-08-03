@@ -78,7 +78,7 @@ abstract class CircleRepository {
     String habitId,
     String date,
   );
-  Future<void> createCircleHabit({
+  Future<String> createCircleHabit({
     required String circleId,
     required String name,
     required CircleHabitTrackingType trackingType,

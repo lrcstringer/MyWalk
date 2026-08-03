@@ -65,6 +65,9 @@ class FirestoreCircleRepository implements CircleRepository {
   CollectionReference _habitDailySummary(String circleId, String habitId) =>
       _circleHabits(circleId).doc(habitId).collection('daily_summary');
 
+  CollectionReference _encouragements(String circleId) =>
+      _circles.doc(circleId).collection('encouragements');
+
   CollectionReference _milestoneShares(String circleId) =>
       _circles.doc(circleId).collection('milestone_shares');
 
@@ -701,7 +704,7 @@ class FirestoreCircleRepository implements CircleRepository {
   }
 
   @override
-  Future<void> createCircleHabit({
+  Future<String> createCircleHabit({
     required String circleId,
     required String name,
     required CircleHabitTrackingType trackingType,
@@ -712,7 +715,7 @@ class FirestoreCircleRepository implements CircleRepository {
     String? purposeStatement,
     String? description,
   }) async {
-    await _call('circleCreateHabit', {
+    final result = await _call('circleCreateHabit', {
       'circleId': circleId,
       'name': name,
       'trackingType': _circleHabitTrackingTypeToString(trackingType),
@@ -723,6 +726,7 @@ class FirestoreCircleRepository implements CircleRepository {
       'purposeStatement': purposeStatement,
       'description': description,
     });
+    return result['id'] as String;
   }
 
   @override
@@ -789,21 +793,43 @@ class FirestoreCircleRepository implements CircleRepository {
   @override
   Future<List<Encouragement>> getReceivedEncouragements(
       String circleId) async {
-    final data = await _call('circleGetEncouragements',
-        {'circleId': circleId, 'type': 'received'});
-    final list = (data['encouragements'] as List<dynamic>?) ?? [];
-    return list
-        .map((e) => _parseEncouragement(e as Map<String, dynamic>))
-        .toList();
+    final uid = _uid;
+    final snap = await _queryWithFallback(
+      _encouragements(circleId).where('recipientId', isEqualTo: uid),
+    );
+    final docs = snap.docs.toList()
+      ..sort((a, b) {
+        final aTs = (a.data() as Map)['createdAt'];
+        final bTs = (b.data() as Map)['createdAt'];
+        if (aTs is Timestamp && bTs is Timestamp) {
+          return bTs.compareTo(aTs);
+        }
+        return 0;
+      });
+    return docs.map((d) {
+      final data = d.data() as Map<String, dynamic>;
+      final isAnon = data['isAnonymous'] as bool? ?? false;
+      return _parseEncouragement(data, maskSender: isAnon);
+    }).toList();
   }
 
   @override
   Future<List<Encouragement>> getSentEncouragements(String circleId) async {
-    final data = await _call('circleGetEncouragements',
-        {'circleId': circleId, 'type': 'sent'});
-    final list = (data['encouragements'] as List<dynamic>?) ?? [];
-    return list
-        .map((e) => _parseEncouragement(e as Map<String, dynamic>))
+    final uid = _uid;
+    final snap = await _queryWithFallback(
+      _encouragements(circleId).where('senderId', isEqualTo: uid),
+    );
+    final docs = snap.docs.toList()
+      ..sort((a, b) {
+        final aTs = (a.data() as Map)['createdAt'];
+        final bTs = (b.data() as Map)['createdAt'];
+        if (aTs is Timestamp && bTs is Timestamp) {
+          return bTs.compareTo(aTs);
+        }
+        return 0;
+      });
+    return docs
+        .map((d) => _parseEncouragement(d.data() as Map<String, dynamic>))
         .toList();
   }
 
@@ -1052,6 +1078,14 @@ class FirestoreCircleRepository implements CircleRepository {
 
   static CircleHabit _parseCircleHabit(
       String id, Map<String, dynamic> d) {
+    final rawResponses = d['responses'] as Map<String, dynamic>? ?? {};
+    final responses = rawResponses.map((uid, val) {
+      final r = val as Map<String, dynamic>;
+      return MapEntry(uid, ActivityResponse(
+        action: r['action'] as String? ?? '',
+        name: r['name'] as String? ?? '',
+      ));
+    });
     return CircleHabit(
       id: id,
       circleId: d['circleId'] as String? ?? '',
@@ -1070,20 +1104,29 @@ class FirestoreCircleRepository implements CircleRepository {
       createdAt: _tsToIso(d['createdAt']),
       startsAt: _tsToIso(d['startsAt']),
       endsAt: d['endsAt'] != null ? _tsToIso(d['endsAt']) : null,
+      responses: responses,
     );
   }
 
-  static Encouragement _parseEncouragement(Map<String, dynamic> d) {
+  static Encouragement _parseEncouragement(
+    Map<String, dynamic> d, {
+    bool maskSender = false,
+  }) {
     final rawCreatedAt = d['createdAt'];
-    final createdAt = rawCreatedAt is int
-        ? DateTime.fromMillisecondsSinceEpoch(rawCreatedAt).toIso8601String()
-        : (rawCreatedAt as String?) ?? DateTime.now().toIso8601String();
+    final String createdAt;
+    if (rawCreatedAt is Timestamp) {
+      createdAt = rawCreatedAt.toDate().toIso8601String();
+    } else if (rawCreatedAt is num) {
+      createdAt = DateTime.fromMillisecondsSinceEpoch(rawCreatedAt.toInt()).toIso8601String();
+    } else {
+      createdAt = (rawCreatedAt as String?) ?? DateTime.now().toIso8601String();
+    }
     final type = d['type'] as String?;
     return Encouragement(
       id: d['id'] as String? ?? '',
       circleId: d['circleId'] as String? ?? '',
-      senderId: d['senderId'] as String?,
-      senderDisplayName: d['senderDisplayName'] as String?,
+      senderId: maskSender ? null : d['senderId'] as String?,
+      senderDisplayName: maskSender ? null : d['senderDisplayName'] as String?,
       recipientId: d['recipientId'] as String? ?? '',
       messageType: (type != null && type.isNotEmpty)
           ? EncouragementMessageType.preset

@@ -211,9 +211,9 @@ service cloud.firestore {
         }
       }
 
-      // encouragements — recipient reads via callable (privacy masking); writes via callable
+      // encouragements — members read directly; anon masking is client-side via isAnonymous flag
       match /encouragements/{encouragementId} {
-        allow read: if false; // Always fetched through circleGetEncouragements callable
+        allow read: if isCircleMember(circleId);
         allow write: if false;
       }
 

@@ -84,6 +84,7 @@ export const circleCreateHabit = onCall(
       createdAt: now,
       startsAt: now,
       endsAt: null,
+      responses: {},
     });
 
     return { id: ref.id };
