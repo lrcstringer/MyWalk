@@ -1136,6 +1136,7 @@ class FirestoreCircleRepository implements CircleRepository {
       isAnonymous: d['isAnonymous'] as bool? ?? false,
       isRead: d['isRead'] as bool? ?? false,
       createdAt: createdAt,
+      thankYouCount: (d['thankYouCount'] as int?) ?? 0,
     );
   }
 

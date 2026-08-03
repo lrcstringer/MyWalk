@@ -426,6 +426,7 @@ class Encouragement {
   final bool isAnonymous;
   final bool isRead;
   final String createdAt;
+  final int thankYouCount;
 
   const Encouragement({
     required this.id,
@@ -439,6 +440,7 @@ class Encouragement {
     required this.isAnonymous,
     required this.isRead,
     required this.createdAt,
+    this.thankYouCount = 0,
   });
 
   String get displayMessage {

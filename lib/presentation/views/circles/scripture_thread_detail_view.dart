@@ -7,6 +7,7 @@ import '../../../data/datasources/remote/auth_service.dart';
 import '../../providers/scripture_thread_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
+import '../journal/journal_entry_composer.dart';
 import '../kingdom_life/bible_project_browser_view.dart';
 
 // Parses Delta JSON with plain-text fallback.
@@ -147,6 +148,26 @@ class _ScriptureThreadDetailViewState
                           },
                           onDelete: (c) => _deleteComment(context, c),
                         )),
+                  const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: () => Navigator.push<void>(context, MaterialPageRoute(
+                      builder: (_) => JournalEntryComposer(
+                        habitName: widget.thread.reference,
+                        sourceType: 'group_scripture',
+                        chipIcon: Icons.groups_rounded,
+                      ),
+                    )),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.edit_note, size: 16,
+                          color: MyWalkColor.softGold.withValues(alpha: 0.8)),
+                      const SizedBox(width: 6),
+                      Text('Create journal entry',
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: MyWalkColor.softGold.withValues(alpha: 0.8))),
+                    ]),
+                  ),
                 ],
               ),
             ),

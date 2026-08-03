@@ -478,9 +478,9 @@ class _NotificationTileState extends State<_NotificationTile> {
       case CircleNotificationType.sos:
         return const Color(0xFFE05555);
       case CircleNotificationType.prayerRequest:
-        return MyWalkColor.softGold;
+        return MyWalkColor.sage;
       case CircleNotificationType.announcement:
-        return const Color(0xFF5B8DEF);
+        return MyWalkColor.golden;
       case CircleNotificationType.partnershipInvite:
       case CircleNotificationType.partnerMessage:
       case CircleNotificationType.partnershipAccepted:
@@ -488,7 +488,7 @@ class _NotificationTileState extends State<_NotificationTile> {
       case CircleNotificationType.event:
         return MyWalkColor.eventPurple;
       case CircleNotificationType.groupActivity:
-        return MyWalkColor.golden;
+        return MyWalkColor.warmCoral;
       case CircleNotificationType.encouragement:
         return MyWalkColor.softGold;
       case CircleNotificationType.prayerList:
@@ -700,6 +700,13 @@ class _CircleActionRow extends StatelessWidget {
               icon: Icons.check_rounded,
               color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
               onTap: () => onAction(NotificationAction.gotIt)),
+        ]),
+      CircleNotificationType.prayerRequest => Row(children: [
+          _ActionButton(
+              label: "I'm praying",
+              icon: Icons.favorite_border_rounded,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              onTap: () => onAction(NotificationAction.pray)),
         ]),
       _ => Row(children: [
           _ActionButton(

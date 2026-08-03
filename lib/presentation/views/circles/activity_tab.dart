@@ -268,6 +268,17 @@ class _EncouragementCard extends StatelessWidget {
                     color: MyWalkColor.softGold.withValues(alpha: 0.65))),
           ]),
         ),
+        if (enc.thankYouCount > 0) ...[
+          const SizedBox(height: 8),
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.favorite, size: 12,
+                color: MyWalkColor.softGold.withValues(alpha: 0.7)),
+            const SizedBox(width: 4),
+            Text('${enc.thankYouCount}',
+                style: TextStyle(fontSize: 11,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.7))),
+          ]),
+        ],
       ]),
       ),
     );

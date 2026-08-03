@@ -106,6 +106,7 @@ export const circleSendEncouragement = onCall(
         isRead: false,
         actionTaken: null,
         suppressActions: false,
+        sourceId: ref.id,
       });
     }
 

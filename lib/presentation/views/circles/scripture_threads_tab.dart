@@ -8,7 +8,6 @@ import '../../providers/scripture_thread_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../theme/app_theme.dart';
 import '../bible/bible_browser_view.dart';
-import '../journal/journal_entry_composer.dart';
 import 'scripture_thread_detail_view.dart';
 
 class ScriptureThreadsTab extends StatefulWidget {
@@ -352,49 +351,20 @@ class _ThreadCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Row(children: [
-            Icon(Icons.chat_bubble_outline_rounded,
-                size: 12,
-                color: isClosed
-                    ? Colors.white.withValues(alpha: 0.25)
-                    : MyWalkColor.golden.withValues(alpha: 0.65)),
-            const SizedBox(width: 4),
             Text(
               isClosed
                   ? '${thread.commentCount} ${thread.commentCount == 1 ? "comment" : "comments"}'
                   : thread.commentCount == 0
-                      ? 'Be the first to comment'
-                      : '${thread.commentCount} ${thread.commentCount == 1 ? "comment" : "comments"}',
+                      ? 'View thread →'
+                      : '${thread.commentCount} ${thread.commentCount == 1 ? "comment" : "comments"} · View →',
               style: TextStyle(
                   fontSize: 12,
+                  fontWeight: FontWeight.w600,
                   color: isClosed
                       ? Colors.white.withValues(alpha: 0.25)
-                      : MyWalkColor.golden.withValues(alpha: 0.75)),
+                      : MyWalkColor.golden),
             ),
-            const Spacer(),
-            Icon(Icons.arrow_forward_ios_rounded,
-                size: 11,
-                color: isClosed
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : MyWalkColor.golden.withValues(alpha: 0.5)),
           ]),
-          const SizedBox(height: 10),
-          GestureDetector(
-            onTap: () => Navigator.push<void>(context, MaterialPageRoute(
-              builder: (_) => JournalEntryComposer(
-                habitName: thread.reference,
-                sourceType: 'group_scripture',
-                chipIcon: Icons.groups_rounded,
-              ),
-            )),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.edit_note, size: 14,
-                  color: MyWalkColor.softGold.withValues(alpha: isClosed ? 0.35 : 0.65)),
-              const SizedBox(width: 4),
-              Text('Create journal entry',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-                      color: MyWalkColor.softGold.withValues(alpha: isClosed ? 0.35 : 0.65))),
-            ]),
-          ),
         ]),
         ),
       ),

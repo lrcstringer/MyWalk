@@ -1,11 +1,13 @@
 import * as z from 'zod';
 import { TRPCError } from '@trpc/server';
 import { createTRPCRouter, protectedProcedure } from '../create-context';
+import { FieldValue } from 'firebase-admin/firestore';
 import {
   db,
   membersCol,
   circlesCol,
   userNotificationsCol,
+  encouragementsCol,
   Timestamp,
 } from '../../lib/firestore';
 
@@ -262,6 +264,12 @@ export const notificationsRouter = createTRPCRouter({
           .collection('circles').doc(data.circleId as string)
           .collection('circle_habits').doc(sourceId)
           .update({ [`responses.${ctx.userId}`]: { action: input.action, name: actorName } });
+      }
+
+      // Increment thankYouCount on the encouragement document.
+      if (input.action === 'thank_you' && notifType === 'encouragement' && sourceId) {
+        await encouragementsCol(data.circleId as string).doc(sourceId)
+          .update({ thankYouCount: FieldValue.increment(1) });
       }
 
       return { notifId: input.notifId, action: input.action };
