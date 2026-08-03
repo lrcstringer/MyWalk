@@ -4,6 +4,7 @@ import '../../../data/datasources/remote/auth_service.dart';
 import '../../../domain/entities/circle.dart';
 import '../../../domain/entities/habit.dart' show PrayerItemStatus;
 import '../../providers/group_prayer_list_provider.dart';
+import '../../providers/prayer_list_provider.dart';
 import '../../providers/circle_notification_provider.dart';
 import '../../theme/app_theme.dart';
 import '../journal/journal_entry_composer.dart';
@@ -48,8 +49,11 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() { if (mounted) setState(() {}); });
-    // circle_detail_view._loadProviders() already calls load() before this
-    // widget builds, so no second call needed here.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<PrayerListProvider>().load(widget.circleId);
+      context.read<GroupPrayerListProvider>().load(widget.circleId);
+    });
   }
 
   @override
@@ -168,7 +172,7 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
             _prayerActionRow(
               context: context,
               icon: Icons.volunteer_activism_rounded,
-              title: 'Add a Prayer Request',
+              title: 'Send a Prayer Request to whole group',
               subtitle: 'Share with your group and ask for prayer',
               onTap: () {
                 Navigator.pop(context);
@@ -183,7 +187,7 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
             _prayerActionRow(
               context: context,
               icon: Icons.send_rounded,
-              title: 'Send to a Member',
+              title: 'Send a Prayer Request to particular members',
               subtitle: 'Ask someone specifically to pray for you',
               onTap: () {
                 Navigator.pop(context);
@@ -498,12 +502,9 @@ class _ListBody extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: MyWalkColor.charcoal,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child:
-              Column(mainAxisSize: MainAxisSize.min, children: [
+      builder: (ctx) => SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: Column(children: [
             Center(
                 child: Container(
                     width: 36,
@@ -561,8 +562,7 @@ class _ListBody extends StatelessWidget {
                         fontSize: 15, fontWeight: FontWeight.w600)),
               ),
             ),
-          ]),
-        ),
+        ]),
       ),
     ).whenComplete(controller.dispose);
   }
@@ -1164,9 +1164,9 @@ class _VisibilityPickerSheetState extends State<_VisibilityPickerSheet> {
         .where((m) => !m.isAdmin)
         .toList();
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 24),
+      child: Column(children: [
         Center(
             child: Container(
                 width: 36,
@@ -1277,6 +1277,7 @@ class _VisibilityPickerSheetState extends State<_VisibilityPickerSheet> {
                       notifProvider?.sendAnnouncement(
                         circleId: widget.circleId,
                         message: 'Your group\'s Prayer List is ready — check the Prayer tab.',
+                        notifType: 'prayer_list',
                       ).catchError((_) {});
                       nav.pop();
                     } catch (e) {

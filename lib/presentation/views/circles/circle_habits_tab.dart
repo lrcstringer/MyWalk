@@ -7,10 +7,27 @@ import '../../../domain/entities/circle.dart';
 import '../../../domain/services/week_id_service.dart';
 import '../../theme/app_theme.dart';
 
-class CircleHabitsTab extends StatelessWidget {
+class CircleHabitsTab extends StatefulWidget {
   final String circleId;
   final bool isAdmin;
   const CircleHabitsTab({super.key, required this.circleId, required this.isAdmin});
+
+  @override
+  State<CircleHabitsTab> createState() => _CircleHabitsTabState();
+}
+
+class _CircleHabitsTabState extends State<CircleHabitsTab> {
+  String get circleId => widget.circleId;
+  bool get isAdmin => widget.isAdmin;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<CircleHabitsProvider>().load(circleId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -491,6 +491,8 @@ class _NotificationTileState extends State<_NotificationTile> {
         return MyWalkColor.golden;
       case CircleNotificationType.encouragement:
         return MyWalkColor.softGold;
+      case CircleNotificationType.prayerList:
+        return MyWalkColor.sage;
     }
   }
 
@@ -514,6 +516,8 @@ class _NotificationTileState extends State<_NotificationTile> {
         return Icons.directions_run_rounded;
       case CircleNotificationType.encouragement:
         return Icons.favorite_rounded;
+      case CircleNotificationType.prayerList:
+        return Icons.format_list_bulleted_rounded;
     }
   }
 
@@ -537,6 +541,8 @@ class _NotificationTileState extends State<_NotificationTile> {
         return 'NEW ACTIVITY';
       case CircleNotificationType.encouragement:
         return 'NEW ENCOURAGEMENT';
+      case CircleNotificationType.prayerList:
+        return 'NEW PRAYER LIST';
     }
   }
 
@@ -687,6 +693,13 @@ class _CircleActionRow extends StatelessWidget {
               icon: Icons.favorite_rounded,
               color: MyWalkColor.softGold.withValues(alpha: 0.8),
               onTap: () => onAction(NotificationAction.thankYou)),
+        ]),
+      CircleNotificationType.prayerList => Row(children: [
+          _ActionButton(
+              label: 'Got it',
+              icon: Icons.check_rounded,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              onTap: () => onAction(NotificationAction.gotIt)),
         ]),
       _ => Row(children: [
           _ActionButton(

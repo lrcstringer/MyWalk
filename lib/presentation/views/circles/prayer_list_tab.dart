@@ -708,11 +708,9 @@ class _AddPrayerRequestSheetState extends State<AddPrayerRequestSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Center(child: Container(width: 36, height: 4,
               decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(2)))),
@@ -804,8 +802,7 @@ class _AddPrayerRequestSheetState extends State<AddPrayerRequestSheet> {
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             ),
           ),
-        ]),
-      ),
+      ]),
     );
   }
 

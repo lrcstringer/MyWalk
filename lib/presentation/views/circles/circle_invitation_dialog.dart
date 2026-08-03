@@ -108,7 +108,7 @@ class _CircleInvitationDialogState extends State<CircleInvitationDialog> {
         const SizedBox(height: 20),
         // Title
         Text(
-          'You\'ve been invited to a Prayer Group',
+          'You\'ve been invited to a Group',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: MyWalkColor.warmWhite,
@@ -117,7 +117,7 @@ class _CircleInvitationDialogState extends State<CircleInvitationDialog> {
         ),
         const SizedBox(height: 10),
         Text(
-          'Join to walk together, share gratitude, and support each other.',
+          'Join to walk together and encourage each other.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: MyWalkColor.softGold,

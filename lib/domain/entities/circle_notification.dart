@@ -1,4 +1,4 @@
-enum CircleNotificationType { sos, prayerRequest, announcement, partnershipInvite, partnerMessage, partnershipAccepted, event, groupActivity, encouragement }
+enum CircleNotificationType { sos, prayerRequest, announcement, partnershipInvite, partnerMessage, partnershipAccepted, event, groupActivity, encouragement, prayerList }
 
 enum NotificationAction { pray, imHere, accept, decline, illBeThere, unableToMakeIt, countMeIn, unableToDo, gotIt, thankYou }
 
@@ -66,6 +66,8 @@ class CircleNotification {
         return CircleNotificationType.groupActivity;
       case 'encouragement':
         return CircleNotificationType.encouragement;
+      case 'prayer_list':
+        return CircleNotificationType.prayerList;
       default:
         return CircleNotificationType.announcement;
     }

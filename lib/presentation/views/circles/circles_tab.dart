@@ -209,7 +209,7 @@ class _CirclesListViewState extends State<_CirclesListView> {
                 child: const Icon(Icons.add_circle_outline, color: MyWalkColor.golden, size: 20),
               ),
               title: const Text('Create Group', style: TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w600)),
-              subtitle: Text('Start a new prayer group', style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12)),
+              subtitle: Text('Start a new group', style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 12)),
               onTap: () { Navigator.pop(context); _openCreate(); },
             ),
             ListTile(

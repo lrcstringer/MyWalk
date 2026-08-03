@@ -38,6 +38,16 @@ class _ActivityTabState extends State<ActivityTab> {
   List<CircleMember> get members => widget.members;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<EncouragementProvider>().load(circleId);
+      context.read<MilestoneShareProvider>().load(circleId);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final uid = AuthService.shared.userId ?? '';
     return Consumer2<EncouragementProvider, MilestoneShareProvider>(
