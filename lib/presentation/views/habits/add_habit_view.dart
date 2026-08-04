@@ -169,7 +169,7 @@ class _AddHabitViewState extends State<AddHabitView> {
         },
       );
     } else {
-      title = 'Set It Up';
+      title = widget.forBreakingFree ? 'Set up Breaking Free Practice' : 'Set It Up';
       leading = IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: MyWalkColor.warmWhite, size: 18),
         onPressed: () {
@@ -1301,29 +1301,56 @@ class _AddHabitViewState extends State<AddHabitView> {
   // ── Support/Accountability Partner section ───────────────────────────────
 
   Widget _partnerSection() {
+    const cardColor = Color(0xFF2E6B5E);
+    const iconColor = Color(0xFF7EC8B8);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'SUPPORT/ACCOUNTABILITY PARTNER',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: MyWalkColor.softGold.withValues(alpha: 0.5),
-            letterSpacing: 0.8,
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: cardColor.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: cardColor.withValues(alpha: 0.25), width: 0.5),
           ),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: cardColor.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.handshake_rounded, size: 16, color: iconColor),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text(
+                  'Support/Accountability Partner',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: iconColor),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Do you want to invite someone to walk with you? They can be notified when you need support.',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.5),
+                      height: 1.4),
+                ),
+              ]),
+            ),
+          ]),
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Do you want to invite someone to walk with you? They can be notified when you need support.',
-          style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6), height: 1.4),
-        ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         Text(
           '(You can set this up later if you don\'t want to now)',
           style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.35), fontStyle: FontStyle.italic),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           children: [
             _pillChip(label: 'Yes', selected: _wantsPartner, onTap: () => setState(() => _wantsPartner = true)),

@@ -42,32 +42,46 @@ class MyWalkColor {
 class _DeepSpacePainter extends CustomPainter {
   const _DeepSpacePainter();
 
+  // Each row: [cx%, cy%, radius%, blurSigma, alpha]
+  // Positions weighted toward the lower 50–90% of screen — below where hero
+  // images typically end — so the effect is visible in the content/empty area.
+  // Near-white (0xFFFFFCF8) at 20% of base alpha: neutral out-of-focus light,
+  // not a colour tint. Painted once, cached by RepaintBoundary — zero per-frame cost.
+  static const _orbs = <List<double>>[
+    [0.72, 0.60, 0.30, 40.0, 0.056],
+    [0.22, 0.70, 0.26, 36.0, 0.048],
+    [0.50, 0.80, 0.34, 48.0, 0.040],
+    [0.14, 0.84, 0.22, 30.0, 0.044],
+    [0.82, 0.83, 0.25, 34.0, 0.036],
+    [0.56, 0.63, 0.31, 44.0, 0.030],
+    [0.08, 0.53, 0.19, 28.0, 0.040],
+    [0.90, 0.49, 0.18, 26.0, 0.034],
+    [0.80, 0.68, 0.20, 32.0, 0.024],
+    [0.32, 0.57, 0.28, 42.0, 0.026],
+  ];
+
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    // Vignette: edges recede toward near-black, centre stays warm
-    canvas.drawRect(rect, Paint()
-      ..shader = const RadialGradient(
-        center: Alignment(0.0, 0.1),
-        radius: 1.35,
-        colors: [Colors.transparent, Color(0x40000000)],
-        stops: [0.3, 1.0],
-      ).createShader(rect));
-    // Warm ambient: faint amber sphere high on screen, like a candle far away
-    canvas.drawRect(rect, Paint()
-      ..shader = const RadialGradient(
-        center: Alignment(0.0, -0.8),
-        radius: 0.8,
-        colors: [Color(0x18D4A843), Color(0x00D4A843)],
-      ).createShader(rect));
+    final w = size.width, h = size.height;
+    final paint = Paint();
+    for (final o in _orbs) {
+      canvas.drawCircle(
+        Offset(o[0] * w, o[1] * h),
+        o[2] * w,
+        paint
+          ..color = const Color(0xFFFFFCF8).withValues(alpha: o[4])
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, o[3]),
+      );
+    }
   }
 
   @override
   bool shouldRepaint(covariant _DeepSpacePainter oldDelegate) => false;
 }
 
-/// Full-screen depth background. Paints a vignette (edges recede to near-black)
-/// plus a subtle warm amber glow at the top-centre, creating a sense of depth.
+/// Full-screen depth background. Scatter-paints soft bokeh orbs using
+/// MaskFilter.blur — neutral near-white, 20% intensity — so content reads
+/// as floating in front of a physically lit space rather than a flat void.
 class DeepSpaceBackground extends StatelessWidget {
   const DeepSpaceBackground({super.key});
 
