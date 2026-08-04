@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../domain/entities/journal_entry.dart';
 import '../../../domain/entities/journal_theme.dart';
 import '../../../domain/entities/fruit.dart';
-import '../../../domain/repositories/user_preferences_repository.dart';
 import '../../providers/journal_provider.dart';
 import '../../providers/journal_theme_provider.dart';
 import '../../theme/app_theme.dart';
@@ -49,10 +49,11 @@ class _JournalTabState extends State<JournalTab>
   }
 
   Future<void> _checkFirstVisit() async {
-    final prefs = context.read<UserPreferencesRepository>();
+    // Both keys use raw SharedPreferences (not the Firestore-backed repo) so
+    // they are device-local and reset on reinstall as intended.
+    final sp = await SharedPreferences.getInstance();
 
-    // Privacy dialog — independent check
-    final seen = await prefs.getBool('journal_intro_seen') ?? false;
+    final seen = sp.getBool('journal_intro_seen') ?? false;
     if (!seen && mounted) {
       await showDialog<void>(
         context: context,
@@ -102,20 +103,14 @@ class _JournalTabState extends State<JournalTab>
           );
         },
       );
-      await prefs.setBool('journal_intro_seen', true);
+      await sp.setBool('journal_intro_seen', true);
     }
 
     if (!mounted) return;
 
-    // Skin hint — independent check, not gated on the dialog above.
-    // If journal_intro_seen was absent (genuine fresh install), also reset
-    // the skin hint key so Android backup can't suppress it on reinstall.
-    if (!seen) await prefs.remove('journal_skin_hint_shown');
-
-    final skinHintSeen =
-        await prefs.getBool('journal_skin_hint_shown') ?? false;
+    final skinHintSeen = sp.getBool('journal_skin_hint_shown') ?? false;
     if (!skinHintSeen && mounted) {
-      await prefs.setBool('journal_skin_hint_shown', true);
+      await sp.setBool('journal_skin_hint_shown', true);
       setState(() => _showSkinHint = true);
       _pulseCtrl.repeat(reverse: true);
     }
