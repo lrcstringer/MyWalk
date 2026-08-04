@@ -14,8 +14,36 @@ import '../../theme/app_theme.dart';
 import '../shared/appbar_actions.dart';
 import '../help/kingdom_life_help_view.dart';
 
-class KingdomLifeView extends StatelessWidget {
+class KingdomLifeView extends StatefulWidget {
   const KingdomLifeView({super.key});
+
+  @override
+  State<KingdomLifeView> createState() => _KingdomLifeViewState();
+}
+
+class _KingdomLifeViewState extends State<KingdomLifeView> {
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollHint = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final shouldShow = _scrollController.offset < 20;
+    if (shouldShow != _showScrollHint) {
+      setState(() => _showScrollHint = shouldShow);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +56,7 @@ class KingdomLifeView extends StatelessWidget {
             ),
           ),
           CustomScrollView(
+        controller: _scrollController,
         slivers: [
           SliverAppBar(
             backgroundColor: MyWalkColor.charcoal,
@@ -259,6 +288,7 @@ class KingdomLifeView extends StatelessWidget {
           ),
         ],
       ),
+      // Bottom gradient fade
       Align(
         alignment: Alignment.bottomCenter,
         child: IgnorePointer(
@@ -277,7 +307,67 @@ class KingdomLifeView extends StatelessWidget {
           ),
         ),
       ),
+
+      // Scroll hint chevron — fades out once user scrolls
+      Positioned(
+        bottom: 72,
+        left: 0,
+        right: 0,
+        child: AnimatedOpacity(
+          opacity: _showScrollHint ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 300),
+          child: const IgnorePointer(
+            child: _BouncingChevron(),
+          ),
+        ),
+      ),
     ]),
+    );
+  }
+}
+
+class _BouncingChevron extends StatefulWidget {
+  const _BouncingChevron();
+
+  @override
+  State<_BouncingChevron> createState() => _BouncingChevronState();
+}
+
+class _BouncingChevronState extends State<_BouncingChevron>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _offset;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _offset = Tween<double>(begin: 0, end: 6).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _offset,
+      builder: (_, _) => Transform.translate(
+        offset: Offset(0, _offset.value),
+        child: Icon(
+          Icons.keyboard_arrow_down_rounded,
+          size: 28,
+          color: MyWalkColor.softGold.withValues(alpha: 0.55),
+        ),
+      ),
     );
   }
 }

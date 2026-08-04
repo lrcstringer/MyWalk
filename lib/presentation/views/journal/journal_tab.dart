@@ -20,9 +20,38 @@ class JournalTab extends StatefulWidget {
   State<JournalTab> createState() => _JournalTabState();
 }
 
-class _JournalTabState extends State<JournalTab> {
+class _JournalTabState extends State<JournalTab>
+    with SingleTickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
   bool _initialized = false;
+
+  bool _showSkinHint = false;
+  late final AnimationController _pulseCtrl;
+  late final Animation<double> _pulseAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+    _pulseAnim = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 1),
+    ]).animate(_pulseCtrl);
+    _pulseCtrl.addStatusListener(_onPulseStatus);
+  }
+
+  void _onPulseStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && mounted) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) setState(() => _showSkinHint = false);
+      });
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -84,11 +113,19 @@ class _JournalTabState extends State<JournalTab> {
       },
     );
     await prefs.setBool('journal_intro_seen', true);
+    if (!mounted) return;
+    final skinHintSeen = await prefs.getBool('journal_skin_hint_shown') ?? false;
+    if (!skinHintSeen && mounted) {
+      await prefs.setBool('journal_skin_hint_shown', true);
+      setState(() => _showSkinHint = true);
+      _pulseCtrl.forward();
+    }
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _pulseCtrl.dispose();
     super.dispose();
   }
 
@@ -230,11 +267,35 @@ class _JournalTabState extends State<JournalTab> {
               infoIconAction(context, const JournalHelpView(),
                   color: theme.textPrimary),
               bibleBrowserAction(context, theme.textPrimary),
-              IconButton(
-                icon: Icon(Icons.palette_outlined,
-                    size: 26, color: theme.textPrimary),
-                onPressed: () => showJournalThemePicker(context),
-                tooltip: 'Theme',
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (_showSkinHint)
+                    AnimatedBuilder(
+                      animation: _pulseAnim,
+                      builder: (_, _) => Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.accentAction.withValues(
+                              alpha: _pulseAnim.value * 0.45),
+                        ),
+                      ),
+                    ),
+                  IconButton(
+                    icon: Icon(Icons.palette_outlined,
+                        size: 26, color: theme.textPrimary),
+                    onPressed: () {
+                      if (_showSkinHint) {
+                        setState(() => _showSkinHint = false);
+                        _pulseCtrl.stop();
+                      }
+                      showJournalThemePicker(context);
+                    },
+                    tooltip: 'Theme',
+                  ),
+                ],
               ),
               IconButton(
                 icon: Icon(Icons.sort, size: 26, color: theme.textPrimary),
@@ -282,6 +343,50 @@ class _JournalTabState extends State<JournalTab> {
               ),
             ),
           ),
+
+          // ── Skin hint banner (first visit only) ─────────────────────────
+          if (_showSkinHint)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.accentAction.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: theme.accentAction.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.palette_outlined,
+                          size: 15, color: theme.accentAction),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Tap the palette icon above to change your journal skin',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.accentAction.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() => _showSkinHint = false);
+                          _pulseCtrl.stop();
+                        },
+                        child: Icon(Icons.close,
+                            size: 14,
+                            color: theme.accentAction.withValues(alpha: 0.5)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // ── Loading ──────────────────────────────────────────────────────
           if (provider.isLoading)

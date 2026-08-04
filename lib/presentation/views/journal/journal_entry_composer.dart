@@ -855,8 +855,14 @@ class _BottomFormattingBar extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: QuillSimpleToolbar(
-          controller: controller,
+        // Override Material icon theme so Quill's fallback path uses the
+        // journal theme colour instead of the app's global white-on-dark.
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            iconTheme: IconThemeData(color: theme.textSecondary),
+          ),
+          child: QuillSimpleToolbar(
+            controller: controller,
           config: QuillSimpleToolbarConfig(
             color: Colors.transparent,
             multiRowsDisplay: false,
@@ -917,6 +923,7 @@ class _BottomFormattingBar extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

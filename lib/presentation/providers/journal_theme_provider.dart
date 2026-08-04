@@ -5,7 +5,7 @@ import '../../domain/entities/journal_theme.dart';
 class JournalThemeProvider extends ChangeNotifier {
   static const _prefKey = 'journal_theme_id';
 
-  JournalTheme _theme = JournalTheme.parchment;
+  JournalTheme _theme = JournalTheme.ironAndEmber;
 
   JournalTheme get theme => _theme;
 
