@@ -128,7 +128,7 @@ class PracticesView extends StatelessWidget {
                   Expanded(
                     child: _ActionPill(
                       icon: Icons.apps_rounded,
-                      label: 'Mini-Apps',
+                      label: 'Add a Mini-App',
                       color: const Color(0xFFE8A87C),
                       onTap: () => _openMiniApps(context),
                     ),
@@ -434,7 +434,7 @@ class _MiniAppsSheet extends StatelessWidget {
               ),
               Expanded(
                 child: Text(
-                  'Mini-Apps',
+                  'Add a Mini-App',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontSize: 17, color: MyWalkColor.warmWhite,
