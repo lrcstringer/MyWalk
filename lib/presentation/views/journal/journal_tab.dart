@@ -64,57 +64,66 @@ class _JournalTabState extends State<JournalTab>
 
   Future<void> _checkFirstVisit() async {
     final prefs = context.read<UserPreferencesRepository>();
+
+    // Privacy dialog — independent check
     final seen = await prefs.getBool('journal_intro_seen') ?? false;
-    if (seen || !mounted) return;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        final theme = ctx.read<JournalThemeProvider>().theme;
-        return AlertDialog(
-          backgroundColor: theme.bgCard,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Icon(Icons.lock_outline_rounded, color: theme.accentAction, size: 22),
-              const SizedBox(width: 10),
-              Text(
-                'Private & Secure',
-                style: TextStyle(
-                  color: theme.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 17,
+    if (!seen && mounted) {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          final theme = ctx.read<JournalThemeProvider>().theme;
+          return AlertDialog(
+            backgroundColor: theme.bgCard,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(Icons.lock_outline_rounded,
+                    color: theme.accentAction, size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  'Private & Secure',
+                  style: TextStyle(
+                    color: theme.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'All your journal entries and all your habit notes are encrypted on the server. '
+              'No one can read them. They are literally between you and God.',
+              style: TextStyle(
+                color: theme.textSecondary,
+                fontSize: 14,
+                height: 1.55,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(
+                  'Got it',
+                  style: TextStyle(
+                    color: theme.accentAction,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
-          ),
-          content: Text(
-            'All your journal entries and all your habit notes are encrypted on the server. '
-            'No one can read them. They are literally between you and God.',
-            style: TextStyle(
-              color: theme.textSecondary,
-              fontSize: 14,
-              height: 1.55,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                'Got it',
-                style: TextStyle(
-                  color: theme.accentAction,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-    await prefs.setBool('journal_intro_seen', true);
+          );
+        },
+      );
+      await prefs.setBool('journal_intro_seen', true);
+    }
+
     if (!mounted) return;
-    final skinHintSeen = await prefs.getBool('journal_skin_hint_shown') ?? false;
+
+    // Skin hint — independent check, not gated on the dialog above
+    final skinHintSeen =
+        await prefs.getBool('journal_skin_hint_shown') ?? false;
     if (!skinHintSeen && mounted) {
       await prefs.setBool('journal_skin_hint_shown', true);
       setState(() => _showSkinHint = true);
