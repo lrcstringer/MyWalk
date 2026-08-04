@@ -107,7 +107,11 @@ class _JournalTabState extends State<JournalTab>
 
     if (!mounted) return;
 
-    // Skin hint — independent check, not gated on the dialog above
+    // Skin hint — independent check, not gated on the dialog above.
+    // If journal_intro_seen was absent (genuine fresh install), also reset
+    // the skin hint key so Android backup can't suppress it on reinstall.
+    if (!seen) await prefs.remove('journal_skin_hint_shown');
+
     final skinHintSeen =
         await prefs.getBool('journal_skin_hint_shown') ?? false;
     if (!skinHintSeen && mounted) {
