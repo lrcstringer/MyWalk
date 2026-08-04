@@ -34,23 +34,9 @@ class _JournalTabState extends State<JournalTab>
     super.initState();
     _pulseCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 900),
     );
-    _pulseAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 1),
-    ]).animate(_pulseCtrl);
-    _pulseCtrl.addStatusListener(_onPulseStatus);
-  }
-
-  void _onPulseStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed && mounted) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) setState(() => _showSkinHint = false);
-      });
-    }
+    _pulseAnim = CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut);
   }
 
   @override
@@ -127,7 +113,7 @@ class _JournalTabState extends State<JournalTab>
     if (!skinHintSeen && mounted) {
       await prefs.setBool('journal_skin_hint_shown', true);
       setState(() => _showSkinHint = true);
-      _pulseCtrl.forward();
+      _pulseCtrl.repeat(reverse: true);
     }
   }
 
