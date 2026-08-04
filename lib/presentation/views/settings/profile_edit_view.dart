@@ -99,12 +99,9 @@ class _ProfileEditViewState extends State<ProfileEditView> {
       ),
       body: Stack(
         children: [
-          const Positioned(
-            top: 0, left: 0, right: 0, height: 320,
+          const Positioned.fill(
             child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
-              ),
+              child: DeepSpaceBackground(),
             ),
           ),
           _loading

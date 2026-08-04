@@ -65,9 +65,17 @@ class _ActivityTabState extends State<ActivityTab> {
             foregroundColor: MyWalkColor.charcoal,
             child: const Icon(Icons.favorite_rounded),
           ),
-          body: isLoading
-              ? const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
-              : RefreshIndicator(
+          body: Stack(
+            children: [
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: DeepSpaceBackground(),
+                ),
+              ),
+              if (isLoading)
+                const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
+              else
+                RefreshIndicator(
                   color: MyWalkColor.golden,
                   backgroundColor: MyWalkColor.cardBackground,
                   onRefresh: () => Future.wait([
@@ -122,6 +130,8 @@ class _ActivityTabState extends State<ActivityTab> {
                     ],
                   ),
                 ),
+            ],
+          ),
         );
       },
     );
@@ -140,9 +150,21 @@ class _ActivityTabState extends State<ActivityTab> {
     ]),
   );
 
-  Widget _sectionHeader(String title) => Text(title.toUpperCase(),
-      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-          color: MyWalkColor.softGold, letterSpacing: 1.2));
+  Widget _sectionHeader(String title) => Row(
+    children: [
+      Text(title.toUpperCase(),
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+              color: MyWalkColor.softGold, letterSpacing: 1.2)),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Divider(
+          color: MyWalkColor.softGold.withValues(alpha: 0.25),
+          height: 1,
+          thickness: 0.5,
+        ),
+      ),
+    ],
+  );
 
   Widget _gratitudeHeader(BuildContext context) => Row(children: [
     const Expanded(child: Text('GRATITUDE WALL',
@@ -201,86 +223,90 @@ class _EncouragementCard extends StatelessWidget {
       }
     });
 
+    final recipientMember = members.firstWhere(
+      (m) => m.userId == enc.recipientId,
+      orElse: () => CircleMember(userId: '', role: 'member', joinedAt: ''),
+    );
+    final avatarName = isReceived
+        ? (enc.isAnonymous ? null : enc.senderDisplayName)
+        : recipientMember.displayName;
+    final displayName = isReceived ? senderLabel : recipientMember.displayName;
+
     return Container(
-      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: MyWalkColor.softGold,
+        color: MyWalkColor.softGold.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: Container(
-      margin: const EdgeInsets.only(left: 3),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: MyWalkColor.cardBackground,
-        borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(12),
-          bottomRight: Radius.circular(12),
-        ),
-        border: Border.all(
-          color: MyWalkColor.cardBorder,
-          width: 0.5,
-        ),
+        border: Border.all(color: MyWalkColor.softGold.withValues(alpha: 0.18), width: 0.5),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          MyWalkAvatar(
-            name: isReceived
-                ? (enc.isAnonymous ? null : enc.senderDisplayName)
-                : members.firstWhere((m) => m.userId == enc.recipientId,
-                    orElse: () => CircleMember(userId: '', role: 'member', joinedAt: '')).displayName,
-            size: 26,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isReceived ? senderLabel : members.firstWhere((m) => m.userId == enc.recipientId,
-                  orElse: () => CircleMember(userId: '', role: 'member', joinedAt: '')).displayName,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                  color: MyWalkColor.softGold),
+        // Header zone
+        Container(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          decoration: BoxDecoration(
+            color: MyWalkColor.softGold.withValues(alpha: 0.12),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+            border: Border(
+              bottom: BorderSide(color: MyWalkColor.softGold.withValues(alpha: 0.12), width: 0.5),
             ),
           ),
-          Text(_relativeTime(enc.createdAt),
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
-          if (isReceived && !enc.isRead) ...[
-            const SizedBox(width: 6),
-            Container(width: 7, height: 7,
-                decoration: const BoxDecoration(shape: BoxShape.circle, color: MyWalkColor.softGold)),
-          ],
-        ]),
-        const SizedBox(height: 8),
-        Text(enc.displayMessage,
-            style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite.withValues(alpha: 0.88), height: 1.5)),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: () => Navigator.push<void>(context, MaterialPageRoute(
-            builder: (_) => JournalEntryComposer(
-              habitName: 'Encouragement',
-              sourceType: 'group_encouragement',
-              chipIcon: Icons.groups_rounded,
+          child: Row(children: [
+            MyWalkAvatar(name: avatarName, size: 26),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(displayName,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                      color: MyWalkColor.softGold)),
             ),
-          )),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.edit_note, size: 14,
-                color: MyWalkColor.softGold.withValues(alpha: 0.65)),
-            const SizedBox(width: 4),
-            Text('Create journal entry',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.65))),
+            Text(_relativeTime(enc.createdAt),
+                style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+            if (isReceived && !enc.isRead) ...[
+              const SizedBox(width: 6),
+              Container(width: 7, height: 7,
+                  decoration: const BoxDecoration(shape: BoxShape.circle, color: MyWalkColor.softGold)),
+            ],
           ]),
         ),
-        if (enc.thankYouCount > 0) ...[
-          const SizedBox(height: 8),
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.favorite, size: 12,
-                color: MyWalkColor.softGold.withValues(alpha: 0.7)),
-            const SizedBox(width: 4),
-            Text('${enc.thankYouCount}',
-                style: TextStyle(fontSize: 11,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.7))),
+        // Content
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(enc.displayMessage,
+                style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite.withValues(alpha: 0.88), height: 1.5)),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => Navigator.push<void>(context, MaterialPageRoute(
+                builder: (_) => JournalEntryComposer(
+                  habitName: 'Encouragement',
+                  sourceType: 'group_encouragement',
+                  chipIcon: Icons.groups_rounded,
+                ),
+              )),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.edit_note, size: 14,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.65)),
+                const SizedBox(width: 4),
+                Text('Create journal entry',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                        color: MyWalkColor.softGold.withValues(alpha: 0.65))),
+              ]),
+            ),
+            if (enc.thankYouCount > 0) ...[
+              const SizedBox(height: 8),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.favorite, size: 12,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.7)),
+                const SizedBox(width: 4),
+                Text('${enc.thankYouCount}',
+                    style: TextStyle(fontSize: 11,
+                        color: MyWalkColor.softGold.withValues(alpha: 0.7))),
+              ]),
+            ],
           ]),
-        ],
+        ),
       ]),
-      ),
     );
   }
 }

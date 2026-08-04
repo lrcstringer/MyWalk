@@ -207,7 +207,14 @@ class _PartnershipDetailScreenState extends State<PartnershipDetailScreen> {
             ),
         ],
       ),
-      body: Column(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Column(
         children: [
           const Divider(height: 1, color: Color(0xFF2A2A2A)),
           Expanded(
@@ -242,6 +249,8 @@ class _PartnershipDetailScreenState extends State<PartnershipDetailScreen> {
             )
           else
             _EndedBanner(status: livePartnership.status),
+        ],
+      ),
         ],
       ),
     );

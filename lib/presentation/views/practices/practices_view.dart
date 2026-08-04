@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/habit.dart';
 import '../../../domain/entities/bible_reading_plan.dart';
-import '../../../domain/services/week_cycle_manager.dart';
 import '../../providers/bible_reading_provider.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
@@ -16,9 +15,7 @@ import '../shared/mywalk_paywall_view.dart';
 import '../help/practices_help_view.dart';
 
 class PracticesView extends StatelessWidget {
-  final WeekCycleManager weekCycleManager;
-
-  const PracticesView({super.key, required this.weekCycleManager});
+  const PracticesView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,13 +29,9 @@ class PracticesView extends StatelessWidget {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       body: Stack(children: [
-        const Positioned(
-          top: 0, left: 0, right: 0,
-          height: 320,
+        const Positioned.fill(
           child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
-            ),
+            child: DeepSpaceBackground(),
           ),
         ),
         CustomScrollView(

@@ -118,7 +118,14 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
           },
         ),
       ),
-      body: _step == 4 ? _PreviewStep(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          _step == 4 ? _PreviewStep(
         controller: _previewCtrl,
         saving: _saving,
         onSave: _save,
@@ -136,6 +143,8 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
             setState(() => _step++);
           }
         },
+      ),
+        ],
       ),
     );
   }
@@ -349,7 +358,14 @@ class _DoneView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: Center(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
@@ -384,6 +400,8 @@ class _DoneView extends StatelessWidget {
             ],
           ),
         ),
+      ),
+        ],
       ),
     );
   }

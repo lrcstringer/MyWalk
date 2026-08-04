@@ -86,7 +86,14 @@ class _MemorizationReviewShellState extends State<MemorizationReviewShell> {
           ),
         ],
       ),
-      body: _showConfidence
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          _showConfidence
           ? _ConfidenceSlider(
               initialValue: _confidence,
               onConfirmed: _onConfidenceConfirmed,
@@ -108,6 +115,8 @@ class _MemorizationReviewShellState extends State<MemorizationReviewShell> {
                 ),
               ],
             ),
+        ],
+      ),
     );
   }
 

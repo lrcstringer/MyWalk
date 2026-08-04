@@ -110,7 +110,14 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
           },
         ),
       ),
-      body: Padding(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,6 +225,8 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
             ),
           ],
         ),
+      ),
+        ],
       ),
     );
   }
@@ -348,7 +357,14 @@ class _CompletionView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: Center(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
@@ -383,6 +399,8 @@ class _CompletionView extends StatelessWidget {
             ],
           ),
         ),
+      ),
+        ],
       ),
     );
   }

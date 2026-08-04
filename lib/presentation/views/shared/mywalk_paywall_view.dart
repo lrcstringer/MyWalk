@@ -65,7 +65,14 @@ class _MyWalkPaywallViewState extends State<MyWalkPaywallView> {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SafeArea(
         child: Column(children: [
           Expanded(
             child: SingleChildScrollView(
@@ -85,6 +92,8 @@ class _MyWalkPaywallViewState extends State<MyWalkPaywallView> {
           ),
           _bottomSection(store),
         ]),
+      ),
+        ],
       ),
     );
   }

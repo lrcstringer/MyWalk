@@ -137,7 +137,14 @@ class _ModuleSessionScreenState extends State<ModuleSessionScreen> {
           },
         ),
       ),
-      body: Padding(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Padding(
         padding: EdgeInsets.only(
           left: 20,
           right: 20,
@@ -244,6 +251,8 @@ class _ModuleSessionScreenState extends State<ModuleSessionScreen> {
           ],
         ),
       ),
+        ],
+      ),
     );
   }
 }
@@ -258,7 +267,14 @@ class _AffirmationView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: Center(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
@@ -293,6 +309,8 @@ class _AffirmationView extends StatelessWidget {
             ],
           ),
         ),
+      ),
+        ],
       ),
     );
   }

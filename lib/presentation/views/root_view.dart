@@ -9,7 +9,6 @@ import '../../data/datasources/local/notification_service.dart'; // used in _loa
 import '../../data/services/pending_invite_service.dart';
 import '../../data/services/pending_partner_token_service.dart';
 import '../../domain/repositories/user_preferences_repository.dart';
-import '../../domain/services/week_cycle_manager.dart';
 import 'content_view.dart';
 import 'onboarding/auth_screen.dart';
 import 'onboarding/onboarding_flow.dart';
@@ -174,18 +173,12 @@ class _RootViewState extends State<RootView> {
 
   Future<void> _completeOnboarding() async {
     try {
-      final wcm = context.read<WeekCycleManager>();
       final userPrefs = context.read<UserPreferencesRepository>();
       await userPrefs.setBool('tribute_onboarding_complete', true);
-      // Only set the onboarding date and dedicate the week for new users.
-      // Returning users (reinstall / new device) already have these set in Firestore.
       final existingDate = await userPrefs.getInt('tribute_onboarding_date');
       if (existingDate == null) {
         await userPrefs.setInt('tribute_onboarding_date', DateTime.now().millisecondsSinceEpoch);
-        await wcm.dedicateCurrentWeek();
       }
-      // Mark this device as registered. Stored locally only — excluded from
-      // Android Auto Backup so reinstall always re-shows the auth screen.
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('tribute_device_registered', true);
     } catch (_) {

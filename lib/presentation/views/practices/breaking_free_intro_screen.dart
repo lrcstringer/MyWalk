@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../domain/entities/habit_category_model.dart';
+import '../../providers/accountability_provider.dart';
 import '../../providers/habit_category_provider.dart';
 import '../../theme/app_theme.dart';
 import '../habits/add_habit_view.dart';
+import '../habits/recovery_path_home_screen.dart';
 
 class BreakingFreeIntroScreen extends StatelessWidget {
   final HabitCategoryModel? categoryModel;
@@ -34,7 +37,14 @@ class BreakingFreeIntroScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,6 +148,8 @@ class BreakingFreeIntroScreen extends StatelessWidget {
           ],
         ),
       ),
+        ],
+      ),
     );
   }
 
@@ -197,7 +209,7 @@ class BreakingFreeIntroScreen extends StatelessWidget {
       }
     }
 
-    final saved = await showModalBottomSheet<bool>(
+    final result = await showModalBottomSheet<dynamic>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -219,8 +231,52 @@ class BreakingFreeIntroScreen extends StatelessWidget {
       ),
     );
 
-    if (saved == true && context.mounted) {
-      Navigator.pop(context);
+    if (result is! Map || result['saved'] != true) return;
+    if (!context.mounted) return;
+
+    final habitId = result['habitId'] as String;
+    final habitName = result['habitName'] as String;
+    final wantsPartner = result['wantsPartner'] as bool;
+    final wantsRecoveryPath = result['wantsRecoveryPath'] as bool;
+
+    // Partner invite first
+    if (wantsPartner && context.mounted) {
+      try {
+        final accountability = context.read<AccountabilityProvider>();
+        final invite = await accountability.createInvite(
+          habitId: habitId,
+          habitName: habitName,
+        );
+        if (context.mounted) {
+          await Share.share(
+            'Please walk with me on my $habitName journey.\n\n'
+            'If you already have MyWalk on your mobile:\n\n'
+            '1) Tap this link: ${invite.shareUrl}\n\n'
+            'Or\n\n'
+            '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${invite.shortCode}\n\n\n'
+            'If you don\'t have MyWalk installed on your mobile:\n\n'
+            'Download it from the Google Play Store or Apple Store.\n\n'
+            'Then either:\n\n'
+            '1) Come back to this email and tap this link: ${invite.shareUrl}\n\n'
+            'Or\n\n'
+            '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${invite.shortCode}',
+          );
+        }
+      } catch (_) {}
+    }
+
+    if (!context.mounted) return;
+
+    final nav = Navigator.of(context);
+    nav.pop(); // pop BreakingFreeIntroScreen
+
+    if (wantsRecoveryPath) {
+      nav.push(MaterialPageRoute(
+        builder: (_) => RecoveryPathHomeScreen(
+          habitId: habitId,
+          habitName: habitName,
+        ),
+      ));
     }
   }
 }

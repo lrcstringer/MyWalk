@@ -961,7 +961,7 @@ class FirestoreCircleRepository implements CircleRepository {
     final snap = await _queryWithFallback(_events(circleId)
         .where('eventDate', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
         .orderBy('eventDate', descending: false)
-        .limit(2));
+        .limit(20));
     return snap.docs.map((d) {
       final data = d.data() as Map<String, dynamic>;
       return _parseCircleEvent(d.id, data);
@@ -976,6 +976,7 @@ class FirestoreCircleRepository implements CircleRepository {
     String? description,
     String? location,
     String? meetingLink,
+    String? recurrenceType,
   }) async {
     final result = await _call('circleCreateEvent', {
       'circleId': circleId,
@@ -984,6 +985,7 @@ class FirestoreCircleRepository implements CircleRepository {
       'description': description,
       'location': location,
       'meetingLink': meetingLink,
+      'recurrenceType': recurrenceType,
     });
     return result['id'] as String;
   }
@@ -1206,6 +1208,8 @@ class FirestoreCircleRepository implements CircleRepository {
       eventDate: _tsToIso(d['eventDate']),
       location: d['location'] as String?,
       meetingLink: d['meetingLink'] as String?,
+      recurrenceType: d['recurrenceType'] as String?,
+      recurrenceGroupId: d['recurrenceGroupId'] as String?,
       reminderSent: d['reminderSent'] as bool? ?? false,
       createdAt: _tsToIso(d['createdAt']),
       responses: responses,

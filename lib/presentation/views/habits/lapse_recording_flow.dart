@@ -119,7 +119,14 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
           },
         ),
       ),
-      body: Column(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Column(
         children: [
           // Progress dots
           Padding(
@@ -165,6 +172,8 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
               ],
             ),
           ),
+        ],
+      ),
         ],
       ),
     );
@@ -559,7 +568,14 @@ class _CompletionViewState extends State<_CompletionView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: Center(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
@@ -594,6 +610,8 @@ class _CompletionViewState extends State<_CompletionView> {
             ],
           ),
         ),
+      ),
+        ],
       ),
     );
   }

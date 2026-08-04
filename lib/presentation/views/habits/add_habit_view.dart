@@ -131,6 +131,8 @@ class _AddHabitViewState extends State<AddHabitView> {
   Set<int> _activeDays = {1, 2, 3, 4, 5, 6, 7};
   String _trigger = '';
   String _copingPlan = '';
+  bool _wantsPartner = false;
+  bool _wantsRecoveryPath = false;
   List<FruitType> _selectedFruits = [];
   String _fruitPurposeStatement = '';
   List<FruitType> _suggestedFruits = [];
@@ -201,7 +203,14 @@ class _AddHabitViewState extends State<AddHabitView> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SingleChildScrollView(
         controller: widget.scrollController,
         padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
         child: _step == 1
@@ -209,6 +218,8 @@ class _AddHabitViewState extends State<AddHabitView> {
             : _step == 2
                 ? _subcategoryPicker()
                 : _habitDetails(isPremium),
+      ),
+        ],
       ),
     );
   }
@@ -353,7 +364,7 @@ class _AddHabitViewState extends State<AddHabitView> {
   }
 
   Widget _breakingPatternsGridCard() {
-    const color = MyWalkColor.sage;
+    const color = Color(0xFF922B2B);
     return GestureDetector(
       onTap: () {
         final nav = Navigator.of(context);
@@ -388,7 +399,7 @@ class _AddHabitViewState extends State<AddHabitView> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Breaking Patterns & Freedom Journey',
+              'Breaking Patterns & Recovery/Freedom Plan',
               textAlign: TextAlign.center,
               maxLines: 3,
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite),
@@ -753,17 +764,17 @@ class _AddHabitViewState extends State<AddHabitView> {
         _anchoringSection(isAbstain),
         const SizedBox(height: 28),
 
-        // Support/Prayer Partner + Recovery Path (abstain only)
+        // Notes
+        _notesSection(),
+        const SizedBox(height: 20),
+
+        // Support/Accountability Partner + Recovery Path (abstain only)
         if (isAbstain) ...[
           _partnerSection(),
           const SizedBox(height: 20),
           _recoveryPathTeaserCard(),
           const SizedBox(height: 28),
         ],
-
-        // Notes
-        _notesSection(),
-        const SizedBox(height: 20),
 
         // Reference URL
         _referenceUrlSection(),
@@ -1053,7 +1064,7 @@ class _AddHabitViewState extends State<AddHabitView> {
   }
 
   Widget _categoryChipsRow() {
-    if (_categoryId == null || _isPreFilled) return const SizedBox.shrink();
+    if (_categoryId == null || _isPreFilled || widget.startCategoryModel != null) return const SizedBox.shrink();
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -1287,20 +1298,14 @@ class _AddHabitViewState extends State<AddHabitView> {
     );
   }
 
-  // ── Support/Prayer Partner section ──────────────────────────────────────
+  // ── Support/Accountability Partner section ───────────────────────────────
 
   Widget _partnerSection() {
-    final nudgeKeywords = RegExp(
-        r'\b(call|reach out|text|someone|friend|partner|prayer)\b',
-        caseSensitive: false);
-    final showNudge =
-        nudgeKeywords.hasMatch(_copingPlan) && _copingPlan.isNotEmpty;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'SUPPORT/PRAYER PARTNER',
+          'SUPPORT/ACCOUNTABILITY PARTNER',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
@@ -1308,108 +1313,124 @@ class _AddHabitViewState extends State<AddHabitView> {
             letterSpacing: 0.8,
           ),
         ),
+        const SizedBox(height: 6),
+        Text(
+          'Do you want to invite someone to walk with you? They can be notified when you need support.',
+          style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6), height: 1.4),
+        ),
         const SizedBox(height: 4),
         Text(
-          'Invite someone to walk with you. They\'ll be notified when you need support.',
-          style:
-              TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
+          '(You can set this up later if you don\'t want to now)',
+          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.35), fontStyle: FontStyle.italic),
         ),
-        if (showNudge) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: MyWalkColor.sage.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                  color: MyWalkColor.sage.withValues(alpha: 0.18), width: 0.5),
-            ),
-            child: Row(children: [
-              const Icon(Icons.lightbulb_outline_rounded,
-                  size: 13, color: MyWalkColor.sage),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Your coping plan mentions reaching out — adding a partner makes that easier.',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: MyWalkColor.sage.withValues(alpha: 0.85),
-                      height: 1.4),
-                ),
-              ),
-            ]),
-          ),
-        ],
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: MyWalkColor.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.07), width: 0.5),
-          ),
-          child: Row(children: [
-            Icon(Icons.handshake_rounded,
-                size: 16, color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'You can invite a partner after saving this habit.',
-                style: TextStyle(
-                    fontSize: 13,
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
-                    height: 1.4),
-              ),
-            ),
-          ]),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _pillChip(label: 'Yes', selected: _wantsPartner, onTap: () => setState(() => _wantsPartner = true)),
+            const SizedBox(width: 8),
+            _pillChip(label: 'No', selected: !_wantsPartner, onTap: () => setState(() => _wantsPartner = false)),
+          ],
         ),
       ],
     );
   }
 
-  // ── Recovery Path teaser card ─────────────────────────────────────────────
+  // ── Recovery/Freedom Plan opt-in card ───────────────────────────────────
 
   Widget _recoveryPathTeaserCard() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF6B4FA0).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: const Color(0xFF6B4FA0).withValues(alpha: 0.2), width: 0.5),
-      ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Container(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF6B4FA0).withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
+            color: const Color(0xFF6B4FA0).withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: const Color(0xFF6B4FA0).withValues(alpha: 0.2), width: 0.5),
           ),
-          child: const Icon(Icons.route_rounded,
-              size: 16, color: Color(0xFFB39DDB)),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text(
-              'Recovery Path',
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFB39DDB)),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6B4FA0).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.route_rounded,
+                  size: 16, color: Color(0xFFB39DDB)),
             ),
-            const SizedBox(height: 3),
-            Text(
-              'A guided programme to understand your patterns, anchor to your values, and build guardrails. Available once you save this habit.',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.5),
-                  height: 1.4),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text(
+                  'Recovery/Freedom Plan',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFB39DDB)),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'A guided programme to understand your patterns, anchor to your values, and build guardrails.',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.5),
+                      height: 1.4),
+                ),
+              ]),
             ),
           ]),
         ),
-      ]),
+        const SizedBox(height: 8),
+        Text(
+          '(You can set this up later if you don\'t want to now)',
+          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.35), fontStyle: FontStyle.italic),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _pillChip(label: 'Yes', selected: _wantsRecoveryPath, onTap: () => setState(() => _wantsRecoveryPath = true)),
+            const SizedBox(width: 8),
+            _pillChip(label: 'No', selected: !_wantsRecoveryPath, onTap: () => setState(() => _wantsRecoveryPath = false)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _pillChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected
+              ? MyWalkColor.sage.withValues(alpha: 0.18)
+              : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? MyWalkColor.sage.withValues(alpha: 0.55)
+                : Colors.white.withValues(alpha: 0.12),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: selected
+                ? MyWalkColor.sage
+                : Colors.white.withValues(alpha: 0.4),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1459,7 +1480,7 @@ class _AddHabitViewState extends State<AddHabitView> {
     );
   }
 
-  void _saveHabit() {
+  Future<void> _saveHabit() async {
     final trimmed = _habitName.trim();
     if (trimmed.isEmpty) return;
     final isPremium = context.read<StoreProvider>().isPremium;
@@ -1469,7 +1490,9 @@ class _AddHabitViewState extends State<AddHabitView> {
         ? ''
         : jsonEncode(_notesController.document.toDelta().toJson());
     final refUrl = _referenceUrlController.text.trim();
-    context.read<HabitProvider>().addHabit(
+    final habitProvider = context.read<HabitProvider>();
+    final fruitProvider = context.read<FruitPortfolioProvider>();
+    final habit = await habitProvider.addHabit(
       name: trimmed,
       category: _selectedCategory,
       trackingType: _trackingType,
@@ -1492,9 +1515,20 @@ class _AddHabitViewState extends State<AddHabitView> {
       referenceUrl: refUrl,
     );
     if (_selectedFruits.isNotEmpty) {
-      context.read<FruitPortfolioProvider>().onHabitTagsChanged([], _selectedFruits);
+      fruitProvider.onHabitTagsChanged([], _selectedFruits);
     }
-    Navigator.pop(context, true);
+    if (!mounted) return;
+    if (widget.forBreakingFree) {
+      Navigator.pop(context, {
+        'saved': true,
+        'habitId': habit.id,
+        'habitName': habit.name,
+        'wantsPartner': _wantsPartner,
+        'wantsRecoveryPath': _wantsRecoveryPath,
+      });
+    } else {
+      Navigator.pop(context, true);
+    }
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────

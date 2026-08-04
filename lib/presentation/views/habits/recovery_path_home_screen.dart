@@ -291,7 +291,16 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
         ),
         leading: const BackButton(color: MyWalkColor.warmWhite),
       ),
-      body: body,
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          body,
+        ],
+      ),
     );
   }
 }

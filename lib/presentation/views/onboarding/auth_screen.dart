@@ -166,12 +166,35 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MyWalkColor.charcoal,
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _showNameField ? _nameView() : _mainView(),
-        ),
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Image.asset('assets/feet2 - Copy_edited.jpg', fit: BoxFit.cover),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.25),
+                  Colors.black.withValues(alpha: 0.80),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _showNameField ? _nameView() : _mainView(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -211,9 +234,9 @@ class _AuthScreenState extends State<AuthScreen> {
           // New here / Sign in toggle
           Container(
             decoration: BoxDecoration(
-              color: MyWalkColor.cardBackground,
+              color: const Color(0xCC1E1B1A),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.5),
             ),
             padding: const EdgeInsets.all(3),
             child: Row(
@@ -358,16 +381,18 @@ class _AuthScreenState extends State<AuthScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected && isGold
-              ? MyWalkColor.golden.withValues(alpha: 0.07)
-              : MyWalkColor.cardBackground,
+          color: isSelected
+              ? (isGold
+                  ? MyWalkColor.golden.withValues(alpha: 0.13)
+                  : const Color(0xFF302B25))
+              : const Color(0xCC272320),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected
                 ? (isGold
-                    ? MyWalkColor.golden.withValues(alpha: 0.55)
-                    : MyWalkColor.softGold.withValues(alpha: 0.35))
-                : MyWalkColor.cardBorder,
+                    ? MyWalkColor.golden.withValues(alpha: 0.75)
+                    : MyWalkColor.softGold.withValues(alpha: 0.55))
+                : Colors.white.withValues(alpha: 0.12),
             width: isSelected ? 1.5 : 0.5,
           ),
         ),

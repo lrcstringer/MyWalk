@@ -40,7 +40,14 @@ class _CirclesAuthGateView extends StatelessWidget {
     final auth = context.watch<AuthService>();
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
           child: Column(
@@ -100,6 +107,8 @@ class _CirclesAuthGateView extends StatelessWidget {
             ],
           ),
         ),
+          ),
+        ],
       ),
     );
   }
@@ -241,7 +250,14 @@ class _CirclesListViewState extends State<_CirclesListView> {
         onPressed: () => _showAddSheet(context),
         child: const Icon(Icons.add),
       ),
-      body: CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          CustomScrollView(
           slivers: [
             SliverAppBar(
               backgroundColor: MyWalkColor.charcoal,
@@ -364,6 +380,8 @@ class _CirclesListViewState extends State<_CirclesListView> {
               )),
           ],
         ),
+        ],
+      ),
     );
   }
 

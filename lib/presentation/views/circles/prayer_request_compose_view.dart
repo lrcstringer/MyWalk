@@ -76,7 +76,14 @@ class _PrayerRequestComposeViewState extends State<PrayerRequestComposeView> {
           child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.sage)),
         ),
       ),
-      body: SafeArea(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -222,6 +229,8 @@ class _PrayerRequestComposeViewState extends State<PrayerRequestComposeView> {
             ),
           ],
         ),
+          ),
+        ],
       ),
     );
   }

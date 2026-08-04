@@ -181,7 +181,14 @@ class _EditHabitViewState extends State<EditHabitView> {
         leadingWidth: 80,
         actions: const [],
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SingleChildScrollView(
         controller: widget.scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -246,6 +253,8 @@ class _EditHabitViewState extends State<EditHabitView> {
           ],
           const SizedBox(height: 40),
         ]),
+      ),
+        ],
       ),
     );
   }

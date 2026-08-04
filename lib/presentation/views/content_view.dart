@@ -1,21 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/habit_provider.dart';
 import '../../data/datasources/remote/auth_service.dart';
 import '../../data/services/pending_invite_service.dart';
 import '../../data/services/pending_partner_token_service.dart';
 import '../../domain/repositories/circle_repository.dart';
 import 'habits/partner_acceptance_screen.dart';
-import '../../domain/services/week_cycle_manager.dart';
 import 'circles/circle_invitation_dialog.dart';
 import 'today/today_view.dart';
 import 'practices/practices_view.dart';
 import 'kingdom_life/kingdom_life_view.dart';
 import 'circles/circles_tab.dart';
 import 'journal/journal_tab.dart';
-import 'shared/week_look_back_view.dart';
-import 'shared/sunday_dedication_view.dart';
 
 class ContentView extends StatefulWidget {
   const ContentView({super.key});
@@ -27,9 +23,6 @@ class ContentView extends StatefulWidget {
 class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
   int _selectedTab = 0;
   late final PageController _pageController;
-  bool _showingLookBack = false;
-  bool _showingDedication = false;
-  bool _showAutoCarryBanner = false;
   bool _hasNewGratitudes = false;
   int _circlesRefreshTrigger = 0;
   bool _checkingGratitudes = false;
@@ -45,11 +38,10 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
     AuthService.shared.addListener(_onAuthChanged);
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _onAppear();
+      _checkNewGratitudes();
       _consumePendingInvite();
       _consumePendingPartnerToken();
     });
-    // Listen for deep links that arrive while the app is already running.
     _inviteSub = context
         .read<PendingInviteService>()
         .stream
@@ -81,8 +73,6 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
     _prevAuthenticated = isNowAuthenticated;
   }
 
-  /// Picks up any invite code that was saved before ContentView was mounted
-  /// (e.g. the app was cold-started via a deep link during onboarding).
   void _consumePendingInvite() {
     final code = context.read<PendingInviteService>().consume();
     if (code != null) _showInviteDialog(code);
@@ -122,46 +112,14 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _onAppear() async {
-    await _checkWeekCycleState();
-    _checkNewGratitudes();
-  }
-
-  Future<void> _checkWeekCycleState() async {
-    final wcm = context.read<WeekCycleManager>();
-    final habits = context.read<HabitProvider>().habits;
-    final needsLookBack = await wcm.needsLookBack;
-    final needsDedication = await wcm.needsDedication;
-
-    if (!mounted) return;
-
-    if (needsLookBack && habits.isNotEmpty) {
-      setState(() => _showingLookBack = true);
-    } else if (needsDedication && habits.isNotEmpty) {
-      final dedicated = await wcm.weekDedicatedDate;
-      if (!mounted) return;
-      // Auto-carry: user had a previous dedication but missed Sunday —
-      // silently dedicate and show a one-tap banner instead of the full ceremony.
-      if (dedicated != null && !wcm.isSunday) {
-        await wcm.dedicateCurrentWeek();
-        if (mounted) setState(() => _showAutoCarryBanner = true);
-      } else {
-        // Sunday, or first-time user — show full dedication ceremony.
-        setState(() => _showingDedication = true);
-      }
-    }
-  }
-
   Future<void> _checkNewGratitudes() async {
     final isAuthenticated = context.read<AuthService>().isAuthenticated;
     if (!isAuthenticated) return;
-    // Prevent stacked concurrent calls (e.g. rapid background/foreground).
     if (_checkingGratitudes) return;
     _checkingGratitudes = true;
     try {
       final circleRepo = context.read<CircleRepository>();
       final circles = await circleRepo.listCircles();
-      // Fetch all counts in parallel instead of sequentially.
       final counts = await Future.wait(
         circles.map((c) => circleRepo.getGratitudeNewCount(c.id)),
       );
@@ -176,89 +134,61 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final wcm = context.read<WeekCycleManager>();
-    return Stack(
-      children: [
-        Scaffold(
-          body: PageView(
-            controller: _pageController,
-            onPageChanged: (i) => setState(() {
-              _selectedTab = i;
-              if (i == 4) _hasNewGratitudes = false;
-            }),
-            children: [
-              _KeepAlivePage(child: TodayView(
-                weekCycleManager: wcm,
-                showAutoCarryBanner: _showAutoCarryBanner,
-                onDismissAutoCarry: () => setState(() => _showAutoCarryBanner = false),
-              )),
-              _KeepAlivePage(child: PracticesView(weekCycleManager: wcm)),
-              const _KeepAlivePage(child: JournalTab()),
-              const _KeepAlivePage(child: KingdomLifeView()),
-              _KeepAlivePage(child: CirclesTab(refreshTrigger: _circlesRefreshTrigger)),
-            ],
+    return Scaffold(
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (i) => setState(() {
+          _selectedTab = i;
+          if (i == 4) _hasNewGratitudes = false;
+        }),
+        children: [
+          const _KeepAlivePage(child: TodayView()),
+          const _KeepAlivePage(child: PracticesView()),
+          const _KeepAlivePage(child: JournalTab()),
+          const _KeepAlivePage(child: KingdomLifeView()),
+          _KeepAlivePage(child: CirclesTab(refreshTrigger: _circlesRefreshTrigger)),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedTab,
+        onTap: (i) {
+          setState(() {
+            _selectedTab = i;
+            if (i == 4) _hasNewGratitudes = false;
+          });
+          _pageController.animateToPage(
+            i,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
+        items: [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.card_giftcard),
+            label: 'Today',
           ),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _selectedTab,
-            onTap: (i) {
-              setState(() {
-                _selectedTab = i;
-                if (i == 4) _hasNewGratitudes = false;
-              });
-              _pageController.animateToPage(
-                i,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            items: [
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.card_giftcard),
-                label: 'Today',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.checklist_rounded),
-                label: 'Practices',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.book_outlined),
-                activeIcon: Icon(Icons.book),
-                label: 'Journal',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.auto_awesome_outlined),
-                activeIcon: Icon(Icons.auto_awesome),
-                label: 'Kingdom Life',
-              ),
-              BottomNavigationBarItem(
-                icon: _hasNewGratitudes
-                    ? Badge(child: const Icon(Icons.groups))
-                    : const Icon(Icons.groups),
-                label: 'Groups',
-              ),
-            ],
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.checklist_rounded),
+            label: 'Practices',
           ),
-        ),
-        if (_showingLookBack)
-          WeekLookBackView(
-            weekCycleManager: wcm,
-            onDismiss: () async {
-              await wcm.completeLookBack();
-              final needsDedication = await wcm.needsDedication;
-              if (mounted) {
-                setState(() {
-                  _showingLookBack = false;
-                  _showingDedication = needsDedication;
-                });
-              }
-            },
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.book_outlined),
+            activeIcon: Icon(Icons.book),
+            label: 'Journal',
           ),
-        if (_showingDedication)
-          SundayDedicationView(
-            weekCycleManager: wcm,
-            onDismiss: () => setState(() => _showingDedication = false),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.auto_awesome_outlined),
+            activeIcon: Icon(Icons.auto_awesome),
+            label: 'Kingdom Life',
           ),
-      ],
+          BottomNavigationBarItem(
+            icon: _hasNewGratitudes
+                ? Badge(child: const Icon(Icons.groups))
+                : const Icon(Icons.groups),
+            label: 'Groups',
+          ),
+        ],
+      ),
     );
   }
 }

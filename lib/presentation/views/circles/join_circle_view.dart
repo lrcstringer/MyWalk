@@ -69,11 +69,20 @@ class _JoinCircleViewState extends State<JoinCircleView> {
         ),
         leadingWidth: 80,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: _joinedName != null ? _successState() : _formState(),
-        ),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: _joinedName != null ? _successState() : _formState(),
+            ),
+          ),
+        ],
       ),
     );
   }

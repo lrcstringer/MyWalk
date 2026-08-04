@@ -258,7 +258,8 @@ void _showGratitudeShareSheetFor(
 
 class PrayerListTab extends StatelessWidget {
   final String circleId;
-  const PrayerListTab({super.key, required this.circleId});
+  final List<CircleMember> members;
+  const PrayerListTab({super.key, required this.circleId, required this.members});
 
   @override
   Widget build(BuildContext context) {
@@ -274,13 +275,9 @@ class PrayerListTab extends StatelessWidget {
           backgroundColor: MyWalkColor.charcoal,
           body: Stack(
             children: [
-              const Positioned(
-                top: 0, left: 0, right: 0,
-                height: 320,
+              const Positioned.fill(
                 child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
-                  ),
+                  child: DeepSpaceBackground(),
                 ),
               ),
               if (isLoading && active.isEmpty && individual.isEmpty)
@@ -302,7 +299,7 @@ class PrayerListTab extends StatelessWidget {
                           ...individual.map((r) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: _IndividualRequestCard(
-                              request: r, uid: uid, circleId: circleId),
+                              request: r, uid: uid, circleId: circleId, members: members),
                           )),
                           const SizedBox(height: 12),
                         ],
@@ -353,9 +350,21 @@ class PrayerListTab extends StatelessWidget {
   }
 
   Widget _sectionHeader(String title) {
-    return Text(title.toUpperCase(),
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-            color: MyWalkColor.sage, letterSpacing: 1.2));
+    return Row(
+      children: [
+        Text(title.toUpperCase(),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                color: MyWalkColor.sage, letterSpacing: 1.2)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Divider(
+            color: MyWalkColor.sage.withValues(alpha: 0.25),
+            height: 1,
+            thickness: 0.5,
+          ),
+        ),
+      ],
+    );
   }
 
 }
@@ -380,77 +389,80 @@ class _PrayerRequestCard extends StatelessWidget {
     final isAnswered = request.status == PrayerRequestStatus.answered;
 
     return Container(
-      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: MyWalkColor.sage,
+        color: MyWalkColor.sage.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: MyWalkColor.sage.withValues(alpha: 0.18), width: 0.5),
       ),
-      child: Container(
-        margin: const EdgeInsets.only(left: 3),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: MyWalkColor.cardBackground,
-          borderRadius: const BorderRadius.only(
-            topRight: Radius.circular(12),
-            bottomRight: Radius.circular(12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Header zone
+        Container(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          decoration: BoxDecoration(
+            color: MyWalkColor.sage.withValues(alpha: 0.12),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+            border: Border(
+              bottom: BorderSide(color: MyWalkColor.sage.withValues(alpha: 0.12), width: 0.5),
+            ),
           ),
-          border: Border.all(
-            color: isAnswered
-                ? MyWalkColor.sage.withValues(alpha: 0.2)
-                : MyWalkColor.cardBorder,
-            width: 0.5,
-          ),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          MyWalkAvatar(name: request.authorDisplayName, size: 26),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(request.authorDisplayName,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                    color: isAuthor ? MyWalkColor.golden : MyWalkColor.softGold)),
-          ),
-          if (isAnswered)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: MyWalkColor.sage.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
+          child: Row(children: [
+            MyWalkAvatar(name: request.authorDisplayName, size: 26),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(request.authorDisplayName,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                      color: isAuthor ? MyWalkColor.golden : MyWalkColor.softGold)),
+            ),
+            if (isAnswered) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.sage.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text('Answered',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: MyWalkColor.sage)),
               ),
-              child: const Text('Answered',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: MyWalkColor.sage)),
-            ),
-          const SizedBox(width: 4),
-          Text(_relativeTime(request.createdAt),
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
-        ]),
-        const SizedBox(height: 8),
-        Text(request.requestText,
-            style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite.withValues(alpha: 0.88), height: 1.5)),
-        if (isAnswered && request.answeredNote != null) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: MyWalkColor.sage.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(request.answeredNote!,
-                style: TextStyle(fontSize: 13, color: MyWalkColor.sage.withValues(alpha: 0.85), height: 1.4)),
-          ),
-        ],
-        const SizedBox(height: 10),
-        Row(children: [
-          if (!isAnswered)
-            _prayButton(context, hasPrayed),
-          const Spacer(),
-          if (isAuthor && !isAnswered)
-            _markAnsweredButton(context),
-        ]),
-        const SizedBox(height: 10),
-        _journalFooter(context, 'Group Prayer'),
-        ]),
-      ),
+              const SizedBox(width: 6),
+            ],
+            Text(_relativeTime(request.createdAt),
+                style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+          ]),
+        ),
+        // Content
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(request.requestText,
+                style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite.withValues(alpha: 0.88), height: 1.5)),
+            if (isAnswered && request.answeredNote != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.sage.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(request.answeredNote!,
+                    style: TextStyle(fontSize: 13, color: MyWalkColor.sage.withValues(alpha: 0.85), height: 1.4)),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Row(children: [
+              if (!isAnswered)
+                _prayButton(context, hasPrayed),
+              const Spacer(),
+              if (isAuthor && !isAnswered)
+                _markAnsweredButton(context),
+            ]),
+            const SizedBox(height: 10),
+            _journalFooter(context, 'Group Prayer'),
+          ]),
+        ),
+      ]),
     );
   }
 
@@ -514,122 +526,154 @@ class _IndividualRequestCard extends StatelessWidget {
   final PrayerRequest request;
   final String uid;
   final String circleId;
+  final List<CircleMember> members;
 
   const _IndividualRequestCard({
     required this.request,
     required this.uid,
     required this.circleId,
+    required this.members,
   });
 
   @override
   Widget build(BuildContext context) {
     final isAuthor = request.isAuthor(uid);
     final isAnswered = request.status == PrayerRequestStatus.answered;
-    final count = request.recipientIds.length;
-    final directionLabel = isAuthor
-        ? 'You asked $count member${count == 1 ? '' : 's'}'
-        : '${request.authorDisplayName} asked you';
+
+    String directionLabel;
+    if (isAuthor) {
+      final names = request.recipientIds.map((id) {
+        final m = members.firstWhere(
+          (m) => m.userId == id,
+          orElse: () => const CircleMember(userId: '', role: '', joinedAt: '', displayName: 'Someone'),
+        );
+        return m.displayName.split(' ').first;
+      }).toList();
+      if (names.isEmpty) {
+        directionLabel = 'You asked someone';
+      } else if (names.length == 1) {
+        directionLabel = 'You asked ${names[0]}';
+      } else if (names.length == 2) {
+        directionLabel = 'You asked ${names[0]} & ${names[1]}';
+      } else {
+        directionLabel = 'You asked ${names[0]} & ${names.length - 1} others';
+      }
+    } else {
+      directionLabel = '${request.authorDisplayName} asked you';
+    }
 
     return Container(
-      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: MyWalkColor.sage,
+        color: MyWalkColor.sage.withValues(alpha: isAnswered ? 0.08 : 0.06),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: MyWalkColor.sage.withValues(alpha: 0.18), width: 0.5),
       ),
-      child: Container(
-        margin: const EdgeInsets.only(left: 3),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isAnswered
-              ? MyWalkColor.sage.withValues(alpha: 0.06)
-              : MyWalkColor.cardBackground,
-          borderRadius: const BorderRadius.only(
-            topRight: Radius.circular(12),
-            bottomRight: Radius.circular(12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Header zone
+        Container(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          decoration: BoxDecoration(
+            color: MyWalkColor.sage.withValues(alpha: 0.12),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+            border: Border(
+              bottom: BorderSide(color: MyWalkColor.sage.withValues(alpha: 0.12), width: 0.5),
+            ),
           ),
-          border: Border.all(
-            color: isAnswered
-                ? MyWalkColor.sage.withValues(alpha: 0.2)
-                : MyWalkColor.cardBorder,
-            width: 0.5,
-          ),
+          child: Row(children: [
+            MyWalkAvatar(name: request.authorDisplayName, size: 26),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(directionLabel,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                      color: isAuthor ? MyWalkColor.golden : MyWalkColor.softGold)),
+            ),
+            if (isAnswered) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.sage.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text('Answered',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: MyWalkColor.sage)),
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(_relativeTime(request.createdAt),
+                style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+          ]),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          MyWalkAvatar(name: request.authorDisplayName, size: 26),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(directionLabel,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                    color: isAuthor ? MyWalkColor.golden : MyWalkColor.softGold)),
-          ),
-          if (isAnswered)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: MyWalkColor.sage.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text('Answered',
-                  style: TextStyle(
-                      fontSize: 10, fontWeight: FontWeight.w600, color: MyWalkColor.sage)),
-            ),
-          const SizedBox(width: 4),
-          Text(_relativeTime(request.createdAt),
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
-        ]),
-        const SizedBox(height: 8),
-        Text(request.requestText,
-            style: TextStyle(
-                fontSize: 14,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.9),
-                height: 1.45)),
-        if (isAnswered && request.answeredNote != null) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: MyWalkColor.sage.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(request.answeredNote!,
+        // Content
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(request.requestText,
                 style: TextStyle(
-                    fontSize: 13,
-                    color: MyWalkColor.sage.withValues(alpha: 0.85),
-                    height: 1.4)),
-          ),
-        ],
-        if (isAuthor) ...[
-          if (request.responses.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${request.responses.length} of ${request.recipientIds.length} responded',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: MyWalkColor.softGold.withValues(alpha: 0.7)),
-            ),
-          ],
-          if (!isAnswered) ...[
-            const SizedBox(height: 10),
-            Row(children: [
-              const Spacer(),
-              GestureDetector(
-                onTap: () => _showMarkAnsweredDialogFor(
-                    context, circleId, request.id, request.requestText),
-                child: Text('Mark Answered',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
-                        color: MyWalkColor.sage.withValues(alpha: 0.8))),
+                    fontSize: 14,
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.9),
+                    height: 1.45)),
+            if (isAnswered && request.answeredNote != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.sage.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(request.answeredNote!,
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: MyWalkColor.sage.withValues(alpha: 0.85),
+                        height: 1.4)),
               ),
-            ]),
-          ],
-        ] else if (!isAnswered) ...[
-          const SizedBox(height: 10),
-          _responseRow(context),
-        ],
-        const SizedBox(height: 10),
-        _journalFooter(context, 'Group Prayer'),
+            ],
+            if (isAuthor) ...[
+              if (request.responses.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                ...request.responses.entries.map((entry) {
+                  final member = members.firstWhere(
+                    (m) => m.userId == entry.key,
+                    orElse: () => const CircleMember(
+                        userId: '', role: '', joinedAt: '', displayName: 'Someone'),
+                  );
+                  final firstName = member.displayName.split(' ').first;
+                  final label = entry.value == 'im_here'
+                      ? '$firstName is there for you'
+                      : '$firstName is praying for you';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(label,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: MyWalkColor.softGold.withValues(alpha: 0.7))),
+                  );
+                }),
+              ],
+              if (!isAnswered) ...[
+                const SizedBox(height: 10),
+                Row(children: [
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => _showMarkAnsweredDialogFor(
+                        context, circleId, request.id, request.requestText),
+                    child: Text('Mark Answered',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+                            color: MyWalkColor.sage.withValues(alpha: 0.8))),
+                  ),
+                ]),
+              ],
+            ] else if (!isAnswered) ...[
+              const SizedBox(height: 10),
+              _responseRow(context),
+            ],
+            const SizedBox(height: 10),
+            _journalFooter(context, 'Group Prayer'),
+          ]),
+        ),
       ]),
-      ),
     );
   }
 
@@ -646,7 +690,7 @@ class _IndividualRequestCard extends StatelessWidget {
       ]);
     }
     return Row(children: [
-      _actionButton(context, 'Pray', 'pray'),
+      _actionButton(context, 'Praying for you', 'pray'),
       const SizedBox(width: 8),
       _actionButton(context, "I'm Here", 'im_here'),
     ]);

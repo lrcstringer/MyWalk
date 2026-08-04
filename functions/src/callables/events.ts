@@ -8,7 +8,30 @@ import {
   Timestamp,
 } from '../lib/firestore';
 
-const MAX_ACTIVE_EVENTS = 10;
+const MAX_ACTIVE_EVENTS = 50;
+
+// Pre-generated occurrences per recurrence type (~3 months each)
+const INITIAL_OCCURRENCES: Record<string, number> = {
+  weekly: 13,
+  biweekly: 7,
+  monthly: 3,
+};
+
+function addInterval(date: Date, recurrenceType: string): Date {
+  switch (recurrenceType) {
+    case 'weekly':
+      return new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000);
+    case 'biweekly':
+      return new Date(date.getTime() + 14 * 24 * 60 * 60 * 1000);
+    case 'monthly': {
+      const d = new Date(date);
+      d.setMonth(d.getMonth() + 1);
+      return d;
+    }
+    default:
+      return date;
+  }
+}
 
 // ── circleCreateEvent ─────────────────────────────────────────────────────────
 
@@ -17,7 +40,7 @@ export const circleCreateEvent = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
 
-    const { circleId, title, eventDateMs, description, location, meetingLink } =
+    const { circleId, title, eventDateMs, description, location, meetingLink, recurrenceType } =
       request.data as {
         circleId: string;
         title: string;
@@ -25,6 +48,7 @@ export const circleCreateEvent = onCall(
         description?: string;
         location?: string;
         meetingLink?: string;
+        recurrenceType?: string;
       };
 
     if (!circleId?.trim()) throw new HttpsError('invalid-argument', 'circleId required');
@@ -32,15 +56,17 @@ export const circleCreateEvent = onCall(
     if (typeof eventDateMs !== 'number' || eventDateMs <= 0) {
       throw new HttpsError('invalid-argument', 'eventDateMs must be a positive number (ms since epoch)');
     }
+    if (recurrenceType && !['weekly', 'biweekly', 'monthly'].includes(recurrenceType)) {
+      throw new HttpsError('invalid-argument', 'Invalid recurrenceType');
+    }
 
-    const eventDate = new Date(eventDateMs);
-    if (eventDate <= new Date()) {
+    const firstDate = new Date(eventDateMs);
+    if (firstDate <= new Date()) {
       throw new HttpsError('invalid-argument', 'Event date must be in the future');
     }
 
     const uid = request.auth.uid;
 
-    // Permission check: admin always allowed; any_member if settings permit.
     const [memberSnap, circleSnap] = await Promise.all([
       membersCol(circleId).doc(uid).get(),
       circlesCol().doc(circleId).get(),
@@ -56,33 +82,54 @@ export const circleCreateEvent = onCall(
       throw new HttpsError('permission-denied', 'Only admins can create circle events');
     }
 
-    // Enforce active-event cap to prevent spam.
+    // Enforce cap — recurring meetups generate multiple docs at once.
+    const occurrenceCount = recurrenceType ? (INITIAL_OCCURRENCES[recurrenceType] ?? 1) : 1;
     const now = Timestamp.now();
     const activeSnap = await eventsCol(circleId)
       .where('eventDate', '>', now)
       .limit(MAX_ACTIVE_EVENTS)
       .get();
-    if (activeSnap.size >= MAX_ACTIVE_EVENTS) {
+    if (activeSnap.size + occurrenceCount > MAX_ACTIVE_EVENTS) {
       throw new HttpsError(
         'resource-exhausted',
-        `A circle can have at most ${MAX_ACTIVE_EVENTS} upcoming events`
+        `Creating this meetup would exceed the limit of ${MAX_ACTIVE_EVENTS} upcoming events`,
       );
     }
 
-    const ref = eventsCol(circleId).doc();
-    await ref.set({
-      id: ref.id,
+    const recurrenceGroupId = recurrenceType ? eventsCol(circleId).doc().id : null;
+    const baseDoc = {
       circleId,
       createdById: uid,
       title: title.trim(),
       description: description?.trim() ?? null,
       location: location?.trim() ?? null,
       meetingLink: meetingLink?.trim() ?? null,
-      eventDate: Timestamp.fromDate(eventDate),
+      recurrenceType: recurrenceType ?? null,
+      recurrenceGroupId,
       createdAt: now,
-    });
+    };
 
-    return { id: ref.id };
+    if (!recurrenceType) {
+      const ref = eventsCol(circleId).doc();
+      await ref.set({ ...baseDoc, id: ref.id, eventDate: Timestamp.fromDate(firstDate) });
+      return { id: ref.id };
+    }
+
+    // Generate all occurrences up front.
+    const batch = db.batch();
+    let firstId = '';
+    let currentDate = firstDate;
+    const count = INITIAL_OCCURRENCES[recurrenceType];
+
+    for (let i = 0; i < count; i++) {
+      const ref = eventsCol(circleId).doc();
+      if (i === 0) firstId = ref.id;
+      batch.set(ref, { ...baseDoc, id: ref.id, eventDate: Timestamp.fromDate(currentDate) });
+      currentDate = addInterval(currentDate, recurrenceType);
+    }
+
+    await batch.commit();
+    return { id: firstId };
   }
 );
 
@@ -129,7 +176,6 @@ export const circleUpdateEvent = onCall(
     const role = memberSnap.data()!['role'] as string;
     const createdById = eventSnap.data()!['createdById'] as string;
 
-    // Admins or the event creator can edit.
     if (role !== 'admin' && createdById !== uid) {
       throw new HttpsError('permission-denied', 'Only admins or the event creator can edit events');
     }
@@ -174,7 +220,6 @@ export const circleDeleteEvent = onCall(
     const role = memberSnap.data()!['role'] as string;
     const createdById = eventSnap.data()!['createdById'] as string;
 
-    // Admins or the event creator can delete.
     if (role !== 'admin' && createdById !== uid) {
       throw new HttpsError('permission-denied', 'Only admins or the event creator can delete events');
     }
@@ -207,3 +252,71 @@ export const sendEventReminders = onSchedule(
   }
 );
 
+// ── generateRecurringMeetups (scheduled weekly) ───────────────────────────────
+// Extends recurring meetup series when fewer than 5 future occurrences remain.
+
+export const generateRecurringMeetups = onSchedule(
+  { schedule: 'every monday 08:00', timeZone: 'UTC', region: 'us-central1' },
+  async () => {
+    const now = new Date();
+
+    // Fetch all upcoming recurring events (recurrenceGroupId is a non-empty string).
+    const upcomingSnap = await db
+      .collectionGroup('events')
+      .where('recurrenceGroupId', '>=', '')
+      .where('eventDate', '>=', Timestamp.fromDate(now))
+      .get();
+
+    if (upcomingSnap.empty) return;
+
+    // Group events by recurrenceGroupId and find the latest date per group.
+    type GroupMeta = {
+      latestDate: Date;
+      recurrenceType: string;
+      circleId: string;
+      baseDoc: Record<string, unknown>;
+    };
+    const groups = new Map<string, GroupMeta>();
+
+    for (const doc of upcomingSnap.docs) {
+      const d = doc.data();
+      const groupId = d['recurrenceGroupId'] as string;
+      const eventDate = (d['eventDate'] as Timestamp).toDate();
+      const existing = groups.get(groupId);
+      if (!existing || eventDate > existing.latestDate) {
+        groups.set(groupId, {
+          latestDate: eventDate,
+          recurrenceType: d['recurrenceType'] as string,
+          circleId: d['circleId'] as string,
+          baseDoc: d,
+        });
+      }
+    }
+
+    // For groups whose last occurrence is within 35 days, generate 4 more.
+    const threshold = new Date(now.getTime() + 35 * 24 * 60 * 60 * 1000);
+    const batch = db.batch();
+    let writes = 0;
+
+    for (const [, g] of groups.entries()) {
+      if (g.latestDate <= threshold) {
+        let current = g.latestDate;
+        for (let i = 0; i < 4; i++) {
+          current = addInterval(current, g.recurrenceType);
+          const ref = eventsCol(g.circleId).doc();
+          batch.set(ref, {
+            ...g.baseDoc,
+            id: ref.id,
+            eventDate: Timestamp.fromDate(current),
+            createdAt: Timestamp.now(),
+            reminderSent: false,
+            responses: {},
+          });
+          writes++;
+        }
+      }
+    }
+
+    if (writes > 0) await batch.commit();
+  }
+);

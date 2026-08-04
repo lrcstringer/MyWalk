@@ -39,6 +39,47 @@ class MyWalkColor {
   );
 }
 
+class _DeepSpacePainter extends CustomPainter {
+  const _DeepSpacePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    // Vignette: edges recede toward near-black, centre stays warm
+    canvas.drawRect(rect, Paint()
+      ..shader = const RadialGradient(
+        center: Alignment(0.0, 0.1),
+        radius: 1.35,
+        colors: [Colors.transparent, Color(0x40000000)],
+        stops: [0.3, 1.0],
+      ).createShader(rect));
+    // Warm ambient: faint amber sphere high on screen, like a candle far away
+    canvas.drawRect(rect, Paint()
+      ..shader = const RadialGradient(
+        center: Alignment(0.0, -0.8),
+        radius: 0.8,
+        colors: [Color(0x18D4A843), Color(0x00D4A843)],
+      ).createShader(rect));
+  }
+
+  @override
+  bool shouldRepaint(covariant _DeepSpacePainter oldDelegate) => false;
+}
+
+/// Full-screen depth background. Paints a vignette (edges recede to near-black)
+/// plus a subtle warm amber glow at the top-centre, creating a sense of depth.
+class DeepSpaceBackground extends StatelessWidget {
+  const DeepSpaceBackground({super.key});
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+    child: CustomPaint(
+      painter: const _DeepSpacePainter(),
+      child: const SizedBox.expand(),
+    ),
+  );
+}
+
 class AppTheme {
   static TextTheme _buildTextTheme(Color baseColor) {
     final inter = GoogleFonts.interTextTheme().apply(bodyColor: baseColor, displayColor: baseColor);

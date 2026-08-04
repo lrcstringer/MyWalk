@@ -48,9 +48,16 @@ class _CircleHabitsTabState extends State<CircleHabitsTab> {
                   child: const Icon(Icons.add),
                 )
               : null,
-          body: isLoading && habits.isEmpty
-              ? const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
-              : RefreshIndicator(
+          body: Stack(
+            children: [
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: DeepSpaceBackground(),
+                ),
+              ),
+              isLoading && habits.isEmpty
+                  ? const Center(child: CircularProgressIndicator(color: MyWalkColor.golden))
+                  : RefreshIndicator(
                   color: MyWalkColor.golden,
                   backgroundColor: MyWalkColor.cardBackground,
                   onRefresh: () => provider.load(circleId),
@@ -69,6 +76,8 @@ class _CircleHabitsTabState extends State<CircleHabitsTab> {
                     ],
                   ),
                 ),
+            ],
+          ),
         );
       },
     );
@@ -523,7 +532,14 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
           child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.warmCoral)),
         ),
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
             16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 40),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -589,6 +605,8 @@ class _EditCircleHabitSheetState extends State<EditCircleHabitSheet> {
             ),
           ),
         ]),
+          ),
+        ],
       ),
     );
   }
@@ -825,7 +843,14 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
           child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.warmCoral)),
         ),
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(16, 12, 16,
             MediaQuery.of(context).viewInsets.bottom + 40),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -883,6 +908,8 @@ class _CreateCircleHabitSheetState extends State<CreateCircleHabitSheet> {
             ),
           ),
         ]),
+          ),
+        ],
       ),
     );
   }

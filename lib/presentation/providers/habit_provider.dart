@@ -224,7 +224,7 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addHabit({
+  Future<Habit> addHabit({
     required String name,
     required HabitCategory category,
     required HabitTrackingType trackingType,
@@ -274,6 +274,7 @@ class HabitProvider extends ChangeNotifier {
     await _repository.insertHabit(habit);
     _habits = [..._habits, habit];
     notifyListeners();
+    return habit;
   }
 
   Future<void> updateHabit(Habit habit) async {

@@ -59,9 +59,9 @@ class _CircleDetailViewState extends State<CircleDetailView> {
   static const _sections = [
     ('Prayer',        Icons.volunteer_activism_rounded,   MyWalkColor.sage),
     ('Scripture',     Icons.menu_book_rounded,            MyWalkColor.golden),
-    ('Activities',    Icons.check_circle_outline_rounded, MyWalkColor.warmCoral),
-    ('Encouragement', Icons.favorite_rounded,             MyWalkColor.softGold),
-    ('Events',        Icons.event_rounded,                MyWalkColor.eventPurple),
+    ('Group Practices', Icons.check_circle_outline_rounded, MyWalkColor.warmCoral),
+    ('Encouragement',  Icons.favorite_rounded,             MyWalkColor.softGold),
+    ('Meetups',        Icons.event_rounded,                MyWalkColor.eventPurple),
   ];
 
   @override
@@ -285,8 +285,8 @@ class _CircleDetailViewState extends State<CircleDetailView> {
           ? '$threadCount open ${threadCount == 1 ? "thread" : "threads"}'
           : 'Start a discussion',
       habitCount > 0
-          ? '$habitCount ${habitCount == 1 ? "activity" : "activities"}'
-          : 'No activities yet',
+          ? '$habitCount ${habitCount == 1 ? "practice" : "practices"}'
+          : 'No practices yet',
       receivedCount > 0
           ? '$receivedCount received · Gratitude Wall'
           : 'Wall · Personal notes',
@@ -298,6 +298,9 @@ class _CircleDetailViewState extends State<CircleDetailView> {
 
     return Stack(
       children: [
+        const Positioned.fill(
+          child: IgnorePointer(child: DeepSpaceBackground()),
+        ),
         SafeArea(
           top: false,
           child: CustomScrollView(
@@ -384,8 +387,8 @@ class _CircleDetailViewState extends State<CircleDetailView> {
   String _nextEventStat(List<CircleEvent> events) {
     final now = DateTime.now();
     final count = events.where((e) => e.eventDateTime.isAfter(now)).length;
-    if (count == 0) return 'No upcoming events';
-    return '$count upcoming ${count == 1 ? "event" : "events"}';
+    if (count == 0) return 'No upcoming meetups';
+    return '$count upcoming ${count == 1 ? "meetup" : "meetups"}';
   }
 
   Future<void> _pushSection(BuildContext context, int index, CircleDetails detail) async {

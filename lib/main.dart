@@ -25,7 +25,6 @@ import 'domain/repositories/iap_repository.dart';
 import 'domain/repositories/user_preferences_repository.dart';
 import 'domain/repositories/circle_repository.dart';
 import 'domain/repositories/user_repository.dart';
-import 'domain/services/week_cycle_manager.dart';
 import 'domain/services/engagement_service.dart';
 import 'presentation/providers/prayer_list_provider.dart';
 import 'presentation/providers/group_prayer_list_provider.dart';
@@ -156,7 +155,6 @@ void main() async {
         Provider<IAPRepository>.value(value: iapRepository),
         Provider<UserPreferencesRepository>.value(value: userPrefs),
         Provider<UserRepository>.value(value: userRepository),
-        Provider<WeekCycleManager>(create: (_) => WeekCycleManager(userPrefs)),
         ChangeNotifierProvider<EngagementService>(create: (_) => EngagementService(userPrefs)),
         Provider<CircleRepository>(
             create: (_) => FirestoreCircleRepository(pendingSendQueue)),

@@ -163,6 +163,7 @@ abstract class CircleRepository {
     String? description,
     String? location,
     String? meetingLink,
+    String? recurrenceType,
   });
   Future<void> updateEvent({
     required String circleId,

@@ -69,7 +69,14 @@ class _AnnouncementComposeViewState extends State<AnnouncementComposeView> {
           child: SizedBox(height: 1, child: ColoredBox(color: MyWalkColor.softGold)),
         ),
       ),
-      body: SafeArea(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: Column(
@@ -127,6 +134,8 @@ class _AnnouncementComposeViewState extends State<AnnouncementComposeView> {
             ],
           ),
         ),
+          ),
+        ],
       ),
     );
   }

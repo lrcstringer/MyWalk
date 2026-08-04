@@ -599,6 +599,8 @@ class CircleEvent {
   final String eventDate; // ISO string
   final String? location;
   final String? meetingLink;
+  final String? recurrenceType; // null | 'weekly' | 'biweekly' | 'monthly'
+  final String? recurrenceGroupId;
   final bool reminderSent;
   final String createdAt;
   final Map<String, EventResponse> responses;
@@ -612,6 +614,8 @@ class CircleEvent {
     required this.eventDate,
     this.location,
     this.meetingLink,
+    this.recurrenceType,
+    this.recurrenceGroupId,
     required this.reminderSent,
     required this.createdAt,
     this.responses = const {},
@@ -622,6 +626,8 @@ class CircleEvent {
   DateTime get eventDateTime => DateTime.parse(eventDate);
 
   bool get isUpcoming => eventDateTime.isAfter(DateTime.now());
+
+  bool get isRecurring => recurrenceGroupId != null;
 }
 
 // ── Group Prayer List ─────────────────────────────────────────────────────────

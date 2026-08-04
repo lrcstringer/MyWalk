@@ -57,12 +57,9 @@ class _EventsTabState extends State<EventsTab> {
               : null,
           body: Stack(
             children: [
-              const Positioned(
-                top: 0, left: 0, right: 0, height: 320,
+              const Positioned.fill(
                 child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
-                  ),
+                  child: DeepSpaceBackground(),
                 ),
               ),
               isLoading && events.isEmpty
@@ -89,12 +86,12 @@ class _EventsTabState extends State<EventsTab> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.event_rounded, size: 40, color: MyWalkColor.eventPurple.withValues(alpha: 0.5)),
           const SizedBox(height: 12),
-          Text('No upcoming events.',
+          Text('No upcoming meetups.',
               style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.4))),
           const SizedBox(height: 6),
           Text(canCreate
-              ? 'Tap + to create an event for your group.'
-              : 'Your admin hasn\'t created any events yet.',
+              ? 'Tap + to create a meetup for your group.'
+              : 'Your admin hasn\'t created any meetups yet.',
               style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.3)),
               textAlign: TextAlign.center),
         ]),
@@ -140,10 +137,22 @@ class _EventsTabState extends State<EventsTab> {
     );
   }
 
-  Widget _sectionHeader(String label) => Text(label.toUpperCase(),
-      style: const TextStyle(
-          fontSize: 11, fontWeight: FontWeight.w700,
-          color: MyWalkColor.eventPurple, letterSpacing: 1.2));
+  Widget _sectionHeader(String label) => Row(
+    children: [
+      Text(label.toUpperCase(),
+          style: const TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w700,
+              color: MyWalkColor.eventPurple, letterSpacing: 1.2)),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Divider(
+          color: MyWalkColor.eventPurple.withValues(alpha: 0.25),
+          height: 1,
+          thickness: 0.5,
+        ),
+      ),
+    ],
+  );
 }
 
 // ─── Event Card ───────────────────────────────────────────────────────────────
@@ -168,100 +177,123 @@ class _EventCard extends StatelessWidget {
     final canDelete = isAdmin || event.isAuthor(uid);
 
     return Container(
-      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: MyWalkColor.eventPurple,
+        color: MyWalkColor.eventPurple.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: Container(
-      margin: const EdgeInsets.only(left: 3),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: MyWalkColor.cardBackground,
-        borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(12),
-          bottomRight: Radius.circular(12),
-        ),
-        border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+        border: Border.all(color: MyWalkColor.eventPurple.withValues(alpha: 0.18), width: 0.5),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: MyWalkColor.eventPurple.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+        // Header zone
+        Container(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          decoration: BoxDecoration(
+            color: MyWalkColor.eventPurple.withValues(alpha: 0.12),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
             ),
-            child: Text(
-              _formatDateShort(eventDt),
-              style: const TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.eventPurple),
+            border: Border(
+              bottom: BorderSide(
+                color: MyWalkColor.eventPurple.withValues(alpha: 0.15),
+                width: 0.5,
+              ),
             ),
           ),
-          const Spacer(),
-          if (canEdit) ...[
-            GestureDetector(
-              onTap: () => _showEditSheet(context),
-              child: Icon(Icons.edit_outlined,
-                  size: 18, color: Colors.white.withValues(alpha: 0.3)),
+          child: Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: MyWalkColor.eventPurple.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _formatDateShort(eventDt),
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.eventPurple),
+              ),
             ),
-            const SizedBox(width: 12),
-          ],
-          if (canDelete)
-            GestureDetector(
-              onTap: () => _confirmDelete(context),
-              child: Icon(Icons.delete_outline_rounded,
-                  size: 18, color: Colors.white.withValues(alpha: 0.3)),
-            ),
-        ]),
-        const SizedBox(height: 10),
-        Text(event.title,
-            style: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
-        if (event.description != null && event.description!.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Text(event.description!,
-              style: TextStyle(
-                  fontSize: 13, color: Colors.white.withValues(alpha: 0.55), height: 1.4)),
-        ],
-        const SizedBox(height: 12),
-        Row(children: [
-          Icon(Icons.access_time_rounded, size: 13, color: MyWalkColor.softGold),
-          const SizedBox(width: 5),
-          Text(_formatTime(eventDt),
-              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.55))),
-          if (event.location != null) ...[
-            const SizedBox(width: 12),
-            const Icon(Icons.place_rounded, size: 13, color: MyWalkColor.softGold),
-            const SizedBox(width: 5),
-            Expanded(
-              child: Text(event.location!,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.55))),
-            ),
-          ],
-        ]),
-        if (event.meetingLink != null) ...[
-          const SizedBox(height: 10),
-          GestureDetector(
-            onTap: () => _openLink(context, event.meetingLink!),
-            child: Row(children: [
-              const Icon(Icons.video_call_rounded, size: 14, color: MyWalkColor.golden),
-              const SizedBox(width: 5),
-              const Text('Join Meeting',
+            if (event.isRecurring) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.eventPurple.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: MyWalkColor.eventPurple.withValues(alpha: 0.35), width: 0.5),
+                ),
+                child: const Text('Recurring',
+                    style: TextStyle(fontSize: 10, color: MyWalkColor.eventPurple, fontWeight: FontWeight.w500)),
+              ),
+            ],
+            const Spacer(),
+            if (canEdit) ...[
+              GestureDetector(
+                onTap: () => _showEditSheet(context),
+                child: Icon(Icons.edit_outlined,
+                    size: 18, color: Colors.white.withValues(alpha: 0.35)),
+              ),
+              const SizedBox(width: 12),
+            ],
+            if (canDelete)
+              GestureDetector(
+                onTap: () => _confirmDelete(context),
+                child: Icon(Icons.delete_outline_rounded,
+                    size: 18, color: Colors.white.withValues(alpha: 0.35)),
+              ),
+          ]),
+        ),
+        // Content area
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(event.title,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.warmWhite)),
+            if (event.description != null && event.description!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(event.description!,
                   style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: MyWalkColor.golden)),
+                      fontSize: 13, color: Colors.white.withValues(alpha: 0.55), height: 1.4)),
+            ],
+            const SizedBox(height: 12),
+            Row(children: [
+              Icon(Icons.access_time_rounded, size: 13, color: MyWalkColor.softGold),
+              const SizedBox(width: 5),
+              Text(_formatTime(eventDt),
+                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.55))),
+              if (event.location != null) ...[
+                const SizedBox(width: 12),
+                const Icon(Icons.place_rounded, size: 13, color: MyWalkColor.softGold),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(event.location!,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.55))),
+                ),
+              ],
             ]),
-          ),
-        ],
-        if (event.responses.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          _RsvpRow(responses: event.responses),
-        ],
+            if (event.meetingLink != null) ...[
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => _openLink(context, event.meetingLink!),
+                child: Row(children: [
+                  const Icon(Icons.video_call_rounded, size: 14, color: MyWalkColor.golden),
+                  const SizedBox(width: 5),
+                  const Text('Join Meeting',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: MyWalkColor.golden)),
+                ]),
+              ),
+            ],
+            if (event.responses.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _RsvpRow(responses: event.responses),
+            ],
+          ]),
+        ),
       ]),
-      ),
     );
   }
 
@@ -287,7 +319,7 @@ class _EventCard extends StatelessWidget {
         backgroundColor: MyWalkColor.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          canCancel ? 'Cancel Event' : 'Delete Event',
+          canCancel ? 'Cancel Meetup' : 'Delete Meetup',
           style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 16),
         ),
         content: Text(
@@ -299,7 +331,7 @@ class _EventCard extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Keep Event', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+            child: Text('Keep Meetup', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
           ),
           if (canCancel) ...[
             TextButton(
@@ -333,7 +365,7 @@ class _EventCard extends StatelessWidget {
   void _cancelAndNotify(BuildContext context) {
     context.read<CircleNotificationProvider>().sendAnnouncement(
       circleId: circleId,
-      message: 'Event cancelled: ${event.title} — ${_formatDateShort(event.eventDateTime)}',
+      message: 'Meetup cancelled: ${event.title} — ${_formatDateShort(event.eventDateTime)}',
       notifType: 'event',
     ).catchError((_) {});
     context.read<CircleEventsProvider>().deleteEvent(circleId, event.id);
@@ -437,6 +469,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
   final _locationController = TextEditingController();
   final _linkController = TextEditingController();
   DateTime? _eventDate;
+  String? _recurrenceType;
   bool _notifyMembers = false;
   bool _submitting = false;
   String? _error;
@@ -456,7 +489,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: Text('New Event',
+        title: Text('New Meetup',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: MyWalkColor.warmWhite, fontSize: 17)),
         leadingWidth: 72,
         leading: TextButton(
@@ -471,19 +504,16 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
       ),
       body: Stack(
         children: [
-          const Positioned(
-            top: 0, left: 0, right: 0, height: 320,
+          const Positioned.fill(
             child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
-              ),
+              child: DeepSpaceBackground(),
             ),
           ),
           SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
                 16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 40),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _label('Event Title'),
+          _label('Meetup Title'),
           const SizedBox(height: 6),
           TextField(
             controller: _titleController,
@@ -527,7 +557,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
             controller: _descController,
             maxLines: 3,
             style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
-            decoration: _inputDec("What's happening at this event?"),
+            decoration: _inputDec("What's happening at this meetup?"),
           ),
           const SizedBox(height: 14),
           _label('Location (optional)'),
@@ -546,6 +576,10 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
             style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
             decoration: _inputDec('https://zoom.us/…'),
           ),
+          const SizedBox(height: 14),
+          _label('Frequency'),
+          const SizedBox(height: 8),
+          _recurrenceRow(),
           if (widget.isAdmin) ...[
             const SizedBox(height: 14),
             _notifyRow(),
@@ -569,7 +603,7 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
               child: _submitting
                   ? const SizedBox(width: 18, height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Create Event',
+                  : const Text('Create Meetup',
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             ),
           ),
@@ -585,6 +619,50 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: Colors.white.withValues(alpha: 0.5)));
+
+  Widget _recurrenceRow() {
+    const options = [
+      (null, 'Once'),
+      ('weekly', 'Weekly'),
+      ('biweekly', 'Biweekly'),
+      ('monthly', 'Monthly'),
+    ];
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: options.map((opt) {
+        final selected = _recurrenceType == opt.$1;
+        return GestureDetector(
+          onTap: () => setState(() => _recurrenceType = opt.$1),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: selected
+                  ? MyWalkColor.eventPurple.withValues(alpha: 0.2)
+                  : MyWalkColor.inputBackground,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: selected
+                    ? MyWalkColor.eventPurple
+                    : Colors.white.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              opt.$2,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                color: selected
+                    ? MyWalkColor.eventPurple
+                    : Colors.white.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
 
   InputDecoration _inputDec(String hint) => InputDecoration(
         hintText: hint,
@@ -705,10 +783,11 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
         meetingLink: _linkController.text.trim().isEmpty
             ? null
             : _linkController.text.trim(),
+        recurrenceType: _recurrenceType,
       );
       notifProvider?.sendAnnouncement(
         circleId: widget.circleId,
-        message: 'New event: $title — ${_formatFull(_eventDate!)}',
+        message: 'New meetup: $title — ${_formatFull(_eventDate!)}',
         notifType: 'event',
         sourceId: eventId,
       ).catchError((_) {});
@@ -767,7 +846,7 @@ class _EditEventSheetState extends State<EditEventSheet> {
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         backgroundColor: MyWalkColor.charcoal,
-        title: Text('Edit Event',
+        title: Text('Edit Meetup',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: MyWalkColor.warmWhite, fontSize: 17)),
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
@@ -781,19 +860,16 @@ class _EditEventSheetState extends State<EditEventSheet> {
       ),
       body: Stack(
         children: [
-          const Positioned(
-            top: 0, left: 0, right: 0, height: 320,
+          const Positioned.fill(
             child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
-              ),
+              child: DeepSpaceBackground(),
             ),
           ),
           SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
                 16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 40),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _label('Event Title'),
+          _label('Meetup Title'),
           const SizedBox(height: 6),
           TextField(
             controller: _titleController,
@@ -829,7 +905,7 @@ class _EditEventSheetState extends State<EditEventSheet> {
             controller: _descController,
             maxLines: 3,
             style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
-            decoration: _inputDec("What's happening at this event?"),
+            decoration: _inputDec("What's happening at this meetup?"),
           ),
           const SizedBox(height: 14),
           _label('Location (optional)'),
@@ -871,7 +947,7 @@ class _EditEventSheetState extends State<EditEventSheet> {
               child: _submitting
                   ? const SizedBox(width: 18, height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Save Event',
+                  : const Text('Save Meetup',
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             ),
           ),
@@ -1011,7 +1087,7 @@ class _EditEventSheetState extends State<EditEventSheet> {
       );
       notifProvider?.sendAnnouncement(
         circleId: widget.circleId,
-        message: 'Event updated: $title — ${_formatFull(_eventDate)}',
+        message: 'Meetup updated: $title — ${_formatFull(_eventDate)}',
         notifType: 'event',
         sourceId: widget.event.id,
       ).catchError((_) {});

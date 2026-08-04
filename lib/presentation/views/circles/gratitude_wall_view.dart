@@ -99,9 +99,21 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
   }
 
   Widget _sectionHeader(String title) {
-    return Text(title,
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-            color: MyWalkColor.softGold, letterSpacing: 1.2));
+    return Row(
+      children: [
+        Text(title,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                color: MyWalkColor.softGold, letterSpacing: 1.2)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Divider(
+            color: MyWalkColor.softGold.withValues(alpha: 0.25),
+            height: 1,
+            thickness: 0.5,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -178,24 +190,26 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
           ? () => setState(() => _deleteTarget = item)
           : null,
       child: Container(
-        clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
-          color: MyWalkColor.softGold,
+          color: MyWalkColor.softGold.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: MyWalkColor.softGold.withValues(alpha: 0.18), width: 0.5),
         ),
-        child: Container(
-          margin: const EdgeInsets.only(left: 3),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: MyWalkColor.cardBackground,
-            borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(12),
-              bottomRight: Radius.circular(12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Header zone
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+            decoration: BoxDecoration(
+              color: MyWalkColor.softGold.withValues(alpha: 0.12),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              border: Border(
+                bottom: BorderSide(color: MyWalkColor.softGold.withValues(alpha: 0.12), width: 0.5),
+              ),
             ),
-            border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
+            child: Row(children: [
               MyWalkAvatar(name: item.isAnonymous ? null : item.displayName, size: 26),
               const SizedBox(width: 8),
               Expanded(
@@ -213,29 +227,51 @@ class _GratitudeWallWidgetState extends State<GratitudeWallWidget> {
               Text(_relativeTime(item.sharedAt),
                   style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
             ]),
-            const SizedBox(height: 8),
-            Text(item.gratitudeText,
-                style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite.withValues(alpha: 0.88), height: 1.5)),
-            const SizedBox(height: 10),
-            GestureDetector(
-              onTap: () => Navigator.push<void>(context, MaterialPageRoute(
-                builder: (_) => JournalEntryComposer(
-                  habitName: 'Gratitude',
-                  sourceType: 'group_encouragement',
-                  chipIcon: Icons.groups_rounded,
+          ),
+          // Content with quotation watermark
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: 0,
+                  top: -8,
+                  child: Text(
+                    '“',
+                    style: TextStyle(
+                      fontSize: 72,
+                      fontWeight: FontWeight.w900,
+                      color: MyWalkColor.softGold.withValues(alpha: 0.07),
+                      height: 0.9,
+                    ),
+                  ),
                 ),
-              )),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.edit_note, size: 14,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.65)),
-                const SizedBox(width: 4),
-                Text('Create journal entry',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-                        color: MyWalkColor.softGold.withValues(alpha: 0.65))),
-              ]),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(item.gratitudeText,
+                      style: TextStyle(fontSize: 14, color: MyWalkColor.warmWhite.withValues(alpha: 0.88), height: 1.5)),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () => Navigator.push<void>(context, MaterialPageRoute(
+                      builder: (_) => JournalEntryComposer(
+                        habitName: 'Gratitude',
+                        sourceType: 'group_encouragement',
+                        chipIcon: Icons.groups_rounded,
+                      ),
+                    )),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.edit_note, size: 14,
+                          color: MyWalkColor.softGold.withValues(alpha: 0.65)),
+                      const SizedBox(width: 4),
+                      Text('Create journal entry',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                              color: MyWalkColor.softGold.withValues(alpha: 0.65))),
+                    ]),
+                  ),
+                ]),
+              ],
             ),
-          ]),
-        ),
+          ),
+        ]),
       ),
     );
   }
@@ -283,13 +319,9 @@ class GratitudeWallView extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          const Positioned(
-            top: 0, left: 0, right: 0,
-            height: 320,
+          const Positioned.fill(
             child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
-              ),
+              child: DeepSpaceBackground(),
             ),
           ),
           SafeArea(

@@ -117,7 +117,14 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
               child: const Icon(Icons.add),
             )
           : null,
-      body: Column(children: [
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Column(children: [
         Container(
           color: MyWalkColor.charcoal,
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -129,7 +136,7 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
             ),
             child: Row(children: [
               _pillTab(0, 'Requests'),
-              _pillTab(1, 'List'),
+              _pillTab(1, 'Group Prayer Agenda'),
             ]),
           ),
         ),
@@ -137,7 +144,7 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
           child: TabBarView(
             controller: _tabController,
             children: [
-              PrayerListTab(circleId: widget.circleId),
+              PrayerListTab(circleId: widget.circleId, members: widget.members),
               GroupPrayerListTab(
                 circleId: widget.circleId,
                 isAdmin: widget.isAdmin,
@@ -147,6 +154,8 @@ class _CirclePrayerTabState extends State<CirclePrayerTab>
           ),
         ),
       ]),
+        ],
+      ),
     );
   }
 
@@ -403,7 +412,14 @@ class _ListBody extends StatelessWidget {
               child: const Icon(Icons.add),
             )
           : null,
-      body: RefreshIndicator(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          RefreshIndicator(
         color: MyWalkColor.sage,
         backgroundColor: MyWalkColor.cardBackground,
         onRefresh: () =>
@@ -411,6 +427,7 @@ class _ListBody extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
           children: [
+            _documentHeader(),
             if (isAdmin)
               _adminHeader(context),
             if (active.isEmpty && answered.isEmpty)
@@ -438,7 +455,33 @@ class _ListBody extends StatelessWidget {
             ],
           ],
         ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _documentHeader() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.format_list_bulleted_rounded,
+              size: 15, color: MyWalkColor.sage.withValues(alpha: 0.7)),
+          const SizedBox(width: 8),
+          const Text('Group Prayer Agenda',
+              style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: MyWalkColor.warmWhite,
+                  letterSpacing: -0.3)),
+        ]),
+        const SizedBox(height: 4),
+        Text('Curated by your group admin',
+            style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.35))),
+        const SizedBox(height: 12),
+        Divider(color: Colors.white.withValues(alpha: 0.08), height: 1, thickness: 1),
+      ]),
     );
   }
 
@@ -557,7 +600,7 @@ class _ListBody extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Add to List',
+                child: const Text('Add to Agenda',
                     style: TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w600)),
               ),
@@ -646,160 +689,162 @@ class _PrayerItemCardState extends State<_PrayerItemCard> {
     final isAnswered = item.status == PrayerItemStatus.answered;
 
     return Container(
-      clipBehavior: Clip.hardEdge,
-      decoration: BoxDecoration(
-        color: MyWalkColor.sage,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Container(
-      margin: const EdgeInsets.only(left: 3),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
       decoration: BoxDecoration(
         color: MyWalkColor.cardBackground,
-        borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(12),
-          bottomRight: Radius.circular(12),
-        ),
-        border: Border.all(
-          color: MyWalkColor.cardBorder,
-          width: 0.5,
-        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(
-            child: Text(item.text,
-                style: TextStyle(
-                    fontSize: 14,
-                    color: isAnswered
-                        ? Colors.white.withValues(alpha: 0.45)
-                        : MyWalkColor.warmWhite.withValues(alpha: 0.88),
-                    decoration:
-                        isAnswered ? TextDecoration.lineThrough : null,
-                    decorationColor: Colors.white.withValues(alpha: 0.3),
-                    height: 1.5)),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(
+            isAnswered
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
+            size: 18,
+            color: isAnswered
+                ? MyWalkColor.sage
+                : MyWalkColor.golden.withValues(alpha: 0.5),
           ),
-          if (widget.isAdmin) ...[
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _confirmDelete(context),
-              child: Icon(Icons.close_rounded,
-                  size: 16, color: Colors.white.withValues(alpha: 0.25)),
-            ),
-          ],
-        ]),
-        const SizedBox(height: 8),
-        Row(children: [
-          if (widget.isAdmin)
-            _statusMenu(context, item)
-          else
-            _statusBadge(item),
-          const Spacer(),
-          Text(_relativeTime(item.createdAt),
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
-          if (widget.isAdmin) ...[
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => setState(() => _editingMemo = !_editingMemo),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.notes_rounded,
-                    size: 13,
-                    color: (item.memo?.isNotEmpty ?? false)
-                        ? MyWalkColor.softGold
-                        : Colors.white.withValues(alpha: 0.3)),
-                const SizedBox(width: 4),
-                Text('Note',
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(
+                child: Text(item.text,
                     style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 14,
+                        color: isAnswered
+                            ? Colors.white.withValues(alpha: 0.45)
+                            : MyWalkColor.warmWhite.withValues(alpha: 0.88),
+                        decoration:
+                            isAnswered ? TextDecoration.lineThrough : null,
+                        decorationColor: Colors.white.withValues(alpha: 0.3),
+                        height: 1.5)),
+              ),
+              if (widget.isAdmin) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _confirmDelete(context),
+                  child: Icon(Icons.close_rounded,
+                      size: 16, color: Colors.white.withValues(alpha: 0.25)),
+                ),
+              ],
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
+              if (widget.isAdmin)
+                _statusMenu(context, item)
+              else
+                _statusBadge(item),
+              const Spacer(),
+              Text(_relativeTime(item.createdAt),
+                  style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3))),
+              if (widget.isAdmin) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => setState(() => _editingMemo = !_editingMemo),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.notes_rounded,
+                        size: 13,
                         color: (item.memo?.isNotEmpty ?? false)
                             ? MyWalkColor.softGold
-                            : Colors.white.withValues(alpha: 0.3))),
+                            : Colors.white.withValues(alpha: 0.3)),
+                    const SizedBox(width: 4),
+                    Text('Note',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: (item.memo?.isNotEmpty ?? false)
+                                ? MyWalkColor.softGold
+                                : Colors.white.withValues(alpha: 0.3))),
+                  ]),
+                ),
+              ],
+            ]),
+            if (item.memo != null && item.memo!.isNotEmpty && !_editingMemo) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(item.memo!,
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.55),
+                        height: 1.4)),
+              ),
+            ],
+            if (_editingMemo) ...[
+              const SizedBox(height: 8),
+              TextField(
+                controller: _memoController,
+                autofocus: true,
+                maxLength: 300,
+                maxLines: 2,
+                style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'Add a note...',
+                  hintStyle:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                  filled: true,
+                  fillColor: MyWalkColor.inputBackground,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none),
+                  counterStyle:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 8),
+                ),
+              ),
+              Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                TextButton(
+                  onPressed: () => setState(() {
+                    _memoController.text = widget.item.memo ?? '';
+                    _editingMemo = false;
+                  }),
+                  child: Text('Cancel',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4))),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() => _editingMemo = false);
+                    context.read<GroupPrayerListProvider>().updateItemMemo(
+                        widget.circleId,
+                        widget.item,
+                        _memoController.text.trim());
+                  },
+                  child: const Text('Save',
+                      style: TextStyle(color: MyWalkColor.golden)),
+                ),
+              ]),
+            ],
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => Navigator.push<void>(context, MaterialPageRoute(
+                builder: (_) => JournalEntryComposer(
+                  habitName: 'Group Prayer',
+                  sourceType: 'group_prayer',
+                  chipIcon: Icons.groups_rounded,
+                ),
+              )),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.edit_note, size: 14,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.65)),
+                const SizedBox(width: 4),
+                Text('Create journal entry',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                        color: MyWalkColor.softGold.withValues(alpha: 0.65))),
               ]),
             ),
-          ],
-        ]),
-        if (item.memo != null && item.memo!.isNotEmpty && !_editingMemo) ...[
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(item.memo!,
-                style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withValues(alpha: 0.55),
-                    height: 1.4)),
-          ),
-        ],
-        if (_editingMemo) ...[
-          const SizedBox(height: 8),
-          TextField(
-            controller: _memoController,
-            autofocus: true,
-            maxLength: 300,
-            maxLines: 2,
-            style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 13),
-            decoration: InputDecoration(
-              hintText: 'Add a note...',
-              hintStyle:
-                  TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              filled: true,
-              fillColor: MyWalkColor.inputBackground,
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none),
-              counterStyle:
-                  TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 10),
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 8),
-            ),
-          ),
-          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-            TextButton(
-              onPressed: () => setState(() {
-                _memoController.text = widget.item.memo ?? '';
-                _editingMemo = false;
-              }),
-              child: Text('Cancel',
-                  style:
-                      TextStyle(color: Colors.white.withValues(alpha: 0.4))),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() => _editingMemo = false);
-                context.read<GroupPrayerListProvider>().updateItemMemo(
-                    widget.circleId,
-                    widget.item,
-                    _memoController.text.trim());
-              },
-              child: const Text('Save',
-                  style: TextStyle(color: MyWalkColor.golden)),
-            ),
-          ]),
-        ],
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: () => Navigator.push<void>(context, MaterialPageRoute(
-            builder: (_) => JournalEntryComposer(
-              habitName: 'Group Prayer',
-              sourceType: 'group_prayer',
-              chipIcon: Icons.groups_rounded,
-            ),
-          )),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.edit_note, size: 14,
-                color: MyWalkColor.softGold.withValues(alpha: 0.65)),
-            const SizedBox(width: 4),
-            Text('Create journal entry',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.65))),
           ]),
         ),
       ]),
-      ),
     );
   }
 
@@ -1030,7 +1075,14 @@ class _GratitudeShareSheetState extends State<_GratitudeShareSheet> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          Padding(
         padding: EdgeInsets.fromLTRB(
             20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1102,6 +1154,8 @@ class _GratitudeShareSheetState extends State<_GratitudeShareSheet> {
             ),
           ),
         ]),
+          ),
+        ],
       ),
     );
   }

@@ -59,7 +59,14 @@ class _CreateCircleViewState extends State<CreateCircleView> {
         ),
         leadingWidth: 80,
       ),
-      body: SafeArea(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -105,6 +112,8 @@ class _CreateCircleViewState extends State<CreateCircleView> {
             ],
           ),
         ),
+          ),
+        ],
       ),
     );
   }

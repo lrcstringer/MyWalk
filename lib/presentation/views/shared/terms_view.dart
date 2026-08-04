@@ -29,9 +29,18 @@ class TermsView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, 8, 20, 48),
-        child: _TermsContent(),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          const SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 48),
+            child: _TermsContent(),
+          ),
+        ],
       ),
     );
   }

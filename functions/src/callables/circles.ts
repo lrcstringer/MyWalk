@@ -10,6 +10,7 @@ import {
   heatmapEntriesCol,
   milestonesCol,
   metaDoc,
+  usersCol,
   Timestamp,
 } from '../lib/firestore';
 import { sendPushToUsers } from '../lib/fcm';
@@ -192,13 +193,23 @@ export const circleShareGratitude = onCall(
     }
 
     const uid = request.auth.uid;
+
+    let resolvedName: string | null = null;
+    if (!isAnonymous) {
+      resolvedName = displayName?.trim() || null;
+      if (!resolvedName) {
+        const userSnap = await usersCol().doc(uid).get();
+        resolvedName = userSnap.data()?.displayName ?? null;
+      }
+    }
+
     const batch = db.batch();
 
     for (const circleId of circleIds) {
       const ref = gratitudesCol(circleId).doc();
       batch.set(ref, {
         id: ref.id, userId: uid, gratitudeText,
-        isAnonymous, displayName: isAnonymous ? null : (displayName ?? null),
+        isAnonymous, displayName: resolvedName,
         sharedAt: Timestamp.now(), deleted: false,
       });
     }

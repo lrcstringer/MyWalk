@@ -18,7 +18,14 @@ class CirclesHelpView extends StatelessWidget {
         foregroundColor: MyWalkColor.warmWhite,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -121,6 +128,8 @@ class CirclesHelpView extends StatelessWidget {
             const SizedBox(height: 40),
           ],
         ),
+      ),
+        ],
       ),
     );
   }

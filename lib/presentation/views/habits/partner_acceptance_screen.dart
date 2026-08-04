@@ -101,7 +101,14 @@ class _PartnerAcceptanceScreenState extends State<PartnerAcceptanceScreen> {
                 onPressed: () => Navigator.of(context).pop(),
               ),
       ),
-      body: SafeArea(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SafeArea(
         child: _loading
             ? const Center(
                 child: CircularProgressIndicator(color: MyWalkColor.golden))
@@ -110,6 +117,8 @@ class _PartnerAcceptanceScreenState extends State<PartnerAcceptanceScreen> {
                 : _errorMessage != null && _partnership == null
                     ? _errorState()
                     : _inviteState(),
+      ),
+        ],
       ),
     );
   }

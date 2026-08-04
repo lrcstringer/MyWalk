@@ -60,7 +60,14 @@ class _ShareGratitudeSheetState extends State<ShareGratitudeSheet> {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -107,6 +114,8 @@ class _ShareGratitudeSheetState extends State<ShareGratitudeSheet> {
             ),
           ]),
         ),
+          ),
+        ],
       ),
     );
   }

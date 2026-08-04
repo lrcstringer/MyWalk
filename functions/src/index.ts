@@ -57,6 +57,7 @@ export {
   circleUpdateEvent,
   circleDeleteEvent,
   sendEventReminders,
+  generateRecurringMeetups,
 } from './callables/events';
 export { resetWeeklyFruitPortfolio } from './callables/fruit';
 export { seedHabitCategories } from './callables/habit_categories';

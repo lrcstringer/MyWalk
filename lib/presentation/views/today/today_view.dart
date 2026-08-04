@@ -8,7 +8,6 @@ import '../../providers/store_provider.dart';
 import '../../../domain/entities/circle.dart';
 import '../../../domain/repositories/circle_repository.dart';
 import '../../../data/datasources/remote/auth_service.dart';
-import '../../../domain/services/week_cycle_manager.dart';
 import '../../theme/app_theme.dart';
 import '../circles/share_gratitude_sheet.dart';
 import '../habits/habit_check_in_card_view.dart';
@@ -20,16 +19,7 @@ import 'widgets/category_group_header.dart';
 import '../bible_reading/bible_reading_habit_card.dart';
 
 class TodayView extends StatefulWidget {
-  final WeekCycleManager weekCycleManager;
-  final bool showAutoCarryBanner;
-  final VoidCallback? onDismissAutoCarry;
-
-  const TodayView({
-    super.key,
-    required this.weekCycleManager,
-    required this.showAutoCarryBanner,
-    this.onDismissAutoCarry,
-  });
+  const TodayView({super.key});
 
   @override
   State<TodayView> createState() => _TodayViewState();
@@ -93,21 +83,16 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
 
     final imageHeight = MediaQuery.of(context).size.width * 0.65;
 
-    return Stack(
-      children: [
-        // Warm atmospheric glow from top-centre — adds depth behind all content
-        const Positioned(
-          top: 0, left: 0, right: 0,
-          height: 320,
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(gradient: MyWalkColor.warmGlow),
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
             ),
           ),
-        ),
-        Scaffold(
-          backgroundColor: MyWalkColor.charcoal,
-          body: CustomScrollView(
+          CustomScrollView(
               slivers: [
                 SliverAppBar(
                   backgroundColor: MyWalkColor.charcoal,
@@ -201,10 +186,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                         child: _titleSection(),
                       ),
 
-                      // Auto carry banner
-                      if (widget.showAutoCarryBanner)
-                        _autoCarryBanner(),
-
                       // Week strip
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -242,7 +223,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                 ),
               ],
           ),
-        ),
         Align(
           alignment: Alignment.bottomCenter,
           child: IgnorePointer(
@@ -261,8 +241,8 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
             ),
           ),
         ),
-
-      ],
+        ],
+      ),
     );
   }
 
@@ -277,40 +257,6 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
         fontSize: 17,
         color: MyWalkColor.warmWhite,
-      ),
-    );
-  }
-
-  Widget _autoCarryBanner() {
-    return GestureDetector(
-      onTap: widget.onDismissAutoCarry,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
-        decoration: BoxDecoration(
-          color: MyWalkColor.golden.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.2), width: 0.5),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: MyWalkColor.golden, size: 16),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'New week, same habits. You\'re already on Day ${DateTime.now().weekday % 7 + 1}. Let\'s keep going.',
-                style: TextStyle(
-                  color: MyWalkColor.softGold.withValues(alpha: 0.85),
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            GestureDetector(
-              onTap: widget.onDismissAutoCarry,
-              child: Icon(Icons.close, size: 14, color: MyWalkColor.softGold.withValues(alpha: 0.4)),
-            ),
-          ],
-        ),
       ),
     );
   }

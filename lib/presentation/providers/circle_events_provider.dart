@@ -63,6 +63,7 @@ class CircleEventsProvider extends ChangeNotifier {
     String? description,
     String? location,
     String? meetingLink,
+    String? recurrenceType,
   }) async {
     _creating = true;
     error = null;
@@ -76,6 +77,7 @@ class CircleEventsProvider extends ChangeNotifier {
         description: description,
         location: location,
         meetingLink: meetingLink,
+        recurrenceType: recurrenceType,
       );
       await load(circleId);
       return eventId;

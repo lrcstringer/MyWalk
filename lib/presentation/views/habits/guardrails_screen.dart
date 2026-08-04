@@ -70,7 +70,14 @@ class _GuardrailsScreenState extends State<GuardrailsScreen>
           ],
         ),
       ),
-      body: TabBarView(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DeepSpaceBackground(),
+            ),
+          ),
+          TabBarView(
         controller: _tabs,
         children: [
           _ChecklistTab(
@@ -83,6 +90,8 @@ class _GuardrailsScreenState extends State<GuardrailsScreen>
             existingPlans: path?.module4.hrsPlan ?? [],
           ),
           _UrgeSurfingTab(habitId: widget.habitId),
+        ],
+      ),
         ],
       ),
     );
