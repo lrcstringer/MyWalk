@@ -541,16 +541,15 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<JournalThemeProvider>().theme;
-
     final fruitTag = widget.initialEntry?.fruitTag ?? _linkedHabit?.fruitTags.firstOrNull ?? widget.fruitTag;
     final habitName = widget.initialEntry?.habitName ?? _linkedHabit?.name ?? widget.habitName;
     final sourceType = widget.initialEntry?.sourceType ?? (_linkedHabit != null ? 'linked' : widget.sourceType);
-
-    final hasVoice = _newVoicePath != null ||
-        (_existingVoiceUrl != null && !_removeExistingVoice);
+    final hasVoice = _newVoicePath != null || (_existingVoiceUrl != null && !_removeExistingVoice);
+    final showSourceChip = _linkedHabit != null || sourceType != 'free' || fruitTag != null || habitName != null;
 
     return Scaffold(
       backgroundColor: theme.bgPrimary,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: theme.bgPrimary,
         foregroundColor: theme.textPrimary,
@@ -565,189 +564,130 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: theme.accentAction,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2, color: theme.accentAction),
               ),
             )
           else
             TextButton(
               onPressed: _save,
-              child: Text('Save',
-                  style: TextStyle(
-                    color: theme.accentAction,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  )),
+              child: Text('Save', style: TextStyle(
+                color: theme.accentAction, fontWeight: FontWeight.w600, fontSize: 16,
+              )),
             ),
         ],
       ),
+      // Phase 3: formatting toolbar docked above the keyboard
+      bottomNavigationBar: _BottomFormattingBar(
+        controller: _textController,
+        theme: theme,
+        isListening: _isListening,
+        speechAvailable: _speechAvailable,
+        onToggleDictation: _toggleDictation,
+      ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
         children: [
-          // Source chip / habit link
-          if (!_isEditMode && widget.sourceType == 'free')
-            _linkedHabit != null
-                ? _SourceChip(
-                    habitName: habitName,
-                    fruitTag: fruitTag,
-                    sourceType: sourceType,
-                    theme: theme,
-                    chipIcon: widget.chipIcon,
-                    onClear: () => setState(() => _linkedHabit = null),
-                  )
-                : _LinkHabitButton(
-                    theme: theme,
-                    onTap: () => _showHabitPicker(theme),
-                  )
-          else if (sourceType != 'free' || fruitTag != null || habitName != null)
+          // Phase 1: diary-style date header
+          _DateHeader(
+            theme: theme,
+            date: _isEditMode ? widget.initialEntry!.createdAt : DateTime.now(),
+          ),
+          const SizedBox(height: 10),
+
+          // Source chip when entry is linked to a habit or fruit
+          if (showSourceChip) ...[
             _SourceChip(
               habitName: habitName,
               fruitTag: fruitTag,
               sourceType: sourceType,
               theme: theme,
               chipIcon: widget.chipIcon,
+              onClear: _linkedHabit != null ? () => setState(() => _linkedHabit = null) : null,
             ),
+            const SizedBox(height: 8),
+          ],
 
-          // Toolbar
-          DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: theme.textSecondary.withValues(alpha: 0.12),
-                  width: 1,
-                ),
-              ),
+          // Phase 2: editor with ruled-paper lines behind the text
+          CustomPaint(
+            painter: _RuledLinePainter(
+              lineColor: theme.textSecondary.withValues(alpha: 0.10),
             ),
-            child: QuillSimpleToolbar(
-              controller: _textController,
-              config: QuillSimpleToolbarConfig(
-                color: Colors.transparent,
-                multiRowsDisplay: false,
-                showDividers: true,
-                showBoldButton: true,
-                showItalicButton: true,
-                showUnderLineButton: true,
-                showStrikeThrough: false,
-                showInlineCode: false,
-                showColorButton: false,
-                showBackgroundColorButton: false,
-                showClearFormat: false,
-                showSmallButton: false,
-                showFontFamily: false,
-                showFontSize: false,
-                showAlignmentButtons: false,
-                showLeftAlignment: false,
-                showCenterAlignment: false,
-                showRightAlignment: false,
-                showJustifyAlignment: false,
-                showHeaderStyle: false,
-                showListNumbers: true,
-                showListBullets: true,
-                showListCheck: true,
-                showCodeBlock: false,
-                showQuote: false,
-                showIndent: false,
-                showLink: false,
-                showUndo: true,
-                showRedo: true,
-                showDirection: false,
-                showSearchButton: false,
-                showSubscript: false,
-                showSuperscript: false,
-                customButtons: [
-                  QuillToolbarCustomButtonOptions(
-                    icon: Icon(
-                      _isListening ? Icons.mic : Icons.mic_none_rounded,
-                      color: _isListening ? Colors.red : theme.textSecondary,
-                      size: 18,
+            child: DefaultTextStyle(
+              style: DefaultTextStyle.of(context).style.copyWith(
+                color: theme.textPrimary,
+                fontSize: 16,
+                height: 1.65,
+                decoration: TextDecoration.none,
+              ),
+              child: QuillEditor.basic(
+                controller: _textController,
+                focusNode: _editorFocusNode,
+                scrollController: _editorScrollController,
+                config: QuillEditorConfig(
+                  placeholder: 'Write something...',
+                  minHeight: 200,
+                  scrollable: false,
+                  padding: EdgeInsets.zero,
+                  customStyles: DefaultStyles(
+                    placeHolder: DefaultTextBlockStyle(
+                      TextStyle(
+                        fontSize: 16,
+                        height: 1.65,
+                        color: theme.textSecondary.withValues(alpha: 0.5),
+                        decoration: TextDecoration.none,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      const HorizontalSpacing(0, 0),
+                      VerticalSpacing.zero,
+                      VerticalSpacing.zero,
+                      null,
                     ),
-                    onPressed: _speechAvailable ? _toggleDictation : null,
-                    tooltip: _isListening ? 'Stop dictation' : 'Dictate',
-                  ),
-                ],
-                iconTheme: QuillIconTheme(
-                  iconButtonUnselectedData: IconButtonData(
-                    color: theme.textSecondary,
-                    iconSize: 18,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  iconButtonSelectedData: IconButtonData(
-                    color: theme.accentAction,
-                    iconSize: 18,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Rich-text editor
-          DefaultTextStyle(
-            style: DefaultTextStyle.of(context).style.copyWith(
-              color: theme.textPrimary,
-              fontSize: 16,
-              height: 1.6,
-              decoration: TextDecoration.none,
-            ),
-            child: QuillEditor.basic(
-              controller: _textController,
-              focusNode: _editorFocusNode,
-              scrollController: _editorScrollController,
-              config: QuillEditorConfig(
-                placeholder: 'Write something...',
-                minHeight: 150,
-                scrollable: false,
-                padding: EdgeInsets.zero,
-                customStyles: DefaultStyles(
-                  placeHolder: DefaultTextBlockStyle(
-                    TextStyle(
-                      fontSize: 16,
-                      height: 1.6,
-                      color: theme.textSecondary.withValues(alpha: 0.5),
-                      decoration: TextDecoration.none,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    const HorizontalSpacing(0, 0),
-                    VerticalSpacing.zero,
-                    VerticalSpacing.zero,
-                    null,
                   ),
                 ),
               ),
             ),
           ),
 
-          Divider(
-              color: theme.textSecondary.withValues(alpha: 0.15),
-              height: 24),
+          Divider(color: theme.textSecondary.withValues(alpha: 0.15), height: 36),
 
-          // Images section
-          _ImagesSection(
+          // Image thumbnails (only when images are attached)
+          if (_totalImageCount > 0) ...[
+            _AttachmentThumbnails(
+              existingUrls: _existingImageUrls,
+              newPaths: _newImagePaths,
+              theme: theme,
+              onRemoveExisting: _removeExistingImage,
+              onRemoveNew: _removeNewImage,
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Voice recorder / playback (only when active)
+          if (_isRecording || hasVoice) ...[
+            _VoiceSection(
+              theme: theme,
+              isRecording: _isRecording,
+              hasVoice: hasVoice,
+              isPlaying: _isPlayingBack,
+              recordingDuration: _recordingDuration,
+              onToggleRecord: _toggleRecording,
+              onTogglePlayback: _togglePlayback,
+              onDiscard: _discardVoice,
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Phase 4: compact action icon row — photo / sketch / mic / link
+          _MediaActionRow(
             theme: theme,
-            existingUrls: _existingImageUrls,
-            newPaths: _newImagePaths,
-            totalCount: _totalImageCount,
-            onAddTap: () => _showImageSourceSheet(theme),
-            onDoodleTap: () => _openDoodleCanvas(theme),
-            onRemoveExisting: _removeExistingImage,
-            onRemoveNew: _removeNewImage,
-          ),
-
-          const SizedBox(height: 16),
-
-          // Voice section
-          _VoiceSection(
-            theme: theme,
-            isRecording: _isRecording,
+            canAddImage: _totalImageCount < _kMaxImagesPerEntry,
             hasVoice: hasVoice,
-            isPlaying: _isPlayingBack,
-            recordingDuration: _recordingDuration,
-            onToggleRecord: _toggleRecording,
-            onTogglePlayback: _togglePlayback,
-            onDiscard: _discardVoice,
+            isRecording: _isRecording,
+            showLink: !_isEditMode && widget.sourceType == 'free' && _linkedHabit == null,
+            onPhoto: () => _showImageSourceSheet(theme),
+            onDoodle: () => _openDoodleCanvas(theme),
+            onMic: _toggleRecording,
+            onLink: () => _showHabitPicker(theme),
           ),
         ],
       ),
@@ -837,170 +777,277 @@ class _SourceChip extends StatelessWidget {
   }
 }
 
-// ── Link Habit Button ────────────────────────────────────────────────────────
+// ── Date Header (Phase 1) ────────────────────────────────────────────────────
 
-class _LinkHabitButton extends StatelessWidget {
+class _DateHeader extends StatelessWidget {
   final JournalTheme theme;
-  final VoidCallback onTap;
+  final DateTime date;
 
-  const _LinkHabitButton({required this.theme, required this.onTap});
+  const _DateHeader({required this.theme, required this.date});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.link, size: 14,
-                color: theme.textSecondary.withValues(alpha: 0.6)),
-            const SizedBox(width: 5),
-            Text(
-              'Link to a practice',
-              style: TextStyle(
-                fontSize: 13,
-                color: theme.textSecondary.withValues(alpha: 0.6),
+    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    final text = '${weekdays[date.weekday - 1]}, ${date.day} ${months[date.month - 1]} ${date.year}';
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontStyle: FontStyle.italic,
+        color: theme.textSecondary.withValues(alpha: 0.65),
+      ),
+    );
+  }
+}
+
+// ── Ruled Line Painter (Phase 2) ─────────────────────────────────────────────
+
+class _RuledLinePainter extends CustomPainter {
+  final Color lineColor;
+
+  const _RuledLinePainter({required this.lineColor});
+
+  static const _lineSpacing = 26.4; // 16px font × 1.65 line-height
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 0.8;
+    double y = _lineSpacing;
+    while (y < size.height) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+      y += _lineSpacing;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RuledLinePainter old) => old.lineColor != lineColor;
+}
+
+// ── Bottom Formatting Bar (Phase 3) ──────────────────────────────────────────
+
+class _BottomFormattingBar extends StatelessWidget {
+  final QuillController controller;
+  final JournalTheme theme;
+  final bool isListening;
+  final bool speechAvailable;
+  final VoidCallback onToggleDictation;
+
+  const _BottomFormattingBar({
+    required this.controller,
+    required this.theme,
+    required this.isListening,
+    required this.speechAvailable,
+    required this.onToggleDictation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.bgCard,
+        border: Border(
+          top: BorderSide(color: theme.textSecondary.withValues(alpha: 0.12)),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: QuillSimpleToolbar(
+          controller: controller,
+          config: QuillSimpleToolbarConfig(
+            color: Colors.transparent,
+            multiRowsDisplay: false,
+            showDividers: true,
+            showBoldButton: true,
+            showItalicButton: true,
+            showUnderLineButton: true,
+            showStrikeThrough: false,
+            showInlineCode: false,
+            showColorButton: false,
+            showBackgroundColorButton: false,
+            showClearFormat: false,
+            showSmallButton: false,
+            showFontFamily: false,
+            showFontSize: false,
+            showAlignmentButtons: false,
+            showLeftAlignment: false,
+            showCenterAlignment: false,
+            showRightAlignment: false,
+            showJustifyAlignment: false,
+            showHeaderStyle: false,
+            showListNumbers: true,
+            showListBullets: true,
+            showListCheck: true,
+            showCodeBlock: false,
+            showQuote: false,
+            showIndent: false,
+            showLink: false,
+            showUndo: true,
+            showRedo: true,
+            showDirection: false,
+            showSearchButton: false,
+            showSubscript: false,
+            showSuperscript: false,
+            customButtons: [
+              QuillToolbarCustomButtonOptions(
+                icon: Icon(
+                  isListening ? Icons.mic : Icons.mic_none_rounded,
+                  color: isListening ? Colors.red : theme.textSecondary,
+                  size: 18,
+                ),
+                onPressed: speechAvailable ? onToggleDictation : null,
+                tooltip: isListening ? 'Stop dictation' : 'Dictate',
+              ),
+            ],
+            iconTheme: QuillIconTheme(
+              iconButtonUnselectedData: IconButtonData(
+                color: theme.textSecondary,
+                iconSize: 18,
+                visualDensity: VisualDensity.compact,
+              ),
+              iconButtonSelectedData: IconButtonData(
+                color: theme.accentAction,
+                iconSize: 18,
+                visualDensity: VisualDensity.compact,
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Images Section ──────────────────────────────────────────────────────────
+// ── Attachment Thumbnails (Phase 4) ───────────────────────────────────────────
 
-class _ImagesSection extends StatelessWidget {
-  final JournalTheme theme;
+class _AttachmentThumbnails extends StatelessWidget {
   final List<String> existingUrls;
   final List<String> newPaths;
-  final int totalCount;
-  final VoidCallback onAddTap;
-  final VoidCallback onDoodleTap;
+  final JournalTheme theme;
   final ValueChanged<String> onRemoveExisting;
   final ValueChanged<int> onRemoveNew;
 
-  const _ImagesSection({
-    required this.theme,
+  const _AttachmentThumbnails({
     required this.existingUrls,
     required this.newPaths,
-    required this.totalCount,
-    required this.onAddTap,
-    required this.onDoodleTap,
+    required this.theme,
     required this.onRemoveExisting,
     required this.onRemoveNew,
   });
 
   @override
   Widget build(BuildContext context) {
-    final showAddButton = totalCount < _kMaxImagesPerEntry;
-    if (totalCount == 0 && !showAddButton) return const SizedBox.shrink();
+    return SizedBox(
+      height: 88,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          for (final url in existingUrls)
+            _ImageThumb.network(url: url, theme: theme, onRemove: () => onRemoveExisting(url)),
+          for (var i = 0; i < newPaths.length; i++)
+            _ImageThumb.file(path: newPaths[i], theme: theme, onRemove: () => onRemoveNew(i)),
+        ],
+      ),
+    );
+  }
+}
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.image_outlined,
-                size: 16, color: theme.textSecondary),
-            const SizedBox(width: 6),
-            Text(
-              'Photos',
-              style: TextStyle(
-                fontSize: 13,
-                color: theme.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
+// ── Media Action Row (Phase 4) ────────────────────────────────────────────────
+
+class _MediaActionRow extends StatelessWidget {
+  final JournalTheme theme;
+  final bool canAddImage;
+  final bool hasVoice;
+  final bool isRecording;
+  final bool showLink;
+  final VoidCallback onPhoto;
+  final VoidCallback onDoodle;
+  final VoidCallback onMic;
+  final VoidCallback onLink;
+
+  const _MediaActionRow({
+    required this.theme,
+    required this.canAddImage,
+    required this.hasVoice,
+    required this.isRecording,
+    required this.showLink,
+    required this.onPhoto,
+    required this.onDoodle,
+    required this.onMic,
+    required this.onLink,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dimmed = theme.textSecondary.withValues(alpha: 0.35);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          _ActionIcon(
+            icon: Icons.camera_alt_outlined,
+            label: 'Photo',
+            color: canAddImage ? theme.textSecondary : dimmed,
+            onTap: canAddImage ? onPhoto : null,
+          ),
+          const SizedBox(width: 20),
+          _ActionIcon(
+            icon: Icons.draw_outlined,
+            label: 'Sketch',
+            color: canAddImage ? theme.textSecondary : dimmed,
+            onTap: canAddImage ? onDoodle : null,
+          ),
+          const SizedBox(width: 20),
+          _ActionIcon(
+            icon: isRecording ? Icons.stop_rounded : Icons.mic_outlined,
+            label: isRecording ? 'Stop' : (hasVoice ? 'Voice ✓' : 'Voice'),
+            color: isRecording ? Colors.red : (hasVoice ? theme.accentAction : theme.textSecondary),
+            onTap: onMic,
+          ),
+          if (showLink) ...[
+            const SizedBox(width: 20),
+            _ActionIcon(
+              icon: Icons.link_rounded,
+              label: 'Link',
+              color: theme.textSecondary,
+              onTap: onLink,
             ),
           ],
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 90,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              for (final url in existingUrls)
-                _ImageThumb.network(
-                    url: url,
-                    theme: theme,
-                    onRemove: () => onRemoveExisting(url)),
+        ],
+      ),
+    );
+  }
+}
 
-              for (var i = 0; i < newPaths.length; i++)
-                _ImageThumb.file(
-                    path: newPaths[i],
-                    theme: theme,
-                    onRemove: () => onRemoveNew(i)),
+class _ActionIcon extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
 
-              if (showAddButton) ...[
-                GestureDetector(
-                  onTap: onAddTap,
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: theme.bgCard,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: theme.textSecondary.withValues(alpha: 0.2)),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_a_photo_outlined,
-                            size: 22, color: theme.textSecondary),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Add\nPhoto',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: theme.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: onDoodleTap,
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: theme.bgCard,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: theme.textSecondary.withValues(alpha: 0.2)),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.draw_outlined,
-                            size: 22, color: theme.textSecondary),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Add\nDoodle',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: theme.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
+  const _ActionIcon({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 3),
+          Text(label, style: TextStyle(fontSize: 10, color: color, height: 1.2)),
+        ],
+      ),
     );
   }
 }
@@ -1122,56 +1169,7 @@ class _VoiceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isRecording) return _buildRecordingState();
-    if (hasVoice) return _buildPlaybackState();
-    return _buildIdleState();
-  }
-
-  // ── Idle ──────────────────────────────────────────────────────────────────
-
-  Widget _buildIdleState() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: theme.bgCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: theme.textSecondary.withValues(alpha: 0.15)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.mic_none_outlined,
-              size: 18, color: theme.textSecondary),
-          const SizedBox(width: 10),
-          Text(
-            'Voice note',
-            style: TextStyle(fontSize: 14, color: theme.textSecondary),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '· 3 min max',
-            style: TextStyle(
-              fontSize: 12,
-              color: theme.textSecondary.withValues(alpha: 0.55),
-            ),
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: onToggleRecord,
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: theme.accentAction.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: theme.accentAction.withValues(alpha: 0.35)),
-              ),
-              child: Icon(Icons.mic, size: 20, color: theme.accentAction),
-            ),
-          ),
-        ],
-      ),
-    );
+    return _buildPlaybackState();
   }
 
   // ── Recording ────────────────────────────────────────────────────────────

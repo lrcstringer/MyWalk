@@ -768,6 +768,10 @@ class _AddHabitViewState extends State<AddHabitView> {
         _notesSection(),
         const SizedBox(height: 20),
 
+        // Reference URL
+        _referenceUrlSection(),
+        const SizedBox(height: 28),
+
         // Support/Accountability Partner + Recovery Path (abstain only)
         if (isAbstain) ...[
           _partnerSection(),
@@ -775,10 +779,6 @@ class _AddHabitViewState extends State<AddHabitView> {
           _recoveryPathTeaserCard(),
           const SizedBox(height: 28),
         ],
-
-        // Reference URL
-        _referenceUrlSection(),
-        const SizedBox(height: 28),
 
         // Save button
         SizedBox(

@@ -497,95 +497,143 @@ class _JournalEntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = entry.habitName != null
+        ? MyWalkColor.golden
+        : entry.fruitTag != null
+            ? entry.fruitTag!.color
+            : theme.accentAction;
+    final preview = JournalEntry.extractPlainText(entry.text);
+    final hasChip = entry.habitName != null || entry.fruitTag != null;
+
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: theme.bgCard,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: theme.textSecondary.withValues(alpha: 0.15)),
+          border: Border.all(color: theme.textSecondary.withValues(alpha: 0.12)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Top row: date + media indicators
-            Row(
-              children: [
-                if (entry.pinned) ...[
-                  Icon(Icons.push_pin_rounded,
-                      size: 12, color: theme.accentAction.withValues(alpha: 0.8)),
-                  const SizedBox(width: 4),
-                ],
-                Text(
-                  _shortDate(entry.createdAt),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.textSecondary,
-                  ),
+            // Colored left accent bar
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.75),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(11),
+                  bottomLeft: Radius.circular(11),
                 ),
-                const Spacer(),
-                if (entry.uploadPending)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: Icon(Icons.cloud_upload_outlined,
-                        size: 14,
-                        color: theme.textSecondary.withValues(alpha: 0.6)),
-                  ),
-                if (entry.imageUrls.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: Icon(Icons.image_outlined,
-                        size: 14,
-                        color: theme.textSecondary.withValues(alpha: 0.5)),
-                  ),
-                if (entry.voiceUrl != null)
-                  Icon(Icons.mic_outlined,
-                      size: 14,
-                      color: theme.textSecondary.withValues(alpha: 0.5)),
-              ],
+              ),
             ),
-
-            const SizedBox(height: 8),
-
-            // Source chip
-            _SourceChip(entry: entry, theme: theme),
-
-            // Text preview
-            Builder(builder: (context) {
-              final preview = JournalEntry.extractPlainText(entry.text);
-              if (preview.isEmpty) return const SizedBox.shrink();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  Text(
-                    preview,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: theme.textPrimary,
-                      height: 1.5,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Date row with weekday + media icons
+                    Row(
+                      children: [
+                        if (entry.pinned) ...[
+                          Icon(Icons.push_pin_rounded,
+                              size: 11, color: accentColor.withValues(alpha: 0.8)),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          _weekday(entry.createdAt),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: accentColor.withValues(alpha: 0.8),
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        Text(
+                          '  ·  ${_longDate(entry.createdAt)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: theme.textSecondary.withValues(alpha: 0.55),
+                          ),
+                        ),
+                        const Spacer(),
+                        if (entry.uploadPending)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Icon(Icons.cloud_upload_outlined,
+                                size: 12,
+                                color: theme.textSecondary.withValues(alpha: 0.5)),
+                          ),
+                        if (entry.imageUrls.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Icon(Icons.image_outlined,
+                                size: 12,
+                                color: theme.textSecondary.withValues(alpha: 0.5)),
+                          ),
+                        if (entry.voiceUrl != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Icon(Icons.mic_outlined,
+                                size: 12,
+                                color: theme.textSecondary.withValues(alpha: 0.5)),
+                          ),
+                      ],
                     ),
-                  ),
-                ],
-              );
-            }),
+
+                    // Text preview (3 lines)
+                    if (preview.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        preview,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.textPrimary,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                    if (preview.isEmpty &&
+                        (entry.imageUrls.isNotEmpty || entry.voiceUrl != null)) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        entry.voiceUrl != null ? 'Voice note' : 'Photo entry',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                          color: theme.textSecondary.withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ],
+
+                    // Source chip at bottom
+                    if (hasChip) ...[
+                      const SizedBox(height: 8),
+                      _SourceChip(entry: entry, theme: theme),
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  String _shortDate(DateTime dt) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
+  String _weekday(DateTime dt) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days[dt.weekday - 1];
+  }
+
+  String _longDate(DateTime dt) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 }

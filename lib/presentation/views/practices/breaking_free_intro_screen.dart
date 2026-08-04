@@ -226,7 +226,7 @@ class BreakingFreeIntroScreen extends StatelessWidget {
           scrollController: sc,
           startCategoryModel: catModel,
           startSubcategoryModel: subModel,
-          forBreakingFree: catModel == null,
+          forBreakingFree: true,
         ),
       ),
     );

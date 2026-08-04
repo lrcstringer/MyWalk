@@ -120,6 +120,7 @@ class PracticesView extends StatelessWidget {
                     child: _ActionPill(
                       icon: Icons.add_rounded,
                       label: 'Add a Practice',
+                      color: const Color(0xFF90EE90),
                       onTap: () => _openAddPractice(context),
                     ),
                   ),
@@ -128,6 +129,7 @@ class PracticesView extends StatelessWidget {
                     child: _ActionPill(
                       icon: Icons.apps_rounded,
                       label: 'Mini-Apps',
+                      color: const Color(0xFFE8A87C),
                       onTap: () => _openMiniApps(context),
                     ),
                   ),
@@ -355,23 +357,46 @@ class _ManagementCard extends StatelessWidget {
 class _ActionPill extends StatelessWidget {
   final IconData icon;
   final String label;
+  final Color color;
   final VoidCallback onTap;
-  const _ActionPill({required this.icon, required this.label, required this.onTap});
+  const _ActionPill({required this.icon, required this.label, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
         decoration: BoxDecoration(
-          color: MyWalkColor.cardBackground,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              MyWalkColor.cardBackground,
+              color.withValues(alpha: 0.22),
+            ],
+          ),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.3), width: 1),
+          border: Border.all(color: color.withValues(alpha: 0.65), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.18),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: MyWalkColor.golden, size: 22),
-          const SizedBox(height: 6),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.15),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(height: 8),
           Text(
             label,
             textAlign: TextAlign.center,
@@ -499,15 +524,15 @@ class _BibleInAYearCard extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [
               MyWalkColor.cardBackground,
-              MyWalkColor.golden.withValues(alpha: 0.06),
+              const Color(0xFF74B3CE).withValues(alpha: 0.08),
             ],
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: MyWalkColor.golden.withValues(alpha: 0.35), width: 1.5),
+              color: const Color(0xFF74B3CE).withValues(alpha: 0.45), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: MyWalkColor.golden.withValues(alpha: 0.10),
+              color: const Color(0xFF74B3CE).withValues(alpha: 0.15),
               blurRadius: 12,
               spreadRadius: 1,
               offset: const Offset(0, 4),
@@ -524,10 +549,10 @@ class _BibleInAYearCard extends StatelessWidget {
                   height: 40,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: MyWalkColor.golden.withValues(alpha: 0.12),
+                    color: const Color(0xFF74B3CE).withValues(alpha: 0.15),
                   ),
                   child: const Icon(Icons.menu_book_rounded,
-                      color: MyWalkColor.golden, size: 20),
+                      color: Color(0xFF74B3CE), size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -573,7 +598,7 @@ class _BibleInAYearCard extends StatelessWidget {
                   )
                 else
                   Icon(Icons.chevron_right,
-                      color: MyWalkColor.softGold.withValues(alpha: 0.6),
+                      color: const Color(0xFF74B3CE).withValues(alpha: 0.7),
                       size: 20),
               ],
             ),
@@ -605,7 +630,7 @@ class _BiblePlanBody extends StatelessWidget {
       case BibleReadingPlanStatus.pending:
         final days = provider.daysUntilLive ?? 0;
         return Row(children: [
-          const Icon(Icons.schedule, color: MyWalkColor.golden, size: 14),
+          const Icon(Icons.schedule, color: Color(0xFF74B3CE), size: 14),
           const SizedBox(width: 6),
           Text(
             days == 0
@@ -629,7 +654,7 @@ class _BiblePlanBody extends StatelessWidget {
                 minHeight: 6,
                 backgroundColor: Colors.white.withValues(alpha: 0.08),
                 valueColor:
-                    const AlwaysStoppedAnimation(MyWalkColor.golden),
+                    const AlwaysStoppedAnimation(Color(0xFF74B3CE)),
               ),
             ),
             const SizedBox(height: 8),
@@ -643,11 +668,11 @@ class _BiblePlanBody extends StatelessWidget {
               if (streak > 1) ...[
                 const Spacer(),
                 const Icon(Icons.local_fire_department,
-                    size: 11, color: MyWalkColor.golden),
+                    size: 11, color: Color(0xFF74B3CE)),
                 const SizedBox(width: 3),
                 Text('$streak day streak',
                     style: const TextStyle(
-                        fontSize: 11, color: MyWalkColor.golden)),
+                        fontSize: 11, color: Color(0xFF74B3CE))),
               ],
             ]),
           ],
@@ -688,21 +713,21 @@ class _MemorizationCard extends StatelessWidget {
             colors: [
               MyWalkColor.cardBackground,
               isPremium
-                  ? MyWalkColor.golden.withValues(alpha: 0.06)
+                  ? const Color(0xFF8B7EC8).withValues(alpha: 0.08)
                   : Colors.white.withValues(alpha: 0.02),
             ],
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isPremium
-                ? MyWalkColor.golden.withValues(alpha: 0.35)
+                ? const Color(0xFF8B7EC8).withValues(alpha: 0.45)
                 : MyWalkColor.cardBorder,
             width: isPremium ? 1.5 : 0.5,
           ),
           boxShadow: isPremium
               ? [
                   BoxShadow(
-                    color: MyWalkColor.golden.withValues(alpha: 0.10),
+                    color: const Color(0xFF8B7EC8).withValues(alpha: 0.15),
                     blurRadius: 12,
                     spreadRadius: 1,
                     offset: const Offset(0, 4),
@@ -718,13 +743,13 @@ class _MemorizationCard extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isPremium
-                    ? MyWalkColor.golden.withValues(alpha: 0.12)
+                    ? const Color(0xFF8B7EC8).withValues(alpha: 0.15)
                     : Colors.white.withValues(alpha: 0.05),
               ),
               child: Icon(
                 Icons.psychology,
                 color: isPremium
-                    ? MyWalkColor.golden
+                    ? const Color(0xFF8B7EC8)
                     : Colors.white.withValues(alpha: 0.3),
                 size: 20,
               ),
@@ -776,7 +801,7 @@ class _MemorizationCard extends StatelessWidget {
               )
             else
               Icon(Icons.chevron_right,
-                  color: MyWalkColor.softGold.withValues(alpha: 0.6),
+                  color: const Color(0xFF8B7EC8).withValues(alpha: 0.8),
                   size: 20),
           ],
         ),
