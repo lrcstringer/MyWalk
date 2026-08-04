@@ -137,6 +137,7 @@ class _AddHabitViewState extends State<AddHabitView> {
   String _fruitPurposeStatement = '';
   List<FruitType> _suggestedFruits = [];
   late QuillController _notesController;
+  bool _notesExpanded = false;
   final FocusNode _notesFocusNode = FocusNode();
   final ScrollController _notesScrollController = ScrollController();
   final TextEditingController _referenceUrlController = TextEditingController();
@@ -598,9 +599,12 @@ class _AddHabitViewState extends State<AddHabitView> {
         _categoryChipsRow(),
         const SizedBox(height: 20),
 
-        // Subcategory content card (Key Verse, Your Why, Examples, Supporting Verses)
+        // Subcategory content card (Key Verse, Examples, Supporting Verses)
         if (_selectedSubcategoryModel != null && !(_selectedCategoryModel?.isCustom ?? true))
           _subcategoryContentCard(_selectedSubcategoryModel!),
+
+        // ── ABOUT THIS PRACTICE ───────────────────────────────────────────
+        _sectionHeader('ABOUT THIS PRACTICE', MyWalkColor.sage),
 
         // Name
         _label('Practice Name'),
@@ -626,6 +630,17 @@ class _AddHabitViewState extends State<AddHabitView> {
         // Fruit tags
         _fruitTagSection(),
         const SizedBox(height: 20),
+
+        // Notes (collapsible)
+        _notesSection(),
+        const SizedBox(height: 20),
+
+        // Reference URL
+        _referenceUrlSection(),
+        const SizedBox(height: 28),
+
+        // ── SCHEDULE & TRACKING ───────────────────────────────────────────
+        _sectionHeader('SCHEDULE & TRACKING', MyWalkColor.eventPurple),
 
         // Tracking type (not for abstain)
         if (!isAbstain) ...[
@@ -751,7 +766,6 @@ class _AddHabitViewState extends State<AddHabitView> {
           const SizedBox(height: 20),
         ],
 
-
         // Day of week picker
         DayOfWeekPicker(
           selected: _activeDays,
@@ -760,16 +774,8 @@ class _AddHabitViewState extends State<AddHabitView> {
         ),
         const SizedBox(height: 20),
 
-        // Anchoring section
+        // Anchoring/trigger section
         _anchoringSection(isAbstain),
-        const SizedBox(height: 28),
-
-        // Notes
-        _notesSection(),
-        const SizedBox(height: 20),
-
-        // Reference URL
-        _referenceUrlSection(),
         const SizedBox(height: 28),
 
         // Support/Accountability Partner + Recovery Path (abstain only)
@@ -797,6 +803,41 @@ class _AddHabitViewState extends State<AddHabitView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _sectionHeader(String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 14,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 9,
+              letterSpacing: 1.4,
+              fontWeight: FontWeight.w600,
+              color: color.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Divider(
+              color: color.withValues(alpha: 0.18),
+              thickness: 0.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -856,29 +897,6 @@ class _AddHabitViewState extends State<AddHabitView> {
                 const SizedBox(height: 12),
                 Divider(
                     color: MyWalkColor.golden.withValues(alpha: 0.12), thickness: 0.5),
-                const SizedBox(height: 12),
-              ],
-
-              // Your Why
-              if (sub.yourWhy.isNotEmpty) ...[
-                Text(
-                  'YOUR WHY',
-                  style: TextStyle(
-                    fontSize: 9,
-                    letterSpacing: 1.4,
-                    fontWeight: FontWeight.w600,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.5),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  sub.yourWhy,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withValues(alpha: 0.75),
-                    height: 1.5,
-                  ),
-                ),
                 const SizedBox(height: 12),
               ],
 
@@ -1195,105 +1213,153 @@ class _AddHabitViewState extends State<AddHabitView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'NOTES',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: MyWalkColor.softGold.withValues(alpha: 0.5),
-            letterSpacing: 0.8,
+        // Header row — tapping toggles collapse
+        GestureDetector(
+          onTap: () => setState(() => _notesExpanded = !_notesExpanded),
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            children: [
+              Text(
+                'NOTES',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: MyWalkColor.softGold.withValues(alpha: 0.5),
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                _notesExpanded ? Icons.expand_less : Icons.expand_more,
+                size: 16,
+                color: MyWalkColor.softGold.withValues(alpha: 0.4),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Personal notes, reminders, or reflections for this habit.',
-          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: MyWalkColor.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: MyWalkColor.golden.withValues(alpha: 0.18),
-              width: 1,
+
+        if (_notesExpanded) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Personal notes, reminders, or reflections for this habit.',
+            style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: MyWalkColor.cardBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: MyWalkColor.golden.withValues(alpha: 0.18),
+                width: 1,
+              ),
             ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(11),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                QuillSimpleToolbar(
-                  controller: _notesController,
-                  config: QuillSimpleToolbarConfig(
-                    color: Colors.transparent,
-                    multiRowsDisplay: false,
-                    showDividers: false,
-                    showBoldButton: true,
-                    showItalicButton: true,
-                    showUnderLineButton: true,
-                    showListBullets: true,
-                    showListNumbers: true,
-                    showListCheck: false,
-                    showUndo: true,
-                    showRedo: true,
-                    showHeaderStyle: false,
-                    showColorButton: false,
-                    showBackgroundColorButton: false,
-                    showClearFormat: false,
-                    showStrikeThrough: false,
-                    showInlineCode: false,
-                    showLink: false,
-                    showSearchButton: false,
-                    showSubscript: false,
-                    showSuperscript: false,
-                    showSmallButton: false,
-                    showFontFamily: false,
-                    showFontSize: false,
-                    showAlignmentButtons: false,
-                    showLeftAlignment: false,
-                    showCenterAlignment: false,
-                    showRightAlignment: false,
-                    showJustifyAlignment: false,
-                    showIndent: false,
-                    showQuote: false,
-                    showCodeBlock: false,
-                    showDirection: false,
-                    iconTheme: QuillIconTheme(
-                      iconButtonUnselectedData: IconButtonData(
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
-                        iconSize: 18,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      iconButtonSelectedData: IconButtonData(
-                        color: MyWalkColor.golden,
-                        iconSize: 18,
-                        visualDensity: VisualDensity.compact,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(11),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  QuillSimpleToolbar(
+                    controller: _notesController,
+                    config: QuillSimpleToolbarConfig(
+                      color: Colors.transparent,
+                      multiRowsDisplay: false,
+                      showDividers: false,
+                      showBoldButton: true,
+                      showItalicButton: true,
+                      showUnderLineButton: true,
+                      showListBullets: true,
+                      showListNumbers: true,
+                      showListCheck: false,
+                      showUndo: true,
+                      showRedo: true,
+                      showHeaderStyle: false,
+                      showColorButton: false,
+                      showBackgroundColorButton: false,
+                      showClearFormat: false,
+                      showStrikeThrough: false,
+                      showInlineCode: false,
+                      showLink: false,
+                      showSearchButton: false,
+                      showSubscript: false,
+                      showSuperscript: false,
+                      showSmallButton: false,
+                      showFontFamily: false,
+                      showFontSize: false,
+                      showAlignmentButtons: false,
+                      showLeftAlignment: false,
+                      showCenterAlignment: false,
+                      showRightAlignment: false,
+                      showJustifyAlignment: false,
+                      showIndent: false,
+                      showQuote: false,
+                      showCodeBlock: false,
+                      showDirection: false,
+                      iconTheme: QuillIconTheme(
+                        iconButtonUnselectedData: IconButtonData(
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                          iconSize: 18,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        iconButtonSelectedData: IconButtonData(
+                          color: MyWalkColor.golden,
+                          iconSize: 18,
+                          visualDensity: VisualDensity.compact,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Divider(
-                  height: 1,
-                  color: MyWalkColor.golden.withValues(alpha: 0.12),
-                ),
-                QuillEditor.basic(
-                  controller: _notesController,
-                  focusNode: _notesFocusNode,
-                  scrollController: _notesScrollController,
-                  config: QuillEditorConfig(
-                    placeholder: 'Add personal notes…',
-                    minHeight: 100,
-                    maxHeight: 200,
-                    scrollable: true,
-                    padding: const EdgeInsets.all(12),
+                  Divider(
+                    height: 1,
+                    color: MyWalkColor.golden.withValues(alpha: 0.12),
                   ),
-                ),
-              ],
+                  QuillEditor.basic(
+                    controller: _notesController,
+                    focusNode: _notesFocusNode,
+                    scrollController: _notesScrollController,
+                    config: QuillEditorConfig(
+                      placeholder: 'Add personal notes…',
+                      minHeight: 100,
+                      maxHeight: 200,
+                      scrollable: true,
+                      padding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ] else ...[
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => setState(() => _notesExpanded = true),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+              decoration: BoxDecoration(
+                color: MyWalkColor.cardBackground,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: MyWalkColor.golden.withValues(alpha: 0.12),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.edit_note_outlined,
+                      size: 16, color: MyWalkColor.softGold.withValues(alpha: 0.4)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Add personal notes…',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
