@@ -264,8 +264,6 @@ class _JournalTabState extends State<JournalTab>
               ),
             ),
             actions: [
-              infoIconAction(context, const JournalHelpView(),
-                  color: theme.textPrimary),
               bibleBrowserAction(context, theme.textPrimary),
               Stack(
                 alignment: Alignment.center,
@@ -302,6 +300,8 @@ class _JournalTabState extends State<JournalTab>
                 onPressed: () => _showSortSheet(context, provider, theme),
                 tooltip: 'Sort',
               ),
+              infoIconAction(context, const JournalHelpView(),
+                  color: theme.textPrimary),
             ],
           ),
 
