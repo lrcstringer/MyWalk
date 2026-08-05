@@ -5,6 +5,7 @@ import '../../data/datasources/remote/auth_service.dart';
 import '../../data/services/pending_invite_service.dart';
 import '../../data/services/pending_partner_token_service.dart';
 import '../../domain/repositories/circle_repository.dart';
+import '../providers/navigation_provider.dart';
 import 'habits/partner_acceptance_screen.dart';
 import 'circles/circle_invitation_dialog.dart';
 import 'today/today_view.dart';
@@ -37,6 +38,7 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
     _prevAuthenticated = AuthService.shared.isAuthenticated;
     AuthService.shared.addListener(_onAuthChanged);
     WidgetsBinding.instance.addObserver(this);
+    context.read<NavigationProvider>().addListener(_onNavigationRequest);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkNewGratitudes();
       _consumePendingInvite();
@@ -56,10 +58,27 @@ class _ContentViewState extends State<ContentView> with WidgetsBindingObserver {
   void dispose() {
     _pageController.dispose();
     AuthService.shared.removeListener(_onAuthChanged);
+    context.read<NavigationProvider>().removeListener(_onNavigationRequest);
     _inviteSub?.cancel();
     _partnerTokenSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _onNavigationRequest() {
+    final navProvider = context.read<NavigationProvider>();
+    final tab = navProvider.pendingTab;
+    if (tab < 0 || !mounted) return;
+    navProvider.clearPending();
+    setState(() {
+      _selectedTab = tab;
+      if (tab == 4) _hasNewGratitudes = false;
+    });
+    _pageController.animateToPage(
+      tab,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _onAuthChanged() {

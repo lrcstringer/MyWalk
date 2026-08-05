@@ -62,6 +62,7 @@ import 'domain/repositories/recovery_path_repository.dart';
 import 'presentation/providers/recovery_path_provider.dart';
 import 'data/repositories/firestore_bible_reading_repository.dart';
 import 'presentation/providers/bible_reading_provider.dart';
+import 'presentation/providers/navigation_provider.dart';
 import 'app.dart';
 
 /// Top-level handler for background/terminated FCM messages.
@@ -233,6 +234,9 @@ void main() async {
         ),
         ChangeNotifierProvider<BibleReadingProvider>(
           create: (_) => BibleReadingProvider(bibleReadingRepository),
+        ),
+        ChangeNotifierProvider<NavigationProvider>(
+          create: (_) => NavigationProvider(),
         ),
       ],
       child: const MyWalkApp(),

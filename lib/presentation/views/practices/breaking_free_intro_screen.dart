@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../domain/entities/habit_category_model.dart';
-import '../../providers/accountability_provider.dart';
 import '../../providers/habit_category_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/partner_invite_dialog.dart';
 import '../habits/add_habit_view.dart';
-import '../habits/recovery_path_home_screen.dart';
 
 class BreakingFreeIntroScreen extends StatelessWidget {
   final HabitCategoryModel? categoryModel;
@@ -159,6 +158,7 @@ class BreakingFreeIntroScreen extends StatelessWidget {
     required String title,
     required String body,
   }) {
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -239,44 +239,54 @@ class BreakingFreeIntroScreen extends StatelessWidget {
     final wantsPartner = result['wantsPartner'] as bool;
     final wantsRecoveryPath = result['wantsRecoveryPath'] as bool;
 
-    // Partner invite first
+    // Partner invite — same flow as "Add a support/prayer partner" on the Today card.
     if (wantsPartner && context.mounted) {
-      try {
-        final accountability = context.read<AccountabilityProvider>();
-        final invite = await accountability.createInvite(
-          habitId: habitId,
-          habitName: habitName,
-        );
-        if (context.mounted) {
-          await Share.share(
-            'Please walk with me on my $habitName journey.\n\n'
-            'If you already have MyWalk on your mobile:\n\n'
-            '1) Tap this link: ${invite.shareUrl}\n\n'
-            'Or\n\n'
-            '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${invite.shortCode}\n\n\n'
-            'If you don\'t have MyWalk installed on your mobile:\n\n'
-            'Download it from the Google Play Store or Apple Store.\n\n'
-            'Then either:\n\n'
-            '1) Come back to this email and tap this link: ${invite.shareUrl}\n\n'
-            'Or\n\n'
-            '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${invite.shortCode}',
-          );
-        }
-      } catch (_) {}
+      await showPartnerInviteDialog(
+        context,
+        habitId: habitId,
+        habitName: habitName,
+      );
     }
 
     if (!context.mounted) return;
 
-    final nav = Navigator.of(context);
-    nav.pop(); // pop BreakingFreeIntroScreen
-
+    // Freedom Plan — show confirmation dialog then open Today tab.
     if (wantsRecoveryPath) {
-      nav.push(MaterialPageRoute(
-        builder: (_) => RecoveryPathHomeScreen(
-          habitId: habitId,
-          habitName: habitName,
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: MyWalkColor.charcoal,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            'Freedom Plan Created',
+            style: TextStyle(
+                color: MyWalkColor.warmWhite,
+                fontWeight: FontWeight.w600,
+                fontSize: 17),
+          ),
+          content: const Text(
+            'The Freedom Plan has been created for you. You can access it by tapping the "Freedom Path" link in the practice card on your Today screen.',
+            style: TextStyle(
+                color: MyWalkColor.warmWhite, fontSize: 14, height: 1.55),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK',
+                  style: TextStyle(
+                      color: MyWalkColor.sage, fontWeight: FontWeight.w600)),
+            ),
+          ],
         ),
-      ));
+      );
+      if (context.mounted) {
+        context.read<NavigationProvider>().switchToTab(0);
+      }
     }
+
+    if (!context.mounted) return;
+    Navigator.of(context).pop(); // pop BreakingFreeIntroScreen → Today tab shows
   }
 }
+

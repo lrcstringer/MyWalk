@@ -206,21 +206,27 @@ class _EditHabitViewState extends State<EditHabitView> {
             const SizedBox(height: 16),
             _categoryChipsRow(),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
+          _sectionHeader('ABOUT THIS PRACTICE', MyWalkColor.sage),
           _nameSection(),
           const SizedBox(height: 20),
           _purposeSection(isPremium),
           const SizedBox(height: 20),
           _fruitSection(),
+          const SizedBox(height: 20),
+          _notesSection(),
+          const SizedBox(height: 20),
+          _referenceUrlSection(),
+          const SizedBox(height: 28),
+          _sectionHeader('SCHEDULE & TRACKING', MyWalkColor.eventPurple),
           if (widget.habit.trackingType == HabitTrackingType.timed) ...[
-            const SizedBox(height: 20),
             _timedTargetSection(),
+            const SizedBox(height: 20),
           ],
           if (widget.habit.trackingType == HabitTrackingType.count) ...[
-            const SizedBox(height: 20),
             _countTargetSection(),
+            const SizedBox(height: 20),
           ],
-          const SizedBox(height: 20),
           _dayOfWeekSection(isAbstain),
           const SizedBox(height: 20),
           _reminderSection(),
@@ -233,10 +239,6 @@ class _EditHabitViewState extends State<EditHabitView> {
             _recoveryPathTeaserCard(),
             const SizedBox(height: 20),
           ],
-          _notesSection(),
-          const SizedBox(height: 20),
-          _referenceUrlSection(),
-          const SizedBox(height: 20),
           _prayerListToggle(),
           const SizedBox(height: 24),
           SizedBox(
@@ -265,6 +267,41 @@ class _EditHabitViewState extends State<EditHabitView> {
           const SizedBox(height: 40),
         ]),
       ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 14,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 9,
+              letterSpacing: 1.4,
+              fontWeight: FontWeight.w600,
+              color: color.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Divider(
+              color: color.withValues(alpha: 0.18),
+              thickness: 0.5,
+            ),
+          ),
         ],
       ),
     );
@@ -849,17 +886,15 @@ class _EditHabitViewState extends State<EditHabitView> {
       ),
     );
     if (confirmed == true && mounted) {
-      // End any partnerships before archiving so the partner is notified.
-      await context
-          .read<AccountabilityProvider>()
-          .endPartnershipsForHabit(widget.habit.id, reason: 'archived')
+      final accountabilityProv = context.read<AccountabilityProvider>();
+      final habitProv = context.read<HabitProvider>();
+      final habit = widget.habit;
+      Navigator.pop(context); // dismiss EditHabitView
+      Navigator.pop(context); // dismiss HabitDetailView
+      await accountabilityProv
+          .endPartnershipsForHabit(habit.id, reason: 'archived')
           .catchError((_) {});
-      if (!mounted) return;
-      await context.read<HabitProvider>().archiveHabit(widget.habit);
-      if (mounted) {
-        Navigator.pop(context); // dismiss EditHabitView
-        Navigator.pop(context); // dismiss HabitDetailView
-      }
+      await habitProv.archiveHabit(habit);
     }
   }
 
@@ -915,17 +950,15 @@ class _EditHabitViewState extends State<EditHabitView> {
       ),
     );
     if (confirmed == true && mounted) {
-      // End any partnerships before deleting so the partner is notified.
-      await context
-          .read<AccountabilityProvider>()
-          .endPartnershipsForHabit(widget.habit.id, reason: 'deleted')
+      final accountabilityProv = context.read<AccountabilityProvider>();
+      final habitProv = context.read<HabitProvider>();
+      final habit = widget.habit;
+      Navigator.pop(context); // dismiss EditHabitView
+      Navigator.pop(context); // dismiss HabitDetailView
+      await accountabilityProv
+          .endPartnershipsForHabit(habit.id, reason: 'deleted')
           .catchError((_) {});
-      if (!mounted) return;
-      await context.read<HabitProvider>().deleteHabit(widget.habit);
-      if (mounted) {
-        Navigator.pop(context); // dismiss EditHabitView
-        Navigator.pop(context); // dismiss HabitDetailView
-      }
+      await habitProv.deleteHabit(habit);
     }
   }
 
