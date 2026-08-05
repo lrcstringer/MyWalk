@@ -9,6 +9,7 @@ import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import 'edit_habit_view.dart';
+import 'heatmap_view.dart';
 import '../kingdom_life/bible_project_browser_view.dart';
 
 class HabitDetailView extends StatefulWidget {
@@ -25,9 +26,14 @@ class _HabitDetailViewState extends State<HabitDetailView> {
   late Habit _liveHabit;
   late HabitProvider _habitProvider;
   QuillController? _notesController;
+  bool _showMonth = false;
 
   // Canonical getter used everywhere in the view — always the freshest data.
   Habit get _habit => _liveHabit;
+
+  Color get _accentColor => _habit.trackingType == HabitTrackingType.abstain
+      ? MyWalkColor.sage
+      : MyWalkColor.golden;
 
   @override
   void initState() {
@@ -124,7 +130,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
         controller: widget.scrollController,
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         children: [
-          _weekBreakdownSection(),
+          _historySection(),
           const SizedBox(height: 20),
           if (_habit.trigger.isNotEmpty || _habit.copingPlan.isNotEmpty) ...[
             _anchoringSection(),
@@ -155,6 +161,77 @@ class _HabitDetailViewState extends State<HabitDetailView> {
   }
 
 
+
+  Widget _historySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _rangePill('Week', !_showMonth,
+                () => setState(() => _showMonth = false)),
+            const SizedBox(width: 8),
+            _rangePill('Month', _showMonth,
+                () => setState(() => _showMonth = true)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _showMonth ? _monthSection() : _weekBreakdownSection(),
+      ],
+    );
+  }
+
+  Widget _rangePill(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? _accentColor.withValues(alpha: 0.15)
+              : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? _accentColor.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            color: selected ? _accentColor : Colors.white.withValues(alpha: 0.5),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _monthSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: MyWalkDecorations.card,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Last 4 Weeks',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: MyWalkColor.softGold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          HeatmapView(habit: _habit, weekCount: 4),
+        ],
+      ),
+    );
+  }
 
   Widget _weekBreakdownSection() {
     final dates = _currentWeekDates();

@@ -287,16 +287,34 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         const SizedBox(width: 8),
         GestureDetector(
           onTap: () => _showHistory(context),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            child: Icon(
-              Icons.bar_chart_rounded,
-              size: 18,
-              color: Colors.white.withValues(alpha: 0.35),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.15), width: 0.5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.bar_chart_rounded,
+                    size: 14,
+                    color: Colors.white.withValues(alpha: 0.5)),
+                const SizedBox(width: 4),
+                Text(
+                  'History',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         GestureDetector(
           onTap: () => _openJournal(context),
           child: Container(

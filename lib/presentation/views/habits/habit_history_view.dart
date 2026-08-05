@@ -85,11 +85,12 @@ class _HabitHistoryViewState extends State<HabitHistoryView> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _range == _HistoryRange.week
                 ? _weekContent(accentColor)
                 : _monthContent(),
           ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 32),
         ],
       ),
     );
