@@ -197,145 +197,158 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   }
 
   Widget _header(Color accentColor) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                accentColor.withValues(alpha: _isCompleted ? 0.3 : 0.12),
-                accentColor.withValues(alpha: _isCompleted ? 0.1 : 0.03),
-              ],
-            ),
-          ),
-          child: Icon(
-            _habitIcon(),
-            color: accentColor,
-            size: 18,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _habit.subcategoryId == 'breaking_habits'
-                    ? 'Breaking Patterns: ${_habit.name}'
-                    : _habit.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                  color: MyWalkColor.warmWhite,
+        // Title row
+        Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    accentColor.withValues(alpha: _isCompleted ? 0.3 : 0.12),
+                    accentColor.withValues(alpha: _isCompleted ? 0.1 : 0.03),
+                  ],
                 ),
               ),
-              if (_isCompleted)
-                Text(
-                  _completedSubtitle(),
+              child: Icon(_habitIcon(), color: accentColor, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _habit.subcategoryId == 'breaking_habits'
+                        ? 'Breaking Patterns: ${_habit.name}'
+                        : _habit.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: MyWalkColor.warmWhite,
+                    ),
+                  ),
+                  if (_isCompleted)
+                    Text(
+                      _completedSubtitle(),
+                      style: const TextStyle(fontSize: 11, color: MyWalkColor.sage),
+                    )
+                  else if (_habit.subcategoryId != 'breaking_habits') ...[
+                    if (_habit.subcategoryName != null &&
+                        _habit.subcategoryName!.isNotEmpty)
+                      Text(
+                        _habit.subcategoryName!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.4)),
+                      )
+                    else
+                      Text(
+                        _habit.purposeStatement,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: MyWalkColor.softGold.withValues(alpha: 0.6)),
+                      ),
+                  ],
+                  if (_habit.fruitTags.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    FruitTagRow(
+                      fruitTags: _habit.fruitTags,
+                      purposeStatement: _habit.fruitPurposeStatement,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (_isCompleted)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Icon(Icons.check_circle_rounded, color: accentColor, size: 24),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Action pills row
+        Row(
+          children: [
+            _actionPill(
+              label: 'Show History',
+              icon: Icons.bar_chart_rounded,
+              color: Colors.white.withValues(alpha: 0.5),
+              background: Colors.white.withValues(alpha: 0.05),
+              border: Colors.white.withValues(alpha: 0.15),
+              onTap: () => _showHistory(context),
+            ),
+            const SizedBox(width: 6),
+            _actionPill(
+              label: 'Create Journal',
+              icon: Icons.edit_note,
+              color: MyWalkColor.softGold.withValues(alpha: 0.75),
+              background: MyWalkColor.softGold.withValues(alpha: 0.08),
+              border: MyWalkColor.softGold.withValues(alpha: 0.2),
+              onTap: () => _openJournal(context),
+            ),
+            const SizedBox(width: 6),
+            _actionPill(
+              label: 'Practice Details',
+              icon: Icons.open_in_new_rounded,
+              color: accentColor.withValues(alpha: 0.7),
+              background: accentColor.withValues(alpha: 0.07),
+              border: accentColor.withValues(alpha: 0.2),
+              onTap: () => _showDetail(context),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _actionPill({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required Color background,
+    required Color border,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: border, width: 0.5),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 12, color: color),
+              const SizedBox(width: 3),
+              Flexible(
+                child: Text(
+                  label,
                   style: TextStyle(
-                    fontSize: 11,
-                    color: MyWalkColor.sage,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: color,
                   ),
-                )
-              else if (_habit.subcategoryId != 'breaking_habits') ...[
-                if (_habit.subcategoryName != null && _habit.subcategoryName!.isNotEmpty)
-                  Text(
-                    _habit.subcategoryName!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.4),
-                    ),
-                  )
-                else
-                  Text(
-                    _habit.purposeStatement,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: MyWalkColor.softGold.withValues(alpha: 0.6),
-                    ),
-                  ),
-              ],
-              if (_habit.fruitTags.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                FruitTagRow(
-                  fruitTags: _habit.fruitTags,
-                  purposeStatement: _habit.fruitPurposeStatement,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
+              ),
             ],
           ),
         ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () => _showHistory(context),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.15), width: 0.5),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.bar_chart_rounded,
-                    size: 14,
-                    color: Colors.white.withValues(alpha: 0.5)),
-                const SizedBox(width: 4),
-                Text(
-                  'History',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        GestureDetector(
-          onTap: () => _openJournal(context),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: MyWalkColor.softGold.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                  color: MyWalkColor.softGold.withValues(alpha: 0.2), width: 0.5),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.edit_note,
-                    size: 14,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.75)),
-                const SizedBox(width: 4),
-                Text(
-                  'Journal',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.75),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        if (_isCompleted)
-          Icon(Icons.check_circle_rounded, color: accentColor, size: 24),
-      ],
+      ),
     );
   }
 
