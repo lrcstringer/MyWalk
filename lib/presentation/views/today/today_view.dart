@@ -79,7 +79,7 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
       (h) => h.isBuiltIn && h.category == HabitCategory.gratitude,
       orElse: () => habits.first,
     );
-    final userHabits = habits.where((h) => !h.isBuiltIn).toList();
+    final userHabits = habits.where((h) => !h.isBuiltIn && h.isActive(_selectedDate)).toList();
 
     final imageHeight = MediaQuery.of(context).size.width * 0.65;
 

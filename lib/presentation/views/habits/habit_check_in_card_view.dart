@@ -13,6 +13,7 @@ import '../../providers/recovery_path_provider.dart';
 import '../shared/fruit_tag_row.dart';
 import '../shared/golden_pulse_view.dart';
 import 'habit_detail_view.dart';
+import 'habit_history_view.dart';
 import '../journal/journal_entry_composer.dart';
 
 class HabitCheckInCardView extends StatefulWidget {
@@ -284,6 +285,18 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
           ),
         ),
         const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () => _showHistory(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Icon(
+              Icons.bar_chart_rounded,
+              size: 18,
+              color: Colors.white.withValues(alpha: 0.35),
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
         GestureDetector(
           onTap: () => _openJournal(context),
           child: Container(
@@ -898,6 +911,19 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
           sourceType: 'habit',
         ),
       ),
+    );
+  }
+
+  void _showHistory(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: MyWalkColor.charcoal,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => HabitHistoryView(habit: _habit),
     );
   }
 
