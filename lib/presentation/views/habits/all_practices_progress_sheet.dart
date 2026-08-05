@@ -4,30 +4,50 @@ import '../../../domain/entities/habit.dart';
 import '../../../domain/services/daily_score_service.dart';
 import '../../theme/app_theme.dart';
 
-class AllPracticesProgressSheet extends StatelessWidget {
+class AllPracticesProgressSheet extends StatefulWidget {
   final List<Habit> habits;
 
   const AllPracticesProgressSheet({super.key, required this.habits});
 
+  @override
+  State<AllPracticesProgressSheet> createState() =>
+      _AllPracticesProgressSheetState();
+}
+
+class _AllPracticesProgressSheetState
+    extends State<AllPracticesProgressSheet> {
   static final _scoreService = DailyScoreService.instance;
   static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   static const _weekCount = 4;
 
+  late Set<String> _selectedIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIds = widget.habits.map((h) => h.id).toSet();
+  }
+
+  List<Habit> get _activeHabits =>
+      widget.habits.where((h) => _selectedIds.contains(h.id)).toList();
+
   List<List<_Day>> _buildWeeks() {
+    final habits = _activeHabits;
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
     final daysSinceSunday = today.weekday % 7;
-    final currentWeekStart = todayStart.subtract(Duration(days: daysSinceSunday));
+    final currentWeekStart =
+        todayStart.subtract(Duration(days: daysSinceSunday));
 
     return List.generate(_weekCount, (i) {
-      final weekStart = currentWeekStart
-          .add(Duration(days: (i - (_weekCount - 1)) * 7));
+      final weekStart =
+          currentWeekStart.add(Duration(days: (i - (_weekCount - 1)) * 7));
       return List.generate(7, (d) {
         final date = weekStart.add(Duration(days: d));
         final isFuture = date.isAfter(todayStart);
         final score =
-            isFuture ? 0.0 : _scoreService.dailyScore(habits, date);
-        final tier = isFuture
+            isFuture || habits.isEmpty ? 0.0 : _scoreService.dailyScore(habits, date);
+        final tier = isFuture || habits.isEmpty
             ? DayTier.nothing
             : _scoreService.tierForScore(score);
         return _Day(date: date, isFuture: isFuture, tier: tier);
@@ -72,15 +92,16 @@ class AllPracticesProgressSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final weeks = _buildWeeks();
+    final bottomPad = MediaQuery.of(context).padding.bottom;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: MyWalkColor.charcoal,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Handle
           Container(
             width: 40,
             height: 4,
@@ -90,6 +111,7 @@ class AllPracticesProgressSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
+          // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -112,17 +134,66 @@ class AllPracticesProgressSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          // Heatmap card
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _heatmapCard(weeks),
           ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 32),
+          const SizedBox(height: 20),
+          // "PRACTICES" label
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Text(
+                  'PRACTICES',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
+                ),
+                const Spacer(),
+                if (_selectedIds.length < widget.habits.length)
+                  GestureDetector(
+                    onTap: () => setState(() {
+                      _selectedIds =
+                          widget.habits.map((h) => h.id).toSet();
+                    }),
+                    child: Text(
+                      'Show All',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: MyWalkColor.softGold.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Practice list
+          Flexible(
+            child: ListView.separated(
+              shrinkWrap: true,
+              padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad + 24),
+              itemCount: widget.habits.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (_, i) => _practiceRow(widget.habits[i]),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _heatmapCard(List<List<_Day>> weeks) {
+    final firstWeekStart = weeks.first.first.date;
+    final lastDay = weeks.last.last.date;
+    final fmt = DateFormat('MMM d');
+    final dateRange = '${fmt.format(firstWeekStart)} – ${fmt.format(lastDay)}';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -153,7 +224,7 @@ class AllPracticesProgressSheet extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                _dateRange(weeks),
+                dateRange,
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.white.withValues(alpha: 0.3),
@@ -179,7 +250,8 @@ class AllPracticesProgressSheet extends StatelessWidget {
       const labelWidth = 34.0;
       const gap = 3.0;
       final tileArea = constraints.maxWidth - labelWidth - gap;
-      final tileSize = ((tileArea - gap * 6) / 7).clamp(20.0, double.infinity);
+      final tileSize =
+          ((tileArea - gap * 6) / 7).clamp(20.0, double.infinity);
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,7 +260,20 @@ class AllPracticesProgressSheet extends StatelessWidget {
           Row(
             children: [
               const SizedBox(width: labelWidth + gap),
-              ...List.generate(7, (d) => _expandedLabel(_dayLabels[d])),
+              ...List.generate(
+                7,
+                (d) => Expanded(
+                  child: Text(
+                    _dayLabels[d],
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.35),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -234,25 +319,135 @@ class AllPracticesProgressSheet extends StatelessWidget {
     });
   }
 
-  Widget _expandedLabel(String text) {
-    return Expanded(
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 9,
-          color: Colors.white.withValues(alpha: 0.35),
-          fontWeight: FontWeight.w500,
+  Widget _practiceRow(Habit habit) {
+    final selected = _selectedIds.contains(habit.id);
+    final accent = habit.trackingType == HabitTrackingType.abstain
+        ? MyWalkColor.sage
+        : MyWalkColor.golden;
+
+    return GestureDetector(
+      onTap: () => setState(() {
+        if (selected) {
+          // Don't allow deselecting the last one
+          if (_selectedIds.length > 1) _selectedIds.remove(habit.id);
+        } else {
+          _selectedIds.add(habit.id);
+        }
+      }),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.white.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.white.withValues(alpha: 0.05),
+            width: 0.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accent.withValues(alpha: selected ? 0.15 : 0.06),
+              ),
+              child: Icon(_iconFor(habit),
+                  size: 16,
+                  color: accent.withValues(alpha: selected ? 1.0 : 0.4)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    habit.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: selected
+                          ? MyWalkColor.warmWhite
+                          : MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  if (habit.subcategoryName != null &&
+                      habit.subcategoryName!.isNotEmpty)
+                    Text(
+                      habit.subcategoryName!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(
+                            alpha: selected ? 0.4 : 0.2),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    selected ? accent : Colors.transparent,
+                border: Border.all(
+                  color: selected
+                      ? accent
+                      : Colors.white.withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: selected
+                  ? Icon(Icons.check,
+                      size: 13, color: MyWalkColor.charcoal)
+                  : null,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  String _dateRange(List<List<_Day>> weeks) {
-    final start = weeks.first.first.date;
-    final end = weeks.last.last.date;
-    final fmt = DateFormat('MMM d');
-    return '${fmt.format(start)} – ${fmt.format(end)}';
+  IconData _iconFor(Habit h) {
+    if (h.trackingType == HabitTrackingType.abstain) {
+      return Icons.shield_rounded;
+    }
+    switch (h.category) {
+      case HabitCategory.gratitude:
+        return Icons.auto_awesome;
+      case HabitCategory.scripture:
+        return Icons.menu_book;
+      case HabitCategory.exercise:
+        return Icons.fitness_center;
+      case HabitCategory.rest:
+        return Icons.bedtime;
+      case HabitCategory.fasting:
+        return Icons.no_food;
+      case HabitCategory.study:
+        return Icons.school;
+      case HabitCategory.service:
+        return Icons.volunteer_activism;
+      case HabitCategory.connection:
+        return Icons.people;
+      case HabitCategory.health:
+        return Icons.favorite;
+      case HabitCategory.abstain:
+        return Icons.shield_rounded;
+      case HabitCategory.prayer:
+        return Icons.self_improvement_rounded;
+      case HabitCategory.custom:
+        return Icons.star;
+    }
   }
 }
 

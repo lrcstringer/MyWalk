@@ -17,6 +17,7 @@ class HeatmapView extends StatelessWidget {
   static final _scoreService = DailyScoreService.instance;
 
   static const _tileSize = 10.0;
+  static const _fillTileHeight = 16.0;
   static const _gap = 2.0;
   static const _stride = _tileSize + _gap;
   static const _dayLabelWidth = 14.0;
@@ -81,12 +82,14 @@ class HeatmapView extends StatelessWidget {
       // Expand tiles to fill when the natural content is narrower than available.
       final naturalWidth = weeks.length * _stride;
       final fill = naturalWidth < available;
-      final tileSize = fill
+      final tileWidth = fill
           ? (gridWidth / weeks.length - _gap).clamp(_tileSize, double.infinity)
           : _tileSize;
-      final stride = tileSize + _gap;
+      final tileHeight = fill ? _fillTileHeight : _tileSize;
+      final hStride = tileWidth + _gap;
+      final vStride = tileHeight + _gap;
 
-      final grid = _buildGrid(weeks, accent, tileSize, stride);
+      final grid = _buildGrid(weeks, accent, tileWidth, tileHeight, hStride);
 
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,7 +99,7 @@ class HeatmapView extends StatelessWidget {
             child: Column(
               children: List.generate(7, (i) => SizedBox(
                 width: _dayLabelWidth,
-                height: stride,
+                height: vStride,
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -127,8 +130,9 @@ class HeatmapView extends StatelessWidget {
   Widget _buildGrid(
     List<List<_HeatmapDay>> weeks,
     Color accent,
-    double tileSize,
-    double stride,
+    double tileWidth,
+    double tileHeight,
+    double hStride,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +146,7 @@ class HeatmapView extends StatelessWidget {
               final showMonth =
                   i == 0 || sunday.month != weeks[i - 1].first.date.month;
               return SizedBox(
-                width: stride,
+                width: hStride,
                 child: showMonth
                     ? Text(
                         _monthAbbrs[sunday.month - 1],
@@ -165,8 +169,8 @@ class HeatmapView extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
-                width: tileSize,
-                height: tileSize,
+                width: tileWidth,
+                height: tileHeight,
                 decoration: BoxDecoration(
                   color: _tileFill(day, accent),
                   borderRadius: BorderRadius.circular(2),
