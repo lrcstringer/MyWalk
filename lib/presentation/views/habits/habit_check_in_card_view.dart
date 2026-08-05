@@ -223,7 +223,9 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _habit.name,
+                _habit.subcategoryId == 'breaking_habits'
+                    ? 'Breaking Patterns: ${_habit.name}'
+                    : _habit.name,
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
@@ -238,26 +240,28 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                     color: MyWalkColor.sage,
                   ),
                 )
-              else if (_habit.subcategoryName != null && _habit.subcategoryName!.isNotEmpty)
-                Text(
-                  _habit.subcategoryName!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.4),
+              else if (_habit.subcategoryId != 'breaking_habits') ...[
+                if (_habit.subcategoryName != null && _habit.subcategoryName!.isNotEmpty)
+                  Text(
+                    _habit.subcategoryName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+                  )
+                else
+                  Text(
+                    _habit.purposeStatement,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: MyWalkColor.softGold.withValues(alpha: 0.6),
+                    ),
                   ),
-                )
-              else
-                Text(
-                  _habit.purposeStatement,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.6),
-                  ),
-                ),
+              ],
               if (_habit.fruitTags.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 FruitTagRow(
@@ -330,9 +334,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         ),
         const SizedBox(width: 8),
         if (_isCompleted)
-          Icon(Icons.check_circle_rounded, color: accentColor, size: 24)
-        else
-          Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.2), size: 16),
+          Icon(Icons.check_circle_rounded, color: accentColor, size: 24),
       ],
     );
   }
@@ -500,11 +502,13 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
             const Icon(Icons.route_rounded, size: 14, color: purple),
             const SizedBox(width: 5),
             Expanded(
-              child: Text('Freedom Path — Begin ›',
+              child: Text('Freedom Plan — Begin',
                   style: TextStyle(
                       fontSize: 12,
                       color: purple.withValues(alpha: 0.85))),
             ),
+            Icon(Icons.chevron_right_rounded,
+                size: 14, color: purple.withValues(alpha: 0.5)),
           ]),
         ),
       );
@@ -528,7 +532,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
           const SizedBox(width: 5),
           Expanded(
             child: Text(
-              'Freedom Path · Phase $phase · Day $day',
+              'Freedom Plan · Phase $phase · Day $day',
               style: TextStyle(fontSize: 12, color: purple.withValues(alpha: 0.85)),
             ),
           ),

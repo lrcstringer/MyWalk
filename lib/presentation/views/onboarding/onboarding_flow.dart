@@ -110,7 +110,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     _OnbCat(
       name: 'Breaking Patterns',
       subtitle:
-          'Overcoming bad/persistent habits, optionally with support partners and our Freedom Path activities guide',
+          'Overcoming bad/persistent habits, optionally with support partners and our Freedom Plan activities guide',
       icon: Icons.shield_rounded,
       iconBg: const Color(0xFF2A1A1A),
       iconColor: Color(0xFFE05252),

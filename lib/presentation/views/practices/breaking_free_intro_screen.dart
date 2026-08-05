@@ -267,7 +267,7 @@ class BreakingFreeIntroScreen extends StatelessWidget {
                 fontSize: 17),
           ),
           content: const Text(
-            'The Freedom Plan has been created for you. You can access it by tapping the "Freedom Path" link in the practice card on your Today screen.',
+            'The Freedom Plan has been created for you. You can access it by tapping the "Freedom Plan" link in the practice card on your Today screen.',
             style: TextStyle(
                 color: MyWalkColor.warmWhite, fontSize: 14, height: 1.55),
           ),

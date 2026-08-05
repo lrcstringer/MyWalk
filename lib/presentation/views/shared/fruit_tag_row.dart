@@ -46,14 +46,21 @@ class FruitTagRow extends StatelessWidget {
 
   Widget _fruitDot(FruitType fruit) {
     return Container(
-      width: 18,
-      height: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: fruit.color.withValues(alpha: 0.15),
-        border: Border.all(color: fruit.color.withValues(alpha: 0.4), width: 0.75),
+        color: fruit.color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: fruit.color.withValues(alpha: 0.35), width: 0.75),
       ),
-      child: Icon(fruit.icon, size: 10, color: fruit.color),
+      child: Text(
+        fruit.label,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          color: fruit.color.withValues(alpha: 0.9),
+          letterSpacing: 0.2,
+        ),
+      ),
     );
   }
 
