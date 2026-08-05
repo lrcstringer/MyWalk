@@ -381,6 +381,9 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                   context,
                   habitId: _habit.id,
                   habitName: _habit.name,
+                  habitLabel: _habit.subcategoryId == 'breaking_habits'
+                      ? 'Breaking Patterns: ${_habit.name}'
+                      : null,
                 ),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

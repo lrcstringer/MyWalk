@@ -21,6 +21,7 @@ abstract class AccountabilityRepository {
     required String habitId,
     required String habitName,
     required String ownerDisplayName,
+    String? habitLabel,
     String? recipientEmail,
   });
 

@@ -121,6 +121,7 @@ class AccountabilityProvider extends ChangeNotifier {
   Future<InviteResult> createInvite({
     required String habitId,
     required String habitName,
+    String? habitLabel,
     String? recipientEmail,
   }) async {
     _loading = true;
@@ -131,6 +132,7 @@ class AccountabilityProvider extends ChangeNotifier {
       return await _repo.createInvite(
         habitId: habitId,
         habitName: habitName,
+        habitLabel: habitLabel,
         ownerDisplayName: displayName,
         recipientEmail: recipientEmail,
       );

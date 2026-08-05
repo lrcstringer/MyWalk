@@ -11,12 +11,14 @@ export const accountabilityCreateInvite = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
     const uid = request.auth.uid;
-    const { habitId, habitName, ownerDisplayName, recipientEmail } = request.data as {
+    const { habitId, habitName, habitLabel, ownerDisplayName, recipientEmail } = request.data as {
       habitId: string;
       habitName: string;
+      habitLabel?: string;
       ownerDisplayName: string;
       recipientEmail?: string;
     };
+    const displayLabel = habitLabel ?? habitName;
     if (!habitId?.trim()) throw new HttpsError('invalid-argument', 'habitId is required');
 
     // Block if an active partnership already exists for this habit.
@@ -53,6 +55,7 @@ export const accountabilityCreateInvite = onCall(
       ownerDisplayName: ownerDisplayName ?? '',
       habitId,
       habitName: habitName ?? '',
+      habitLabel: displayLabel,
       status: 'pending',
       inviteToken: token,
       shortCode,
@@ -75,8 +78,8 @@ export const accountabilityCreateInvite = onCall(
             senderUid: uid,
             senderName: ownerDisplayName ?? '',
             circleId: partnershipId,
-            circleName: habitName ?? '',
-            message: `${ownerDisplayName ?? 'Someone'} wants you to be their support/prayer partner for "${habitName ?? 'a habit'}"`,
+            circleName: displayLabel,
+            message: `${ownerDisplayName ?? 'Someone'} wants you to be their support partner for their "${displayLabel}" practice`,
             partnerInviteToken: token,
             isRead: false,
             suppressActions: false,
@@ -145,6 +148,7 @@ export const accountabilityAcceptInvite = onCall(
     });
 
     // Notify the owner in-app + push.
+    const acceptedLabel = data.habitLabel ?? data.habitName ?? 'your practice';
     const ownerNotifId = crypto.randomUUID();
     userNotificationsCol(data.ownerId).doc(ownerNotifId).set({
       id: ownerNotifId,
@@ -152,16 +156,16 @@ export const accountabilityAcceptInvite = onCall(
       senderUid: uid,
       senderName: partnerDisplayName ?? '',
       circleId: doc.id,
-      circleName: data.habitName ?? '',
-      message: `${partnerDisplayName ?? 'Someone'} accepted your partner invite for "${data.habitName ?? 'your habit'}"`,
+      circleName: acceptedLabel,
+      message: `${partnerDisplayName ?? 'Someone'} accepted your support partner invite for your "${acceptedLabel}" practice`,
       isRead: false,
       suppressActions: true,
       createdAt: now,
     }).catch(() => {});
 
     sendPushToUsers([data.ownerId], {
-      title: `${partnerDisplayName ?? 'Someone'} accepted your invite`,
-      body: `You're now walking together on "${data.habitName}".`,
+      title: `${partnerDisplayName ?? 'Someone'} accepted your support partner invite`,
+      body: `You're now walking together through "${acceptedLabel}".`,
       data: { type: 'partnership_accepted', partnershipId: doc.id, channel: 'partnerships' },
       channelId: 'partnerships',
     }).catch(() => {});

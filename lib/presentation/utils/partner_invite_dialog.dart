@@ -12,6 +12,7 @@ Future<void> showPartnerInviteDialog(
   BuildContext context, {
   required String habitId,
   required String habitName,
+  String? habitLabel,
 }) async {
   final accountabilityProv = context.read<AccountabilityProvider>();
   final messenger = ScaffoldMessenger.of(context);
@@ -86,6 +87,7 @@ Future<void> showPartnerInviteDialog(
     final result = await accountabilityProv.createInvite(
       habitId: habitId,
       habitName: habitName,
+      habitLabel: habitLabel,
       recipientEmail: email.isEmpty ? null : email,
     );
     if (!context.mounted) return;

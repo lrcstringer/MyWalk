@@ -531,7 +531,7 @@ class _NotificationTileState extends State<_NotificationTile> {
       case CircleNotificationType.partnerMessage:
         return 'PARTNER MESSAGE';
       case CircleNotificationType.partnershipAccepted:
-        return 'PARTNER ACCEPTED';
+        return 'SUPPORT PARTNER ACCEPTED';
       case CircleNotificationType.event:
         return 'NEW EVENT';
       case CircleNotificationType.groupActivity:

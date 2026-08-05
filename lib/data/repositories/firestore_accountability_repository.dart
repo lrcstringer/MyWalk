@@ -45,11 +45,13 @@ class FirestoreAccountabilityRepository implements AccountabilityRepository {
     required String habitId,
     required String habitName,
     required String ownerDisplayName,
+    String? habitLabel,
     String? recipientEmail,
   }) async {
     final result = await _call('accountabilityCreateInvite', {
       'habitId': habitId,
       'habitName': habitName,
+      'habitLabel': habitLabel,
       'ownerDisplayName': ownerDisplayName,
       'recipientEmail': recipientEmail,
     });

@@ -245,6 +245,7 @@ class BreakingFreeIntroScreen extends StatelessWidget {
         context,
         habitId: habitId,
         habitName: habitName,
+        habitLabel: 'Breaking Patterns: $habitName',
       );
     }
 

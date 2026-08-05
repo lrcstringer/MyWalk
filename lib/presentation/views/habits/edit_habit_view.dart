@@ -535,6 +535,9 @@ class _EditHabitViewState extends State<EditHabitView> {
                 final result = await accountability.createInvite(
                   habitId: widget.habit.id,
                   habitName: widget.habit.name,
+                  habitLabel: widget.habit.subcategoryId == 'breaking_habits'
+                      ? 'Breaking Patterns: ${widget.habit.name}'
+                      : null,
                 );
                 if (!mounted) return;
                 await _sharePartnerLink(result.shareUrl, result.shortCode, widget.habit.name);
@@ -610,6 +613,9 @@ class _EditHabitViewState extends State<EditHabitView> {
                   final result = await accountability.createInvite(
                     habitId: widget.habit.id,
                     habitName: widget.habit.name,
+                    habitLabel: widget.habit.subcategoryId == 'breaking_habits'
+                        ? 'Breaking Patterns: ${widget.habit.name}'
+                        : null,
                   );
                   if (!mounted) return;
                   await _sharePartnerLink(result.shareUrl, result.shortCode, widget.habit.name);
