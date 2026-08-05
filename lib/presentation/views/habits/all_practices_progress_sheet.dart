@@ -240,8 +240,45 @@ class _AllPracticesProgressSheetState
           ),
           const SizedBox(height: 12),
           _transposedGrid(weeks),
+          const SizedBox(height: 12),
+          _legend(),
         ],
       ),
+    );
+  }
+
+  Widget _legend() {
+    const items = [
+      (color: Color(0x0AFFFFFF), label: 'None'),
+      (color: Color(0x4DD4A843), label: 'Some'),
+      (color: Color(0xA6D4A843), label: 'Most'),
+      (color: Color(0xFFD4A843), label: 'All'),
+    ];
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: items.map((item) => Padding(
+        padding: const EdgeInsets.only(left: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: item.color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              item.label,
+              style: TextStyle(
+                fontSize: 9,
+                color: Colors.white.withValues(alpha: 0.35),
+              ),
+            ),
+          ],
+        ),
+      )).toList(),
     );
   }
 
