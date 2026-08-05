@@ -53,7 +53,7 @@ class HeatmapView extends StatelessWidget {
     final isAbstain = habit.trackingType == HabitTrackingType.abstain;
     final accent = isAbstain ? MyWalkColor.sage : MyWalkColor.golden;
 
-    // Single week: render as a plain horizontal row.
+    // Single week: plain horizontal row, tiles fill width.
     if (weeks.length == 1) {
       return Row(
         children: weeks.first.map((day) => Expanded(
@@ -75,93 +75,114 @@ class HeatmapView extends StatelessWidget {
       );
     }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Fixed day labels — not scrollable.
-        Padding(
-          padding: const EdgeInsets.only(top: _monthRowHeight + 1),
-          child: Column(
-            children: List.generate(7, (i) => SizedBox(
-              width: _dayLabelWidth,
-              height: _stride,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _dayLabels[i],
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: Colors.white.withValues(alpha: 0.35),
-                  ),
-                ),
-              ),
-            )),
-          ),
-        ),
-        // Scrollable grid — starts scrolled to the newest (rightmost) week.
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            reverse: true,
+    return LayoutBuilder(builder: (context, constraints) {
+      final available = constraints.maxWidth;
+      final gridWidth = available - _dayLabelWidth;
+      // Expand tiles to fill when the natural content is narrower than available.
+      final naturalWidth = weeks.length * _stride;
+      final fill = naturalWidth < available;
+      final tileSize = fill
+          ? (gridWidth / weeks.length - _gap).clamp(_tileSize, double.infinity)
+          : _tileSize;
+      final stride = tileSize + _gap;
+
+      final grid = _buildGrid(weeks, accent, tileSize, stride);
+
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(top: _monthRowHeight + 1),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Month markers row.
-                SizedBox(
-                  height: _monthRowHeight,
-                  child: Row(
-                    children: List.generate(weeks.length, (i) {
-                      final sunday = weeks[i].first.date;
-                      final showMonth = i == 0 ||
-                          sunday.month != weeks[i - 1].first.date.month;
-                      return SizedBox(
-                        width: _stride,
-                        child: showMonth
-                            ? Text(
-                                _monthAbbrs[sunday.month - 1],
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                ),
-                              )
-                            : null,
-                      );
-                    }),
+              children: List.generate(7, (i) => SizedBox(
+                width: _dayLabelWidth,
+                height: stride,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _dayLabels[i],
+                    style: TextStyle(
+                      fontSize: 8,
+                      color: Colors.white.withValues(alpha: 0.35),
+                    ),
                   ),
                 ),
-                // 7 day rows.
-                ...List.generate(7, (dayIndex) => Row(
-                  children: weeks.map((week) {
-                    final day = week[dayIndex];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: _gap, bottom: _gap),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        width: _tileSize,
-                        height: _tileSize,
-                        decoration: BoxDecoration(
-                          color: _tileFill(day, accent),
-                          borderRadius: BorderRadius.circular(2),
-                          border: day.tier == DayTier.partial && !day.isFuture
-                              ? Border.all(
-                                  color: accent.withValues(alpha: 0.5),
-                                  width: 0.5)
-                              : null,
-                          boxShadow: day.tier == DayTier.full && !day.isFuture
-                              ? [BoxShadow(
-                                  color: accent.withValues(alpha: 0.35),
-                                  blurRadius: 3)]
-                              : null,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                )),
-              ],
+              )),
             ),
           ),
+          Expanded(
+            child: fill
+                ? grid
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    reverse: true,
+                    child: grid,
+                  ),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildGrid(
+    List<List<_HeatmapDay>> weeks,
+    Color accent,
+    double tileSize,
+    double stride,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Month markers row.
+        SizedBox(
+          height: _monthRowHeight,
+          child: Row(
+            children: List.generate(weeks.length, (i) {
+              final sunday = weeks[i].first.date;
+              final showMonth =
+                  i == 0 || sunday.month != weeks[i - 1].first.date.month;
+              return SizedBox(
+                width: stride,
+                child: showMonth
+                    ? Text(
+                        _monthAbbrs[sunday.month - 1],
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                      )
+                    : null,
+              );
+            }),
+          ),
         ),
+        // 7 day rows.
+        ...List.generate(7, (dayIndex) => Row(
+          children: weeks.map((week) {
+            final day = week[dayIndex];
+            return Padding(
+              padding: EdgeInsets.only(right: _gap, bottom: _gap),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: tileSize,
+                height: tileSize,
+                decoration: BoxDecoration(
+                  color: _tileFill(day, accent),
+                  borderRadius: BorderRadius.circular(2),
+                  border: day.tier == DayTier.partial && !day.isFuture
+                      ? Border.all(
+                          color: accent.withValues(alpha: 0.5), width: 0.5)
+                      : null,
+                  boxShadow: day.tier == DayTier.full && !day.isFuture
+                      ? [BoxShadow(
+                          color: accent.withValues(alpha: 0.35), blurRadius: 3)]
+                      : null,
+                ),
+              ),
+            );
+          }).toList(),
+        )),
       ],
     );
   }
