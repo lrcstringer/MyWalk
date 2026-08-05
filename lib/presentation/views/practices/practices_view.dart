@@ -8,6 +8,7 @@ import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import '../bible_reading/bible_reading_grid_view.dart';
 import '../habits/add_habit_view.dart';
+import '../habits/all_practices_progress_sheet.dart';
 import '../habits/habit_detail_view.dart';
 import '../memorization/memorization_router.dart';
 import '../shared/appbar_actions.dart';
@@ -135,9 +136,38 @@ class PracticesView extends StatelessWidget {
                   ),
                 ]),
 
+                // ── Progress link ──────────────────────────────────────────
+                if (habits.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: () => _openProgress(context, habits),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Text(
+                            'All Practices · Last 4 Weeks',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: MyWalkColor.softGold.withValues(alpha: 0.6),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 11,
+                            color: MyWalkColor.softGold.withValues(alpha: 0.35),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+
                 // ── Your Practices ─────────────────────────────────────────
                 if (habits.isNotEmpty) ...[
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 16),
                   _sectionLabel('YOUR PRACTICES'),
                   const SizedBox(height: 10),
                   _ManagementCard(habits: habits),
@@ -166,6 +196,19 @@ class PracticesView extends StatelessWidget {
         ),
       ),
     ]),
+    );
+  }
+
+  void _openProgress(BuildContext context, List<Habit> habits) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: MyWalkColor.charcoal,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => AllPracticesProgressSheet(habits: habits),
     );
   }
 

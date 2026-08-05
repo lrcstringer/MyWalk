@@ -9,6 +9,7 @@ import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import 'edit_habit_view.dart';
+import 'habit_week_card.dart';
 import 'heatmap_view.dart';
 import '../kingdom_life/bible_project_browser_view.dart';
 
@@ -85,15 +86,6 @@ class _HabitDetailViewState extends State<HabitDetailView> {
     }
   }
 
-  List<DateTime> _currentWeekDates() {
-    final today = DateTime.now();
-    final todayStart = DateTime(today.year, today.month, today.day);
-    final daysSinceSunday = today.weekday % 7;
-    final weekStart = todayStart.subtract(Duration(days: daysSinceSunday));
-    return List.generate(7, (i) => weekStart.add(Duration(days: i)));
-  }
-
-  static const _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   @override
   Widget build(BuildContext context) {
@@ -176,7 +168,7 @@ class _HabitDetailViewState extends State<HabitDetailView> {
           ],
         ),
         const SizedBox(height: 10),
-        _showMonth ? _monthSection() : _weekBreakdownSection(),
+        _showMonth ? _monthSection() : HabitWeekCard(habit: _habit),
       ],
     );
   }
@@ -212,9 +204,21 @@ class _HabitDetailViewState extends State<HabitDetailView> {
   }
 
   Widget _monthSection() {
+    final accent = _accentColor;
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: MyWalkDecorations.card,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF2C2823),
+            Color.lerp(const Color(0xFF221F1B), accent, 0.07)!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.25), width: 0.5),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -226,196 +230,16 @@ class _HabitDetailViewState extends State<HabitDetailView> {
               color: MyWalkColor.softGold,
             ),
           ),
+          const SizedBox(height: 10),
+          Divider(
+            color: accent.withValues(alpha: 0.18),
+            thickness: 0.5,
+            height: 1,
+          ),
           const SizedBox(height: 12),
           HeatmapView(habit: _habit, weekCount: 4),
         ],
       ),
-    );
-  }
-
-  Widget _weekBreakdownSection() {
-    final dates = _currentWeekDates();
-    final todayStart = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: MyWalkDecorations.card,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('This Week',
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: MyWalkColor.softGold)),
-          const SizedBox(height: 12),
-          Row(
-            children: dates.asMap().entries.map((e) {
-              final date = e.value;
-              final isToday = date.year == todayStart.year &&
-                  date.month == todayStart.month &&
-                  date.day == todayStart.day;
-              return Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      _dayLabels[e.key],
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
-                        color: isToday ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    _weekDayVisual(date),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _weekDayVisual(DateTime date) {
-    final todayStart = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    final isFuture = date.isAfter(todayStart);
-    final isActive = _habit.isActive(date);
-    final entry = _habit.entryFor(date);
-
-    switch (_habit.trackingType) {
-      case HabitTrackingType.timed:
-        return _timedDayBar(entry, isFuture, isActive);
-      case HabitTrackingType.count:
-        return _countDayVisual(entry, isFuture, isActive);
-      case HabitTrackingType.checkIn:
-        return _checkInDayCircle(entry, isFuture, isActive);
-      case HabitTrackingType.abstain:
-        return _abstainDayShield(entry, isFuture, isActive);
-    }
-  }
-
-  Widget _timedDayBar(dynamic entry, bool isFuture, bool isActive) {
-    final value = entry?.value ?? 0.0;
-    final target = _habit.dailyTarget;
-    final ratio = target > 0 ? (value / target).clamp(0.0, 1.0) : 0.0;
-    final completed = entry?.isCompleted ?? false;
-
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            Container(
-              width: 16,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            if (!isFuture && isActive)
-              Container(
-                width: 16,
-                height: (40 * ratio).clamp(2.0, 40.0).toDouble(),
-                decoration: BoxDecoration(
-                  color: completed ? MyWalkColor.golden : MyWalkColor.mutedSage,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          (!isFuture && isActive && value > 0) ? '${value.toInt()}' : ' ',
-          style: TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.w500,
-            color: completed ? MyWalkColor.golden : Colors.white.withValues(alpha: 0.3),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _countDayVisual(dynamic entry, bool isFuture, bool isActive) {
-    final value = entry?.value ?? 0.0;
-    final completed = entry?.isCompleted ?? false;
-
-    return Column(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: (!isFuture && isActive && value > 0)
-                ? (completed
-                    ? MyWalkColor.golden.withValues(alpha: 0.15)
-                    : Colors.white.withValues(alpha: 0.04))
-                : Colors.white.withValues(alpha: isFuture || !isActive ? 0.02 : 0.04),
-          ),
-          child: (!isFuture && isActive && value > 0)
-              ? Center(
-                  child: Text(
-                    '${value.toInt()}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: completed
-                          ? MyWalkColor.golden
-                          : MyWalkColor.softGold.withValues(alpha: 0.6),
-                    ),
-                  ),
-                )
-              : null,
-        ),
-        const SizedBox(height: 4),
-        const Text(' ', style: TextStyle(fontSize: 9)),
-      ],
-    );
-  }
-
-  Widget _checkInDayCircle(dynamic entry, bool isFuture, bool isActive) {
-    final completed = entry?.isCompleted ?? false;
-
-    return Column(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: completed
-                ? MyWalkColor.golden
-                : Colors.white.withValues(alpha: isFuture || !isActive ? 0.02 : 0.04),
-          ),
-          child: completed
-              ? const Icon(Icons.check, size: 14, color: MyWalkColor.charcoal)
-              : null,
-        ),
-        const SizedBox(height: 4),
-        const Text(' ', style: TextStyle(fontSize: 9)),
-      ],
-    );
-  }
-
-  Widget _abstainDayShield(dynamic entry, bool isFuture, bool isActive) {
-    final confirmed = entry?.isCompleted ?? false;
-
-    return Column(
-      children: [
-        Icon(
-          confirmed ? Icons.shield_rounded : Icons.shield_outlined,
-          size: 24,
-          color: confirmed
-              ? MyWalkColor.sage
-              : Colors.white.withValues(alpha: isFuture || !isActive ? 0.08 : 0.2),
-        ),
-        const SizedBox(height: 4),
-        const Text(' ', style: TextStyle(fontSize: 9)),
-      ],
     );
   }
 

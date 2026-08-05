@@ -193,11 +193,11 @@ class HeatmapView extends StatelessWidget {
       case DayTier.nothing:
         return MyWalkColor.surfaceOverlay;
       case DayTier.partial:
-        return accent.withValues(alpha: 0.12);
+        return accent.withValues(alpha: 0.30);
       case DayTier.substantial:
-        return accent.withValues(alpha: 0.55);
+        return accent.withValues(alpha: 0.65);
       case DayTier.full:
-        return accent.withValues(alpha: 0.8);
+        return accent.withValues(alpha: 1.0);
     }
   }
 }
