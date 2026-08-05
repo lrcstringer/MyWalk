@@ -45,6 +45,9 @@ class _EditHabitViewState extends State<EditHabitView> {
   String? _subcategoryId;
   String? _categoryName;
   String? _subcategoryName;
+  late bool _reminderEnabled;
+  late int _reminderHour;
+  late int _reminderMinute;
 
   static const _copingSuggestions = ['Pray first', 'Call a friend', 'Go for a walk', 'Read my verse', 'Journal it out'];
 
@@ -79,6 +82,9 @@ class _EditHabitViewState extends State<EditHabitView> {
     _subcategoryId = h.subcategoryId;
     _categoryName = h.categoryName;
     _subcategoryName = h.subcategoryName;
+    _reminderEnabled = h.reminderEnabled;
+    _reminderHour = h.reminderHour;
+    _reminderMinute = h.reminderMinute;
   }
 
   @override
@@ -124,6 +130,9 @@ class _EditHabitViewState extends State<EditHabitView> {
       notes: notesJson,
       referenceUrl: refUrl,
       hasPrayerItems: _hasPrayerItems,
+      reminderEnabled: _reminderEnabled,
+      reminderHour: _reminderHour,
+      reminderMinute: _reminderMinute,
     );
     context.read<HabitProvider>().updateHabit(updated);
     // Update portfolio habit counts for changed tags.
@@ -213,6 +222,8 @@ class _EditHabitViewState extends State<EditHabitView> {
           ],
           const SizedBox(height: 20),
           _dayOfWeekSection(isAbstain),
+          const SizedBox(height: 20),
+          _reminderSection(),
           const SizedBox(height: 20),
           if (isAbstain) _copingSection() else _triggerSection(),
           const SizedBox(height: 20),
@@ -1131,6 +1142,122 @@ class _EditHabitViewState extends State<EditHabitView> {
         }),
       ),
     ]);
+  }
+
+  Widget _reminderSection() {
+    final timeLabel = TimeOfDay(hour: _reminderHour, minute: _reminderMinute)
+        .format(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => setState(() => _reminderEnabled = !_reminderEnabled),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: MyWalkColor.cardBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _reminderEnabled
+                    ? MyWalkColor.golden.withValues(alpha: 0.3)
+                    : MyWalkColor.cardBorder,
+                width: 0.5,
+              ),
+            ),
+            child: Row(children: [
+              Icon(Icons.notifications_outlined,
+                  size: 18,
+                  color: _reminderEnabled
+                      ? MyWalkColor.golden
+                      : Colors.white.withValues(alpha: 0.4)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Remind me',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: _reminderEnabled
+                              ? MyWalkColor.warmWhite
+                              : Colors.white.withValues(alpha: 0.6))),
+                  const SizedBox(height: 2),
+                  Text('A gentle nudge on your active days.',
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
+                ]),
+              ),
+              const SizedBox(width: 10),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 38,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: _reminderEnabled
+                      ? MyWalkColor.golden
+                      : Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 200),
+                  alignment: _reminderEnabled
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.all(3),
+                    width: 16,
+                    height: 16,
+                    decoration: const BoxDecoration(
+                        shape: BoxShape.circle, color: Colors.white),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        ),
+        if (_reminderEnabled) ...[
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay(hour: _reminderHour, minute: _reminderMinute),
+              );
+              if (picked != null) {
+                setState(() {
+                  _reminderHour = picked.hour;
+                  _reminderMinute = picked.minute;
+                });
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: MyWalkColor.cardBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+              ),
+              child: Row(children: [
+                Icon(Icons.access_time,
+                    size: 16, color: MyWalkColor.softGold.withValues(alpha: 0.7)),
+                const SizedBox(width: 10),
+                Text('Reminder time',
+                    style: TextStyle(
+                        fontSize: 13, color: Colors.white.withValues(alpha: 0.6))),
+                const Spacer(),
+                Text(timeLabel,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: MyWalkColor.warmWhite)),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right,
+                    size: 16, color: Colors.white.withValues(alpha: 0.3)),
+              ]),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _triggerSection() {

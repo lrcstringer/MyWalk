@@ -9,6 +9,7 @@ import '../../domain/repositories/habit_repository.dart';
 import '../../domain/entities/fruit.dart';
 import '../../domain/repositories/circle_repository.dart';
 import '../../domain/services/daily_score_service.dart';
+import '../../data/datasources/local/notification_service.dart';
 import 'fruit_portfolio_provider.dart';
 
 class HabitProvider extends ChangeNotifier {
@@ -282,6 +283,7 @@ class HabitProvider extends ChangeNotifier {
     _habits = [
       for (final h in _habits) h.id == habit.id ? habit : h,
     ];
+    NotificationService.shared.schedulePracticeReminder(habit).ignore();
     notifyListeners();
   }
 
@@ -289,6 +291,7 @@ class HabitProvider extends ChangeNotifier {
     if (habit.isBuiltIn) return;
     await _repository.deleteHabit(habit.id);
     _habits = _habits.where((h) => h.id != habit.id).toList();
+    NotificationService.shared.cancelPracticeReminder(habit).ignore();
     notifyListeners();
   }
 
@@ -296,6 +299,7 @@ class HabitProvider extends ChangeNotifier {
     if (habit.isBuiltIn) return;
     await _repository.setArchived(habit.id, archived: true);
     _habits = _habits.where((h) => h.id != habit.id).toList();
+    NotificationService.shared.cancelPracticeReminder(habit).ignore();
     notifyListeners();
   }
 

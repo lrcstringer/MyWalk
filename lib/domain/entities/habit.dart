@@ -250,6 +250,10 @@ class Habit {
   final String? accountabilityPartnerId;
   final String? recoveryPathId;
   final bool hasRecoveryPath;
+  // Opt-in scheduled reminder (one per active day, fires at the chosen time)
+  final bool reminderEnabled;
+  final int reminderHour;
+  final int reminderMinute;
 
   const Habit({
     required this.id,
@@ -284,6 +288,9 @@ class Habit {
     this.accountabilityPartnerId,
     this.recoveryPathId,
     this.hasRecoveryPath = false,
+    this.reminderEnabled = false,
+    this.reminderHour = 8,
+    this.reminderMinute = 0,
   });
 
   factory Habit.create({
@@ -370,6 +377,9 @@ class Habit {
     Object? accountabilityPartnerId = _keep,
     Object? recoveryPathId = _keep,
     bool? hasRecoveryPath,
+    bool? reminderEnabled,
+    int? reminderHour,
+    int? reminderMinute,
   }) =>
       Habit(
         id: id,
@@ -408,6 +418,9 @@ class Habit {
             ? this.recoveryPathId
             : recoveryPathId as String?,
         hasRecoveryPath: hasRecoveryPath ?? this.hasRecoveryPath,
+        reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+        reminderHour: reminderHour ?? this.reminderHour,
+        reminderMinute: reminderMinute ?? this.reminderMinute,
       );
 
   Set<int> get activeDaySet {
@@ -498,6 +511,9 @@ class Habit {
         if (accountabilityPartnerId != null) 'accountabilityPartnerId': accountabilityPartnerId,
         if (recoveryPathId != null) 'recoveryPathId': recoveryPathId,
         'hasRecoveryPath': hasRecoveryPath,
+        'reminderEnabled': reminderEnabled,
+        'reminderHour': reminderHour,
+        'reminderMinute': reminderMinute,
       };
 
   factory Habit.fromFirestore(
@@ -550,6 +566,9 @@ class Habit {
       accountabilityPartnerId: data['accountabilityPartnerId'] as String?,
       recoveryPathId: data['recoveryPathId'] as String?,
       hasRecoveryPath: data['hasRecoveryPath'] as bool? ?? false,
+      reminderEnabled: data['reminderEnabled'] as bool? ?? false,
+      reminderHour: (data['reminderHour'] as num?)?.toInt() ?? 8,
+      reminderMinute: (data['reminderMinute'] as num?)?.toInt() ?? 0,
     );
   }
 }

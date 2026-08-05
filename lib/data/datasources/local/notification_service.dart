@@ -50,6 +50,12 @@ class NotificationService {
     importance: Importance.high,
     playSound: true,
   );
+  static const _channelPracticeReminders = AndroidNotificationChannel(
+    'practice_reminders',
+    'Practice Reminders',
+    description: 'Scheduled reminders for your daily practices',
+    importance: Importance.defaultImportance,
+  );
 
   Future<void> init() async {
     tz_data.initializeTimeZones();
@@ -64,6 +70,7 @@ class NotificationService {
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(_channelCircles);
     await androidPlugin?.createNotificationChannel(_channelPartnerships);
+    await androidPlugin?.createNotificationChannel(_channelPracticeReminders);
     await checkAuthorization();
   }
 
@@ -222,6 +229,7 @@ class NotificationService {
 
     for (final habit in habits) {
       await _scheduleTimeMilestones(habit);
+      if (habit.reminderEnabled) await schedulePracticeReminder(habit);
     }
     await _scheduleVariableReinforcement(daysSince);
   }
@@ -284,6 +292,43 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
+  }
+
+  // ── Per-practice scheduled reminders ─────────────────────────────────────
+
+  Future<void> schedulePracticeReminder(Habit habit) async {
+    await cancelPracticeReminder(habit);
+    if (!habit.reminderEnabled || habit.isArchived || !isAuthorized) return;
+
+    for (final swiftDay in habit.activeDaySet) {
+      // Swift weekday: 1=Sun..7=Sat → Dart weekday: Mon=1..Sun=7
+      final dartDay = swiftDay == 1 ? 7 : swiftDay - 1;
+      final notifId = Object.hash('prem', habit.id, dartDay) & 0x7fffffff;
+      await _plugin.zonedSchedule(
+        notifId,
+        habit.name,
+        'Time for your practice.',
+        _nextWeekday(dartDay, habit.reminderHour, habit.reminderMinute),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'practice_reminders', 'Practice Reminders',
+            importance: Importance.defaultImportance,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      );
+    }
+  }
+
+  Future<void> cancelPracticeReminder(Habit habit) async {
+    for (int dartDay = 1; dartDay <= 7; dartDay++) {
+      final notifId = Object.hash('prem', habit.id, dartDay) & 0x7fffffff;
+      await _plugin.cancel(notifId);
+    }
   }
 
   // Helpers — using local timezone via DateTime
