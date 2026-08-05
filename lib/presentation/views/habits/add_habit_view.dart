@@ -68,6 +68,8 @@ class _AddHabitViewState extends State<AddHabitView> {
       _subcategoryId = 'breaking_habits';
       _categoryName = 'Breaking Free';
       _purposeStatement = HabitCategory.abstain.defaultPurpose;
+      _selectedCategoryModel = widget.startCategoryModel;
+      _selectedSubcategoryModel = widget.startSubcategoryModel;
       _step = 3;
     } else if (widget.startCategoryModel != null) {
       final cat = widget.startCategoryModel!;
