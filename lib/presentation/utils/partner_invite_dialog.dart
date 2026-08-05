@@ -33,12 +33,24 @@ Future<void> showPartnerInviteDialog(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Option 1
           const Text(
-            'If you know their MyWalk email address, enter it and they will receive an in-app notification immediately.',
-            style:
-                TextStyle(color: MyWalkColor.warmWhite, fontSize: 13, height: 1.5),
+            'If you know their MyWalk email address:',
+            style: TextStyle(
+                color: MyWalkColor.sage,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                height: 1.4),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
+          Text(
+            'Enter it below and they will receive an in-app notification immediately.',
+            style: TextStyle(
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                fontSize: 12,
+                height: 1.5),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: emailController,
             keyboardType: TextInputType.emailAddress,
@@ -55,11 +67,25 @@ Future<void> showPartnerInviteDialog(
                   borderSide: BorderSide(color: MyWalkColor.sage)),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 20),
+          Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.1), height: 1),
+          const SizedBox(height: 16),
+          // Option 2
           const Text(
-            "If you don't have their email address, that is OK. Just tap Continue and a link will be created that you can share via WhatsApp, Email or SMS.",
-            style:
-                TextStyle(color: MyWalkColor.warmWhite, fontSize: 13, height: 1.5),
+            "If you don't know their email address:",
+            style: TextStyle(
+                color: MyWalkColor.sage,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                height: 1.4),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Just tap Continue and a link will be created that you can share via WhatsApp, Email or SMS.',
+            style: TextStyle(
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                fontSize: 12,
+                height: 1.5),
           ),
         ],
       ),
