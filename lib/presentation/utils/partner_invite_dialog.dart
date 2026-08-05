@@ -131,10 +131,10 @@ Future<void> showPartnerInviteDialog(
           ),
         );
         if (confirmed == true && context.mounted) {
-          await _shareInvite(result, habitName);
+          await _shareInvite(result, habitLabel ?? habitName);
         }
       } else {
-        await _shareInvite(result, habitName);
+        await _shareInvite(result, habitLabel ?? habitName);
       }
     }
   } catch (e) {
@@ -147,14 +147,14 @@ Future<void> showPartnerInviteDialog(
   }
 }
 
-Future<void> _shareInvite(InviteResult result, String habitName) async {
+Future<void> _shareInvite(InviteResult result, String label) async {
   await Share.share(
-    'Please walk with me on my $habitName journey.\n\n'
-    'If you already have MyWalk on your mobile:\n\n'
+    'Please walk with me on my $label journey.\n\n'
+    'IF YOU ALREADY HAVE MYWALK ON YOUR MOBILE:\n\n'
     '1) Tap this link: ${result.shareUrl}\n\n'
     'Or\n\n'
     '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${result.shortCode}\n\n\n'
-    "If you don't have MyWalk installed on your mobile:\n\n"
+    "IF YOU DON'T HAVE MYWALK INSTALLED ON YOUR MOBILE:\n\n"
     'Download it from the Google Play Store or Apple Store.\n\n'
     'Then either:\n\n'
     '1) Come back to this email and tap this link: ${result.shareUrl}\n\n'
