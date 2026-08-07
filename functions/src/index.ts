@@ -71,13 +71,10 @@ export {
 } from './callables/accountability';
 export { scheduleReviewReminder, cancelReviewReminder, sweepDueReminders } from './callables/memorization_notify';
 export {
-  rpDailyCheckInReminder,
-  rpMissed3DaysReminder,
   rpWeeklyCompassReminder,
-  rpLapseUnlocksM5,
   rpQuarterlyReviewReminder,
-  rpM2UnlockReminder,
 } from './callables/recovery_path_notify';
+export { rpAnalyseCues } from './callables/recovery_path_analyse';
 export { deleteAccount } from './callables/account';
 export { redeemToken } from './callables/tokens';
 

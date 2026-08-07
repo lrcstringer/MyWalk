@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'weekly_compass_screen.dart';
+import 'thought_examination_screen.dart';
+import 'daily_check_in_screen.dart';
+import 'mid_point_reflection_screen.dart';
+import 'cue_hierarchy_screen.dart';
+import 'environmental_restructuring_screen.dart';
+import 'lifestyle_audit_screen.dart';
+import '../../../domain/entities/recovery_path.dart';
 import '../../../domain/entities/recovery_session.dart';
 import '../../../domain/services/recovery_module_content.dart';
 import '../../../domain/services/recovery_phase_calculator.dart';
@@ -31,12 +39,22 @@ class RecoveryPathHomeScreen extends StatefulWidget {
 }
 
 class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
+  int _logCount = 0;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<RecoveryPathProvider>().loadPath(widget.habitId);
+      _loadLogCount();
     });
+  }
+
+  Future<void> _loadLogCount() async {
+    final count = await context
+        .read<RecoveryPathProvider>()
+        .getBehaviourLogCount(widget.habitId);
+    if (mounted) setState(() => _logCount = count);
   }
 
   Future<void> _begin() async {
@@ -100,14 +118,7 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
           ));
         } else if (!compassDone) {
           Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => ModuleSessionScreen(
-              habitId: habitId,
-              sessionType: RecoverySessionType.m3WeeklyCompass,
-              moduleNumber: 3,
-              title: RecoveryModuleContent.m3CompassTitle,
-              prompts: RecoveryModuleContent.m3WeeklyCompassPrompts,
-              hint: RecoveryModuleContent.m3CompassHint,
-            ),
+            builder: (_) => WeeklyCompassScreen(habitId: habitId),
           ));
         } else {
           _showDoneSnack('Weekly compass done — check back next week.');
@@ -115,64 +126,7 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
 
       case 2:
         Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => ModuleSessionScreen(
-            habitId: habitId,
-            sessionType: RecoverySessionType.m2ThoughtExamination,
-            moduleNumber: 2,
-            title: RecoveryModuleContent.m2Title,
-            prompts: RecoveryModuleContent.m2ThoughtExaminationPrompts,
-            hint: RecoveryModuleContent.m2Hint,
-            onSaved: (responseText) async {
-              // Extract the last answer (counter-response) and offer to save it.
-              final lastAnswer = responseText
-                  .split('\n\n')
-                  .lastOrNull
-                  ?.split('\n')
-                  .skip(1)
-                  .join('\n')
-                  .trim();
-              if (lastAnswer == null || lastAnswer.isEmpty) return;
-              if (!mounted) return;
-              final save = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: MyWalkColor.cardBackground,
-                  title: const Text(
-                    'Save to library?',
-                    style: TextStyle(
-                        color: MyWalkColor.warmWhite,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600),
-                  ),
-                  content: Text(
-                    '"$lastAnswer"',
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
-                        fontStyle: FontStyle.italic),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(false),
-                      child: Text('Skip',
-                          style: TextStyle(
-                              color: MyWalkColor.warmWhite.withValues(alpha: 0.4))),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(true),
-                      child: const Text('Save',
-                          style: TextStyle(color: _kRpPurple)),
-                    ),
-                  ],
-                ),
-              );
-              if (save == true && mounted) {
-                await context
-                    .read<RecoveryPathProvider>()
-                    .addCounterResponse(habitId, lastAnswer);
-              }
-            },
-          ),
+          builder: (_) => ThoughtExaminationScreen(habitId: habitId),
         ));
 
       case 4:
@@ -207,8 +161,54 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
   }
 
   void _openLapseFlow() {
+    final prov = context.read<RecoveryPathProvider>();
+    if (!prov.isModuleUnlocked(widget.habitId, 5)) {
+      prov.markModule5IntroSeen(widget.habitId).ignore();
+    }
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => LapseRecordingFlow(habitId: widget.habitId),
+    ));
+  }
+
+  void _openDailyCheckIn() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => DailyCheckInScreen(
+        habitId: widget.habitId,
+        habitName: widget.habitName,
+      ),
+    ));
+  }
+
+  void _openMidPointReflection() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => MidPointReflectionScreen(habitId: widget.habitId),
+    ));
+  }
+
+  void _openCueHierarchy() {
+    final path = context.read<RecoveryPathProvider>().pathFor(widget.habitId);
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CueHierarchyScreen(
+        habitId: widget.habitId,
+        habitName: widget.habitName,
+        habitType: path?.habitType ?? '',
+      ),
+    ));
+  }
+
+  void _openEnvironmentalRestructuring() {
+    final path = context.read<RecoveryPathProvider>().pathFor(widget.habitId);
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => EnvironmentalRestructuringScreen(
+        habitId: widget.habitId,
+        habitType: path?.habitType ?? '',
+      ),
+    ));
+  }
+
+  void _openLifestyleAudit() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => LifestyleAuditScreen(habitId: widget.habitId),
     ));
   }
 
@@ -234,9 +234,15 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
       body = _ActiveBody(
         habitId: habitId,
         habitName: widget.habitName,
+        logCount: _logCount,
         prov: prov,
         onModuleTap: _openModule,
         onLapseTap: _openLapseFlow,
+        onDailyCheckIn: _openDailyCheckIn,
+        onMidPointReflection: _openMidPointReflection,
+        onCueHierarchy: _openCueHierarchy,
+        onEnvironmentalRestructuring: _openEnvironmentalRestructuring,
+        onLifestyleAudit: _openLifestyleAudit,
       );
     } else if (hasError) {
       // Load failed — show retry rather than "Begin" to prevent accidentally
@@ -406,47 +412,148 @@ class _BeginBodyState extends State<_BeginBody> {
 
 // ── Active state ─────────────────────────────────────────────────────────────
 
+class _ActionCard {
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _ActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+}
+
 class _ActiveBody extends StatelessWidget {
   final String habitId;
   final String habitName;
+  final int logCount;
   final RecoveryPathProvider prov;
   final void Function(int) onModuleTap;
   final VoidCallback onLapseTap;
+  final VoidCallback onDailyCheckIn;
+  final VoidCallback onMidPointReflection;
+  final VoidCallback onCueHierarchy;
+  final VoidCallback onEnvironmentalRestructuring;
+  final VoidCallback onLifestyleAudit;
 
   const _ActiveBody({
     required this.habitId,
     required this.habitName,
+    required this.logCount,
     required this.prov,
     required this.onModuleTap,
     required this.onLapseTap,
+    required this.onDailyCheckIn,
+    required this.onMidPointReflection,
+    required this.onCueHierarchy,
+    required this.onEnvironmentalRestructuring,
+    required this.onLifestyleAudit,
   });
+
+  List<_ActionCard> _pendingActions(
+    RecoveryPath path,
+    int day,
+    bool checkInDone,
+    bool compassDone,
+  ) {
+    final actions = <_ActionCard>[];
+
+    if (!checkInDone) {
+      actions.add(_ActionCard(
+        title: 'Daily check-in',
+        subtitle: 'Takes 30 seconds',
+        onTap: onDailyCheckIn,
+      ));
+    }
+    if (day >= 8 && day <= 10 && !path.midPointReflectionDone) {
+      actions.add(_ActionCard(
+        title: 'Mid-point reflection',
+        subtitle: 'How are things going so far?',
+        onTap: onMidPointReflection,
+      ));
+    }
+    if (day >= 14 && !path.cueHierarchyDone && logCount >= 5) {
+      actions.add(_ActionCard(
+        title: 'Build your cue map',
+        subtitle: 'Your logs are ready — this is a big step.',
+        onTap: onCueHierarchy,
+      ));
+    }
+    if (path.module3.valuesInventoryDone && !compassDone) {
+      actions.add(_ActionCard(
+        title: 'Weekly values compass',
+        subtitle: 'A 5-minute check-in',
+        onTap: () => onModuleTap(3),
+      ));
+    }
+    if (path.cueHierarchyDone && !path.environmentalChangesDone) {
+      actions.add(_ActionCard(
+        title: 'Change your environment',
+        subtitle: 'Use your cue map to make concrete changes',
+        onTap: onEnvironmentalRestructuring,
+      ));
+    }
+    if (path.environmentalChangesDone && !path.hrsPlanDone) {
+      actions.add(_ActionCard(
+        title: 'Build your coping plans',
+        subtitle: 'One plan per trigger — pre-made, ready to use',
+        onTap: () => onModuleTap(4),
+      ));
+    }
+    if (RecoveryPhaseCalculator.isModuleUnlocked(path, 5) &&
+        !path.module5.recoveryLetterWritten) {
+      actions.add(_ActionCard(
+        title: 'Write your recovery letter',
+        subtitle: 'Do this while you\'re clear-headed',
+        onTap: () => onModuleTap(5),
+      ));
+    }
+    if (day >= 30 && prov.isLifestyleAuditDue(path)) {
+      actions.add(_ActionCard(
+        title: 'Monthly balance check',
+        subtitle: 'What\'s taking from you? What\'s nourishing you?',
+        onTap: onLifestyleAudit,
+      ));
+    }
+    if (prov.isQuarterlyReviewDue(path, day)) {
+      actions.add(_ActionCard(
+        title: 'Quarterly review',
+        subtitle: 'Reflect on how far you\'ve come',
+        onTap: () => onModuleTap(5),
+      ));
+    }
+
+    return actions.take(2).toList();
+  }
+
+  String? _nextStep(int moduleNumber, RecoveryPath path, int day) {
+    if (moduleNumber == 1 && !path.cueHierarchyDone && logCount >= 5 && day >= 14) {
+      return 'Your next step: Build your cue map';
+    }
+    if (moduleNumber == 3 && !path.module3.valuesInventoryDone) {
+      return 'Your next step: Complete your values inventory';
+    }
+    if (moduleNumber == 4 && !path.environmentalChangesDone) {
+      return 'Your next step: Map your environmental changes';
+    }
+    if (moduleNumber == 4 && path.environmentalChangesDone && !path.hrsPlanDone) {
+      return 'Your next step: Build your coping plans';
+    }
+    if (moduleNumber == 5 && !path.module5.recoveryLetterWritten) {
+      return 'Your next step: Write your recovery letter';
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final userIsPremium = context.read<StoreProvider>().isPremium;
     final path = prov.pathFor(habitId)!;
     final phase = RecoveryPhaseCalculator.calculate(path);
     final day = prov.dayNumberFor(habitId);
     final checkInDone = prov.checkInDoneToday(habitId);
     final compassDone = prov.compassDoneThisWeek(habitId);
     final inventoryDone = path.module3.valuesInventoryDone;
-
-    // Today's focus: first thing still pending
-    final String? focusLabel;
-    final int? focusModule;
-    if (!checkInDone) {
-      focusLabel = 'Daily check-in (Module 1)';
-      focusModule = 1;
-    } else if (!inventoryDone) {
-      focusLabel = 'Values inventory (Module 3)';
-      focusModule = 3;
-    } else if (!compassDone) {
-      focusLabel = 'Weekly compass (Module 3)';
-      focusModule = 3;
-    } else {
-      focusLabel = null;
-      focusModule = null;
-    }
+    final pending = _pendingActions(path, day, checkInDone, compassDone);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
@@ -464,45 +571,8 @@ class _ActiveBody extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // Today's focus card
-          if (focusLabel != null)
-            GestureDetector(
-              onTap: () => onModuleTap(focusModule!),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: _kRpPurple.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: _kRpPurple.withValues(alpha: 0.25), width: 0.75),
-                ),
-                child: Row(children: [
-                  const Icon(Icons.wb_sunny_rounded,
-                      size: 16, color: _kRpPurple),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("Today's focus",
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  color: _kRpPurple,
-                                  fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 2),
-                          Text(focusLabel,
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  color: MyWalkColor.warmWhite)),
-                        ]),
-                  ),
-                  const Icon(Icons.chevron_right_rounded,
-                      size: 16, color: _kRpPurple),
-                ]),
-              ),
-            )
-          else
+          // Pending action cards (up to 2) or all-caught-up
+          if (pending.isEmpty)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(14),
@@ -519,7 +589,46 @@ class _ActiveBody extends StatelessWidget {
                         fontSize: 13,
                         color: MyWalkColor.warmWhite.withValues(alpha: 0.7))),
               ]),
-            ),
+            )
+          else
+            ...pending.map((card) => GestureDetector(
+                  onTap: card.onTap,
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: _kRpPurple.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: _kRpPurple.withValues(alpha: 0.25), width: 0.75),
+                    ),
+                    child: Row(children: [
+                      const Icon(Icons.wb_sunny_rounded,
+                          size: 16, color: _kRpPurple),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(card.title,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: MyWalkColor.warmWhite)),
+                              const SizedBox(height: 2),
+                              Text(card.subtitle,
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: MyWalkColor.warmWhite
+                                          .withValues(alpha: 0.5))),
+                            ]),
+                      ),
+                      const Icon(Icons.chevron_right_rounded,
+                          size: 16, color: _kRpPurple),
+                    ]),
+                  ),
+                )),
 
           const SizedBox(height: 22),
 
@@ -534,15 +643,13 @@ class _ActiveBody extends StatelessWidget {
 
           ...RecoveryModuleContent.modules.map((m) {
             final unlocked =
-                RecoveryPhaseCalculator.isModuleUnlocked(m.number, phase);
+                RecoveryPhaseCalculator.isModuleUnlocked(path, m.number);
             return _ModuleCard(
               meta: m,
               unlocked: unlocked,
-              isPremium: m.isPremium && !userIsPremium,
-              checkInCount: m.number == 1
-                  ? path.module1.dailyCheckInCount
-                  : null,
+              checkInCount: m.number == 1 ? path.module1.dailyCheckInCount : null,
               inventoryDone: m.number == 3 ? inventoryDone : null,
+              nextStep: unlocked ? _nextStep(m.number, path, day) : null,
               onTap: unlocked ? () => onModuleTap(m.number) : null,
             );
           }),
@@ -555,11 +662,11 @@ class _ActiveBody extends StatelessWidget {
             icon: Icon(Icons.refresh_rounded,
                 size: 14,
                 color: MyWalkColor.warmWhite.withValues(alpha: 0.25)),
-            label: Text(
-              RecoveryModuleContent.lapseEntryLabel,
+            label: const Text(
+              'I had a moment',
               style: TextStyle(
                   fontSize: 12,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.25)),
+                  color: MyWalkColor.warmWhite),
             ),
           ),
         ],
@@ -630,17 +737,17 @@ class _ModulePreviewRow extends StatelessWidget {
 class _ModuleCard extends StatelessWidget {
   final ModuleMeta meta;
   final bool unlocked;
-  final bool isPremium;
   final int? checkInCount;
   final bool? inventoryDone;
+  final String? nextStep;
   final VoidCallback? onTap;
 
   const _ModuleCard({
     required this.meta,
     required this.unlocked,
-    required this.isPremium,
     this.checkInCount,
     this.inventoryDone,
+    this.nextStep,
     this.onTap,
   });
 
@@ -671,34 +778,15 @@ class _ModuleCard extends StatelessWidget {
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    Text(
-                      'M${meta.number} — ${meta.title}',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: dimmed
-                              ? MyWalkColor.warmWhite.withValues(alpha: 0.3)
-                              : MyWalkColor.warmWhite),
-                    ),
-                    if (isPremium) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: MyWalkColor.golden.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text('PREMIUM',
-                            style: TextStyle(
-                                fontSize: 8,
-                                fontWeight: FontWeight.w700,
-                                color: MyWalkColor.golden,
-                                letterSpacing: 0.5)),
-                      ),
-                    ],
-                  ]),
+                  Text(
+                    meta.title,
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: dimmed
+                            ? MyWalkColor.warmWhite.withValues(alpha: 0.3)
+                            : MyWalkColor.warmWhite),
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     _subtitle(),
@@ -725,11 +813,8 @@ class _ModuleCard extends StatelessWidget {
 
   String _subtitle() {
     if (!unlocked) return meta.subtitle;
-    if (checkInCount != null) {
-      final count = checkInCount!;
-      if (count < 7) return '$count/7 check-ins to unlock weekly review';
-      return '$count check-ins complete';
-    }
+    if (nextStep != null) return nextStep!;
+    if (checkInCount != null) return '${checkInCount!} check-ins logged';
     if (inventoryDone != null) {
       return inventoryDone! ? 'Values inventory done' : 'Values inventory not yet done';
     }

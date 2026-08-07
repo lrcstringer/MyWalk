@@ -2,40 +2,44 @@ import '../entities/recovery_path.dart';
 
 /// Pure function that computes the current phase (1–4) from path state.
 ///
-/// Phase rules:
-///   1 — Awareness     : default starting state
-///   2 — Understanding : ≥ 7 M1 daily check-ins (weekly review unlocked)
-///   3 — Anchoring     : ≥ 7 check-ins AND M3 values inventory done
-///   4 — Resilience    : at least one lapse recorded (M5 unlocked)
-///
-/// Phase 4 takes priority — a lapse can happen at any phase.
+/// Phase rules (evaluated in priority order, highest first):
+///   4 — Maintenance       : ≥ 90 days AND values inventory done
+///   3 — Sustained Practice: ≥ 30 days OR any lapse recorded
+///   2 — Going Deeper      : cue hierarchy done OR ≥ 14 days OR ≥ 14 check-ins
+///   1 — Getting Started   : default
 class RecoveryPhaseCalculator {
   RecoveryPhaseCalculator._();
 
   static int calculate(RecoveryPath path) {
-    if (path.totalLapses > 0) return 4;
-    if (path.module1.dailyCheckInCount >= 7 && path.module3.valuesInventoryDone) {
-      return 3;
-    }
-    if (path.module1.dailyCheckInCount >= 7) return 2;
+    final daysSinceStart =
+        DateTime.now().difference(path.startedAt).inDays;
+
+    if (daysSinceStart >= 90 && path.module3.valuesInventoryDone) { return 4; }
+    if (daysSinceStart >= 30 || path.totalLapses > 0) { return 3; }
+    if (path.cueHierarchyDone ||
+        daysSinceStart >= 14 ||
+        path.module1.dailyCheckInCount >= 14) { return 2; }
     return 1;
   }
 
-  /// Returns true if [moduleNumber] is unlocked at [phase].
-  /// M1 and M3 are always unlocked (free). M2, M4, M5 require phase ≥ 2/3/4
-  /// and are premium-gated at the UI layer.
-  static bool isModuleUnlocked(int moduleNumber, int phase) {
+  /// Returns true if [moduleNumber] is unlocked for [path].
+  /// M1 and M3 are always unlocked.
+  /// M2 and M4 unlock when cue hierarchy is done or after 28 days.
+  /// M5 unlocks after 30 days or on the first lapse.
+  static bool isModuleUnlocked(RecoveryPath path, int moduleNumber) {
+    final daysSinceStart =
+        DateTime.now().difference(path.startedAt).inDays;
     switch (moduleNumber) {
       case 1:
         return true;
       case 2:
-        return phase >= 2;
+        return path.cueHierarchyDone || daysSinceStart >= 28;
       case 3:
         return true;
       case 4:
-        return phase >= 3;
+        return path.cueHierarchyDone || daysSinceStart >= 28;
       case 5:
-        return phase >= 4;
+        return daysSinceStart >= 30 || path.totalLapses > 0;
       default:
         return false;
     }

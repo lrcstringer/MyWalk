@@ -35,10 +35,13 @@ class RecoveryModule1State {
 }
 
 /// A single domain entry in the values inventory (Module 3).
+/// importance and alignment are now 1–10 (previously 1–5).
 class ValuesInventoryEntry {
   final String domain;
-  final int importance; // 1–5
-  final int alignment; // 1–5
+  final int importance;          // 1–10
+  final int alignment;           // 1–10
+  final String reflectionText;   // user's written reflection for this domain
+  final String compassDirection; // 'toward' | 'neutral' | 'away'
 
   int get gap => importance - alignment;
 
@@ -46,23 +49,39 @@ class ValuesInventoryEntry {
     required this.domain,
     required this.importance,
     required this.alignment,
+    this.reflectionText = '',
+    this.compassDirection = 'neutral',
   });
 
-  ValuesInventoryEntry copyWith({int? importance, int? alignment}) =>
+  ValuesInventoryEntry copyWith({
+    int? importance,
+    int? alignment,
+    String? reflectionText,
+    String? compassDirection,
+  }) =>
       ValuesInventoryEntry(
         domain: domain,
         importance: importance ?? this.importance,
         alignment: alignment ?? this.alignment,
+        reflectionText: reflectionText ?? this.reflectionText,
+        compassDirection: compassDirection ?? this.compassDirection,
       );
 
-  Map<String, dynamic> toMap() =>
-      {'domain': domain, 'importance': importance, 'alignment': alignment};
+  Map<String, dynamic> toMap() => {
+        'domain': domain,
+        'importance': importance,
+        'alignment': alignment,
+        'reflectionText': reflectionText,
+        'compassDirection': compassDirection,
+      };
 
   factory ValuesInventoryEntry.fromMap(Map<String, dynamic> m) =>
       ValuesInventoryEntry(
         domain: m['domain'] as String,
-        importance: (m['importance'] as int?) ?? 3,
-        alignment: (m['alignment'] as int?) ?? 3,
+        importance: (m['importance'] as int?) ?? 5,
+        alignment: (m['alignment'] as int?) ?? 5,
+        reflectionText: (m['reflectionText'] as String?) ?? '',
+        compassDirection: (m['compassDirection'] as String?) ?? 'neutral',
       );
 }
 
@@ -241,14 +260,60 @@ class RecoveryPath {
   final String habitId;
   final DateTime startedAt;
   final int currentPhase; // 1–4; written back when it changes
+
+  // Module sub-states
   final RecoveryModule1State module1;
   final RecoveryModule3State module3;
   final RecoveryModule4State module4;
   final RecoveryModule5State module5;
+
+  // Lapse tracking
   final int totalLapses;
   final DateTime? lastLapseAt;
+
+  // Letter and counter-responses
   final String? recoveryLetterDraft;
-  final List<String> counterResponses;
+  // counterResponses stores Maps {thought, errorType, alternative, createdAt}.
+  // Old Firestore docs may have Strings — fromFirestore handles both.
+  final List<Map<String, dynamic>> counterResponses;
+
+  // Habit classification for AI cue analysis
+  final String habitType; // e.g. 'pornography', 'alcohol', 'generic'
+
+  // Cue Hierarchy (built in Phase 2 flow)
+  final bool cueHierarchyDone;
+  final List<Map<String, dynamic>> cueHierarchy; // {rank, cueText, isAiSuggested}
+
+  // Guardrail progression flags
+  final bool environmentalChangesDone;
+  final bool hrsPlanDone;
+  final bool urgeSurfingIntroSeen;
+
+  // Module 5 progression
+  final bool module5IntroSeen;
+
+  // Lapse button availability (always = startedAt; kept for future config)
+  final DateTime? lapseButtonAvailableFrom;
+
+  // Lifestyle audit
+  final DateTime? lastLifestyleAuditAt;
+
+  // Quarterly review schedule
+  final List<int> quarterlyReviewDueDays; // days on which review should surface
+
+  // Draft state for resumable flows
+  final int thoughtExaminationDraftStep;
+  final Map<String, dynamic>? thoughtExaminationDraft;
+  final int valuesInventoryDraftStep;
+  final List<Map<String, dynamic>> valuesInventoryDraft;
+  final int cueHierarchyDraftStage;
+
+  // Daily check-in transient state (reset each day on load)
+  final int? dailyCheckInEmotionalRating;
+  final String? dailyCheckInOutcome; // 'slipped' | 'urge_only' | 'clear'
+
+  // Mid-point reflection
+  final bool midPointReflectionDone;
 
   const RecoveryPath({
     required this.id,
@@ -264,6 +329,24 @@ class RecoveryPath {
     this.lastLapseAt,
     this.recoveryLetterDraft,
     this.counterResponses = const [],
+    this.habitType = '',
+    this.cueHierarchyDone = false,
+    this.cueHierarchy = const [],
+    this.environmentalChangesDone = false,
+    this.hrsPlanDone = false,
+    this.urgeSurfingIntroSeen = false,
+    this.module5IntroSeen = false,
+    this.lapseButtonAvailableFrom,
+    this.lastLifestyleAuditAt,
+    this.quarterlyReviewDueDays = const [90, 180, 270, 360],
+    this.thoughtExaminationDraftStep = 0,
+    this.thoughtExaminationDraft,
+    this.valuesInventoryDraftStep = 0,
+    this.valuesInventoryDraft = const [],
+    this.cueHierarchyDraftStage = 0,
+    this.dailyCheckInEmotionalRating,
+    this.dailyCheckInOutcome,
+    this.midPointReflectionDone = false,
   });
 
   RecoveryPath copyWith({
@@ -275,7 +358,25 @@ class RecoveryPath {
     int? totalLapses,
     DateTime? lastLapseAt,
     String? recoveryLetterDraft,
-    List<String>? counterResponses,
+    List<Map<String, dynamic>>? counterResponses,
+    String? habitType,
+    bool? cueHierarchyDone,
+    List<Map<String, dynamic>>? cueHierarchy,
+    bool? environmentalChangesDone,
+    bool? hrsPlanDone,
+    bool? urgeSurfingIntroSeen,
+    bool? module5IntroSeen,
+    DateTime? lapseButtonAvailableFrom,
+    DateTime? lastLifestyleAuditAt,
+    List<int>? quarterlyReviewDueDays,
+    int? thoughtExaminationDraftStep,
+    Map<String, dynamic>? thoughtExaminationDraft,
+    int? valuesInventoryDraftStep,
+    List<Map<String, dynamic>>? valuesInventoryDraft,
+    int? cueHierarchyDraftStage,
+    int? dailyCheckInEmotionalRating,
+    String? dailyCheckInOutcome,
+    bool? midPointReflectionDone,
   }) =>
       RecoveryPath(
         id: id,
@@ -291,6 +392,33 @@ class RecoveryPath {
         lastLapseAt: lastLapseAt ?? this.lastLapseAt,
         recoveryLetterDraft: recoveryLetterDraft ?? this.recoveryLetterDraft,
         counterResponses: counterResponses ?? this.counterResponses,
+        habitType: habitType ?? this.habitType,
+        cueHierarchyDone: cueHierarchyDone ?? this.cueHierarchyDone,
+        cueHierarchy: cueHierarchy ?? this.cueHierarchy,
+        environmentalChangesDone:
+            environmentalChangesDone ?? this.environmentalChangesDone,
+        hrsPlanDone: hrsPlanDone ?? this.hrsPlanDone,
+        urgeSurfingIntroSeen: urgeSurfingIntroSeen ?? this.urgeSurfingIntroSeen,
+        module5IntroSeen: module5IntroSeen ?? this.module5IntroSeen,
+        lapseButtonAvailableFrom:
+            lapseButtonAvailableFrom ?? this.lapseButtonAvailableFrom,
+        lastLifestyleAuditAt: lastLifestyleAuditAt ?? this.lastLifestyleAuditAt,
+        quarterlyReviewDueDays:
+            quarterlyReviewDueDays ?? this.quarterlyReviewDueDays,
+        thoughtExaminationDraftStep:
+            thoughtExaminationDraftStep ?? this.thoughtExaminationDraftStep,
+        thoughtExaminationDraft:
+            thoughtExaminationDraft ?? this.thoughtExaminationDraft,
+        valuesInventoryDraftStep:
+            valuesInventoryDraftStep ?? this.valuesInventoryDraftStep,
+        valuesInventoryDraft: valuesInventoryDraft ?? this.valuesInventoryDraft,
+        cueHierarchyDraftStage:
+            cueHierarchyDraftStage ?? this.cueHierarchyDraftStage,
+        dailyCheckInEmotionalRating:
+            dailyCheckInEmotionalRating ?? this.dailyCheckInEmotionalRating,
+        dailyCheckInOutcome: dailyCheckInOutcome ?? this.dailyCheckInOutcome,
+        midPointReflectionDone:
+            midPointReflectionDone ?? this.midPointReflectionDone,
       );
 
   Map<String, dynamic> toFirestore() => {
@@ -307,10 +435,73 @@ class RecoveryPath {
             lastLapseAt != null ? Timestamp.fromDate(lastLapseAt!) : null,
         'recoveryLetterDraft': recoveryLetterDraft,
         'counterResponses': counterResponses,
+        'habitType': habitType,
+        'cueHierarchyDone': cueHierarchyDone,
+        'cueHierarchy': cueHierarchy,
+        'environmentalChangesDone': environmentalChangesDone,
+        'hrsPlanDone': hrsPlanDone,
+        'urgeSurfingIntroSeen': urgeSurfingIntroSeen,
+        'module5IntroSeen': module5IntroSeen,
+        'lapseButtonAvailableFrom': lapseButtonAvailableFrom != null
+            ? Timestamp.fromDate(lapseButtonAvailableFrom!)
+            : null,
+        'lastLifestyleAuditAt': lastLifestyleAuditAt != null
+            ? Timestamp.fromDate(lastLifestyleAuditAt!)
+            : null,
+        'quarterlyReviewDueDays': quarterlyReviewDueDays,
+        'thoughtExaminationDraftStep': thoughtExaminationDraftStep,
+        'thoughtExaminationDraft': thoughtExaminationDraft,
+        'valuesInventoryDraftStep': valuesInventoryDraftStep,
+        'valuesInventoryDraft': valuesInventoryDraft,
+        'cueHierarchyDraftStage': cueHierarchyDraftStage,
+        'dailyCheckInEmotionalRating': dailyCheckInEmotionalRating,
+        'dailyCheckInOutcome': dailyCheckInOutcome,
+        'midPointReflectionDone': midPointReflectionDone,
       };
 
   factory RecoveryPath.fromFirestore(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
+
+    // counterResponses: old docs have List<String>, new docs have List<Map>.
+    // Normalise either format to List<Map<String, dynamic>>.
+    final rawResponses = d['counterResponses'];
+    final counterResponses = <Map<String, dynamic>>[];
+    if (rawResponses is List) {
+      for (final item in rawResponses) {
+        if (item is Map) {
+          counterResponses.add(Map<String, dynamic>.from(item));
+        } else if (item is String) {
+          counterResponses.add({'alternative': item});
+        }
+      }
+    }
+
+    final rawCueHierarchy = d['cueHierarchy'];
+    final cueHierarchy = rawCueHierarchy is List
+        ? rawCueHierarchy
+            .whereType<Map>()
+            .map((m) => Map<String, dynamic>.from(m))
+            .toList()
+        : <Map<String, dynamic>>[];
+
+    final rawVIDraft = d['valuesInventoryDraft'];
+    final valuesInventoryDraft = rawVIDraft is List
+        ? rawVIDraft
+            .whereType<Map>()
+            .map((m) => Map<String, dynamic>.from(m))
+            .toList()
+        : <Map<String, dynamic>>[];
+
+    final rawTEDraft = d['thoughtExaminationDraft'];
+    final thoughtExaminationDraft = rawTEDraft is Map
+        ? Map<String, dynamic>.from(rawTEDraft)
+        : null;
+
+    final rawQRDays = d['quarterlyReviewDueDays'];
+    final quarterlyReviewDueDays = rawQRDays is List
+        ? rawQRDays.whereType<int>().toList()
+        : const <int>[90, 180, 270, 360];
+
     return RecoveryPath(
       id: doc.id,
       userId: d['userId'] as String,
@@ -324,7 +515,29 @@ class RecoveryPath {
       totalLapses: (d['totalLapses'] as int?) ?? 0,
       lastLapseAt: (d['lastLapseAt'] as Timestamp?)?.toDate(),
       recoveryLetterDraft: d['recoveryLetterDraft'] as String?,
-      counterResponses: List<String>.from(d['counterResponses'] ?? []),
+      counterResponses: counterResponses,
+      habitType: (d['habitType'] as String?) ?? '',
+      cueHierarchyDone: (d['cueHierarchyDone'] as bool?) ?? false,
+      cueHierarchy: cueHierarchy,
+      environmentalChangesDone: (d['environmentalChangesDone'] as bool?) ?? false,
+      hrsPlanDone: (d['hrsPlanDone'] as bool?) ?? false,
+      urgeSurfingIntroSeen: (d['urgeSurfingIntroSeen'] as bool?) ?? false,
+      module5IntroSeen: (d['module5IntroSeen'] as bool?) ?? false,
+      lapseButtonAvailableFrom:
+          (d['lapseButtonAvailableFrom'] as Timestamp?)?.toDate(),
+      lastLifestyleAuditAt:
+          (d['lastLifestyleAuditAt'] as Timestamp?)?.toDate(),
+      quarterlyReviewDueDays: quarterlyReviewDueDays,
+      thoughtExaminationDraftStep:
+          (d['thoughtExaminationDraftStep'] as int?) ?? 0,
+      thoughtExaminationDraft: thoughtExaminationDraft,
+      valuesInventoryDraftStep: (d['valuesInventoryDraftStep'] as int?) ?? 0,
+      valuesInventoryDraft: valuesInventoryDraft,
+      cueHierarchyDraftStage: (d['cueHierarchyDraftStage'] as int?) ?? 0,
+      dailyCheckInEmotionalRating:
+          d['dailyCheckInEmotionalRating'] as int?,
+      dailyCheckInOutcome: d['dailyCheckInOutcome'] as String?,
+      midPointReflectionDone: (d['midPointReflectionDone'] as bool?) ?? false,
     );
   }
 }

@@ -180,7 +180,7 @@ class NotificationService {
     await cancelRecoveryPathReminder();
 
     const messages = [
-      'Your daily check-in is waiting — a few minutes keeps your progress going.',
+      'Your daily check-in is waiting — a few minutes of honesty every day adds up.',
       'Take a moment today for your Recovery Path check-in.',
       'Small daily steps lead to lasting change — check in when you\'re ready.',
       'Your Recovery Path check-in is here whenever you need it.',
@@ -215,6 +215,53 @@ class NotificationService {
     for (int i = 0; i < 7; i++) {
       await _plugin.cancel(200 + i);
     }
+  }
+
+  // ── Zero-log weekly nudge (ID 207) ────────────────────────────────────────
+  // Scheduled at most once per calendar week per habitId (SharedPreferences guard).
+  // Fires at 8pm today if no m1BehaviourLog sessions exist in the past 7 days.
+
+  Future<void> scheduleZeroLogNudge(String habitId) async {
+    await checkAuthorization();
+    if (!isAuthorized) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final weekKey = 'rp_zero_log_nudge_${_weekKey(now)}_$habitId';
+    if (prefs.getBool(weekKey) == true) return;
+
+    final today8pm = DateTime(now.year, now.month, now.day, 20, 0);
+    if (!today8pm.isAfter(now)) return;
+
+    await _plugin.zonedSchedule(
+      207,
+      'A quiet week in your log',
+      "It's been a quiet week in your log. Is everything OK? "
+          'Even a brief note about a moment you navigated well is worth capturing.',
+      _toTZDateTime(today8pm),
+      NotificationDetails(
+        android: const AndroidNotificationDetails(
+          'recovery_path_reminder',
+          'Recovery Path Reminders',
+          importance: Importance.defaultImportance,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+
+    await prefs.setBool(weekKey, true);
+  }
+
+  Future<void> cancelZeroLogNudge() async {
+    await _plugin.cancel(207);
+  }
+
+  String _weekKey(DateTime dt) {
+    final dayOfYear = dt.difference(DateTime(dt.year, 1, 1)).inDays;
+    return '${dt.year}_w${dayOfYear ~/ 7}';
   }
 
   Future<void> refreshAllNotifications(List<Habit> habits) async {

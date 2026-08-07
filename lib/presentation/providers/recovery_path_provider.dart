@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import '../../data/datasources/local/notification_service.dart';
 import '../../data/datasources/remote/auth_service.dart';
@@ -18,6 +20,7 @@ class RecoveryPathProvider extends ChangeNotifier {
   final Map<String, bool> _loading = {};
   final Map<String, bool> _checkInDoneToday = {};
   final Map<String, bool> _compassDoneThisWeek = {};
+  final _zeroLogNudgeChecked = <String>{};
 
   String? _errorFor(String habitId) => _errors[habitId];
   final Map<String, String?> _errors = {};
@@ -35,6 +38,7 @@ class RecoveryPathProvider extends ChangeNotifier {
       _errors.clear();
       _checkInDoneToday.clear();
       _compassDoneThisWeek.clear();
+      _zeroLogNudgeChecked.clear();
       notifyListeners();
     }
   }
@@ -55,8 +59,11 @@ class RecoveryPathProvider extends ChangeNotifier {
     return RecoveryPhaseCalculator.calculate(path);
   }
 
-  bool isModuleUnlocked(String habitId, int moduleNumber) =>
-      RecoveryPhaseCalculator.isModuleUnlocked(moduleNumber, phaseFor(habitId));
+  bool isModuleUnlocked(String habitId, int moduleNumber) {
+    final path = _paths[habitId];
+    if (path == null) return false;
+    return RecoveryPhaseCalculator.isModuleUnlocked(path, moduleNumber);
+  }
 
   /// Returns "Day X" based on startedAt.
   int dayNumberFor(String habitId) {
@@ -81,6 +88,7 @@ class RecoveryPathProvider extends ChangeNotifier {
       if (path != null) {
         await _refreshStatusFlags(habitId);
         await _maybeWriteBackPhase(path);
+        _checkZeroLogNudge(habitId).ignore();
       }
     } catch (e) {
       _errors[habitId] = e.toString();
@@ -107,6 +115,21 @@ class RecoveryPathProvider extends ChangeNotifier {
       _paths[path.id] = updated;
       await _repo.updatePath(updated);
     }
+  }
+
+  Future<void> _checkZeroLogNudge(String habitId) async {
+    if (_zeroLogNudgeChecked.contains(habitId)) return;
+    _zeroLogNudgeChecked.add(habitId);
+    try {
+      final uid = AuthService.shared.userId;
+      if (uid == null) return;
+      final sessions = await _repo.getSessions(habitId, uid: uid, type: RecoverySessionType.m1BehaviourLog);
+      final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+      final hasRecent = sessions.any((s) => s.createdAt.isAfter(sevenDaysAgo));
+      if (!hasRecent) {
+        await NotificationService.shared.scheduleZeroLogNudge(habitId);
+      }
+    } catch (_) {}
   }
 
   // ── Start path ───────────────────────────────────────────────────────────
@@ -136,11 +159,21 @@ class RecoveryPathProvider extends ChangeNotifier {
 
     switch (session.sessionType) {
       case RecoverySessionType.m1DailyCheckIn:
+        // Parse structured rating/outcome written by DailyCheckInScreen.
+        int? rating;
+        String? outcome;
+        try {
+          final parsed = jsonDecode(session.responseText) as Map<String, dynamic>;
+          rating = parsed['rating'] as int?;
+          outcome = parsed['outcome'] as String?;
+        } catch (_) {}
         updated = path.copyWith(
           module1: path.module1.copyWith(
             dailyCheckInCount: path.module1.dailyCheckInCount + 1,
             lastCheckInAt: session.createdAt,
           ),
+          dailyCheckInEmotionalRating: rating,
+          dailyCheckInOutcome: outcome,
         );
         _checkInDoneToday[habitId] = true;
       case RecoverySessionType.m3ValuesInventory:
@@ -174,8 +207,20 @@ class RecoveryPathProvider extends ChangeNotifier {
           lastLapseAt: session.createdAt,
           // Unlock M5 on first lapse by ensuring phase will reach 4.
         );
+      case RecoverySessionType.m1MidPointReflection:
+        updated = path.copyWith(midPointReflectionDone: true);
+      case RecoverySessionType.m5LapseResponse:
+        updated = path.copyWith(
+          totalLapses: path.totalLapses + 1,
+          lastLapseAt: session.createdAt,
+        );
       case RecoverySessionType.m1WeeklyReview:
       case RecoverySessionType.m2ThoughtExamination:
+      case RecoverySessionType.m1BehaviourLog:
+      case RecoverySessionType.m1CueHierarchy:
+      case RecoverySessionType.m4EnvironmentalRestructuring:
+      case RecoverySessionType.m4LifestyleAudit:
+      case RecoverySessionType.m5AveEducation:
         break;
     }
 
@@ -186,7 +231,7 @@ class RecoveryPathProvider extends ChangeNotifier {
 
   // ── Counter-response library (M2) ────────────────────────────────────────
 
-  Future<void> addCounterResponse(String habitId, String response) async {
+  Future<void> addCounterResponse(String habitId, Map<String, dynamic> response) async {
     final path = _paths[habitId];
     if (path == null) return;
     final updated = path.copyWith(
@@ -205,6 +250,33 @@ class RecoveryPathProvider extends ChangeNotifier {
     final updated = path.copyWith(
       module4: path.module4.copyWith(hrsPlan: plans),
     );
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    notifyListeners();
+  }
+
+  Future<void> markHrsPlanDone(String habitId) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = path.copyWith(hrsPlanDone: true);
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    notifyListeners();
+  }
+
+  Future<void> markModule5IntroSeen(String habitId) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = path.copyWith(module5IntroSeen: true);
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    notifyListeners();
+  }
+
+  Future<void> markUrgeSurfingIntroSeen(String habitId) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = path.copyWith(urgeSurfingIntroSeen: true);
     _paths[habitId] = updated;
     await _repo.updatePath(updated);
     notifyListeners();
@@ -237,6 +309,22 @@ class RecoveryPathProvider extends ChangeNotifier {
 
   // ── Values inventory ─────────────────────────────────────────────────────
 
+  Future<void> saveValuesInventoryDraft(
+    String habitId,
+    int step,
+    List<Map<String, dynamic>> entries,
+  ) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = path.copyWith(
+      valuesInventoryDraftStep: step,
+      valuesInventoryDraft: entries,
+    );
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    notifyListeners();
+  }
+
   Future<void> saveValuesInventoryEntries(
     String habitId,
     List<ValuesInventoryEntry> entries,
@@ -266,7 +354,190 @@ class RecoveryPathProvider extends ChangeNotifier {
     _errors.clear();
     _checkInDoneToday.clear();
     _compassDoneThisWeek.clear();
+    _zeroLogNudgeChecked.clear();
     notifyListeners();
+  }
+
+  // ── Cue hierarchy (M1) ───────────────────────────────────────────────────
+
+  Future<List<RecoverySession>> getSessionsByType(
+    String habitId,
+    RecoverySessionType type,
+  ) async {
+    final uid = AuthService.shared.userId!;
+    return _repo.getSessions(habitId, uid: uid, type: type);
+  }
+
+  Future<List<RecoverySession>> getAllSessions(String habitId) async {
+    final uid = AuthService.shared.userId!;
+    return _repo.getSessions(habitId, uid: uid);
+  }
+
+  Future<int> getBehaviourLogCount(String habitId) async {
+    final sessions = await getSessionsByType(
+        habitId, RecoverySessionType.m1BehaviourLog);
+    return sessions.length;
+  }
+
+  Future<void> saveCueHierarchy(
+    String habitId,
+    List<Map<String, dynamic>> cues,
+  ) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final uid = AuthService.shared.userId!;
+    final updated = path.copyWith(
+      cueHierarchy: cues,
+      cueHierarchyDone: true,
+      cueHierarchyDraftStage: 0,
+    );
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    final now = DateTime.now();
+    await _repo.saveSession(
+      RecoverySession(
+        id: '${habitId}_m1CueHierarchy_${now.millisecondsSinceEpoch}',
+        habitId: habitId,
+        sessionType: RecoverySessionType.m1CueHierarchy,
+        moduleNumber: 1,
+        responseText: '${cues.length} pattern triggers identified.',
+        createdAt: now,
+      ),
+      uid: uid,
+    );
+    await _maybeWriteBackPhase(updated);
+    notifyListeners();
+  }
+
+  Future<void> markEnvironmentalChangesDone(
+    String habitId,
+    List<Map<String, dynamic>> changes,
+  ) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final uid = AuthService.shared.userId!;
+    final updated = path.copyWith(environmentalChangesDone: true);
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    final now = DateTime.now();
+    await _repo.saveSession(
+      RecoverySession(
+        id: '${habitId}_m4EnvironmentalRestructuring_${now.millisecondsSinceEpoch}',
+        habitId: habitId,
+        sessionType: RecoverySessionType.m4EnvironmentalRestructuring,
+        moduleNumber: 4,
+        responseText: changes
+            .map((c) => '${c['cue']}: ${c['change']}')
+            .join('\n\n'),
+        createdAt: now,
+      ),
+      uid: uid,
+    );
+    notifyListeners();
+  }
+
+  // ── Lifestyle audit (M4) ─────────────────────────────────────────────────
+
+  Future<void> saveLifestyleAudit(String habitId, String responseText) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final uid = AuthService.shared.userId!;
+    final now = DateTime.now();
+    final updated = path.copyWith(lastLifestyleAuditAt: now);
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    await _repo.saveSession(
+      RecoverySession(
+        id: '${habitId}_m4LifestyleAudit_${now.millisecondsSinceEpoch}',
+        habitId: habitId,
+        sessionType: RecoverySessionType.m4LifestyleAudit,
+        moduleNumber: 4,
+        responseText: responseText,
+        createdAt: now,
+      ),
+      uid: uid,
+    );
+    notifyListeners();
+  }
+
+  bool isLifestyleAuditDue(RecoveryPath path) {
+    final last = path.lastLifestyleAuditAt;
+    if (last == null) return true;
+    return DateTime.now().difference(last).inDays >= 30;
+  }
+
+  bool isQuarterlyReviewDue(RecoveryPath path, int dayNumber) {
+    return path.quarterlyReviewDueDays.any((d) => dayNumber >= d) &&
+        path.module5.quarterlyReviewCount <
+            path.quarterlyReviewDueDays
+                .where((d) => dayNumber >= d)
+                .length;
+  }
+
+  // ── Thought examination draft (M2) ───────────────────────────────────────
+
+  Future<void> saveThoughtExaminationDraft(
+    String habitId,
+    int step,
+    Map<String, dynamic> draftData,
+  ) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = path.copyWith(
+      thoughtExaminationDraftStep: step,
+      thoughtExaminationDraft: draftData,
+    );
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+  }
+
+  Future<void> clearThoughtExaminationDraft(String habitId) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = RecoveryPath(
+      id: path.id,
+      userId: path.userId,
+      habitId: path.habitId,
+      startedAt: path.startedAt,
+      currentPhase: path.currentPhase,
+      module1: path.module1,
+      module3: path.module3,
+      module4: path.module4,
+      module5: path.module5,
+      totalLapses: path.totalLapses,
+      lastLapseAt: path.lastLapseAt,
+      recoveryLetterDraft: path.recoveryLetterDraft,
+      counterResponses: path.counterResponses,
+      habitType: path.habitType,
+      cueHierarchyDone: path.cueHierarchyDone,
+      cueHierarchy: path.cueHierarchy,
+      environmentalChangesDone: path.environmentalChangesDone,
+      hrsPlanDone: path.hrsPlanDone,
+      urgeSurfingIntroSeen: path.urgeSurfingIntroSeen,
+      module5IntroSeen: path.module5IntroSeen,
+      lapseButtonAvailableFrom: path.lapseButtonAvailableFrom,
+      lastLifestyleAuditAt: path.lastLifestyleAuditAt,
+      quarterlyReviewDueDays: path.quarterlyReviewDueDays,
+      thoughtExaminationDraftStep: 0,
+      thoughtExaminationDraft: null,
+      valuesInventoryDraftStep: path.valuesInventoryDraftStep,
+      valuesInventoryDraft: path.valuesInventoryDraft,
+      cueHierarchyDraftStage: path.cueHierarchyDraftStage,
+      dailyCheckInEmotionalRating: path.dailyCheckInEmotionalRating,
+      dailyCheckInOutcome: path.dailyCheckInOutcome,
+      midPointReflectionDone: path.midPointReflectionDone,
+    );
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    notifyListeners();
+  }
+
+  Future<void> saveCueHierarchyDraft(String habitId, int stage) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = path.copyWith(cueHierarchyDraftStage: stage);
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
   }
 
   // ── Load sessions ─────────────────────────────────────────────────────────

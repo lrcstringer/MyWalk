@@ -1,16 +1,21 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/recovery_session.dart';
 import '../../../domain/services/recovery_module_content.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
+import 'guardrails_screen.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
 
-/// Full-screen 3-step lapse recording flow.
-/// Step 1 — Self-compassion (shows recovery letter or fallback copy)
-/// Step 2 — Forensic analysis (3 sub-prompts + structured lapse fields)
-/// Step 3 — Re-orientation (top value + journal prompt → save)
+/// Full-screen 5-step lapse recording flow.
+/// Screen 0 — Stop the spiral (no fields, message only)
+/// Screen 1 — Recovery letter + self-compassion text field
+/// Screen 2 — Forensic analysis (4 mini fields)
+/// Screen 3 — Extract and recommit (2 required text fields + coping plan link)
+/// Screen 4 — Completion (auto-pop)
 class LapseRecordingFlow extends StatefulWidget {
   final String habitId;
 
@@ -21,67 +26,95 @@ class LapseRecordingFlow extends StatefulWidget {
 }
 
 class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
-  int _step = 0; // 0, 1, 2, or 3 (completion)
+  int _step = 0;
 
-  // Step 2 — analysis text
-  final TextEditingController _analysisCtrl = TextEditingController();
-  // Step 2 — structured fields
-  final TextEditingController _timeCtrl = TextEditingController();
-  final TextEditingController _locationCtrl = TextEditingController();
-  final TextEditingController _triggerCtrl = TextEditingController();
+  // Screen 1 — self-compassion
+  final TextEditingController _selfCompassionCtrl = TextEditingController();
+
+  // Screen 2 — forensic analysis (4 mini fields)
+  final TextEditingController _situationCtrl = TextEditingController();
   final TextEditingController _emotionCtrl = TextEditingController();
+  final TextEditingController _thoughtCtrl = TextEditingController();
+  final TextEditingController _copingGapCtrl = TextEditingController();
 
-  // Step 3 — re-orientation text
-  final TextEditingController _reorientCtrl = TextEditingController();
+  // Screen 3 — extract and recommit
+  final TextEditingController _copingPlanGapCtrl = TextEditingController();
+  final TextEditingController _recommittedValueCtrl = TextEditingController();
+  bool _copingPlanUpdated = false;
 
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    for (final c in [
+      _selfCompassionCtrl,
+      _copingPlanGapCtrl,
+      _recommittedValueCtrl,
+    ]) {
+      c.addListener(() => setState(() {}));
+    }
+  }
+
+  @override
   void dispose() {
-    _analysisCtrl.dispose();
-    _timeCtrl.dispose();
-    _locationCtrl.dispose();
-    _triggerCtrl.dispose();
+    _selfCompassionCtrl.dispose();
+    _situationCtrl.dispose();
     _emotionCtrl.dispose();
-    _reorientCtrl.dispose();
+    _thoughtCtrl.dispose();
+    _copingGapCtrl.dispose();
+    _copingPlanGapCtrl.dispose();
+    _recommittedValueCtrl.dispose();
     super.dispose();
+  }
+
+  bool get _canAdvance {
+    switch (_step) {
+      case 0: return true;
+      case 1: return _selfCompassionCtrl.text.trim().isNotEmpty;
+      case 2: return true; // mini fields not strictly required
+      case 3:
+        return _copingPlanGapCtrl.text.trim().isNotEmpty &&
+            _recommittedValueCtrl.text.trim().isNotEmpty;
+      default: return false;
+    }
   }
 
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
       final prov = context.read<RecoveryPathProvider>();
+      final now = DateTime.now();
 
-      // Combine analysis text with step 3 response.
-      final combined =
-          'What happened:\n${_analysisCtrl.text.trim()}'
-          '\n\nRe-orientation:\n${_reorientCtrl.text.trim()}';
+      final responseJson = jsonEncode({
+        'selfCompassion': _selfCompassionCtrl.text.trim(),
+        'situation': _situationCtrl.text.trim(),
+        'emotion': _emotionCtrl.text.trim(),
+        'thought': _thoughtCtrl.text.trim(),
+        'situationalCopingGap': _copingGapCtrl.text.trim(),
+        'copingPlanGap': _copingPlanGapCtrl.text.trim(),
+        'recommittedValue': _recommittedValueCtrl.text.trim(),
+      });
 
       final lapseData = LapseData(
-        time: _timeCtrl.text.trim().isEmpty ? null : _timeCtrl.text.trim(),
-        location: _locationCtrl.text.trim().isEmpty
-            ? null
-            : _locationCtrl.text.trim(),
-        trigger: _triggerCtrl.text.trim().isEmpty
-            ? null
-            : _triggerCtrl.text.trim(),
-        emotion: _emotionCtrl.text.trim().isEmpty
-            ? null
-            : _emotionCtrl.text.trim(),
+        selfCompassionText: _selfCompassionCtrl.text.trim(),
+        copingPlanGapText: _copingPlanGapCtrl.text.trim(),
+        recommittedValue: _recommittedValueCtrl.text.trim(),
+        copingPlanUpdated: _copingPlanUpdated,
       );
 
-      final now = DateTime.now();
       final session = RecoverySession(
-        id: '${widget.habitId}_lapseRecord_${now.millisecondsSinceEpoch}',
+        id: '${widget.habitId}_m5LapseResponse_${now.millisecondsSinceEpoch}',
         habitId: widget.habitId,
-        sessionType: RecoverySessionType.lapseRecord,
+        sessionType: RecoverySessionType.m5LapseResponse,
         moduleNumber: 5,
-        responseText: combined,
+        responseText: responseJson,
         createdAt: now,
         lapseData: lapseData,
       );
       await prov.saveSession(session);
-      if (mounted) setState(() { _saving = false; _step = 3; });
+
+      if (mounted) setState(() { _saving = false; _step = 4; });
     } catch (_) {
       if (mounted) {
         setState(() => _saving = false);
@@ -92,12 +125,21 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
     }
   }
 
+  void _onBack() {
+    if (_step > 0) {
+      setState(() => _step--);
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_step == 3) return const _CompletionView();
+    if (_step == 4) return const _CompletionView();
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -110,105 +152,91 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
         ),
         leading: BackButton(
           color: MyWalkColor.warmWhite,
-          onPressed: () {
-            if (_step > 0) {
-              setState(() => _step--);
-            } else {
-              Navigator.of(context).pop();
-            }
-          },
+          onPressed: _onBack,
         ),
       ),
       body: Stack(
         children: [
           const Positioned.fill(
-            child: IgnorePointer(
-              child: DeepSpaceBackground(),
-            ),
-          ),
-          Column(
-        children: [
-          // Progress dots
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              children: List.generate(3, (i) {
-                return Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  width: i == _step ? 20 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: i <= _step
-                        ? _kRpPurple
-                        : _kRpPurple.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                );
-              }),
-            ),
-          ),
-          Expanded(
-            child: IndexedStack(
-              index: _step,
+              child: IgnorePointer(child: DeepSpaceBackground())),
+          SafeArea(
+            child: Column(
               children: [
-                _Step1(
-                  habitId: widget.habitId,
-                  onContinue: () => setState(() => _step = 1),
+                // Progress dots (4 dots, steps 0–3)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                  child: Row(
+                    children: List.generate(4, (i) {
+                      return Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        width: i == _step ? 20 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: i <= _step
+                              ? _kRpPurple
+                              : _kRpPurple.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
                 ),
-                _Step2(
-                  analysisCtrl: _analysisCtrl,
-                  timeCtrl: _timeCtrl,
-                  locationCtrl: _locationCtrl,
-                  triggerCtrl: _triggerCtrl,
-                  emotionCtrl: _emotionCtrl,
-                  onContinue: () => setState(() => _step = 2),
-                ),
-                _Step3(
-                  habitId: widget.habitId,
-                  reorientCtrl: _reorientCtrl,
-                  saving: _saving,
-                  onSave: _save,
+                Expanded(
+                  child: _buildCurrentStep(context),
                 ),
               ],
             ),
           ),
         ],
       ),
-        ],
-      ),
     );
   }
-}
 
-// ── Step 1 — Self-compassion ──────────────────────────────────────────────────
+  Widget _buildCurrentStep(BuildContext context) {
+    switch (_step) {
+      case 0: return _buildScreen0();
+      case 1: return _buildScreen1(context);
+      case 2: return _buildScreen2();
+      case 3: return _buildScreen3(context);
+      default: return const SizedBox.shrink();
+    }
+  }
 
-class _Step1 extends StatelessWidget {
-  final String habitId;
-  final VoidCallback onContinue;
-  const _Step1({required this.habitId, required this.onContinue});
+  // ── Screen 0 — Stop the spiral ────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildScreen0() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text('Take a breath',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: MyWalkColor.warmWhite)),
-          const SizedBox(height: 16),
-
-          // Show saved recovery letter if available, else fallback copy.
-          _LetterCard(habitId: habitId),
-
+          const SizedBox(height: 20),
+          const Text(
+            'First — stop.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                color: MyWalkColor.warmWhite,
+                height: 1.2),
+          ),
           const SizedBox(height: 28),
+          Text(
+            'Whatever your mind is telling you right now about what this means, '
+            'about who you are, about whether change is possible — those thoughts are not facts.\n\n'
+            'One moment is one moment. It is not a verdict.\n\n'
+            'Take a breath. You\'re still here. That matters.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 16,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                height: 1.75),
+          ),
+          const SizedBox(height: 40),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: onContinue,
+              onPressed: () => setState(() => _step = 1),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kRpPurple,
                 foregroundColor: Colors.white,
@@ -216,7 +244,68 @@ class _Step1 extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('I\'m ready — let\'s look at what happened',
+              child: const Text('I\'m ready to continue',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Screen 1 — Recovery letter + self-compassion ──────────────────────────
+
+  Widget _buildScreen1(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _LetterCard(habitId: widget.habitId),
+          const SizedBox(height: 24),
+          const Text(
+            'What would you say to a good friend who had just gone through exactly this moment?',
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: MyWalkColor.warmWhite,
+                height: 1.4),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _selfCompassionCtrl,
+            minLines: 4,
+            maxLines: null,
+            style: const TextStyle(
+                color: MyWalkColor.warmWhite, fontSize: 14, height: 1.6),
+            decoration: InputDecoration(
+              hintText: 'Write as if your most compassionate self is speaking.',
+              hintStyle: TextStyle(
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
+                  fontSize: 13),
+              filled: true,
+              fillColor: MyWalkColor.surfaceOverlay,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.all(14),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _canAdvance ? () => setState(() => _step = 2) : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kRpPurple,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('I\'ve read it — continue',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             ),
           ),
@@ -224,7 +313,190 @@ class _Step1 extends StatelessWidget {
       ),
     );
   }
+
+  // ── Screen 2 — Forensic analysis ──────────────────────────────────────────
+
+  Widget _buildScreen2() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Let\'s understand what happened — not to judge it, but to learn from it.',
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: MyWalkColor.warmWhite,
+                height: 1.3),
+          ),
+          const SizedBox(height: 20),
+          _MiniField(
+              label: 'What was the situation just before? Where were you, what were you doing?',
+              controller: _situationCtrl),
+          _MiniField(
+              label: 'What were you feeling emotionally?',
+              controller: _emotionCtrl),
+          _MiniField(
+              label: 'What thought arose just before?',
+              controller: _thoughtCtrl),
+          _MiniField(
+              label: 'Where did your coping plan not hold — and what do you think got in the way?',
+              controller: _copingGapCtrl),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => setState(() => _step = 3),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kRpPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Continue',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Screen 3 — Extract and recommit ───────────────────────────────────────
+
+  Widget _buildScreen3(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            RecoveryModuleContent.lapseStep3Title,
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: MyWalkColor.warmWhite,
+                height: 1.3),
+          ),
+          const SizedBox(height: 20),
+
+          // Question A
+          const Text(
+            'What does this moment teach you about your coping plan that you didn\'t know before? What would need to be different next time?',
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: MyWalkColor.warmWhite,
+                height: 1.4),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _copingPlanGapCtrl,
+            minLines: 3,
+            maxLines: null,
+            autofocus: true,
+            style: const TextStyle(
+                color: MyWalkColor.warmWhite, fontSize: 14, height: 1.6),
+            decoration: InputDecoration(
+              hintText: 'Be specific about what would change.',
+              hintStyle: TextStyle(
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
+                  fontSize: 13),
+              filled: true,
+              fillColor: MyWalkColor.surfaceOverlay,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.all(14),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Question B
+          const Text(
+            'Which of your values do you want to take the next right step toward — right now, today?',
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: MyWalkColor.warmWhite,
+                height: 1.4),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _recommittedValueCtrl,
+            minLines: 2,
+            maxLines: null,
+            style: const TextStyle(
+                color: MyWalkColor.warmWhite, fontSize: 14, height: 1.6),
+            decoration: InputDecoration(
+              hintText: 'e.g. My family. My faith. My health.',
+              hintStyle: TextStyle(
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
+                  fontSize: 13),
+              filled: true,
+              fillColor: MyWalkColor.surfaceOverlay,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.all(14),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _canAdvance && !_saving ? _save : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kRpPurple,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _saving
+                  ? const SizedBox(
+                      width: 18, height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Text('Save and update my plan',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () {
+                setState(() => _copingPlanUpdated = true);
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => GuardrailsScreen(
+                    habitId: widget.habitId,
+                    habitName: '',
+                    initialTab: 1,
+                  ),
+                ));
+              },
+              child: Text(
+                'Update my coping plan →',
+                style: TextStyle(
+                    color: _kRpPurple.withValues(alpha: 0.7), fontSize: 13),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+// ── Letter card ───────────────────────────────────────────────────────────────
 
 class _LetterCard extends StatelessWidget {
   final String habitId;
@@ -246,8 +518,8 @@ class _LetterCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _kRpPurple.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: _kRpPurple.withValues(alpha: 0.2), width: 0.75),
+        border: Border.all(
+            color: _kRpPurple.withValues(alpha: 0.2), width: 0.75),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,114 +551,7 @@ class _LetterCard extends StatelessWidget {
   }
 }
 
-// ── Step 2 — Forensic analysis ────────────────────────────────────────────────
-
-class _Step2 extends StatelessWidget {
-  final TextEditingController analysisCtrl;
-  final TextEditingController timeCtrl;
-  final TextEditingController locationCtrl;
-  final TextEditingController triggerCtrl;
-  final TextEditingController emotionCtrl;
-  final VoidCallback onContinue;
-
-  const _Step2({
-    required this.analysisCtrl,
-    required this.timeCtrl,
-    required this.locationCtrl,
-    required this.triggerCtrl,
-    required this.emotionCtrl,
-    required this.onContinue,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            RecoveryModuleContent.lapseStep2Title,
-            style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: MyWalkColor.warmWhite),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            RecoveryModuleContent.lapseStep2Body,
-            style: TextStyle(
-                fontSize: 13,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
-                height: 1.5),
-          ),
-          const SizedBox(height: 16),
-
-          // Free-text analysis
-          ...RecoveryModuleContent.lapseStep2SubPrompts.map((p) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text('• $p',
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.6))),
-              )),
-          const SizedBox(height: 8),
-          TextField(
-            controller: analysisCtrl,
-            maxLines: 5,
-            minLines: 3,
-            style: const TextStyle(
-                color: MyWalkColor.warmWhite, fontSize: 14, height: 1.5),
-            decoration: InputDecoration(
-              hintText: 'Write freely — no judgement here.',
-              hintStyle: TextStyle(
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.25),
-                  fontSize: 13),
-              filled: true,
-              fillColor: MyWalkColor.surfaceOverlay,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Structured fields
-          Text('Quick capture',
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
-                  letterSpacing: 0.5)),
-          const SizedBox(height: 10),
-          _MiniField(label: 'Time (approx.)', controller: timeCtrl),
-          _MiniField(label: 'Where were you?', controller: locationCtrl),
-          _MiniField(label: 'What triggered it?', controller: triggerCtrl),
-          _MiniField(label: 'Emotional state before', controller: emotionCtrl),
-
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onContinue,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kRpPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Continue',
-                  style:
-                      TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ── Mini field ────────────────────────────────────────────────────────────────
 
 class _MiniField extends StatelessWidget {
   final String label;
@@ -396,148 +561,31 @@ class _MiniField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: TextField(
-        controller: controller,
-        style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 13),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
-              fontSize: 12),
-          filled: true,
-          fillColor: MyWalkColor.surfaceOverlay,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Step 3 — Re-orientation ───────────────────────────────────────────────────
-
-class _Step3 extends StatelessWidget {
-  final String habitId;
-  final TextEditingController reorientCtrl;
-  final bool saving;
-  final VoidCallback onSave;
-
-  const _Step3({
-    required this.habitId,
-    required this.reorientCtrl,
-    required this.saving,
-    required this.onSave,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final prov = context.watch<RecoveryPathProvider>();
-    final path = prov.pathFor(habitId);
-
-    // Show top value gap (highest importance - alignment) if M3 is done.
-    String? topValueName;
-    if (path != null && path.module3.valuesInventoryDone) {
-      final inventory = path.module3.valuesInventory;
-      if (inventory.isNotEmpty) {
-        final top = inventory.reduce(
-          (a, b) => a.gap >= b.gap ? a : b,
-        );
-        if (top.gap > 0) topValueName = top.domain;
-      }
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Back on the path',
+          Text(label,
               style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: MyWalkColor.warmWhite)),
-          const SizedBox(height: 12),
-
-          if (topValueName != null) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: MyWalkColor.sage.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(children: [
-                const Icon(Icons.anchor_rounded,
-                    size: 14, color: MyWalkColor.sage),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${RecoveryModuleContent.lapseStep3ValuePrefix}$topValueName',
-                    style: const TextStyle(
-                        fontSize: 13, color: MyWalkColor.warmWhite),
-                  ),
-                ),
-              ]),
-            ),
-            const SizedBox(height: 14),
-          ],
-
-          Text(
-            RecoveryModuleContent.lapseStep3Prompt,
-            style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: MyWalkColor.warmWhite,
-                height: 1.4),
-          ),
-          const SizedBox(height: 14),
-
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.75))),
+          const SizedBox(height: 6),
           TextField(
-            controller: reorientCtrl,
-            maxLines: 5,
-            minLines: 3,
-            autofocus: true,
+            controller: controller,
+            minLines: 2,
+            maxLines: null,
             style: const TextStyle(
-                color: MyWalkColor.warmWhite, fontSize: 14, height: 1.5),
+                color: MyWalkColor.warmWhite, fontSize: 13, height: 1.5),
             decoration: InputDecoration(
-              hintText: 'One specific thing…',
-              hintStyle: TextStyle(
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.25),
-                  fontSize: 13),
               filled: true,
               fillColor: MyWalkColor.surfaceOverlay,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: saving ? null : onSave,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kRpPurple,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: saving
-                  ? const SizedBox(
-                      width: 18, height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : const Text('Save and get back up',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
           ),
         ],
@@ -571,46 +619,42 @@ class _CompletionViewState extends State<_CompletionView> {
       body: Stack(
         children: [
           const Positioned.fill(
-            child: IgnorePointer(
-              child: DeepSpaceBackground(),
+              child: IgnorePointer(child: DeepSpaceBackground())),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: _kRpPurple.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.favorite_rounded,
+                        color: _kRpPurple, size: 28),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('You came back.',
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: MyWalkColor.warmWhite)),
+                  const SizedBox(height: 14),
+                  Text(
+                    RecoveryModuleContent.lapseCompletionMessage,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
+                        height: 1.55),
+                  ),
+                ],
+              ),
             ),
           ),
-          Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: _kRpPurple.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.favorite_rounded,
-                    color: _kRpPurple, size: 28),
-              ),
-              const SizedBox(height: 20),
-              const Text('You did it',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: MyWalkColor.warmWhite)),
-              const SizedBox(height: 14),
-              Text(
-                RecoveryModuleContent.lapseCompletionMessage,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 14,
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
-                    height: 1.5,
-                    fontStyle: FontStyle.italic),
-              ),
-            ],
-          ),
-        ),
-      ),
         ],
       ),
     );

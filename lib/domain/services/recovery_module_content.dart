@@ -97,13 +97,13 @@ class RecoveryModuleContent {
   /// The 8 life domains used in the values inventory.
   static const List<String> m3ValuesDomains = [
     'Faith & Spiritual Life',
-    'Family & Close Relationships',
-    'Friendships & Community',
-    'Health & Physical Wellbeing',
-    'Work & Purpose',
+    'Intimate Relationship & Partnership',
+    'Family & Parenting',
+    'Friendship & Social Connection',
+    'Work, Career & Contribution',
     'Personal Growth & Learning',
-    'Joy & Rest',
-    'Service & Contribution',
+    'Health & Physical Wellbeing',
+    'Creative Expression & Leisure',
   ];
 
   static const String m3InventoryIntro =
@@ -115,8 +115,12 @@ class RecoveryModuleContent {
   static const String m3AlignmentLabel = 'How well are you living it?';
 
   static const String m3InventoryCompleteMessage =
-      'Your values map is saved. The gaps you see are not failures — '
-      'they\'re the places where your walk can deepen.';
+      "You've mapped what matters to you. As you work through this journey, "
+      "this is your compass — the life you're building toward.";
+
+  static const String m3InventoryCompleteMessageWithAway =
+      "You can see where this pattern is pulling against what matters to you. "
+      "That's your compass — not a judgement, just information.";
 
   /// Weekly compass prompts — shown once a week after inventory is done.
   static const List<String> m3WeeklyCompassPrompts = [
@@ -125,22 +129,22 @@ class RecoveryModuleContent {
     'What one action this week could bring you closer to living your values?',
   ];
 
-  static const String m3CompassTitle = 'Weekly Values Compass';
+  static const String m3CompassTitle = 'Values Compass';
   static const String m3CompassHint =
-      'Reflect honestly — this is between you and God.';
+      'A quick honest check — this takes about 5 minutes.';
 
   // ── Phase labels ─────────────────────────────────────────────────────────
 
   static String phaseLabel(int phase) {
     switch (phase) {
       case 1:
-        return 'Awareness';
+        return 'Getting Started';
       case 2:
-        return 'Understanding';
+        return 'Going Deeper';
       case 3:
-        return 'Anchoring';
+        return 'Sustained Practice';
       case 4:
-        return 'Resilience';
+        return 'Maintenance';
       default:
         return 'Phase $phase';
     }
@@ -275,9 +279,9 @@ class RecoveryModuleContent {
 
   // Urge surfing prompts
   static const List<String> m4UrgeSurfingPrompts = [
-    'Close your eyes. Notice where the urge lives in your body — chest, stomach, throat? Describe what you feel physically.',
-    'Urges are waves. They peak and then subside — usually within 20 minutes. What is the intensity right now, 1–10?',
-    'You don\'t have to act on this wave. Just ride it. What do you notice as you sit with the urge without giving in?',
+    'Name it: "I am having an urge to [behaviour]." Write what you\'re experiencing right now — not as a command to act, just as an observation.',
+    'Locate it: Where in your body do you feel it? Chest, throat, stomach, hands? What is its shape and quality?',
+    'Watch it: Did it rise and then begin to ease? Describe what happened to the urge as you observed it. Was it survivable?',
   ];
 
   static const String m4UrgeSurfingTitle = 'Urge Surfing';
@@ -288,21 +292,23 @@ class RecoveryModuleContent {
 
   /// 4-prompt recovery letter flow.
   static const List<String> m5RecoveryLetterPrompts = [
-    'What do you most want your future self to know about this struggle — the real, honest version?',
-    'What is still true about who you are, despite this habit? What have you not lost?',
-    'What has kept you going? What moment, verse, or person comes to mind?',
-    'What one thing do you want your future self to do the next time the urge hits?',
+    'Right now, while you\'re clear-headed, write a letter from your wiser self to your struggling self — for the moment after a slip.\n\nWhat do you most want to remind yourself about who you are?',
+    'What does the research say about slips? (Hint: they don\'t have to become relapses. A slip is a data point, not a verdict.)\n\nWrite it in your own words — this is what you\'ll read in your hardest moment.',
+    'Which of your values do you want to take the next step toward — even today, even now?',
+    'What do you want to say to your harshest inner voice?',
   ];
 
   static const String m5RecoveryLetterTitle = 'Your Recovery Letter';
   static const String m5RecoveryLetterIntro =
       'This letter is from you to you — to be read the next time you\'re struggling. '
-      'Write honestly. No one else will see this.';
+      'Write honestly. No one else will see this.\n\n'
+      'Many people find this is the most important thing they write in this whole journey.';
   static const String m5RecoveryLetterPreviewTitle = 'Review your letter';
   static const String m5RecoveryLetterPreviewBody =
       'This is how your answers come together. Edit if you wish, then save.';
   static const String m5LetterSavedMessage =
-      'Your letter is saved. It will be shown to you during the lapse recording flow.';
+      'That\'s the preparation done. You\'ve given your future self something real to hold onto. '
+      'Now you know what to do if a hard moment comes — and you have what you need to get back up.';
 
   /// Builds the stitched letter from 4 answers.
   static String stitchRecoveryLetter(List<String> answers) {
@@ -358,8 +364,9 @@ class RecoveryModuleContent {
       'What is one thing you will do in the next hour to re-anchor yourself?';
   static const String lapseStep3ValuePrefix = 'Your anchor value: ';
   static const String lapseCompletionMessage =
-      'You did the hard thing — you faced it honestly. '
-      'That\'s what recovery looks like.';
+      'You didn\'t give up. You came back. That is what recovery actually looks like '
+      '— not a straight line, but coming back every time.\n\n'
+      'Your plan is updated. Your values are still yours. Keep going.';
 }
 
 class ModuleMeta {

@@ -13,6 +13,13 @@ import '../shared/fruit_tag_row.dart';
 import '../shared/golden_pulse_view.dart';
 import 'habit_detail_view.dart';
 import 'habit_history_view.dart';
+import 'behaviour_log_screen.dart';
+import 'daily_check_in_screen.dart';
+import 'thought_examination_screen.dart';
+import 'guardrails_screen.dart';
+import 'lapse_recording_flow.dart';
+import '../../../domain/entities/recovery_path.dart';
+import '../../../domain/services/recovery_phase_calculator.dart';
 import '../journal/journal_entry_composer.dart';
 
 class HabitCheckInCardView extends StatefulWidget {
@@ -42,6 +49,8 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   // only the most-recent async write commits its post-await setState.
   int _writeToken = 0;
 
+  int _logCount = 0;
+
   Habit get _habit => widget.habit;
   DateTime get _targetDate => widget.targetDate;
 
@@ -54,6 +63,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           context.read<RecoveryPathProvider>().loadPath(_habit.id);
+          _loadLogCount();
         }
       });
     }
@@ -65,6 +75,11 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     if (old.targetDate != widget.targetDate) {
       _refreshState();
     }
+  }
+
+  Future<void> _loadLogCount() async {
+    final count = await context.read<RecoveryPathProvider>().getBehaviourLogCount(_habit.id);
+    if (mounted) setState(() => _logCount = count);
   }
 
   void _refreshState() {
@@ -173,6 +188,12 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                   _verseSection(),
                 ],
                 if (isAbstain && !widget.isRetroactive) ...[
+                  if (_habit.subcategoryId == 'breaking_habits') ...[
+                    const SizedBox(height: 10),
+                    _breakingHabitsActionChips(context),
+                    const SizedBox(height: 2),
+                    _lapseLink(context),
+                  ],
                   const SizedBox(height: 12),
                   _partnerStrip(context),
                   const SizedBox(height: 8),
@@ -540,7 +561,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
               style: TextStyle(fontSize: 12, color: purple.withValues(alpha: 0.85)),
             ),
           ),
-          if (checkInPending)
+          if (checkInPending || _hasPendingAction(path))
             Container(
               width: 7,
               height: 7,
@@ -563,6 +584,9 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   }
 
   Widget _abstainButton() {
+    if (_habit.subcategoryId == 'breaking_habits' && !widget.isRetroactive) {
+      return _breakingHabitsCheckInButton();
+    }
     if (_isCompleted) return const SizedBox.shrink();
     return SizedBox(
       width: double.infinity,
@@ -580,6 +604,158 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         ),
       ),
     );
+  }
+
+  Widget _breakingHabitsCheckInButton() {
+    final prov = context.read<RecoveryPathProvider>();
+    final done = prov.checkInDoneToday(_habit.id);
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: done
+            ? null
+            : () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => DailyCheckInScreen(
+                    habitId: _habit.id,
+                    habitName: _habit.name,
+                  ),
+                )),
+        icon: Icon(
+          done ? Icons.check_circle_outline : Icons.circle_outlined,
+          size: 16,
+        ),
+        label: Text(done ? 'Checked in today ✓' : 'How are you doing today?'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: done
+              ? MyWalkColor.sage.withValues(alpha: 0.15)
+              : MyWalkColor.sage,
+          foregroundColor: MyWalkColor.charcoal,
+          disabledForegroundColor: MyWalkColor.sage.withValues(alpha: 0.55),
+          disabledBackgroundColor: MyWalkColor.sage.withValues(alpha: 0.12),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    );
+  }
+
+  Widget _breakingHabitsActionChips(BuildContext context) {
+    final prov = context.read<RecoveryPathProvider>();
+    final path = prov.pathFor(_habit.id);
+    if (path == null) return const SizedBox.shrink();
+
+    final module2Unlocked = RecoveryPhaseCalculator.isModuleUnlocked(path, 2);
+    final module4Unlocked = RecoveryPhaseCalculator.isModuleUnlocked(path, 4);
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(children: [
+        _habitActionChip(
+          label: 'Log a moment',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => BehaviourLogScreen(habitId: _habit.id),
+          )),
+        ),
+        if (module2Unlocked) ...[
+          const SizedBox(width: 6),
+          _habitActionChip(
+            label: 'Examine a thought',
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => ThoughtExaminationScreen(habitId: _habit.id),
+            )),
+          ),
+        ],
+        if (module4Unlocked && path.urgeSurfingIntroSeen) ...[
+          const SizedBox(width: 6),
+          _habitActionChip(
+            label: 'Urge surfed',
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => GuardrailsScreen(
+                habitId: _habit.id,
+                habitName: _habit.name,
+                initialTab: 2,
+              ),
+            )),
+          ),
+        ],
+        if (module2Unlocked && path.counterResponses.isNotEmpty) ...[
+          const SizedBox(width: 6),
+          _habitActionChip(
+            label: 'My counter-responses',
+            onTap: () => _openCounterResponseLibrary(context, path),
+          ),
+        ],
+      ]),
+    );
+  }
+
+  Widget _habitActionChip({
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: MyWalkColor.softGold.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: MyWalkColor.softGold.withValues(alpha: 0.25), width: 0.5),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: MyWalkColor.softGold.withValues(alpha: 0.8),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _lapseLink(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton(
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => LapseRecordingFlow(habitId: _habit.id),
+        )),
+        style: TextButton.styleFrom(
+          padding: EdgeInsets.zero,
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: Text(
+          'I had a moment',
+          style: TextStyle(
+              fontSize: 12,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.35)),
+        ),
+      ),
+    );
+  }
+
+  void _openCounterResponseLibrary(BuildContext context, RecoveryPath path) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: MyWalkColor.charcoal,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) =>
+          _CounterResponseLibrary(responses: path.counterResponses),
+    );
+  }
+
+  bool _hasPendingAction(RecoveryPath path) {
+    final prov = context.read<RecoveryPathProvider>();
+    final day = prov.dayNumberFor(_habit.id);
+    return (day >= 8 && day <= 10 && !path.midPointReflectionDone) ||
+        (day >= 14 && !path.cueHierarchyDone && _logCount >= 5) ||
+        (path.module3.valuesInventoryDone &&
+            !prov.compassDoneThisWeek(_habit.id));
   }
 
   Widget _timedUI(Color accentColor) {
@@ -827,6 +1003,89 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         expand: false,
         builder: (ctx, sc) => HabitDetailView(habit: _habit, scrollController: sc),
       ),
+    );
+  }
+}
+
+// ── Counter-response library bottom sheet ─────────────────────────────────────
+
+class _CounterResponseLibrary extends StatelessWidget {
+  final List<Map<String, dynamic>> responses;
+  const _CounterResponseLibrary({required this.responses});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 12),
+        Container(
+          width: 32,
+          height: 4,
+          decoration: BoxDecoration(
+            color: MyWalkColor.warmWhite.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text('My Counter-Responses',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: MyWalkColor.warmWhite)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Flexible(
+          child: responses.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text('No counter-responses saved yet.',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.5))),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  itemCount: responses.length,
+                  separatorBuilder: (_, _) => Divider(
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.07),
+                    height: 1,
+                  ),
+                  itemBuilder: (_, i) {
+                    final r = responses[i];
+                    final thought = r['thought'] as String? ?? '';
+                    final alternative = r['alternative'] as String? ?? '';
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (thought.isNotEmpty) ...[
+                            Text('"$thought"',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontStyle: FontStyle.italic,
+                                    color: MyWalkColor.warmWhite
+                                        .withValues(alpha: 0.45))),
+                            const SizedBox(height: 4),
+                          ],
+                          Text(alternative,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  color: MyWalkColor.warmWhite)),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

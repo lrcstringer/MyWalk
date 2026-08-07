@@ -3,12 +3,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 enum RecoverySessionType {
   m1DailyCheckIn,
   m1WeeklyReview,
+  m1BehaviourLog,
+  m1MidPointReflection,
+  m1CueHierarchy,
   m2ThoughtExamination,
   m3ValuesInventory,
   m3WeeklyCompass,
   m4UrgeSurfing,
+  m4EnvironmentalRestructuring,
+  m4LifestyleAudit,
   m5RecoveryLetter,
   m5QuarterlyReview,
+  m5AveEducation,
+  m5LapseResponse,
   lapseRecord;
 
   static RecoverySessionType fromString(String s) {
@@ -21,20 +28,37 @@ enum RecoverySessionType {
   String get value => name;
 }
 
-/// Structured data captured during a lapse recording (Step 2).
+/// Structured data captured during a lapse recording.
 class LapseData {
-  final String? time;       // approximate time of lapse
-  final String? location;   // where the user was
-  final String? trigger;    // what triggered it
-  final String? emotion;    // emotional state before
+  final String? time;               // approximate time of lapse
+  final String? location;           // where the user was
+  final String? trigger;            // what triggered it
+  final String? emotion;            // emotional state before
+  final String? selfCompassionText; // Screen 1 self-compassion response
+  final String? copingPlanGapText;  // what user learned about coping plan gap
+  final String? recommittedValue;   // which value they committed to
+  final bool copingPlanUpdated;     // whether user tapped "Update my coping plan"
 
-  const LapseData({this.time, this.location, this.trigger, this.emotion});
+  const LapseData({
+    this.time,
+    this.location,
+    this.trigger,
+    this.emotion,
+    this.selfCompassionText,
+    this.copingPlanGapText,
+    this.recommittedValue,
+    this.copingPlanUpdated = false,
+  });
 
   Map<String, dynamic> toMap() => {
         'time': time,
         'location': location,
         'trigger': trigger,
         'emotion': emotion,
+        'selfCompassionText': selfCompassionText,
+        'copingPlanGapText': copingPlanGapText,
+        'recommittedValue': recommittedValue,
+        'copingPlanUpdated': copingPlanUpdated,
       };
 
   factory LapseData.fromMap(Map<String, dynamic> m) => LapseData(
@@ -42,6 +66,10 @@ class LapseData {
         location: m['location'] as String?,
         trigger: m['trigger'] as String?,
         emotion: m['emotion'] as String?,
+        selfCompassionText: m['selfCompassionText'] as String?,
+        copingPlanGapText: m['copingPlanGapText'] as String?,
+        recommittedValue: m['recommittedValue'] as String?,
+        copingPlanUpdated: (m['copingPlanUpdated'] as bool?) ?? false,
       );
 }
 
@@ -55,7 +83,7 @@ class RecoverySession {
   final int moduleNumber;
   final String responseText; // plain text in memory; encrypted in Firestore
   final DateTime createdAt;
-  final LapseData? lapseData; // populated only for lapseRecord sessions
+  final LapseData? lapseData; // populated for lapseRecord and m5LapseResponse sessions
 
   const RecoverySession({
     required this.id,

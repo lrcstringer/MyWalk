@@ -26,6 +26,7 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
   int _step = 0; // 0–3 = prompts; 4 = preview; 5 = done
   late final TextEditingController _previewCtrl;
   bool _saving = false;
+  bool _showAveIntro = false;
 
   @override
   void initState() {
@@ -34,6 +35,13 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
     for (final c in _controllers) {
       c.addListener(() => setState(() {}));
     }
+    // Show AVE intro on first open
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final path = context.read<RecoveryPathProvider>().pathFor(widget.habitId);
+      if (path != null && !path.module5IntroSeen) {
+        setState(() => _showAveIntro = true);
+      }
+    });
   }
 
   @override
@@ -91,6 +99,17 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
   @override
   Widget build(BuildContext context) {
     if (_step == 5) return _DoneView();
+
+    if (_showAveIntro) {
+      return _AveIntroScreen(
+        onContinue: () async {
+          await context
+              .read<RecoveryPathProvider>()
+              .markModule5IntroSeen(widget.habitId);
+          if (mounted) setState(() => _showAveIntro = false);
+        },
+      );
+    }
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
@@ -345,6 +364,92 @@ class _PreviewStep extends StatelessWidget {
                   : const Text('Save my letter',
                       style: TextStyle(
                           fontWeight: FontWeight.w600, fontSize: 15)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── AVE education screen (shown once before letter writing) ───────────────────
+
+class _AveIntroScreen extends StatelessWidget {
+  final Future<void> Function() onContinue;
+  const _AveIntroScreen({required this.onContinue});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Navigate Lapses',
+            style: TextStyle(
+                color: MyWalkColor.warmWhite,
+                fontSize: 16,
+                fontWeight: FontWeight.w600)),
+        leading: const BackButton(color: MyWalkColor.warmWhite),
+      ),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+              child: IgnorePointer(child: DeepSpaceBackground())),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Before anything happens — read this.',
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: MyWalkColor.warmWhite,
+                        height: 1.3),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Most people who are changing a deeply ingrained pattern will experience '
+                    'a slip at some point. That\'s not pessimism — it\'s what the research '
+                    'consistently shows.\n\n'
+                    'What determines whether a slip becomes a full relapse is almost never '
+                    'the slip itself. It\'s what happens in the hour afterward.\n\n'
+                    'When a slip happens, the mind tends to catastrophise: "I\'ve failed. '
+                    'I have no willpower. I\'ll never change. I might as well give up." '
+                    'Researchers call this the Abstinence Violation Effect — and it\'s one '
+                    'of the most dangerous things that can happen after a slip, because it '
+                    'turns a single moment into a sustained return to the old pattern.\n\n'
+                    'These thoughts are not facts. They are the all-or-nothing thinking '
+                    'error at its most damaging. And knowing that — right now, before you '
+                    'need it — is one of the most useful things you can do.',
+                    style: TextStyle(
+                        fontSize: 15,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                        height: 1.7),
+                  ),
+                  const SizedBox(height: 36),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onContinue,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kRpPurple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text(
+                          'I\'ve read this — write my letter',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
