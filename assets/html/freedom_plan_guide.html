@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Freedom Plan — How It Works</title>
+<style>
+  :root {
+    --bg: #F2F3F7;
+    --surface: #FFFFFF;
+    --surface2: #ECEEF5;
+    --text: #1A1C26;
+    --text-muted: #5A5E72;
+    --border: #D8DAE8;
+    --accent: #8B7EC8;
+    --accent-light: #EDE9F8;
+    --phase1: #8B7EC8;
+    --phase1-bg: #F0EDF9;
+    --phase2: #6E5BB8;
+    --phase2-bg: #EAE6F5;
+    --phase3: #C4913A;
+    --phase3-bg: #FDF3E3;
+    --phase4: #5A8A5E;
+    --phase4-bg: #EAF3EB;
+    --screen-bg: #22243A;
+    --screen-text: #F0F0F5;
+    --screen-muted: rgba(240,240,245,0.55);
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-serif: Georgia, 'Times New Roman', serif;
+    --rail: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141520;
+      --surface: #1E2030;
+      --surface2: #252840;
+      --text: #E8E9F2;
+      --text-muted: #8A8DA8;
+      --border: #2E3050;
+      --accent: #A090D8;
+      --accent-light: #2A274A;
+      --phase1-bg: #1E1A38;
+      --phase2-bg: #1A1730;
+      --phase3-bg: #2A2010;
+      --phase4-bg: #101E12;
+      --screen-bg: #0E1018;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg:#F2F3F7;--surface:#FFFFFF;--surface2:#ECEEF5;--text:#1A1C26;--text-muted:#5A5E72;
+    --border:#D8DAE8;--accent:#8B7EC8;--accent-light:#EDE9F8;
+    --phase1-bg:#F0EDF9;--phase2-bg:#EAE6F5;--phase3-bg:#FDF3E3;--phase4-bg:#EAF3EB;
+    --screen-bg:#22243A;--screen-text:#F0F0F5;--screen-muted:rgba(240,240,245,0.55);
+  }
+  :root[data-theme="dark"] {
+    --bg:#141520;--surface:#1E2030;--surface2:#252840;--text:#E8E9F2;--text-muted:#8A8DA8;
+    --border:#2E3050;--accent:#A090D8;--accent-light:#2A274A;
+    --phase1-bg:#1E1A38;--phase2-bg:#1A1730;--phase3-bg:#2A2010;--phase4-bg:#101E12;
+    --screen-bg:#0E1018;--screen-text:#E8E9F2;--screen-muted:rgba(232,233,242,0.5);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 0 60px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* ── Header ───────────────────────────────────── */
+  .hero {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 36px 24px 28px;
+    text-align: center;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 12px;
+  }
+  .hero h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(22px, 6vw, 32px);
+    font-weight: normal;
+    margin: 0 0 12px;
+    color: var(--text);
+    text-wrap: balance;
+    line-height: 1.25;
+  }
+  .hero-sub {
+    color: var(--text-muted);
+    font-size: 14px;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ── Content ──────────────────────────────────── */
+  .content {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* ── TOC ──────────────────────────────────────── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin: 24px 0;
+  }
+  .toc-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .toc a {
+    display: block;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13.5px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    transition: color 0.15s;
+  }
+  .toc a:last-child { border-bottom: none; }
+  .toc a:hover { color: var(--accent); }
+  .toc a.sub { padding-left: 14px; font-size: 13px; }
+
+  /* ── Typography ───────────────────────────────── */
+  h2 {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: normal;
+    margin: 44px 0 6px;
+    color: var(--text);
+    text-wrap: balance;
+    line-height: 1.3;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 28px 0 6px;
+    color: var(--text);
+  }
+  h4 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 22px 0 8px;
+  }
+  p { margin: 0 0 12px; }
+  p:last-child { margin-bottom: 0; }
+  ul, ol { padding-left: 20px; margin: 8px 0 12px; }
+  li { margin-bottom: 6px; }
+
+  /* ── Phase rail sections ──────────────────────── */
+  .phase-section {
+    border-left: var(--rail) solid var(--accent);
+    padding: 22px 22px 22px 20px;
+    margin: 22px 0;
+    background: var(--surface);
+    border-radius: 0 10px 10px 0;
+  }
+  .phase-section.p1 { border-color: var(--phase1); background: var(--phase1-bg); }
+  .phase-section.p2 { border-color: var(--phase2); background: var(--phase2-bg); }
+  .phase-section.p3 { border-color: var(--phase3); background: var(--phase3-bg); }
+  .phase-section.p4 { border-color: var(--phase4); background: var(--phase4-bg); }
+
+  .phase-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .badge-p1 { background: var(--phase1); }
+  .badge-p2 { background: var(--phase2); }
+  .badge-p3 { background: var(--phase3); }
+  .badge-p4 { background: var(--phase4); }
+
+  /* ── Screen card ──────────────────────────────── */
+  .screen-card {
+    background: var(--screen-bg);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+  .screen-card .sc-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .screen-card .sc-q {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    color: var(--screen-text);
+    line-height: 1.45;
+    margin-bottom: 6px;
+    text-wrap: balance;
+  }
+  .screen-card .sc-hint {
+    font-size: 12.5px;
+    color: var(--screen-muted);
+    font-style: italic;
+    margin-top: 4px;
+  }
+  .screen-card .sc-note {
+    font-size: 12.5px;
+    color: var(--screen-muted);
+    border-left: 2px solid var(--accent);
+    padding-left: 8px;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .screen-card .sc-body {
+    color: var(--screen-text);
+    line-height: 1.7;
+    font-size: 14px;
+    opacity: 0.85;
+  }
+  .sc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+  .sc-chip {
+    background: rgba(139,126,200,0.18);
+    border: 1px solid rgba(139,126,200,0.3);
+    color: var(--screen-text);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* ── Callout ──────────────────────────────────── */
+  .callout {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.55;
+  }
+
+  /* ── Module card ──────────────────────────────── */
+  .module-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin: 20px 0;
+  }
+  .module-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .module-num {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .module-title {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: normal;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.2;
+  }
+  .unlock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 9px;
+    color: var(--text-muted);
+    margin: 6px 0 10px;
+  }
+
+  /* ── Step list ────────────────────────────────── */
+  .step-list { list-style: none; padding: 0; margin: 10px 0; counter-reset: steps; }
+  .step-list li {
+    counter-increment: steps;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-list li:last-child { border-bottom: none; }
+  .step-list li::before {
+    content: counter(steps);
+    width: 24px;
+    height: 24px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-title { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+  .step-body { color: var(--text-muted); font-size: 13.5px; line-height: 1.5; }
+
+  /* ── Lapse flow ───────────────────────────────── */
+  .lapse-flow { margin: 16px 0; }
+  .lapse-step {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 12px;
+    margin: 14px 0;
+  }
+  .lapse-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--phase3);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .lapse-dot.done { background: var(--phase4); }
+  .lapse-content .lt { font-weight: 700; font-size: 14px; margin-bottom: 3px; }
+  .lapse-content .lb { color: var(--text-muted); font-size: 13.5px; line-height: 1.55; }
+
+  /* ── Domain grid ──────────────────────────────── */
+  .domain-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+    margin: 10px 0;
+  }
+  .domain-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  /* ── Table ────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; margin: 14px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+  }
+  tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: #fff;
+  }
+  .tag-p1 { background: var(--phase1); }
+  .tag-p2 { background: var(--phase2); }
+  .tag-p3 { background: var(--phase3); }
+  .tag-p4 { background: var(--phase4); }
+
+  /* ── Divider ──────────────────────────────────── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* ── Thought type grid ────────────────────────── */
+  .thought-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    margin: 10px 0;
+  }
+  .thought-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+  .thought-pill strong { display: block; font-size: 13px; margin-bottom: 2px; color: var(--text); }
+  .thought-pill span { color: var(--text-muted); }
+
+  /* ── Notification cards ───────────────────────── */
+  .notif-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 10px 0;
+  }
+  .notif-title { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+  .notif-body { color: var(--text-muted); font-size: 13.5px; line-height: 1.55; }
+  .notif-meta { font-size: 12px; color: var(--accent); margin-top: 6px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<!-- ── HERO ──────────────────────────────────────── -->
+<div class="hero">
+  <p class="hero-eyebrow">Your Guide</p>
+  <h1>Your Freedom Plan — How It Works</h1>
+  <p class="hero-sub">A complete guide to what the Freedom Plan is, how it progresses, and what you'll be doing at each stage.</p>
+</div>
+
+<div class="content">
+
+  <!-- TOC -->
+  <nav class="toc">
+    <div class="toc-title">In this guide</div>
+    <a href="#overview">What is the Freedom Plan?</a>
+    <a href="#phases">The four phases</a>
+    <a href="#modules-overview">When modules unlock</a>
+    <a href="#m1">Module 1 — Know Your Pattern</a>
+    <a href="#daily-checkin" class="sub">Daily Check-In</a>
+    <a href="#behaviour-log" class="sub">Logging a Moment</a>
+    <a href="#midpoint" class="sub">Mid-Point Reflection</a>
+    <a href="#cue-map" class="sub">Your Cue Map</a>
+    <a href="#weekly-review" class="sub">Weekly Review</a>
+    <a href="#m2">Module 2 — Challenge Your Thinking</a>
+    <a href="#thought-examination" class="sub">Thought Examination</a>
+    <a href="#counter-library" class="sub">Your Counter-Response Library</a>
+    <a href="#m3">Module 3 — Anchor to Your Values</a>
+    <a href="#values-inventory" class="sub">Values Inventory</a>
+    <a href="#weekly-compass" class="sub">Weekly Values Compass</a>
+    <a href="#m4">Module 4 — Build Your Guardrails</a>
+    <a href="#env-restructuring" class="sub">Environmental Restructuring</a>
+    <a href="#coping-plans" class="sub">High-Risk Situation Plans</a>
+    <a href="#urge-surfing" class="sub">Urge Surfing</a>
+    <a href="#lifestyle-audit" class="sub">Monthly Lifestyle Audit</a>
+    <a href="#m5">Module 5 — Navigate Lapses</a>
+    <a href="#ave" class="sub">Understanding AVE</a>
+    <a href="#recovery-letter" class="sub">Your Recovery Letter</a>
+    <a href="#lapse-flow" class="sub">The "I had a moment" Flow</a>
+    <a href="#quarterly" class="sub">Quarterly Review</a>
+    <a href="#notifications">Notifications</a>
+    <a href="#freedom-journey">The Freedom Journey Tab</a>
+    <a href="#about">What this programme is and isn't</a>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- OVERVIEW                                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="overview">
+    <h2>What is the Freedom Plan?</h2>
+    <p>The Freedom Plan is a structured, private programme to help you understand and change a deeply ingrained pattern of behaviour. It takes place entirely within the app — at your own pace, in your own words, completely private.</p>
+    <p>It's not a 30-day challenge or a simple tracker. It's a genuine self-study programme built on what works: understanding <em>your specific triggers</em>, examining the thoughts that give you permission, grounding the change in what actually matters to you, and preparing concretely — before a hard moment arrives — for what you'll do when it does.</p>
+    <p>Most activities take two to five minutes a day. The programme spans at least 90 days before reaching its highest phase, and continues with quarterly reviews for as long as you need it.</p>
+    <p>Everything you write is encrypted. No one else can read it — not the app, not the team who built it. It's a tool for you.</p>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PHASES                                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="phases">
+    <h2>The Four Phases</h2>
+    <p>The programme moves through four phases automatically. You don't choose your phase — the app tracks your progress and updates it when you've reached the threshold. Each phase unlocks new activities and reflects where you actually are in the journey.</p>
+
+    <div class="phase-section p1">
+      <span class="phase-badge badge-p1">Phase 1</span>
+      <h3 style="margin-top:4px;">Getting Started</h3>
+      <p>Every person begins here. Phase 1 is about building honest self-observation. You log moments, check in daily, and start building data about <em>when</em> and <em>why</em> your pattern tends to occur. No analysis yet — just noticing.</p>
+    </div>
+
+    <div class="phase-section p2">
+      <span class="phase-badge badge-p2">Phase 2</span>
+      <h3 style="margin-top:4px;">Going Deeper</h3>
+      <p>You enter Phase 2 when you complete your cue map, after 14 days, or after 14 check-ins — whichever comes first. This phase is about understanding the pattern at a deeper level: the thoughts that precede it, the triggers that drive it, and the values you want to live by instead.</p>
+    </div>
+
+    <div class="phase-section p3">
+      <span class="phase-badge badge-p3">Phase 3</span>
+      <h3 style="margin-top:4px;">Sustained Practice</h3>
+      <p>Phase 3 begins at 30 days, or immediately if you experience a lapse. This is when the concrete guardrails go in: environmental changes, specific coping plans, lapse navigation tools. The work shifts from understanding to building structure.</p>
+    </div>
+
+    <div class="phase-section p4">
+      <span class="phase-badge badge-p4">Phase 4</span>
+      <h3 style="margin-top:4px;">Maintenance</h3>
+      <p>Reached at 90 days, once your values inventory is complete. At this stage the daily effort has built habits of its own. The recurring activities become a compass check rather than a scramble — quarterly reviews, weekly values compass, occasional lifestyle audits.</p>
+    </div>
+
+    <div class="callout">
+      <strong>About lapses and phases:</strong> If you experience a lapse before Day 30, the app moves you to Phase 3 immediately — not as a punishment, but because you now need the lapse tools. A lapse unlocks the full support framework right away, without waiting for a calendar milestone.
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE OVERVIEW                             -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="modules-overview">
+    <h2>When Modules Unlock</h2>
+    <p>Modules 1 and 3 are always available. Modules 2, 4, and 5 unlock as your journey progresses.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Name</th>
+            <th>Available when</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>M1</strong></td>
+            <td>Know Your Pattern</td>
+            <td>Always</td>
+          </tr>
+          <tr>
+            <td><strong>M2</strong></td>
+            <td>Challenge Your Thinking</td>
+            <td>Cue map done, or Day 28+</td>
+          </tr>
+          <tr>
+            <td><strong>M3</strong></td>
+            <td>Anchor to Your Values</td>
+            <td>Always</td>
+          </tr>
+          <tr>
+            <td><strong>M4</strong></td>
+            <td>Build Your Guardrails</td>
+            <td>Cue map done, or Day 28+</td>
+          </tr>
+          <tr>
+            <td><strong>M5</strong></td>
+            <td>Navigate Lapses</td>
+            <td>Day 30+, or any lapse recorded</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE 1                                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="m1">
+    <div class="module-card">
+      <div class="module-header">
+        <span class="module-num">Module 1</span>
+        <h2 class="module-title">Know Your Pattern</h2>
+      </div>
+      <div class="unlock-badge">🔓 Available from Day 1</div>
+      <p>Module 1 is where the groundwork is laid. Before any strategy, there has to be honest self-observation. This module is about logging moments and building a picture of <em>your specific triggers</em> — not generic advice about what "usually" causes this kind of pattern, but what causes <em>yours</em>.</p>
+      <p>The activities in Module 1 build toward the Cue Map — the most important thing you'll do in the programme. Everything after it depends on it.</p>
+    </div>
+
+    <!-- DAILY CHECK-IN -->
+    <section id="daily-checkin">
+      <h3>Daily Check-In</h3>
+      <p>The daily check-in is the primary recurring activity. It takes about a minute. Over time, the pattern of your check-in responses tells you things that individual moments can't — and it's one of the ways the programme measures your progress.</p>
+
+      <h4>What you'll be asked</h4>
+
+      <div class="screen-card">
+        <div class="sc-label">Question 1</div>
+        <div class="sc-q">How are you doing emotionally today?</div>
+        <div class="sc-hint">A slider from 1 (Not great) to 10 (Really well)</div>
+      </div>
+
+      <div class="screen-card">
+        <div class="sc-label">Question 2 — appears after you move the slider</div>
+        <div class="sc-q">Did you encounter your pattern today?</div>
+        <div class="sc-chips">
+          <span class="sc-chip">Yes, I slipped</span>
+          <span class="sc-chip">I felt the urge but didn't act</span>
+          <span class="sc-chip">Clear day</span>
+        </div>
+      </div>
+
+      <h4>What the app does in response</h4>
+      <ul>
+        <li><strong>"Yes, I slipped"</strong> — the app asks if you'd like to open your behaviour log right now to record what happened. You can also choose "Not now" and just save the check-in.</li>
+        <li><strong>"I felt the urge but didn't act"</strong> — the app asks if you'd like to examine the thought that came up (Module 2's thought examination). You can also skip and just save.</li>
+        <li><strong>"Clear day"</strong> — saved automatically with a brief acknowledgement.</li>
+        <li><strong>If you rated 1–3</strong> — after saving, the app shows a short note: <em>"It looks like it's been a difficult stretch. Stressful periods are when the plan matters most."</em> With a quick link to your coping plans.</li>
+      </ul>
+    </section>
+
+    <!-- BEHAVIOUR LOG -->
+    <section id="behaviour-log">
+      <h3>Logging a Moment</h3>
+      <p>The behaviour log is used whenever you want to record a specific moment — either through the daily check-in's "Yes, I slipped" route, or by tapping "Log a moment" on your habit card at any time. You don't have to wait for the daily check-in to use it.</p>
+      <p>The log captures four things about what happened. The more honest and specific you are, the more useful your cue map will be.</p>
+
+      <ol class="step-list">
+        <li>
+          <div>
+            <div class="step-title">The situation</div>
+            <div class="step-body"><em>"Where were you? What time of day was it?"</em><br>e.g. Home alone, 11pm / Office, after a difficult meeting</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">What you were doing</div>
+            <div class="step-body"><em>"What were you doing immediately before?"</em><br>e.g. Browsing my phone / Just got home from work / Couldn't sleep</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">Your emotional state</div>
+            <div class="step-body"><em>"What were you feeling emotionally?"</em> — an emotion name and a slider for intensity (0 = Mild → 10 = Overwhelming)</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">The thought that arose</div>
+            <div class="step-body"><em>"What thought arose just before? Even a single sentence is fine."</em><br>e.g. "I deserve this." / "Just for a minute." / "No one will know."</div>
+          </div>
+        </li>
+      </ol>
+
+      <p>The app saves your draft as you go — if you close it mid-way, your answers will be there when you come back.</p>
+      <p>The cue map is built from these logs. The app needs at least five logged moments before it offers you the cue map activity.</p>
+    </section>
+
+    <!-- MID-POINT REFLECTION -->
+    <section id="midpoint">
+      <h3>Mid-Point Reflection</h3>
+      <p>Between Day 8 and Day 10, the app surfaces a short reflection — a brief pause before the analysis begins. It appears once and doesn't come back after you complete it.</p>
+
+      <div class="screen-card">
+        <div class="sc-label">Question 1</div>
+        <div class="sc-q">Looking at what you've logged so far — does anything surprise you?</div>
+        <div class="sc-hint">Even if you haven't noticed a pattern yet, that's worth noting.</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Question 2</div>
+        <div class="sc-q">Is there a time of day, place, or emotional state that seems to come up more than once?</div>
+        <div class="sc-hint">Don't force a pattern — just notice if anything stands out.</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Question 3</div>
+        <div class="sc-q">How are you feeling about this process so far?</div>
+        <div class="sc-hint">Honest is good. Frustrated is fine. There are no wrong answers here.</div>
+      </div>
+    </section>
+
+    <!-- CUE MAP -->
+    <section id="cue-map">
+      <h3>Your Cue Map</h3>
+      <p>The cue map is the most important activity in Module 1 — and one of the most important in the whole programme. It appears as a pending action from Day 14 onwards (once you have at least five logged moments) and takes 15–20 minutes to complete. The result is a ranked list of 2–6 trigger patterns in your own words.</p>
+
+      <div class="callout">
+        After completing your cue map, Modules 2 and 4 unlock. The cue map is also used to seed your environmental restructuring and your coping plans — those activities are built around <em>your specific triggers</em>, not generic ones.
+      </div>
+
+      <h4>The five stages</h4>
+
+      <ol class="step-list">
+        <li>
+          <div>
+            <div class="step-title">Acknowledgement</div>
+            <div class="step-body">A short reflective screen that marks the significance of what you're about to do. You've been logging honestly for two weeks — that matters.</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">Read your logs</div>
+            <div class="step-body">All your behaviour log entries are shown in order. Read through them without analysing. Just notice. When you're ready, tap "I've read through them."</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">AI-suggested patterns</div>
+            <div class="step-body">The app analyses your logs and suggests 2–4 candidate trigger patterns — plain-language phrases based on what's in your specific data. You review each one and keep or remove it. This stage is optional — if the analysis can't run, the app moves straight to discovery questions.</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">Discovery questions</div>
+            <div class="step-body">A few targeted questions based on your habit type — common patterns for this kind of behaviour that might not have shown up in your logs yet. You select which ones ring true; these become additional candidate cues.</div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">Build and rank</div>
+            <div class="step-body">All your confirmed cues are listed. Edit the wording to be exactly right for you. Delete any that don't fit. Add your own. Then drag to rank — most triggering at the bottom. When you're satisfied: "Save my pattern triggers."</div>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- WEEKLY REVIEW -->
+    <section id="weekly-review">
+      <h3>Weekly Review</h3>
+      <p>The Weekly Review is a recurring Module 1 activity that appears each week as a pending action. It takes five to ten minutes and asks you to reflect on the past week at a higher level than the daily check-in — what went well, what was difficult, and what you noticed.</p>
+      <p>Unlike the daily check-in (which captures individual moments), the weekly review is about stepping back and observing the shape of the week as a whole. It's a habit in itself — regular reflection is one of the things that distinguishes people who make lasting change from those who don't.</p>
+      <p>The weekly review does not gate or unlock anything else. It's simply a recurring space to be honest about how the week went, and to carry that awareness into the next one.</p>
+    </section>
+
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE 2                                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="m2">
+    <div class="module-card">
+      <div class="module-header">
+        <span class="module-num">Module 2</span>
+        <h2 class="module-title">Challenge Your Thinking</h2>
+      </div>
+      <div class="unlock-badge">🔒 Unlocks: cue map done, or Day 28+</div>
+      <p>Module 2 is about slowing down the thoughts that give your pattern permission. These thoughts move fast — they're usually gone before you can look at them. Thought Examination is a structured way to catch one, hold it up, and look at it honestly.</p>
+      <p>You can start a thought examination from the module screen, from the "Examine a thought" chip on your habit card, or automatically when you report an urge during a daily check-in.</p>
+    </div>
+
+    <section id="thought-examination">
+      <h3>Thought Examination — Five Steps</h3>
+      <p>Each step is different — not five text boxes but five distinct ways of engaging with the thought.</p>
+
+      <ol class="step-list">
+        <li>
+          <div>
+            <div class="step-title">Capture the raw thought</div>
+            <div class="step-body">
+              <div class="screen-card" style="margin:6px 0 0;">
+                <div class="sc-q">Write the thought exactly as it occurred — not a cleaned-up version. The raw thing.</div>
+                <div class="sc-note">The uncleaned version is the one that has power. That's the one worth examining.</div>
+              </div>
+              Example chips are offered if you need a starting point: "I deserve this." / "Just this once." / "No one will know." / "I can't cope without it."
+            </div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">Classify it</div>
+            <div class="step-body">
+              <div class="screen-card" style="margin:6px 0 0;">
+                <div class="sc-q">What kind of thought is this?</div>
+              </div>
+              You select from six types — or add your own:
+              <div class="thought-grid" style="margin-top:10px;">
+                <div class="thought-pill"><strong>Permission-giving</strong><span>I deserve this / just this once</span></div>
+                <div class="thought-pill"><strong>Minimising</strong><span>It's not that bad / everyone does it</span></div>
+                <div class="thought-pill"><strong>Catastrophising</strong><span>I could never change / I have no willpower</span></div>
+                <div class="thought-pill"><strong>All-or-nothing</strong><span>I've slipped — the day is ruined</span></div>
+                <div class="thought-pill"><strong>Externalising</strong><span>It's stress / work / relationships causing this</span></div>
+                <div class="thought-pill"><strong>Self-condemnation</strong><span>I'm broken / weak / this is just who I am</span></div>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">Examine the evidence</div>
+            <div class="step-body">
+              Two questions on one screen:
+              <div class="screen-card" style="margin:6px 0 4px;">
+                <div class="sc-q">What is the actual evidence for this thought? What does your track record say?</div>
+              </div>
+              <div class="screen-card">
+                <div class="sc-q">What would you say to a good friend who told you they believed this?</div>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">Write an alternative</div>
+            <div class="step-body">
+              <div class="screen-card" style="margin:6px 0 4px;">
+                <div class="sc-q">Write a more accurate alternative — in your own words, not an affirmation.</div>
+                <div class="sc-note">Not "everything will be fine" — something you actually believe. Something grounded in what your evidence just showed you.</div>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <div class="step-title">Decide whether to save it</div>
+            <div class="step-body">
+              <div class="screen-card" style="margin:6px 0 0;">
+                <div class="sc-q">Is this one of your recurring thoughts — something that comes up again and again?</div>
+              </div>
+              If yes, the thought and your alternative are saved to your Counter-Response Library. If it's a one-off, just save and move on.
+            </div>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section id="counter-library">
+      <h3>Your Counter-Response Library</h3>
+      <p>Every thought examination you save to your library builds a personal collection of your recurring automatic thoughts — and your own answers to them. Accessible from the "My counter-responses" chip on your habit card, it becomes a reference you can read in a high-risk moment without having to think on your feet.</p>
+    </section>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE 3                                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="m3">
+    <div class="module-card">
+      <div class="module-header">
+        <span class="module-num">Module 3</span>
+        <h2 class="module-title">Anchor to Your Values</h2>
+      </div>
+      <div class="unlock-badge">🔓 Available from Day 1</div>
+      <p>Module 3 is grounded in a simple but important insight: lasting change is easier when you know what you're building <em>toward</em>, not just what you're moving away from. The module has two activities — a one-time Values Inventory and a recurring Weekly Values Compass.</p>
+    </div>
+
+    <section id="values-inventory">
+      <h3>Values Inventory</h3>
+      <p>The Values Inventory takes you through eight areas of life. For each one, you'll reflect on what it means to you, score how important it is and how well you're currently living it, and note honestly whether your pattern is pulling you toward or away from it.</p>
+
+      <div class="domain-grid">
+        <div class="domain-pill">Faith &amp; Spiritual Life</div>
+        <div class="domain-pill">Intimate Relationship &amp; Partnership</div>
+        <div class="domain-pill">Family &amp; Parenting</div>
+        <div class="domain-pill">Friendship &amp; Social Connection</div>
+        <div class="domain-pill">Work, Career &amp; Contribution</div>
+        <div class="domain-pill">Personal Growth &amp; Learning</div>
+        <div class="domain-pill">Health &amp; Physical Wellbeing</div>
+        <div class="domain-pill">Creative Expression &amp; Leisure</div>
+      </div>
+
+      <h4>For each domain, you do three things</h4>
+
+      <div class="screen-card">
+        <div class="sc-label">Reflection</div>
+        <div class="sc-q">In your own words, what does [domain] mean in your life, and what would living it well look like for you?</div>
+        <div class="sc-hint">At least 10 characters required. Write honestly — this is just for you.</div>
+      </div>
+
+      <div class="screen-card">
+        <div class="sc-label">Two sliders (1–10 each)</div>
+        <div class="sc-body">
+          <strong>How important is this to you?</strong> (1 = Not at all → 10 = Central to who I am)<br>
+          <strong>How well are you currently living it?</strong> (1 = Not at all → 10 = Fully)<br><br>
+          The gap between the two is shown to you. A large gap is information — not judgement.
+        </div>
+      </div>
+
+      <div class="screen-card">
+        <div class="sc-label">Compass direction</div>
+        <div class="sc-q">Does your current pattern move you toward or away from this?</div>
+        <div class="sc-chips">
+          <span class="sc-chip">Toward</span>
+          <span class="sc-chip">Neutral</span>
+          <span class="sc-chip">Away</span>
+        </div>
+        <div class="sc-hint">You must select one to continue. Nothing is pre-selected.</div>
+      </div>
+
+      <p>Your progress is saved as you go — if you close mid-way, you'll resume from the next uncompleted domain.</p>
+      <p>The completed inventory lives in your Freedom Journey tab as a permanent reference. It's your map of what matters.</p>
+    </section>
+
+    <section id="weekly-compass">
+      <h3>Weekly Values Compass</h3>
+      <p>Once your inventory is done, a weekly check-in appears each week as a pending action. It takes about five minutes.</p>
+
+      <div class="screen-card">
+        <div class="sc-label">Step 1</div>
+        <div class="sc-q">For each of your values, did this week's actions move toward or away from it?</div>
+        <div class="sc-body" style="margin-top:6px;">You select Toward or Away for each of your eight domains. All must be answered.</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Step 2</div>
+        <div class="sc-q">Where the compass is pointing away — what's one small thing you could do differently this week?</div>
+        <div class="sc-note">If nothing is pointing away, the app shows: "Nothing pointing away this week — that's worth noticing." The field is not required in that case.</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Step 3</div>
+        <div class="sc-q">What is one concrete thing you will do this week that moves toward what matters most to you?</div>
+        <div class="sc-hint">A "do" action — calling someone, exercising, praying, doing the creative work you've been putting off. Required.</div>
+      </div>
+    </section>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE 4                                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="m4">
+    <div class="module-card">
+      <div class="module-header">
+        <span class="module-num">Module 4</span>
+        <h2 class="module-title">Build Your Guardrails</h2>
+      </div>
+      <div class="unlock-badge">🔒 Unlocks: cue map done, or Day 28+</div>
+      <p>Module 4 turns what you know about your triggers into concrete structural protection. Its premise: willpower fails most reliably at the exact moment you need it most. The work here is to make the pattern harder to access automatically — and to pre-plan your response so you're not deciding what to do in the middle of a high-risk moment.</p>
+    </div>
+
+    <section id="env-restructuring">
+      <h3>Environmental Restructuring</h3>
+      <p>For each of your top three cues, you decide on one specific, concrete change to your environment that makes the pattern harder to access.</p>
+
+      <div class="screen-card">
+        <div class="sc-body">"Change the situation before you need to change your mind. Willpower works worst exactly when you need it most. Making concrete changes to your environment is more effective than relying on willpower in the moment."</div>
+      </div>
+
+      <p>Habit-specific suggestions are offered as chips — tap to fill the field as a starting point, then make it your own. If what you write is vague (under 15 characters, or phrases like "be strong"), the app asks: <em>"Can you make this more specific — a concrete action, not a mindset?"</em></p>
+    </section>
+
+    <section id="coping-plans">
+      <h3>High-Risk Situation (HRS) Plans</h3>
+      <p>One coping plan per trigger — a pre-written script for exactly what you'll do when this specific situation arises. The plans are seeded from your cue map, so you're working with your actual triggers.</p>
+      <p>Each plan answers: what's the situation, what will you do first (specifically — the app checks for vagueness), who will you contact, and what will you say. The plan is written now, when you're clear-headed, so you don't have to improvise later.</p>
+      <p>Your plans live in the Freedom Journey tab and are always accessible from within the app — including during a hard moment.</p>
+    </section>
+
+    <section id="urge-surfing">
+      <h3>Urge Surfing</h3>
+      <p>The first time you open this section, you'll read a short introduction to what urge surfing is and why it works. After that, the three-prompt activity is available whenever you need it.</p>
+      <p>The idea: you don't have to fight an urge or give in to it. Urges have a natural shape — they rise, peak, and pass, usually within 15–30 minutes. Urge surfing is the practice of observing that arc rather than reacting to it.</p>
+
+      <div class="screen-card">
+        <div class="sc-label">Prompt 1 — Name it</div>
+        <div class="sc-q">Name it: "I am having an urge to [behaviour]." Write what you're experiencing right now — not as a command to act, just as an observation.</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Prompt 2 — Locate it</div>
+        <div class="sc-q">Locate it: Where in your body do you feel it? Chest, throat, stomach, hands? What is its shape and quality?</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Prompt 3 — Watch it</div>
+        <div class="sc-q">Watch it: Did it rise and then begin to ease? Describe what happened to the urge as you observed it. Was it survivable?</div>
+      </div>
+    </section>
+
+    <section id="lifestyle-audit">
+      <h3>Monthly Lifestyle Audit</h3>
+      <p>Available from Day 30, and then every 30 days afterwards. Its premise: many patterns persist because they're filling a gap — something the pattern provides that nothing else currently does. The audit makes that gap visible.</p>
+
+      <div class="screen-card">
+        <div class="sc-label">Step 1</div>
+        <div class="sc-q">Looking at your typical week honestly — what is taking from you?</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Step 1 (continued — same screen)</div>
+        <div class="sc-q">What is genuinely nourishing you — not numbing, not obligation, but something you'd actually choose?</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Step 2</div>
+        <div class="sc-q">What two activities could you build into the next month that would genuinely nourish you?</div>
+      </div>
+    </section>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE 5                                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="m5">
+    <div class="module-card">
+      <div class="module-header">
+        <span class="module-num">Module 5</span>
+        <h2 class="module-title">Navigate Lapses</h2>
+      </div>
+      <div class="unlock-badge">🔒 Unlocks: Day 30+, or any lapse recorded</div>
+      <p>Module 5 prepares you for hard moments before they happen — and provides structure when they do. The "I had a moment" button on your habit card is always available, regardless of your phase. If Module 5 isn't unlocked yet, it unlocks automatically when you use it, because this is precisely when you need it.</p>
+    </div>
+
+    <section id="ave">
+      <h3>Understanding the Abstinence Violation Effect</h3>
+      <p>The first time you open Module 5, you'll read a one-time explanation of something called the Abstinence Violation Effect — one of the most important things to understand before a hard moment arrives.</p>
+
+      <div class="screen-card">
+        <div class="sc-label">Verbatim from the app</div>
+        <div class="sc-body">"Most people who are changing a deeply ingrained pattern will experience a slip at some point. That's not pessimism — it's what the research consistently shows.
+          <br><br>
+          What determines whether a slip becomes a full relapse is almost never the slip itself. It's what happens in the hour afterward.
+          <br><br>
+          When a slip happens, the mind tends to catastrophise: 'I've failed. I have no willpower. I'll never change. I might as well give up.' Researchers call this the Abstinence Violation Effect — and it's one of the most dangerous things that can happen after a slip, because it turns a single moment into a sustained return to the old pattern.
+          <br><br>
+          These thoughts are not facts. They are the all-or-nothing thinking error at its most damaging. And knowing that — right now, before you need it — is one of the most useful things you can do."
+        </div>
+      </div>
+
+      <p>This screen is shown once. The more useful it is, the better — it's there to be remembered in a hard moment, not to be read after one.</p>
+    </section>
+
+    <section id="recovery-letter">
+      <h3>Your Recovery Letter</h3>
+      <p>After the AVE education screen, you write a letter from your current self to your future struggling self. It's one of the most important things you'll write in this programme.</p>
+      <p>The four prompts guide you through it:</p>
+
+      <div class="screen-card">
+        <div class="sc-label">Prompt 1</div>
+        <div class="sc-q">Right now, while you're clear-headed, write a letter from your wiser self to your struggling self — for the moment after a slip.<br><br>What do you most want to remind yourself about who you are?</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Prompt 2</div>
+        <div class="sc-q">What does the research say about slips? (Hint: they don't have to become relapses. A slip is a data point, not a verdict.)<br><br>Write it in your own words — this is what you'll read in your hardest moment.</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Prompt 3</div>
+        <div class="sc-q">Which of your values do you want to take the next step toward — even today, even now?</div>
+      </div>
+      <div class="screen-card">
+        <div class="sc-label">Prompt 4</div>
+        <div class="sc-q">What do you want to say to your harshest inner voice?</div>
+      </div>
+
+      <p>After the four prompts, the app stitches your answers into a flowing letter that you can read and edit before saving. When you use the "I had a moment" flow, this letter is shown to you at the beginning — your past self speaking to your present one.</p>
+    </section>
+
+    <section id="lapse-flow">
+      <h3>The "I had a moment" Flow</h3>
+      <p>A five-screen structured flow for the immediate aftermath of a lapse. It's designed to be done in the moment — or as soon as possible afterwards.</p>
+
+      <div class="lapse-flow">
+        <div class="lapse-step">
+          <div class="lapse-dot">0</div>
+          <div class="lapse-content">
+            <div class="lt">Stop the Spiral</div>
+            <div class="lb">No questions. Just a full-screen message asking you to pause before your mind turns one moment into a verdict:
+              <div class="screen-card" style="margin-top:8px;">
+                <div class="sc-body">"First — stop.<br><br>Whatever your mind is telling you right now about what this means, about who you are, about whether change is possible — those thoughts are not facts.<br><br>One moment is one moment. It is not a verdict.<br><br>Take a breath. You're still here. That matters."</div>
+              </div>
+              You tap "I'm ready to continue" when you're ready.
+            </div>
+          </div>
+        </div>
+
+        <div class="lapse-step">
+          <div class="lapse-dot">1</div>
+          <div class="lapse-content">
+            <div class="lt">Your Recovery Letter + Self-Compassion</div>
+            <div class="lb">
+              Your recovery letter is displayed — the one you wrote to yourself for this moment. Read it.
+              <div class="screen-card" style="margin-top:8px;">
+                <div class="sc-q">What would you say to a good friend who had just gone through exactly this moment?</div>
+              </div>
+              Required before continuing. What you write here is saved as part of your lapse record.
+            </div>
+          </div>
+        </div>
+
+        <div class="lapse-step">
+          <div class="lapse-dot">2</div>
+          <div class="lapse-content">
+            <div class="lt">Understand What Happened</div>
+            <div class="lb">
+              Not to judge it — to learn from it. Four questions:
+              <div class="screen-card" style="margin-top:8px;">
+                <div class="sc-q">What was the situation just before? Where were you, what were you doing?</div>
+              </div>
+              <div class="screen-card">
+                <div class="sc-q">What were you feeling emotionally?</div>
+              </div>
+              <div class="screen-card">
+                <div class="sc-q">What thought arose just before?</div>
+              </div>
+              <div class="screen-card">
+                <div class="sc-q">Where did your coping plan not hold — and what do you think got in the way?</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lapse-step">
+          <div class="lapse-dot">3</div>
+          <div class="lapse-content">
+            <div class="lt">Extract and Recommit</div>
+            <div class="lb">
+              <div class="screen-card" style="margin-top:6px;">
+                <div class="sc-q">What does this moment teach you about your coping plan that you didn't know before? What would need to be different next time?</div>
+              </div>
+              <div class="screen-card">
+                <div class="sc-q">Which of your values do you want to take the next right step toward — right now, today?</div>
+              </div>
+              A button is offered to update your coping plans immediately from this screen — so the plan is updated while the learning is fresh.
+            </div>
+          </div>
+        </div>
+
+        <div class="lapse-step">
+          <div class="lapse-dot done">✓</div>
+          <div class="lapse-content">
+            <div class="lt">You Came Back</div>
+            <div class="lb">
+              <div class="screen-card" style="margin-top:6px;">
+                <div class="sc-body">"You didn't give up. You came back. That is what recovery actually looks like — not a straight line, but coming back every time.<br><br>Your plan is updated. Your values are still yours. Keep going."</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="quarterly">
+      <h3>Quarterly Review</h3>
+      <p>From Day 90 onwards, a quarterly review appears at days 90, 180, 270, and 360. It's a longer reflective session — a look at how far you've come, what's consolidated, and what still needs attention. This becomes the main recurring activity in Phase 4.</p>
+    </section>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- NOTIFICATIONS                               -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="notifications">
+    <h2>Notifications</h2>
+    <p>The app sends push notifications to help you stay consistent. All notifications are scheduled locally on your device — they don't need the server to be reachable, and they work offline. You can silence any of them in your device's notification settings.</p>
+
+    <div class="notif-card">
+      <div class="notif-title">Daily check-in reminder</div>
+      <div class="notif-body">"Your daily check-in is waiting — a few minutes of honesty every day adds up."</div>
+      <div class="notif-meta">Sent daily if you haven't checked in yet today. Message rotates over time.</div>
+    </div>
+
+    <div class="notif-card">
+      <div class="notif-title">Weekly Values Compass reminder</div>
+      <div class="notif-body">"A few minutes to check where your values compass is pointing — and choose one step forward."</div>
+      <div class="notif-meta">Sent once a week after your values inventory is complete.</div>
+    </div>
+
+    <div class="notif-card">
+      <div class="notif-title">Quarterly review reminder</div>
+      <div class="notif-body">Notifies you that your quarterly review is ready to complete.</div>
+      <div class="notif-meta">Sent at days 90, 180, 270, and 360. Only appears once you've reached Phase 4.</div>
+    </div>
+
+    <div class="notif-card">
+      <div class="notif-title">Quiet week nudge</div>
+      <div class="notif-body">"It's been a quiet week in your log. Is everything OK? Even a brief note about a moment you navigated well is worth capturing."</div>
+      <div class="notif-meta">Sent once if no moments have been logged in the past 7 days. Does not repeat within the same week.</div>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- FREEDOM JOURNEY                             -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="freedom-journey">
+    <h2>The Freedom Journey Tab</h2>
+    <p>The Freedom Journey tab (in the Journal section) is your private record of everything you've done in the programme. It has two views:</p>
+
+    <h3>My Journey</h3>
+    <p>A reverse-chronological feed of every session you've recorded — check-ins, logs, reflections, thought examinations, compass check-ins, and more. You can read any entry in full by tapping it. This is your complete honest record.</p>
+
+    <h3>My Plan</h3>
+    <p>A module-by-module view of your programme. Each module shows its current state — locked, active, or complete — and displays the living documents from that module:</p>
+
+    <ul>
+      <li><strong>Module 1:</strong> Your ranked list of pattern triggers (the cue map)</li>
+      <li><strong>Module 2:</strong> Your counter-response library — thought/alternative pairs</li>
+      <li><strong>Module 3:</strong> Your values inventory — all eight domain cards</li>
+      <li><strong>Module 4:</strong> Your coping plans — one per trigger, tappable to edit</li>
+      <li><strong>Module 5:</strong> Your recovery letter — read-only, with an edit button</li>
+    </ul>
+
+    <p>These living documents update as you update them. Your cue map from Module 1 is the same one that seeds your Module 4 plans — everything in the programme is built from the same foundation.</p>
+  </section>
+
+  <hr>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- ABOUT                                       -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section id="about">
+    <h2>What This Programme Is — and Isn't</h2>
+
+    <h3>What the Freedom Plan doesn't do</h3>
+    <ul>
+      <li><strong>It doesn't share your data with anyone.</strong> Everything you write is encrypted end-to-end and stored privately. No one else can access it — not a counsellor, not the team who built this app.</li>
+      <li><strong>It doesn't assess, diagnose, or treat.</strong> The Freedom Plan is a structured self-help tool. It is not a substitute for clinical support, professional counselling, or medical advice.</li>
+      <li><strong>It doesn't provide crisis support.</strong> If you are in crisis, please contact a crisis support service. The app is designed for everyday programme work — not acute situations.</li>
+      <li><strong>It doesn't lock you out.</strong> The pending actions system surfaces what's next, but you are never blocked from any part of the app. Every module screen is accessible directly. The gating is a guide, not a gate.</li>
+      <li><strong>It doesn't work without honesty.</strong> The cue map, the thought examination, the values inventory — all of it is only as useful as the honesty you put into it. The app can hold the structure. You bring the truth.</li>
+    </ul>
+
+    <h3>How it all connects</h3>
+    <p>The five modules aren't separate tracks — they build on each other deliberately:</p>
+    <ul>
+      <li>The <strong>Behaviour Log</strong> feeds the <strong>Cue Map</strong>.</li>
+      <li>The <strong>Cue Map</strong> seeds the <strong>Environmental Restructuring</strong> and <strong>Coping Plans</strong>.</li>
+      <li>The <strong>Values Inventory</strong> informs the <strong>Weekly Compass</strong> and gives language to the <strong>Lapse Flow</strong>'s recommitment step.</li>
+      <li>The <strong>Thought Examination</strong> draws on the same thought patterns you first noticed in your <strong>Behaviour Logs</strong>.</li>
+      <li>The <strong>Recovery Letter</strong> is shown to you during a lapse — written by your past self to your present one.</li>
+    </ul>
+    <p>If you are sharing any of this work with a counsellor or trusted person, the structure of the programme gives you a clear language for it. The cue map names your specific triggers. The values inventory shows what matters to you and where the gap is. The thought examination gives you categories for the automatic thoughts you encounter.</p>
+    <p>None of that language is required. But it's there if it's useful.</p>
+  </section>
+
+  <hr>
+
+  <div class="callout" style="margin-bottom:0;">
+    <strong>Everything here is private.</strong> All responses you write are encrypted end-to-end. No one else can access what you write — not even the team who built this app. This is a tool for you.
+  </div>
+
+</div><!-- /content -->
+</body>
+</html>

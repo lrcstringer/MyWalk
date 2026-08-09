@@ -43,10 +43,13 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
   bool _logsLoading = true;
   final Set<String> _expandedLogIds = {};
 
-  // Stage 2 — AI candidates
+  // Stage 2 — AI candidates + fill-in gap fields
   bool _aiLoading = false;
   bool _aiSkipped = false;
   final List<_CueCandidate> _aiCandidates = [];
+  final TextEditingController _gapTimeCtrl = TextEditingController();
+  final TextEditingController _gapFeelingCtrl = TextEditingController();
+  final TextEditingController _gapLocationCtrl = TextEditingController();
 
   // Stage 3 — discovery questions
   List<DiscoveryQuestion> _discoveryQuestions = [];
@@ -67,6 +70,14 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
         setState(() => _stage = path.cueHierarchyDraftStage.clamp(0, 4));
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _gapTimeCtrl.dispose();
+    _gapFeelingCtrl.dispose();
+    _gapLocationCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadLogs() async {
@@ -166,6 +177,17 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
   }
 
   void _onAiNext() {
+    // Add non-empty gap answers as additional kept candidates.
+    for (final (ctrl, prefix) in [
+      (_gapTimeCtrl, 'Time of day: '),
+      (_gapFeelingCtrl, 'Feeling before: '),
+      (_gapLocationCtrl, 'Location: '),
+    ]) {
+      final text = ctrl.text.trim();
+      if (text.isNotEmpty) {
+        _aiCandidates.add(_CueCandidate(text: '$prefix$text', keep: true));
+      }
+    }
     _setupDiscovery();
     _goToStage(3);
   }
@@ -301,47 +323,97 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
   // ── Stage 0 — Entry ───────────────────────────────────────────────────────
 
   Widget _buildEntry() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: _kRpPurple.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: _kRpPurple.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.route_rounded, color: _kRpPurple, size: 28),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'What we are going to do',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: MyWalkColor.warmWhite,
+                      height: 1.3),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Every habitual behaviour follows a pattern:',
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                      height: 1.5),
+                ),
+                const SizedBox(height: 16),
+                ...[
+                  ('A CUE', 'a trigger in the environment or your internal emotional landscape that the brain has learned to associate with reward. Cues can be external (a device, a location, a time of day) or internal (loneliness, boredom, anxiety, stress, even excitement).'),
+                  ('A CRAVING', 'the anticipatory desire the cue ignites. This is not the same as enjoying the behaviour — it is the urge to feel different from how you feel right now.'),
+                  ('A BEHAVIOUR', 'the habitual response to the craving. At this stage, the behaviour is largely automatic — it does not feel like a deliberate choice so much as a default.'),
+                  ('A REWARD', 'the consequence that reinforces the loop. Almost always some form of relief, pleasure, or escape — what taught the brain to associate the cue with the behaviour in the first place.'),
+                ].map((item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    decoration: BoxDecoration(
+                      color: _kRpPurple.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _kRpPurple.withValues(alpha: 0.15)),
+                    ),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                            height: 1.55),
+                        children: [
+                          TextSpan(
+                            text: '${item.$1}  ',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: MyWalkColor.warmWhite),
+                          ),
+                          TextSpan(text: item.$2),
+                        ],
+                      ),
+                    ),
+                  ),
+                )),
+                const SizedBox(height: 8),
+                Text(
+                  'We want to disrupt this pattern and the first step is to identify the cues that are particular to you — the specific combinations of situation and internal state that most reliably precede the behaviour.',
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                      height: 1.55),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "You've been logging moments for a little while. Now let's look at what your logs are telling you — together. By the end, you'll have a personal map of what triggers your pattern — in your own words.",
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                      height: 1.55),
+                ),
+              ],
             ),
-            child: const Icon(Icons.route_rounded, color: _kRpPurple, size: 28),
           ),
-          const SizedBox(height: 28),
-          const Text(
-            "You've been logging moments for two weeks.\nThat takes honesty and courage.",
-            style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: MyWalkColor.warmWhite,
-                height: 1.4),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "Now let's look at what your logs are telling you — together.",
-            style: TextStyle(
-                fontSize: 15,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
-                height: 1.5),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "By the end, you'll have a personal map of what triggers your pattern — in your own words.",
-            style: TextStyle(
-                fontSize: 15,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
-                height: 1.5),
-          ),
-          const Spacer(),
-          SizedBox(
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+          child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: _onEntryNext,
@@ -356,8 +428,8 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -442,77 +514,95 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
   // ── Stage 2 — AI candidate patterns ──────────────────────────────────────
 
   Widget _buildAi() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_aiLoading) ...[
-            const Spacer(),
-            const Center(
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: _kRpPurple),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Text('Analysing your logs…',
-                  style: TextStyle(
-                      fontSize: 14,
-                      color: MyWalkColor.warmWhite.withValues(alpha: 0.5))),
-            ),
-            const Spacer(),
-          ] else ...[
-            Text(
-              'Based on your logs, here are some possible patterns.',
-              style: TextStyle(
-                  fontSize: 14,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
-                  height: 1.5),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Keep the ones that ring true. Remove any that don\'t fit.',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.45)),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.separated(
-                itemCount: _aiCandidates.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (_, i) => _CueCandidateCard(
-                  candidate: _aiCandidates[i],
-                  onKeep: () =>
-                      setState(() => _aiCandidates[i].keep = true),
-                  onRemove: () =>
-                      setState(() => _aiCandidates[i].keep = false),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _aiCandidates.every((c) => c.keep != null)
-                    ? _onAiNext
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kRpPurple,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Continue',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-              ),
-            ),
+    if (_aiLoading) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(strokeWidth: 2, color: _kRpPurple),
+            SizedBox(height: 16),
+            Text('Analysing your logs…',
+                style: TextStyle(fontSize: 14, color: Color(0x80F5F0E8))),
           ],
-        ],
-      ),
+        ),
+      );
+    }
+
+    final allActioned = _aiCandidates.every((c) => c.keep != null);
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Identified patterns from your logs',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
+                      height: 1.4),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'You must Keep or Remove every one before continuing.',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.45)),
+                ),
+                const SizedBox(height: 20),
+                ...List.generate(_aiCandidates.length, (i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _CueCandidateCard(
+                    candidate: _aiCandidates[i],
+                    onKeep: () => setState(() => _aiCandidates[i].keep = true),
+                    onRemove: () => setState(() => _aiCandidates[i].keep = false),
+                  ),
+                )),
+                const SizedBox(height: 8),
+                Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08)),
+                const SizedBox(height: 12),
+                Text(
+                  'Fill any gaps — answer these questions',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                      letterSpacing: 0.3),
+                ),
+                const SizedBox(height: 14),
+                _GapField(label: 'What time of day does it most commonly happen?', controller: _gapTimeCtrl),
+                const SizedBox(height: 12),
+                _GapField(label: 'What are you usually feeling just before?', controller: _gapFeelingCtrl),
+                const SizedBox(height: 12),
+                _GapField(label: 'Where are you typically when it happens?', controller: _gapLocationCtrl),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: allActioned ? _onAiNext : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kRpPurple,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Continue',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -590,12 +680,26 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-          child: Text(
-            'Edit to use your own words. Drag to rank — most triggering at the bottom.',
-            style: TextStyle(
-                fontSize: 14,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
-                height: 1.5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Make each cue yours',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
+                    height: 1.4),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'The AI used generic language. Tap each cue to rewrite it in your own words — as specifically as you can. You must confirm every cue before continuing.',
+                style: TextStyle(
+                    fontSize: 13,
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                    height: 1.5),
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -875,6 +979,60 @@ class _ActionChip extends StatelessWidget {
   }
 }
 
+class _GapField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+
+  const _GapField({required this.label, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+              fontSize: 13,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
+              height: 1.4),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          style: const TextStyle(fontSize: 14, color: MyWalkColor.warmWhite),
+          maxLines: 2,
+          decoration: InputDecoration(
+            hintText: 'Optional',
+            hintStyle: TextStyle(
+                fontSize: 13,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.25)),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.04),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide:
+                  BorderSide(color: MyWalkColor.warmWhite.withValues(alpha: 0.1)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide:
+                  BorderSide(color: MyWalkColor.warmWhite.withValues(alpha: 0.1)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide:
+                  BorderSide(color: _kRpPurple.withValues(alpha: 0.5)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _DiscoveryQuestionCard extends StatelessWidget {
   final DiscoveryQuestion question;
   final String? selected;
@@ -1096,7 +1254,7 @@ class _CompletionView extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    "You've just done something most people never do — looked honestly at your own patterns.",
+                    'Your cue map is done.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontSize: 18,
@@ -1106,7 +1264,7 @@ class _CompletionView extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'This list is the map. Everything that comes next uses it.',
+                    'You can now start changing your environment and building your coping plans — both are unlocked in your Phase 2 journey.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontSize: 14,

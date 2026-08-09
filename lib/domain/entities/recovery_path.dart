@@ -315,6 +315,10 @@ class RecoveryPath {
   // Mid-point reflection
   final bool midPointReflectionDone;
 
+  // Phase transition shown flags — each shown once only
+  final bool phase2TransitionShown;
+  final bool phase4TransitionShown;
+
   const RecoveryPath({
     required this.id,
     required this.userId,
@@ -347,6 +351,8 @@ class RecoveryPath {
     this.dailyCheckInEmotionalRating,
     this.dailyCheckInOutcome,
     this.midPointReflectionDone = false,
+    this.phase2TransitionShown = false,
+    this.phase4TransitionShown = false,
   });
 
   RecoveryPath copyWith({
@@ -377,6 +383,8 @@ class RecoveryPath {
     int? dailyCheckInEmotionalRating,
     String? dailyCheckInOutcome,
     bool? midPointReflectionDone,
+    bool? phase2TransitionShown,
+    bool? phase4TransitionShown,
   }) =>
       RecoveryPath(
         id: id,
@@ -419,6 +427,10 @@ class RecoveryPath {
         dailyCheckInOutcome: dailyCheckInOutcome ?? this.dailyCheckInOutcome,
         midPointReflectionDone:
             midPointReflectionDone ?? this.midPointReflectionDone,
+        phase2TransitionShown:
+            phase2TransitionShown ?? this.phase2TransitionShown,
+        phase4TransitionShown:
+            phase4TransitionShown ?? this.phase4TransitionShown,
       );
 
   Map<String, dynamic> toFirestore() => {
@@ -457,6 +469,8 @@ class RecoveryPath {
         'dailyCheckInEmotionalRating': dailyCheckInEmotionalRating,
         'dailyCheckInOutcome': dailyCheckInOutcome,
         'midPointReflectionDone': midPointReflectionDone,
+        'phase2TransitionShown': phase2TransitionShown,
+        'phase4TransitionShown': phase4TransitionShown,
       };
 
   factory RecoveryPath.fromFirestore(DocumentSnapshot doc) {
@@ -538,6 +552,8 @@ class RecoveryPath {
           d['dailyCheckInEmotionalRating'] as int?,
       dailyCheckInOutcome: d['dailyCheckInOutcome'] as String?,
       midPointReflectionDone: (d['midPointReflectionDone'] as bool?) ?? false,
+      phase2TransitionShown: (d['phase2TransitionShown'] as bool?) ?? false,
+      phase4TransitionShown: (d['phase4TransitionShown'] as bool?) ?? false,
     );
   }
 }

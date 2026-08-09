@@ -293,6 +293,24 @@ class RecoveryPathProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> markPhase2TransitionShown(String habitId) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = path.copyWith(phase2TransitionShown: true);
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    notifyListeners();
+  }
+
+  Future<void> markPhase4TransitionShown(String habitId) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = path.copyWith(phase4TransitionShown: true);
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    notifyListeners();
+  }
+
   // ── Recovery letter (M5) ─────────────────────────────────────────────────
 
   Future<void> saveRecoveryLetterDraft(String habitId, String letter) async {
@@ -377,6 +395,13 @@ class RecoveryPathProvider extends ChangeNotifier {
     final sessions = await getSessionsByType(
         habitId, RecoverySessionType.m1BehaviourLog);
     return sessions.length;
+  }
+
+  Future<DateTime?> getLastBehaviourLogDate(String habitId) async {
+    final sessions = await getSessionsByType(
+        habitId, RecoverySessionType.m1BehaviourLog);
+    if (sessions.isEmpty) return null;
+    return sessions.map((s) => s.createdAt).reduce((a, b) => a.isAfter(b) ? a : b);
   }
 
   Future<void> saveCueHierarchy(

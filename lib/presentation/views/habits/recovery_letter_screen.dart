@@ -290,7 +290,7 @@ class _AveIntroScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Navigate Lapses',
+        title: const Text('Recovery Letter',
             style: TextStyle(
                 color: MyWalkColor.warmWhite,
                 fontSize: 16,
@@ -405,6 +405,15 @@ class _DoneView extends StatelessWidget {
                     fontSize: 14,
                     color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
                     height: 1.5,
+                    fontStyle: FontStyle.italic),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Phase 2 complete. Phase 3 begins at Day 30.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.35),
                     fontStyle: FontStyle.italic),
               ),
             ],

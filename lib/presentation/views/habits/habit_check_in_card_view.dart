@@ -18,7 +18,6 @@ import 'guardrails_screen.dart';
 import 'record_a_moment_screen.dart';
 import '../../../domain/entities/recovery_path.dart';
 import '../journal/journal_entry_composer.dart';
-import 'my_freedom_plan_screen.dart';
 
 class HabitCheckInCardView extends StatefulWidget {
   final Habit habit;
@@ -544,12 +543,10 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         : 'Freedom Plan · Phase $phase · Day $day';
 
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => MyFreedomPlanScreen(
-          habitId: habitId,
-          habitName: _habit.name,
-        ),
-      )),
+      onTap: () => Navigator.of(context).pushNamed(
+        '/recovery-path',
+        arguments: {'habitId': habitId, 'habitName': _habit.name},
+      ),
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -645,7 +642,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     final path = prov.pathFor(_habit.id);
     if (path == null) return const SizedBox.shrink();
 
-    final thoughtExamDone = path.cueHierarchyDone;
+    final thoughtExamDone = path.counterResponses.isNotEmpty;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,

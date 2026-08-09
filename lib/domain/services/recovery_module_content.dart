@@ -16,7 +16,7 @@ class RecoveryModuleContent {
     ),
     ModuleMeta(
       number: 2,
-      title: 'Challenge Your Thinking',
+      title: 'Examine Your Thoughts',
       subtitle: 'Examine the thoughts that fuel the habit.',
       icon: '💡',
       phase: 2,
@@ -201,7 +201,7 @@ class RecoveryModuleContent {
 
   static const String lapseEntryLabel = 'Record a setback';
 
-  // ── Module 2 — Challenge Your Thinking ──────────────────────────────────
+  // ── Module 2 — Examine Your Thoughts ──────────────────────────────────
 
   /// 5-step thought examination (CBT Socratic questioning).
   static const List<String> m2ThoughtExaminationPrompts = [
@@ -212,7 +212,7 @@ class RecoveryModuleContent {
     'Write your counter-response: the statement you can return to next time.',
   ];
 
-  static const String m2Title = 'Challenge Your Thinking';
+  static const String m2Title = 'Examine Your Thoughts';
   static const String m2Hint = 'Think slowly — this is detective work, not self-criticism.';
   static const String m2CounterResponsePrompt =
       'Would you like to save your counter-response to your quick-access library?';

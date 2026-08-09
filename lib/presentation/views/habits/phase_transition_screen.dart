@@ -50,7 +50,9 @@ class _Phase1To2Screen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       body: Stack(
         children: [
@@ -176,6 +178,7 @@ class _Phase1To2Screen extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -209,7 +212,7 @@ class _Phase4CelebrationScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Maintenance · Ongoing',
+                      'Phase 4 · Maintenance',
                       style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -271,6 +274,15 @@ class _Phase4CelebrationScreen extends StatelessWidget {
                         fontSize: 15,
                         color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
                         height: 1.7),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'No trophies. No badges. No streak count. Just acknowledgement of what has genuinely been built.',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                        fontStyle: FontStyle.italic,
+                        height: 1.5),
                   ),
                   const SizedBox(height: 36),
                   SizedBox(

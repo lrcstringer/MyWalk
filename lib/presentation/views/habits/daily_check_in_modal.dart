@@ -157,12 +157,12 @@ class _CheckInSheetState extends State<_CheckInSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Daily Check-In',
+        Text(
+          'Check in',
           style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: MyWalkColor.warmWhite),
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.45)),
         ),
         const SizedBox(height: 20),
 
@@ -201,7 +201,7 @@ class _CheckInSheetState extends State<_CheckInSheet> {
 
           // Inline follow-up for 'urge_only'
           if (_outcome == 'urge_only') _buildFollowUp(
-            callout: 'Let\'s capture the thought that came up. What were you thinking at that moment?',
+            callout: 'Let\'s examine the thought that came up. Capture what you were thinking at that moment.',
             hint: 'What came up for you? (optional)',
           ),
 
@@ -456,6 +456,7 @@ class _CheckInSheetState extends State<_CheckInSheet> {
                       builder: (_) => GuardrailsScreen(
                         habitId: widget.habitId,
                         habitName: widget.habitName,
+                        initialTab: 1,
                       ),
                     ));
                   },
@@ -464,7 +465,7 @@ class _CheckInSheetState extends State<_CheckInSheet> {
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: const Text(
-                    'Review my coping plan →',
+                    '→ View coping plan',
                     style: TextStyle(color: _kRpPurple, fontSize: 13),
                   ),
                 ),

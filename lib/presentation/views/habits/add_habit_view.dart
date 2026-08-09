@@ -172,19 +172,22 @@ class _AddHabitViewState extends State<AddHabitView> {
         },
       );
     } else {
-      title = widget.forBreakingFree ? 'Set up Breaking Free Practice' : 'Set It Up';
-      leading = IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: MyWalkColor.warmWhite, size: 18),
-        onPressed: () {
-          if (_isPreFilled || widget.startSubcategoryModel != null) {
-            Navigator.pop(context);
-          } else {
-            setState(() {
-              _step = (_selectedCategoryModel?.isCustom ?? true) ? 1 : 2;
-            });
-          }
-        },
-      );
+      title = widget.forBreakingFree ? 'New Practice' : 'Set It Up';
+      leading = widget.forBreakingFree
+          ? const SizedBox.shrink()
+          : IconButton(
+              icon: const Icon(Icons.arrow_back_ios,
+                  color: MyWalkColor.warmWhite, size: 18),
+              onPressed: () {
+                if (_isPreFilled || widget.startSubcategoryModel != null) {
+                  Navigator.pop(context);
+                } else {
+                  setState(() {
+                    _step = (_selectedCategoryModel?.isCustom ?? true) ? 1 : 2;
+                  });
+                }
+              },
+            );
     }
 
     return Scaffold(
@@ -606,13 +609,13 @@ class _AddHabitViewState extends State<AddHabitView> {
           _subcategoryContentCard(_selectedSubcategoryModel!),
 
         // ── ABOUT THIS PRACTICE ───────────────────────────────────────────
-        _sectionHeader('ABOUT THIS PRACTICE', MyWalkColor.sage),
+        _sectionHeader(isAbstain ? 'Name your practice' : 'ABOUT THIS PRACTICE', MyWalkColor.sage),
 
         // Name
         _label('Practice Name'),
         const SizedBox(height: 8),
         _textField(
-          hint: 'e.g. Morning run',
+          hint: isAbstain ? 'e.g. Pornography, Alcohol, Social media…' : 'e.g. Morning run',
           value: _habitName,
           onChanged: (v) => setState(() => _habitName = v),
         ),
@@ -800,8 +803,8 @@ class _AddHabitViewState extends State<AddHabitView> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            child: const Text('Set this practice',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            child: Text(isAbstain ? 'Save my practice' : 'Set this practice',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
           ),
         ),
       ],
@@ -1423,7 +1426,7 @@ class _AddHabitViewState extends State<AddHabitView> {
           children: [
             _pillChip(label: 'Yes', selected: _wantsPartner, onTap: () => setState(() => _wantsPartner = true)),
             const SizedBox(width: 8),
-            _pillChip(label: 'No', selected: !_wantsPartner, onTap: () => setState(() => _wantsPartner = false)),
+            _pillChip(label: 'No — set up later', selected: !_wantsPartner, onTap: () => setState(() => _wantsPartner = false)),
           ],
         ),
       ],
@@ -1486,7 +1489,7 @@ class _AddHabitViewState extends State<AddHabitView> {
           children: [
             _pillChip(label: 'Yes', selected: _wantsRecoveryPath, onTap: () => setState(() => _wantsRecoveryPath = true)),
             const SizedBox(width: 8),
-            _pillChip(label: 'No', selected: !_wantsRecoveryPath, onTap: () => setState(() => _wantsRecoveryPath = false)),
+            _pillChip(label: 'No — set up later', selected: !_wantsRecoveryPath, onTap: () => setState(() => _wantsRecoveryPath = false)),
           ],
         ),
       ],

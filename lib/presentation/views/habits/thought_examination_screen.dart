@@ -7,7 +7,7 @@ import '../../../domain/entities/recovery_session.dart';
 import '../../../domain/services/recovery_module_content.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
-import 'behaviour_log_screen.dart';
+import 'record_a_moment_screen.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
 
@@ -486,7 +486,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
               onTap: () => setState(() => _step1Selection = t.key),
             )),
         _DescOnlyCard(
-          description: 'Something else — I\'ll describe it',
+          description: 'Other →',
           selected: _step1Selection == 'other',
           onTap: () => setState(() => _step1Selection = 'other'),
         ),
@@ -562,7 +562,22 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
             contentPadding: const EdgeInsets.all(14),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Icon(Icons.arrow_downward_rounded,
+                size: 14, color: _kRpPurple.withValues(alpha: 0.7)),
+            const SizedBox(width: 6),
+            Text(
+              '↓ builds on your answer above',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: _kRpPurple.withValues(alpha: 0.7),
+                  fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
         const Text(
           'Based on that — what\'s the most truthful thing you can say back to this thought right now?',
           style: TextStyle(
@@ -614,7 +629,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Write a more accurate alternative — in your own words, not an affirmation.',
+          'Write your counter-response in your own words — draw on the evidence you just wrote.',
           style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
@@ -622,22 +637,13 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
               height: 1.4),
         ),
         const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: _kRpPurple.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _kRpPurple.withValues(alpha: 0.15)),
-          ),
-          child: Text(
-            'Not "everything will be fine" — something you actually believe. Something grounded '
-            'in what your evidence just showed you.',
-            style: TextStyle(
-                fontSize: 12,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
-                height: 1.5,
-                fontStyle: FontStyle.italic),
-          ),
+        Text(
+          'Not an affirmation. Something grounded in your own history.',
+          style: TextStyle(
+              fontSize: 12,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+              height: 1.5,
+              fontStyle: FontStyle.italic),
         ),
         const SizedBox(height: 16),
         TextField(
@@ -648,7 +654,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
           style: const TextStyle(
               color: MyWalkColor.warmWhite, fontSize: 15, height: 1.6),
           decoration: InputDecoration(
-            hintText: RecoveryModuleContent.m2Hint,
+            hintText: 'Write your counter-response here',
             hintStyle: TextStyle(
                 color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
                 fontSize: 13),
@@ -756,21 +762,33 @@ class _StepDots extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
       child: Row(
-        children: List.generate(total, (i) {
-          final active = i == step;
-          final done = i < step;
-          return Container(
-            margin: const EdgeInsets.only(right: 6),
-            width: active ? 18 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: done || active
-                  ? _kRpPurple
-                  : _kRpPurple.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(4),
+        children: [
+          ...List.generate(total, (i) {
+            final active = i == step;
+            final done = i < step;
+            return Container(
+              margin: const EdgeInsets.only(right: 6),
+              width: active ? 18 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: done || active
+                    ? _kRpPurple
+                    : _kRpPurple.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            );
+          }),
+          if (step >= 0 && step < 4) ...[
+            const SizedBox(width: 10),
+            Text(
+              'Step ${step + 1} of 4',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: _kRpPurple.withValues(alpha: 0.55),
+                  fontWeight: FontWeight.w500),
             ),
-          );
-        }),
+          ],
+        ],
       ),
     );
   }
@@ -1110,11 +1128,11 @@ class _PostSaveView extends StatelessWidget {
                   TextButton(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => BehaviourLogScreen(habitId: habitId),
+                        builder: (_) => RecordAMomentScreen(habitId: habitId),
                       ),
                     ),
                     child: Text(
-                      'Log this moment too',
+                      'Record a moment',
                       style: TextStyle(
                           color: _kRpPurple.withValues(alpha: 0.8),
                           fontSize: 14),

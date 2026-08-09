@@ -236,7 +236,7 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
       ),
       _ModuleSection(
         number: 2,
-        name: 'Challenge Your Thinking',
+        name: 'Examine Your Thoughts',
         isLocked: !RecoveryPhaseCalculator.isModuleUnlocked(path, 2),
         lockedMessage: 'Unlocks when your cue map is complete.',
         isComplete: path.counterResponses.isNotEmpty,

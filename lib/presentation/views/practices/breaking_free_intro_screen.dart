@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/habit_category_model.dart';
 import '../../providers/habit_category_provider.dart';
-import '../../providers/navigation_provider.dart';
-import '../../theme/app_theme.dart';
-import '../../utils/partner_invite_dialog.dart';
 import '../habits/add_habit_view.dart';
+import '../habits/values_inventory_screen.dart';
 
 class BreakingFreeIntroScreen extends StatelessWidget {
   final HabitCategoryModel? categoryModel;
@@ -19,135 +17,131 @@ class BreakingFreeIntroScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const purple = Color(0xFF8B7EC8);
+    const setupTeal = Color(0xFF4A8FA4);
 
     return Scaffold(
-      backgroundColor: MyWalkColor.charcoal,
-      appBar: AppBar(
-        backgroundColor: MyWalkColor.charcoal,
-        foregroundColor: MyWalkColor.warmWhite,
-        elevation: 0,
-        title: const Text(
-          'Breaking Free',
-          style: TextStyle(
-            color: MyWalkColor.warmWhite,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: DeepSpaceBackground(),
-            ),
-          ),
-          SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+      backgroundColor: setupTeal,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hero icon
-            Center(
-              child: Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: MyWalkColor.sage.withValues(alpha: 0.12),
-                  border: Border.all(
-                      color: MyWalkColor.sage.withValues(alpha: 0.3),
-                      width: 1.5),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Hero icon
+                    Center(
+                      child: Text(
+                        '🛡',
+                        style: const TextStyle(fontSize: 48),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Headline
+                    const Text(
+                      'You were made for freedom.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Scripture
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'It is for freedom that Christ has set us free; stand firm therefore, and do not submit again to a yoke of slavery.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.white,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Galatians 5:1',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // What this is
+                    _block(
+                      icon: Icons.shield_rounded,
+                      color: Colors.white,
+                      title: 'A daily practice',
+                      body:
+                          'You will add a Breaking Patterns practice to your Today tab. Each day you check in — staying strong is the practice.',
+                    ),
+                    const SizedBox(height: 16),
+                    _block(
+                      icon: Icons.handshake_rounded,
+                      color: Colors.white,
+                      title: 'A Support / Accountability Partner',
+                      optional: true,
+                      body:
+                          'Invite someone to walk with you. They will be notified when you reach out for support.',
+                    ),
+                    const SizedBox(height: 16),
+                    _block(
+                      icon: Icons.route_rounded,
+                      color: Colors.white,
+                      title: 'A Recovery / Freedom Plan',
+                      optional: true,
+                      body:
+                          'A guided programme to understand your patterns, anchor to your values, and build guardrails for lasting freedom.',
+                    ),
+                    const SizedBox(height: 40),
+                  ],
                 ),
-                child: const Icon(Icons.shield_rounded,
-                    color: MyWalkColor.sage, size: 34),
               ),
             ),
-            const SizedBox(height: 24),
 
-            // Headline
-            const Text(
-              'You were made for freedom.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: MyWalkColor.warmWhite,
-                height: 1.25,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'It is for freedom that Christ has set us free.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                fontStyle: FontStyle.italic,
-                color: MyWalkColor.softGold.withValues(alpha: 0.85),
-                height: 1.5,
-              ),
-            ),
-            Text(
-              'Galatians 5:1',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: MyWalkColor.golden.withValues(alpha: 0.7),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // What this is
-            _block(
-              icon: Icons.shield_rounded,
-              color: MyWalkColor.sage,
-              title: 'A daily practice',
-              body:
-                  'You will add a Breaking Free practice to your Today tab. Each day you check in — staying strong is the practice.',
-            ),
-            const SizedBox(height: 16),
-            _block(
-              icon: Icons.handshake_rounded,
-              color: MyWalkColor.softGold,
-              title: 'An accountability partner',
-              body:
-                  'Invite someone to walk with you. They will be notified when you reach out for support.',
-            ),
-            const SizedBox(height: 16),
-            _block(
-              icon: Icons.route_rounded,
-              color: purple,
-              title: 'A recovery path',
-              body:
-                  'A guided programme to understand your patterns, anchor to your values, and build guardrails for lasting freedom.',
-            ),
-            const SizedBox(height: 40),
-
-            // CTA
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _startPractice(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: MyWalkColor.sage,
-                  foregroundColor: MyWalkColor.charcoal,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
-                child: const Text(
-                  'Set up my Breaking Free practice',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 15),
+            // Pinned CTA
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => _startPractice(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: setupTeal,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text(
+                    'Set up my Breaking Patterns practice',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
                 ),
               ),
             ),
           ],
         ),
-      ),
-        ],
       ),
     );
   }
@@ -157,8 +151,8 @@ class BreakingFreeIntroScreen extends StatelessWidget {
     required Color color,
     required String title,
     required String body,
+    bool optional = false,
   }) {
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -176,11 +170,25 @@ class BreakingFreeIntroScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: color)),
+              Row(
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: color)),
+                  if (optional) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      '(Optional)',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: color.withValues(alpha: 0.55),
+                          fontWeight: FontWeight.w400),
+                    ),
+                  ],
+                ],
+              ),
               const SizedBox(height: 4),
               Text(body,
                   style: TextStyle(
@@ -200,30 +208,22 @@ class BreakingFreeIntroScreen extends StatelessWidget {
 
     if (catModel == null || subModel == null) {
       final provider = context.read<HabitCategoryProvider>();
-      final catMatches = provider.categories.where((c) => c.id == 'caring_for_myself');
+      final catMatches =
+          provider.categories.where((c) => c.id == 'caring_for_myself');
       catModel = catMatches.isEmpty ? null : catMatches.first;
       if (catModel != null) {
-        final subMatches = provider.subcategoriesFor('caring_for_myself')
+        final subMatches = provider
+            .subcategoriesFor('caring_for_myself')
             .where((s) => s.id == 'breaking_habits');
         subModel = subMatches.isEmpty ? null : subMatches.first;
       }
     }
 
-    final result = await showModalBottomSheet<dynamic>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: MyWalkColor.charcoal,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        maxChildSize: 0.95,
-        minChildSize: 0.6,
-        expand: false,
-        builder: (ctx, sc) => AddHabitView(
-          scrollController: sc,
+    // S02 — full-screen push (not modal)
+    final result = await Navigator.push<dynamic>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddHabitView(
           startCategoryModel: catModel,
           startSubcategoryModel: subModel,
           forBreakingFree: true,
@@ -239,55 +239,20 @@ class BreakingFreeIntroScreen extends StatelessWidget {
     final wantsPartner = result['wantsPartner'] as bool;
     final wantsRecoveryPath = result['wantsRecoveryPath'] as bool;
 
-    // Partner invite — same flow as "Add a support/prayer partner" on the Today card.
-    if (wantsPartner && context.mounted) {
-      await showPartnerInviteDialog(
-        context,
-        habitId: habitId,
-        habitName: habitName,
-        habitLabel: 'Breaking Patterns: $habitName',
-      );
-    }
-
-    if (!context.mounted) return;
-
-    // Freedom Plan — show confirmation dialog then open Today tab.
-    if (wantsRecoveryPath) {
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: true,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: MyWalkColor.charcoal,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            'Freedom Plan Created',
-            style: TextStyle(
-                color: MyWalkColor.warmWhite,
-                fontWeight: FontWeight.w600,
-                fontSize: 17),
-          ),
-          content: const Text(
-            'The Freedom Plan has been created for you. You can access it by tapping the "Freedom Plan" link in the practice card on your Today screen.',
-            style: TextStyle(
-                color: MyWalkColor.warmWhite, fontSize: 14, height: 1.55),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK',
-                  style: TextStyle(
-                      color: MyWalkColor.sage, fontWeight: FontWeight.w600)),
-            ),
-          ],
+    // S03 — Values Inventory: immediately after S02, cannot be skipped.
+    // Partner invite + WHN/ENC conditional paths are handled inside ValuesInventoryScreen.
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ValuesInventoryScreen(
+          habitId: habitId,
+          habitName: habitName,
+          setupMode: true,
+          wantsPartner: wantsPartner,
+          wantsRecoveryPath: wantsRecoveryPath,
         ),
-      );
-      if (context.mounted) {
-        context.read<NavigationProvider>().switchToTab(0);
-      }
-    }
-
-    if (!context.mounted) return;
-    Navigator.of(context).pop(); // pop BreakingFreeIntroScreen → Today tab shows
+      ),
+    );
   }
 }
 

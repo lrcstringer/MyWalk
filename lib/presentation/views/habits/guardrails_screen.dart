@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/recovery_path.dart';
-import '../../../domain/entities/recovery_session.dart';
 import '../../../domain/services/cue_rubric_service.dart';
 import '../../../domain/services/recovery_module_content.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
 import 'cue_hierarchy_screen.dart';
-import 'module_session_screen.dart';
+import 'urge_surfed_log_screen.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
 
@@ -101,6 +100,7 @@ class _GuardrailsScreenState extends State<GuardrailsScreen>
               ),
               _UrgeSurfingTab(
                 habitId: widget.habitId,
+                habitName: widget.habitName,
                 urgeSurfingIntroSeen: path?.urgeSurfingIntroSeen ?? false,
               ),
             ],
@@ -576,6 +576,7 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
           const SizedBox(height: 20),
           ..._planControllers.asMap().entries.map((e) => _PlanCard(
                 index: e.key,
+                total: _planControllers.length,
                 controllers: e.value,
                 onRemove: _planControllers.length > 1
                     ? () =>
@@ -622,11 +623,13 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
 
 class _PlanCard extends StatefulWidget {
   final int index;
+  final int total;
   final _PlanControllers controllers;
   final VoidCallback? onRemove;
 
   const _PlanCard({
     required this.index,
+    required this.total,
     required this.controllers,
     this.onRemove,
   });
@@ -659,7 +662,7 @@ class _PlanCardState extends State<_PlanCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Plan ${widget.index + 1}',
+              Text('Plan ${widget.index + 1} of ${widget.total}',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -805,25 +808,28 @@ class _PlanControllers {
 
 class _UrgeSurfingTab extends StatelessWidget {
   final String habitId;
+  final String habitName;
   final bool urgeSurfingIntroSeen;
 
   const _UrgeSurfingTab({
     required this.habitId,
+    required this.habitName,
     required this.urgeSurfingIntroSeen,
   });
 
   @override
   Widget build(BuildContext context) {
     if (!urgeSurfingIntroSeen) {
-      return _UrgeSurfingIntro(habitId: habitId);
+      return _UrgeSurfingIntro(habitId: habitId, habitName: habitName);
     }
-    return _UrgeSurfingSession(habitId: habitId);
+    return _UrgeSurfingSession(habitId: habitId, habitName: habitName);
   }
 }
 
 class _UrgeSurfingIntro extends StatelessWidget {
   final String habitId;
-  const _UrgeSurfingIntro({required this.habitId});
+  final String habitName;
+  const _UrgeSurfingIntro({required this.habitId, required this.habitName});
 
   @override
   Widget build(BuildContext context) {
@@ -832,22 +838,89 @@ class _UrgeSurfingIntro extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('A different option',
+          const Text('Understand urge surfing',
               style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: MyWalkColor.warmWhite)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text(
-            "You don't have to fight an urge or give in to it. There's a third option — you can just watch it.\n\n"
-            "Urges aren't commands. They're neurological events with a natural shape — they rise, peak, and pass, usually within 15–30 minutes, whether or not you act on them. Urge surfing is the practice of riding that arc rather than reacting to it.\n\n"
-            "The more you practise this, the weaker the urge becomes over time.",
+            'Urges are not commands. They are neurological events with a natural arc: they rise, peak (typically within 15–30 minutes), and subside — whether or not you act on them. Urge surfing is the practice of riding that arc rather than either acting on or suppressing the urge.',
             style: TextStyle(
                 fontSize: 14,
                 color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
                 height: 1.65),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
+          Text(
+            'When an urge arises:',
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.85)),
+          ),
+          const SizedBox(height: 10),
+          ...[
+            ('1. Name it:', 'Say to yourself: \'I am having an urge to [behaviour].\' This is not permission — it is observation.'),
+            ('2. Locate it:', 'Where in your body do you feel it? Chest, throat, stomach, hands? What is its shape and quality?'),
+            ('3. Observe it:', 'Watch it intensify without acting. Notice whether it peaks and then diminishes. Track the arc.'),
+            ('4. After it passes', '(or you choose to act on your coping plan): record what happened. Was the urge survivable?'),
+          ].map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 90,
+                  child: Text(item.$1,
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: _kRpPurple.withValues(alpha: 0.9))),
+                ),
+                Expanded(
+                  child: Text(item.$2,
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
+                          height: 1.5)),
+                ),
+              ],
+            ),
+          )),
+          const SizedBox(height: 8),
+          Text(
+            'Repeated urge surfing weakens the cue-response association over time and builds experiential confidence that urges do not require action.',
+            style: TextStyle(
+                fontSize: 13,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
+                height: 1.55),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'You can do this by tapping the \'Urge surfed\' button on the practice card. You\'ll be asked to record what happened: what was the urge, how did it feel, did it rise and then decrease, and how long did that take.',
+            style: TextStyle(
+                fontSize: 13,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
+                height: 1.55),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _kRpPurple.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _kRpPurple.withValues(alpha: 0.18)),
+            ),
+            child: Text(
+              'Education only — no fields to fill in here. Use this skill via the \'Urge surfed\' button on your habit card whenever an urge arises.',
+              style: TextStyle(
+                  fontSize: 13,
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+                  height: 1.5),
+            ),
+          ),
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -864,16 +937,6 @@ class _UrgeSurfingIntro extends StatelessWidget {
                       backgroundColor: const Color(0xFF8B7EC8),
                     ),
                   );
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => ModuleSessionScreen(
-                      habitId: habitId,
-                      sessionType: RecoverySessionType.m4UrgeSurfing,
-                      moduleNumber: 4,
-                      title: RecoveryModuleContent.m4UrgeSurfingTitle,
-                      prompts: RecoveryModuleContent.m4UrgeSurfingPrompts,
-                      hint: RecoveryModuleContent.m4UrgeSurfingHint,
-                    ),
-                  ));
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -883,7 +946,7 @@ class _UrgeSurfingIntro extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Start my first urge surfing session',
+              child: const Text('Got it — I understand urge surfing',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             ),
           ),
@@ -895,7 +958,8 @@ class _UrgeSurfingIntro extends StatelessWidget {
 
 class _UrgeSurfingSession extends StatelessWidget {
   final String habitId;
-  const _UrgeSurfingSession({required this.habitId});
+  final String habitName;
+  const _UrgeSurfingSession({required this.habitId, required this.habitName});
 
   @override
   Widget build(BuildContext context) {
@@ -917,18 +981,14 @@ class _UrgeSurfingSession extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => ModuleSessionScreen(
+                  builder: (_) => UrgeSurfedLogScreen(
                     habitId: habitId,
-                    sessionType: RecoverySessionType.m4UrgeSurfing,
-                    moduleNumber: 4,
-                    title: RecoveryModuleContent.m4UrgeSurfingTitle,
-                    prompts: RecoveryModuleContent.m4UrgeSurfingPrompts,
-                    hint: RecoveryModuleContent.m4UrgeSurfingHint,
+                    habitName: habitName,
                   ),
                 ),
               ),
               icon: const Icon(Icons.waves_rounded, size: 16),
-              label: const Text('Start urge surfing session',
+              label: const Text('Log a surfed urge',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kRpPurple,
@@ -953,20 +1013,20 @@ class _DonesBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: MyWalkColor.sage.withValues(alpha: 0.08),
+        color: _kRpPurple.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _kRpPurple.withValues(alpha: 0.18)),
       ),
-      child: Row(children: [
-        const Icon(Icons.check_circle_rounded, size: 14, color: MyWalkColor.sage),
-        const SizedBox(width: 8),
-        Text('Plans already saved.',
-            style: TextStyle(
-                fontSize: 12,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.7))),
-      ]),
+      child: Text(
+        'Your plans are built. When a high-risk moment arrives, you\'re executing a decision you already made — not improvising under pressure.',
+        style: TextStyle(
+            fontSize: 13,
+            color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
+            height: 1.5),
+      ),
     );
   }
 }

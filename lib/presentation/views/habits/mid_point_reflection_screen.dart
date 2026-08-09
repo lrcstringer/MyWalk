@@ -104,7 +104,7 @@ class _MidPointReflectionScreenState extends State<MidPointReflectionScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Mid-point reflection',
+        title: const Text('Mid-Point Reflection',
             style: TextStyle(
                 color: MyWalkColor.warmWhite,
                 fontSize: 16,
