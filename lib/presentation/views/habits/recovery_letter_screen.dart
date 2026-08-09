@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/recovery_session.dart';
@@ -8,7 +10,7 @@ import '../../theme/app_theme.dart';
 const _kRpPurple = Color(0xFF8B7EC8);
 
 /// Module 5 — Recovery Letter.
-/// 4-prompt guided flow → stitched letter preview (editable) → save.
+/// Free-text letter with soft guidance. Draft saves on every change.
 class RecoveryLetterScreen extends StatefulWidget {
   final String habitId;
 
@@ -19,26 +21,27 @@ class RecoveryLetterScreen extends StatefulWidget {
 }
 
 class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
-  static final _prompts = RecoveryModuleContent.m5RecoveryLetterPrompts;
-
-  final List<TextEditingController> _controllers =
-      List.generate(_prompts.length, (_) => TextEditingController());
-  int _step = 0; // 0–3 = prompts; 4 = preview; 5 = done
-  late final TextEditingController _previewCtrl;
+  final TextEditingController _letterCtrl = TextEditingController();
   bool _saving = false;
   bool _showAveIntro = false;
+  bool _isResume = false;
+  bool _done = false;
+  bool _guidanceVisible = true;
+  Timer? _draftTimer;
 
   @override
   void initState() {
     super.initState();
-    _previewCtrl = TextEditingController();
-    for (final c in _controllers) {
-      c.addListener(() => setState(() {}));
-    }
-    // Show AVE intro on first open
+    _letterCtrl.addListener(_onLetterChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final path = context.read<RecoveryPathProvider>().pathFor(widget.habitId);
-      if (path != null && !path.module5IntroSeen) {
+      if (path == null) return;
+      final draft = path.recoveryLetterDraft;
+      if (draft != null && draft.trim().isNotEmpty) {
+        _letterCtrl.text = draft;
+        setState(() => _isResume = true);
+      }
+      if (!path.module5IntroSeen) {
         setState(() => _showAveIntro = true);
       }
     });
@@ -46,32 +49,32 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
 
   @override
   void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    _previewCtrl.dispose();
+    _draftTimer?.cancel();
+    _letterCtrl.removeListener(_onLetterChanged);
+    _letterCtrl.dispose();
     super.dispose();
   }
 
-  bool get _canAdvance => _controllers[_step].text.trim().isNotEmpty;
-
-  void _buildPreview() {
-    final answers = _controllers.map((c) => c.text.trim()).toList();
-    _previewCtrl.text =
-        RecoveryModuleContent.stitchRecoveryLetter(answers);
-    setState(() => _step = 4);
+  void _onLetterChanged() {
+    setState(() {});
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        context
+            .read<RecoveryPathProvider>()
+            .saveRecoveryLetterDraft(widget.habitId, _letterCtrl.text);
+      }
+    });
   }
+
+  bool get _canSave => _letterCtrl.text.trim().isNotEmpty;
 
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      final letter = _previewCtrl.text.trim();
+      final letter = _letterCtrl.text.trim();
       final prov = context.read<RecoveryPathProvider>();
-
-      // Save the letter draft onto the path.
       await prov.saveRecoveryLetterDraft(widget.habitId, letter);
-
-      // Also save as a session (encrypted).
       final now = DateTime.now();
       final session = RecoverySession(
         id: '${widget.habitId}_m5RecoveryLetter_${now.millisecondsSinceEpoch}',
@@ -82,8 +85,7 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
         createdAt: now,
       );
       await prov.saveSession(session);
-
-      if (mounted) setState(() { _saving = false; _step = 5; });
+      if (mounted) setState(() { _saving = false; _done = true; });
       await Future.delayed(const Duration(milliseconds: 2400));
       if (mounted) Navigator.of(context).pop();
     } catch (_) {
@@ -98,7 +100,7 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_step == 5) return _DoneView();
+    if (_done) return _DoneView();
 
     if (_showAveIntro) {
       return _AveIntroScreen(
@@ -113,257 +115,160 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          _step == 4
-              ? RecoveryModuleContent.m5RecoveryLetterPreviewTitle
+          _isResume
+              ? 'Continue writing your recovery letter'
               : RecoveryModuleContent.m5RecoveryLetterTitle,
           style: const TextStyle(
               color: MyWalkColor.warmWhite,
               fontSize: 16,
               fontWeight: FontWeight.w600),
         ),
-        leading: BackButton(
-          color: MyWalkColor.warmWhite,
-          onPressed: () {
-            if (_step > 0) {
-              setState(() => _step--);
-            } else {
-              Navigator.of(context).pop();
-            }
-          },
-        ),
+        leading: const BackButton(color: MyWalkColor.warmWhite),
       ),
       body: Stack(
         children: [
           const Positioned.fill(
-            child: IgnorePointer(
-              child: DeepSpaceBackground(),
-            ),
-          ),
-          _step == 4 ? _PreviewStep(
-        controller: _previewCtrl,
-        saving: _saving,
-        onSave: _save,
-      ) : _PromptStep(
-        step: _step,
-        total: _prompts.length,
-        prompt: _prompts[_step],
-        controller: _controllers[_step],
-        canAdvance: _canAdvance,
-        isLast: _step == _prompts.length - 1,
-        onNext: () {
-          if (_step == _prompts.length - 1) {
-            _buildPreview();
-          } else {
-            setState(() => _step++);
-          }
-        },
-      ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PromptStep extends StatelessWidget {
-  final int step;
-  final int total;
-  final String prompt;
-  final TextEditingController controller;
-  final bool canAdvance;
-  final bool isLast;
-  final VoidCallback onNext;
-
-  const _PromptStep({
-    required this.step,
-    required this.total,
-    required this.prompt,
-    required this.controller,
-    required this.canAdvance,
-    required this.isLast,
-    required this.onNext,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 8,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Step dots
-          Row(
-            children: List.generate(total, (i) {
-              final active = i == step;
-              final done = i < step;
-              return Container(
-                margin: const EdgeInsets.only(right: 6),
-                width: active ? 18 : 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: done || active
-                      ? _kRpPurple
-                      : _kRpPurple.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(4),
+              child: IgnorePointer(child: DeepSpaceBackground())),
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Right now, while you\'re clear-headed, write a letter — from the wiser, '
+                          'stronger version of yourself to the version of you who has just slipped.',
+                          style: TextStyle(
+                              fontSize: 14,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+                              height: 1.6),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'You can stop and come back to this — it doesn\'t need to be done in one sitting.',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: _kRpPurple.withValues(alpha: 0.8),
+                              height: 1.5,
+                              fontStyle: FontStyle.italic),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _letterCtrl,
+                          minLines: 12,
+                          maxLines: null,
+                          autofocus: !_isResume,
+                          style: const TextStyle(
+                              color: MyWalkColor.warmWhite,
+                              fontSize: 15,
+                              height: 1.7),
+                          decoration: InputDecoration(
+                            hintText: 'Dear future me…',
+                            hintStyle: TextStyle(
+                                color: MyWalkColor.warmWhite.withValues(alpha: 0.25),
+                                fontSize: 14),
+                            filled: true,
+                            fillColor: MyWalkColor.surfaceOverlay,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.all(16),
+                          ),
+                        ),
+                        if (_guidanceVisible) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                            decoration: BoxDecoration(
+                              color: _kRpPurple.withValues(alpha: 0.07),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: _kRpPurple.withValues(alpha: 0.18)),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'You might include:',
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: _kRpPurple.withValues(alpha: 0.8)),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      ...const [
+                                        '• What you want to remind yourself about who you are',
+                                        '• What the research says about slips (a slip is not a relapse)',
+                                        '• Which value you want to take the next step toward',
+                                        '• What you want to say to your harshest inner voice',
+                                      ].map((s) => Padding(
+                                            padding: const EdgeInsets.only(bottom: 4),
+                                            child: Text(s,
+                                                style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: MyWalkColor.warmWhite
+                                                        .withValues(alpha: 0.55),
+                                                    height: 1.4)),
+                                          )),
+                                    ],
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => setState(() => _guidanceVisible = false),
+                                  child: Icon(Icons.close_rounded,
+                                      size: 16,
+                                      color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
                 ),
-              );
-            }),
-          ),
-          const SizedBox(height: 20),
-
-          // Intro (first step only)
-          if (step == 0) ...[
-            Text(
-              RecoveryModuleContent.m5RecoveryLetterIntro,
-              style: TextStyle(
-                  fontSize: 13,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
-                  height: 1.5),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          Text(
-            prompt,
-            style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: MyWalkColor.warmWhite,
-                height: 1.4),
-          ),
-          const SizedBox(height: 18),
-
-          Expanded(
-            child: TextField(
-              controller: controller,
-              maxLines: null,
-              expands: true,
-              textAlignVertical: TextAlignVertical.top,
-              autofocus: true,
-              style: const TextStyle(
-                  color: MyWalkColor.warmWhite, fontSize: 15, height: 1.6),
-              decoration: InputDecoration(
-                hintText: 'Write honestly…',
-                hintStyle: TextStyle(
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.25),
-                    fontSize: 14),
-                filled: true,
-                fillColor: MyWalkColor.surfaceOverlay,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                      20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _canSave && !_saving ? _save : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kRpPurple,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.25),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Text('Save my letter',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 15)),
+                    ),
+                  ),
                 ),
-                contentPadding: const EdgeInsets.all(16),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: canAdvance ? onNext : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kRpPurple,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.25),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: Text(
-                isLast ? 'Preview my letter' : 'Next',
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 15),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PreviewStep extends StatelessWidget {
-  final TextEditingController controller;
-  final bool saving;
-  final VoidCallback onSave;
-
-  const _PreviewStep({
-    required this.controller,
-    required this.saving,
-    required this.onSave,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 8,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            RecoveryModuleContent.m5RecoveryLetterPreviewBody,
-            style: TextStyle(
-                fontSize: 13,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
-                height: 1.5),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              maxLines: null,
-              expands: true,
-              textAlignVertical: TextAlignVertical.top,
-              style: const TextStyle(
-                  color: MyWalkColor.warmWhite, fontSize: 14, height: 1.7),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: MyWalkColor.surfaceOverlay,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.all(16),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: saving ? null : onSave,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kRpPurple,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.25),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: saving
-                  ? const SizedBox(
-                      width: 18, height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : const Text('Save my letter',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 15)),
+              ],
             ),
           ),
         ],

@@ -33,12 +33,9 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
   // Step 0 — domain toward/away
   late final Map<String, String> _domainSelections; // domain → 'toward'|'away'
 
-  // Step 1 — where pointing away
+  // Step 1 — merged commitment question (conditional wording based on away/toward)
   late final TextEditingController _step1Ctrl;
   bool _allToward = false;
-
-  // Step 2 — committed action
-  late final TextEditingController _step2Ctrl;
 
   @override
   void initState() {
@@ -47,7 +44,6 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
     _inventory = path?.module3.valuesInventory ?? [];
     _domainSelections = {};
     _step1Ctrl = TextEditingController()..addListener(() => setState(() {}));
-    _step2Ctrl = TextEditingController()..addListener(() => setState(() {}));
 
     // If no inventory, skip domain step
     if (_inventory.isEmpty) _step = 1;
@@ -56,7 +52,6 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
   @override
   void dispose() {
     _step1Ctrl.dispose();
-    _step2Ctrl.dispose();
     super.dispose();
   }
 
@@ -65,10 +60,7 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
       case 0:
         return _inventory.every((e) => _domainSelections.containsKey(e.domain));
       case 1:
-        if (_allToward) return true;
         return _step1Ctrl.text.trim().isNotEmpty;
-      case 2:
-        return _step2Ctrl.text.trim().isNotEmpty;
       default:
         return false;
     }
@@ -87,8 +79,7 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
       final now = DateTime.now();
       final responseJson = jsonEncode({
         'domainDirections': _domainSelections,
-        'awayReflection': _step1Ctrl.text.trim(),
-        'committedAction': _step2Ctrl.text.trim(),
+        'committedAction': _step1Ctrl.text.trim(),
       });
       final session = RecoverySession(
         id: '${widget.habitId}_m3WeeklyCompass_${now.millisecondsSinceEpoch}',
@@ -127,9 +118,9 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
   Widget build(BuildContext context) {
     if (_done) return _CompassAffirmationView(allToward: _allToward);
 
-    final totalSteps = _inventory.isEmpty ? 2 : 3;
-    final displayStep = _inventory.isEmpty ? _step - 1 : _step;
-    final isLast = _step == (_inventory.isEmpty ? 2 : 2);
+    final totalSteps = _inventory.isEmpty ? 1 : 2;
+    final displayStep = _inventory.isEmpty ? 0 : _step;
+    final isLast = _step == 1;
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
@@ -226,8 +217,6 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
         return _buildStep0();
       case 1:
         return _buildStep1();
-      case 2:
-        return _buildStep2();
       default:
         return const SizedBox.shrink();
     }
@@ -267,14 +256,26 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
     );
   }
 
-  // ── Step 1 — Pointing away reflection (or all-toward message) ─────────────
+  // ── Step 1 — Merged commitment question (conditional wording) ─────────────
 
   Widget _buildStep1() {
-    if (_allToward || _inventory.isEmpty) {
-      // All toward — non-required
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    final awayDomains = _domainSelections.entries
+        .where((e) => e.value == 'away')
+        .map((e) => e.key)
+        .toList();
+
+    final hasAway = awayDomains.isNotEmpty;
+    final question = hasAway
+        ? 'What\'s one concrete thing you\'ll do differently this week — something specific, not a mindset?'
+        : 'What\'s one concrete thing you\'ll do this week that moves toward what matters most to you?';
+    final hint = hasAway
+        ? 'Focus on the area where your compass is pointing away.'
+        : 'A "do" action — something concrete you can actually do.';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_allToward && _inventory.isNotEmpty) ...[
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -301,115 +302,35 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Text(
-            'Anything else you want to note about your values this week?',
-            style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: MyWalkColor.warmWhite,
-                height: 1.4),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _step1Ctrl,
-            minLines: 3,
-            maxLines: null,
-            autofocus: true,
-            style: const TextStyle(
-                color: MyWalkColor.warmWhite, fontSize: 14, height: 1.6),
-            decoration: InputDecoration(
-              hintText: 'Optional — this step is complete even if left blank.',
-              hintStyle: TextStyle(
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
-                  fontSize: 13),
-              filled: true,
-              fillColor: MyWalkColor.surfaceOverlay,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.all(14),
-            ),
-          ),
-          const SizedBox(height: 16),
         ],
-      );
-    }
-
-    // Some domains pointing away
-    final awayDomains = _domainSelections.entries
-        .where((e) => e.value == 'away')
-        .map((e) => e.key)
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (awayDomains.isNotEmpty) ...[
+        if (hasAway) ...[
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: awayDomains.map((d) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: MyWalkColor.warmCoral.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: MyWalkColor.warmCoral.withValues(alpha: 0.25)),
-                  ),
-                  child: Text(d,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color:
-                              MyWalkColor.warmWhite.withValues(alpha: 0.65))),
-                )).toList(),
+            children: awayDomains
+                .map((d) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: MyWalkColor.warmCoral.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color:
+                                MyWalkColor.warmCoral.withValues(alpha: 0.25)),
+                      ),
+                      child: Text(d,
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: MyWalkColor.warmWhite
+                                  .withValues(alpha: 0.65))),
+                    ))
+                .toList(),
           ),
           const SizedBox(height: 16),
         ],
-        const Text(
-          'Where the compass is pointing away — what\'s one small thing you could do differently this week?',
-          style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: MyWalkColor.warmWhite,
-              height: 1.4),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _step1Ctrl,
-          minLines: 3,
-          maxLines: null,
-          autofocus: true,
+        Text(
+          question,
           style: const TextStyle(
-              color: MyWalkColor.warmWhite, fontSize: 14, height: 1.6),
-          decoration: InputDecoration(
-            hintText: 'Even a single small shift counts.',
-            hintStyle: TextStyle(
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
-                fontSize: 13),
-            filled: true,
-            fillColor: MyWalkColor.surfaceOverlay,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.all(14),
-          ),
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  // ── Step 2 — Committed action ──────────────────────────────────────────────
-
-  Widget _buildStep2() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'What is one concrete thing you will do this week that moves toward what matters most to you?',
-          style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
               color: MyWalkColor.warmWhite,
@@ -417,7 +338,7 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'A "do" action — calling someone, exercising, praying, doing the creative work you\'ve been putting off.',
+          hint,
           style: TextStyle(
               fontSize: 13,
               color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
@@ -426,14 +347,14 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
         ),
         const SizedBox(height: 14),
         TextField(
-          controller: _step2Ctrl,
+          controller: _step1Ctrl,
           minLines: 3,
           maxLines: null,
           autofocus: true,
           style: const TextStyle(
               color: MyWalkColor.warmWhite, fontSize: 14, height: 1.6),
           decoration: InputDecoration(
-            hintText: RecoveryModuleContent.m3CompassHint,
+            hintText: 'A concrete, specific action.',
             hintStyle: TextStyle(
                 color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
                 fontSize: 13),

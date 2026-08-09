@@ -6,14 +6,6 @@ import '../../theme/app_theme.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
 
-const _kVaguePhrases = [
-  'be strong',
-  'think positive',
-  'try harder',
-  'just stop',
-  'willpower',
-  'be better',
-];
 
 class EnvironmentalRestructuringScreen extends StatefulWidget {
   final String habitId;
@@ -35,7 +27,7 @@ class _EnvironmentalRestructuringScreenState
   late final List<Map<String, dynamic>> _cues;
   late final List<TextEditingController> _controllers;
   late final List<List<String>> _suggestions;
-  late final List<bool> _showVagueness;
+  bool _showIntro = true;
   bool _saving = false;
   bool _done = false;
 
@@ -47,23 +39,14 @@ class _EnvironmentalRestructuringScreenState
     _cues = hierarchy.take(3).toList();
 
     _controllers = List.generate(_cues.length, (_) => TextEditingController());
-    _showVagueness = List.filled(_cues.length, false);
     _suggestions = _cues.map((c) {
       final cueText = c['cueText'] as String? ?? '';
       return CueRubricService.environmentalSuggestionsFor(
           widget.habitType, cueText);
     }).toList();
 
-    for (int i = 0; i < _controllers.length; i++) {
-      final idx = i;
-      _controllers[idx].addListener(() {
-        final vague = _isVague(_controllers[idx].text);
-        if (vague != _showVagueness[idx]) {
-          setState(() => _showVagueness[idx] = vague);
-        } else {
-          setState(() {}); // rebuild for button enable
-        }
-      });
+    for (final c in _controllers) {
+      c.addListener(() => setState(() {}));
     }
   }
 
@@ -75,17 +58,9 @@ class _EnvironmentalRestructuringScreenState
     super.dispose();
   }
 
-  bool _isVague(String text) {
-    final t = text.trim().toLowerCase();
-    if (t.isEmpty) return false;
-    if (t.length < 15) return true;
-    return _kVaguePhrases.any((p) => t.contains(p));
-  }
-
   bool get _canSave =>
       _controllers.isNotEmpty &&
-      _controllers.every((c) => c.text.trim().length >= 15) &&
-      !_showVagueness.any((v) => v);
+      _controllers.every((c) => c.text.trim().isNotEmpty);
 
   Future<void> _save() async {
     if (!_canSave) return;
@@ -109,9 +84,77 @@ class _EnvironmentalRestructuringScreenState
     }
   }
 
+  Widget _buildIntroScaffold() {
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: BackButton(color: MyWalkColor.warmWhite),
+        title: const Text('Change Your Environment',
+            style: TextStyle(
+                color: MyWalkColor.warmWhite,
+                fontSize: 16,
+                fontWeight: FontWeight.w600)),
+      ),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+              child: IgnorePointer(child: DeepSpaceBackground())),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Change the situation before you need to change your mind.',
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: MyWalkColor.warmWhite,
+                        height: 1.3),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Willpower works worst exactly when you need it most — when you\'re stressed, '
+                    'tired, and the urge is strong. Making concrete changes to your environment '
+                    'is more reliable than relying on willpower in the moment.',
+                    style: TextStyle(
+                        fontSize: 15,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+                        height: 1.7),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => setState(() => _showIntro = false),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kRpPurple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text("Let's do this",
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_done) return const _EnvCompletionView();
+    if (_showIntro) return _buildIntroScaffold();
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
@@ -169,7 +212,6 @@ class _EnvironmentalRestructuringScreenState
                                     _cues[i]['cueText'] as String? ?? '',
                                 controller: _controllers[i],
                                 suggestions: _suggestions[i],
-                                showVagueness: _showVagueness[i],
                               )),
                       ],
                     ),
@@ -230,13 +272,11 @@ class _CueSection extends StatefulWidget {
   final String cueText;
   final TextEditingController controller;
   final List<String> suggestions;
-  final bool showVagueness;
 
   const _CueSection({
     required this.cueText,
     required this.controller,
     required this.suggestions,
-    required this.showVagueness,
   });
 
   @override
@@ -304,15 +344,14 @@ class _CueSectionState extends State<_CueSection> {
               contentPadding: const EdgeInsets.all(14),
             ),
           ),
-          if (widget.showVagueness) ...[
-            const SizedBox(height: 6),
-            Text(
-              'Can you make this more specific — a concrete action, not a mindset?',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: MyWalkColor.warmCoral.withValues(alpha: 0.85)),
-            ),
-          ],
+          const SizedBox(height: 6),
+          Text(
+            'Be specific — e.g. "delete the app" not "use my phone less"',
+            style: TextStyle(
+                fontSize: 12,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
+                fontStyle: FontStyle.italic),
+          ),
           if (visibleSuggestions.isNotEmpty) ...[
             const SizedBox(height: 12),
             Wrap(

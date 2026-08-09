@@ -36,7 +36,7 @@ const _kThoughtTypes = [
 ];
 
 const _kStep0Examples = [
-  'I deserve this.',
+  'I\'ve earned this.',
   'Just this once.',
   'No one will know.',
   'I can\'t cope without it.',
@@ -59,6 +59,7 @@ class ThoughtExaminationScreen extends StatefulWidget {
 }
 
 class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
+  bool _showOpening = true;
   int _step = 0;
   _Phase _phase = _Phase.input;
 
@@ -80,6 +81,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
 
   // Step 4 — library choice (drives save, no Next button)
   bool _saving = false;
+  bool _savedToLibraryFirst = false;
 
   @override
   void initState() {
@@ -114,6 +116,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
     final draft = path.thoughtExaminationDraft;
     if (draft == null || draft.isEmpty) return;
     setState(() {
+      _showOpening = false;
       _step = path.thoughtExaminationDraftStep;
       _step0Ctrl.text = (draft['step0'] as String?) ?? '';
       _step1Selection = draft['step1'] as String?;
@@ -176,7 +179,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
         'thought': _step0Ctrl.text.trim(),
         'errorType': errorType,
         'evidence': _step2aCtrl.text.trim(),
-        'friendResponse': _step2bCtrl.text.trim(),
+        'honestResponse': _step2bCtrl.text.trim(),
         'alternative': alternative,
       });
 
@@ -190,12 +193,14 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
       ));
 
       if (saveToLibrary) {
+        final isFirst = prov.pathFor(widget.habitId)?.counterResponses.isEmpty ?? true;
         await prov.addCounterResponse(widget.habitId, {
           'thought': _step0Ctrl.text.trim(),
           'errorType': errorType,
           'alternative': alternative,
           'createdAt': Timestamp.now(),
         });
+        if (isFirst) _savedToLibraryFirst = true;
       }
 
       await prov.clearThoughtExaminationDraft(widget.habitId);
@@ -219,14 +224,15 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
     if (_step > 0) {
       setState(() => _step--);
     } else {
-      Navigator.of(context).pop();
+      setState(() => _showOpening = true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_phase == _Phase.affirmation) return _AffirmationView();
-    if (_phase == _Phase.postSave) return _PostSaveView(habitId: widget.habitId);
+    if (_phase == _Phase.postSave) return _PostSaveView(habitId: widget.habitId, showCounterResponseNotification: _savedToLibraryFirst);
+    if (_showOpening) return _buildOpeningScaffold();
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
@@ -283,6 +289,82 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
                       ),
                     ),
                   ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOpeningScaffold() {
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(RecoveryModuleContent.m2Title,
+            style: TextStyle(
+                color: MyWalkColor.warmWhite,
+                fontSize: 16,
+                fontWeight: FontWeight.w600)),
+        leading: BackButton(
+          color: MyWalkColor.warmWhite,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+              child: IgnorePointer(child: DeepSpaceBackground())),
+          SafeArea(
+            child: Column(
+              children: [
+                _StepDots(step: -1, total: 5),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'The cue doesn\'t cause the behaviour — the thought does. '
+                          'This takes about 5 minutes and works best done as soon as possible after you notice the thought.',
+                          style: TextStyle(
+                              fontSize: 15,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
+                              height: 1.65),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Here\'s what you\'ll do: write the thought down exactly as it occurred, '
+                          'identify what kind of thought it is, then write a more honest response to it.',
+                          style: TextStyle(
+                              fontSize: 15,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
+                              height: 1.65),
+                        ),
+                        const SizedBox(height: 40),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => setState(() => _showOpening = false),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _kRpPurple,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text('Start',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600, fontSize: 15)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -383,7 +465,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
     );
   }
 
-  // ── Step 1 — Thought type grid ─────────────────────────────────────────────
+  // ── Step 1 — Thought type (descriptions only — no clinical labels shown) ────
 
   Widget _buildStep1() {
     return Column(
@@ -398,14 +480,13 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
               height: 1.4),
         ),
         const SizedBox(height: 16),
-        ..._kThoughtTypes.map((t) => _ThoughtTypeCard(
-              type: t,
+        ..._kThoughtTypes.map((t) => _DescOnlyCard(
+              description: t.description,
               selected: _step1Selection == t.key,
               onTap: () => setState(() => _step1Selection = t.key),
             )),
-        _ThoughtTypeCard(
-          type: const _ThoughtType(
-              'other', 'Other', 'Describe the thought pattern in your own words'),
+        _DescOnlyCard(
+          description: 'Something else — I\'ll describe it',
           selected: _step1Selection == 'other',
           onTap: () => setState(() => _step1Selection = 'other'),
         ),
@@ -436,25 +517,90 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
     );
   }
 
-  // ── Step 2 — Evidence + friend response ───────────────────────────────────
+  // ── Step 2 — Evidence from history + honest response ─────────────────────
 
   Widget _buildStep2() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _PromptField(
-          prompt:
-              'What is the actual evidence for this thought? What does your track record say?',
+        const Text(
+          'When you\'ve given in to this thought before — what actually happened in the hours after? Not what you hoped. What actually happened.',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: MyWalkColor.warmWhite,
+              height: 1.4),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Your honest answer to this is the only evidence that matters.',
+          style: TextStyle(
+              fontSize: 12,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
+              fontStyle: FontStyle.italic,
+              height: 1.4),
+        ),
+        const SizedBox(height: 12),
+        TextField(
           controller: _step2aCtrl,
           minLines: 3,
+          maxLines: null,
+          autofocus: true,
+          style: const TextStyle(
+              color: MyWalkColor.warmWhite, fontSize: 14, height: 1.6),
+          decoration: InputDecoration(
+            hintText: RecoveryModuleContent.m2Hint,
+            hintStyle: TextStyle(
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
+                fontSize: 13),
+            filled: true,
+            fillColor: MyWalkColor.surfaceOverlay,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(14),
+          ),
         ),
-        const SizedBox(height: 20),
-        _PromptField(
-          prompt:
-              'What would you say to a good friend who told you they believed this thought?',
+        const SizedBox(height: 24),
+        const Text(
+          'Based on that — what\'s the most truthful thing you can say back to this thought right now?',
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: MyWalkColor.warmWhite,
+              height: 1.4),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Not "everything will be fine." Something you actually believe, built from what you just wrote.',
+          style: TextStyle(
+              fontSize: 12,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
+              fontStyle: FontStyle.italic,
+              height: 1.4),
+        ),
+        const SizedBox(height: 12),
+        TextField(
           controller: _step2bCtrl,
           minLines: 3,
+          maxLines: null,
           autofocus: false,
+          style: const TextStyle(
+              color: MyWalkColor.warmWhite, fontSize: 14, height: 1.6),
+          decoration: InputDecoration(
+            hintText: RecoveryModuleContent.m2Hint,
+            hintStyle: TextStyle(
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
+                fontSize: 13),
+            filled: true,
+            fillColor: MyWalkColor.surfaceOverlay,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(14),
+          ),
         ),
         const SizedBox(height: 16),
       ],
@@ -693,53 +839,55 @@ class _ThoughtTypeCard extends StatelessWidget {
   }
 }
 
-class _PromptField extends StatelessWidget {
-  final String prompt;
-  final TextEditingController controller;
-  final int minLines;
-  final bool autofocus;
+class _DescOnlyCard extends StatelessWidget {
+  final String description;
+  final bool selected;
+  final VoidCallback onTap;
 
-  const _PromptField({
-    required this.prompt,
-    required this.controller,
-    this.minLines = 3,
-    this.autofocus = true,
+  const _DescOnlyCard({
+    required this.description,
+    required this.selected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(prompt,
-            style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: MyWalkColor.warmWhite,
-                height: 1.4)),
-        const SizedBox(height: 10),
-        TextField(
-          controller: controller,
-          minLines: minLines,
-          maxLines: null,
-          autofocus: autofocus,
-          style: const TextStyle(
-              color: MyWalkColor.warmWhite, fontSize: 14, height: 1.6),
-          decoration: InputDecoration(
-            hintText: RecoveryModuleContent.m2Hint,
-            hintStyle: TextStyle(
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
-                fontSize: 13),
-            filled: true,
-            fillColor: MyWalkColor.surfaceOverlay,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.all(14),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? _kRpPurple.withValues(alpha: 0.12)
+              : MyWalkColor.surfaceOverlay,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected
+                ? _kRpPurple.withValues(alpha: 0.5)
+                : Colors.transparent,
+            width: 1.5,
           ),
         ),
-      ],
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                description,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: selected
+                        ? _kRpPurple
+                        : MyWalkColor.warmWhite.withValues(alpha: 0.75)),
+              ),
+            ),
+            if (selected)
+              const Icon(Icons.check_circle_rounded,
+                  size: 18, color: _kRpPurple),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -850,7 +998,8 @@ class _AffirmationView extends StatelessWidget {
 
 class _PostSaveView extends StatelessWidget {
   final String habitId;
-  const _PostSaveView({required this.habitId});
+  final bool showCounterResponseNotification;
+  const _PostSaveView({required this.habitId, this.showCounterResponseNotification = false});
 
   @override
   Widget build(BuildContext context) {
@@ -882,7 +1031,65 @@ class _PostSaveView extends StatelessWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: MyWalkColor.warmWhite)),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _kRpPurple.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: _kRpPurple.withValues(alpha: 0.25)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.touch_app_rounded,
+                            size: 16,
+                            color: _kRpPurple.withValues(alpha: 0.8)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'The "Examine a thought" button will now appear on your habit card.',
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: _kRpPurple.withValues(alpha: 0.9),
+                                height: 1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (showCounterResponseNotification) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _kRpPurple.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: _kRpPurple.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.library_books_rounded,
+                              size: 16,
+                              color: _kRpPurple.withValues(alpha: 0.8)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'The "My counter-responses" button will now appear on your habit card.',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: _kRpPurple.withValues(alpha: 0.9),
+                                  height: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

@@ -12,9 +12,6 @@ import 'journal_entry_detail_view.dart';
 import 'journal_theme_picker.dart';
 import '../shared/appbar_actions.dart';
 import '../help/journal_help_view.dart';
-import '../../../domain/entities/habit.dart';
-import '../../providers/habit_provider.dart';
-import 'freedom_journey_tab.dart';
 
 class JournalTab extends StatefulWidget {
   const JournalTab({super.key});
@@ -32,10 +29,6 @@ class _JournalTabState extends State<JournalTab>
   late final AnimationController _pulseCtrl;
   late final Animation<double> _pulseAnim;
 
-  HabitProvider? _habitProvider;
-  TabController? _tabCtrl;
-  String? _freedomHabitId;
-
   @override
   void initState() {
     super.initState();
@@ -44,12 +37,6 @@ class _JournalTabState extends State<JournalTab>
       duration: const Duration(milliseconds: 900),
     );
     _pulseAnim = CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _habitProvider = context.read<HabitProvider>();
-      _habitProvider!.addListener(_onHabitsChanged);
-      _checkFreedomPlan();
-    });
   }
 
   @override
@@ -131,38 +118,9 @@ class _JournalTabState extends State<JournalTab>
 
   @override
   void dispose() {
-    _habitProvider?.removeListener(_onHabitsChanged);
-    _tabCtrl?.dispose();
     _searchCtrl.dispose();
     _pulseCtrl.dispose();
     super.dispose();
-  }
-
-  void _onHabitsChanged() => _checkFreedomPlan();
-
-  void _checkFreedomPlan() {
-    if (!mounted) return;
-    final habits = _habitProvider?.habits ?? [];
-    Habit? fpHabit;
-    for (final h in habits) {
-      if (h.subcategoryId == 'breaking_habits' && h.hasRecoveryPath) {
-        fpHabit = h;
-        break;
-      }
-    }
-    if (fpHabit != null && _tabCtrl == null) {
-      setState(() {
-        _freedomHabitId = fpHabit!.id;
-        _tabCtrl = TabController(length: 2, vsync: this)
-          ..addListener(() { if (mounted) setState(() {}); });
-      });
-    } else if (fpHabit == null && _tabCtrl != null) {
-      setState(() {
-        _tabCtrl!.dispose();
-        _tabCtrl = null;
-        _freedomHabitId = null;
-      });
-    }
   }
 
   void _showSortSheet(
@@ -233,17 +191,15 @@ class _JournalTabState extends State<JournalTab>
 
     return Scaffold(
       backgroundColor: theme.bgPrimary,
-      floatingActionButton: (_tabCtrl == null || _tabCtrl!.index == 0)
-          ? FloatingActionButton(
-              onPressed: () => Navigator.push<void>(
-                context,
-                MaterialPageRoute(builder: (_) => const JournalEntryComposer()),
-              ),
-              backgroundColor: theme.textPrimary,
-              foregroundColor: theme.bgCard,
-              child: const Icon(Icons.edit_outlined),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton(
+          onPressed: () => Navigator.push<void>(
+            context,
+            MaterialPageRoute(builder: (_) => const JournalEntryComposer()),
+          ),
+          backgroundColor: theme.textPrimary,
+          foregroundColor: theme.bgCard,
+          child: const Icon(Icons.edit_outlined),
+        ),
       body: CustomScrollView(
         slivers: [
           // ── Hero image app bar ───────────────────────────────────────────
@@ -341,24 +297,8 @@ class _JournalTabState extends State<JournalTab>
               infoIconAction(context, const JournalHelpView(),
                   color: theme.textPrimary),
             ],
-            bottom: _tabCtrl != null
-                ? TabBar(
-                    controller: _tabCtrl,
-                    labelColor: theme.textPrimary,
-                    unselectedLabelColor: theme.textSecondary,
-                    indicatorColor: theme.accentAction,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    labelStyle: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600),
-                    tabs: const [
-                      Tab(text: 'Journal'),
-                      Tab(text: 'Freedom Journey'),
-                    ],
-                  )
-                : null,
           ),
 
-          if (_tabCtrl == null || _tabCtrl!.index == 0) ...[
           // ── Search bar ──────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
@@ -553,12 +493,6 @@ class _JournalTabState extends State<JournalTab>
                 ],
               ]);
             }),
-          ],
-          ] else ...[
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: FreedomJourneyTab(habitId: _freedomHabitId!),
-            ),
           ],
         ],
       ),

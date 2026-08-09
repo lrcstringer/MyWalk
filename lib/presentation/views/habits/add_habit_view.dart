@@ -1575,9 +1575,103 @@ class _AddHabitViewState extends State<AddHabitView> {
     );
   }
 
+  // ── Content safety guard ────────────────────────────────────────────────
+
+  static const _crisisPhrases = [
+    'cutting', 'cut myself', 'self harm', 'self-harm', 'selfharm',
+    'suicide', 'suicidal', 'kill myself', 'killing myself', 'end my life',
+    'jump off a bridge', 'jump off a building', 'take my life',
+    'hurt myself', 'harming myself', 'want to die', 'don\'t want to live',
+  ];
+
+  static const _eatingDisorderPhrases = [
+    'anorexia', 'bulimia', 'purge', 'purging', 'binge and purge',
+    'not eating', 'starving myself', 'eating disorder', 'restrictive eating',
+  ];
+
+  bool _hasCrisisContent(String text) {
+    final lower = text.toLowerCase();
+    return _crisisPhrases.any(lower.contains);
+  }
+
+  bool _hasEatingDisorderContent(String text) {
+    final lower = text.toLowerCase();
+    return _eatingDisorderPhrases.any(lower.contains);
+  }
+
+  Future<bool> _runContentSafetyCheck() async {
+    if (_subcategoryId != 'breaking_habits') return false;
+    final combined = '$_habitName $_purposeStatement'.trim();
+    if (_hasCrisisContent(combined)) {
+      await _showSafetyDialog(
+        title: 'This needs more than an app',
+        message:
+            'What you\'ve described sounds like it may need real professional support. '
+            'This app isn\'t designed to help with self-harm or thoughts of suicide — '
+            'please reach out to your doctor, a counsellor, or a crisis helpline. '
+            'You deserve proper care.',
+      );
+      return true;
+    }
+    if (_hasEatingDisorderContent(combined)) {
+      await _showSafetyDialog(
+        title: 'This needs specialist support',
+        message:
+            'Eating disorders are serious medical conditions that need specialist care. '
+            'This app isn\'t designed to support recovery from eating disorders — '
+            'please speak with your doctor or a specialist who can give you the right help.',
+      );
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _showSafetyDialog({
+    required String title,
+    required String message,
+  }) {
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: MyWalkColor.warmWhite,
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+          ),
+        ),
+        content: Text(
+          message,
+          style: TextStyle(
+            color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
+            fontSize: 14,
+            height: 1.55,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Close',
+              style: TextStyle(
+                color: MyWalkColor.softGold.withValues(alpha: 0.9),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _saveHabit() async {
     final trimmed = _habitName.trim();
     if (trimmed.isEmpty) return;
+    if (await _runContentSafetyCheck()) return;
+    if (!mounted) return;
     final isPremium = context.read<StoreProvider>().isPremium;
     final purpose = isPremium ? _purposeStatement : _selectedCategory.defaultPurpose;
     final plainNotes = _notesController.document.toPlainText().trim();

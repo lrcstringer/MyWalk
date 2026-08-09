@@ -9,6 +9,7 @@ import '../../providers/habit_provider.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
 import '../habits/guardrails_screen.dart';
+import '../habits/phase2_journey_screen.dart';
 import '../habits/recovery_letter_screen.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
@@ -283,12 +284,31 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
       ),
     ];
 
+    final phase = RecoveryPhaseCalculator.calculate(path);
+    final showPhase2Card = phase == 2;
+
+    // Count completed Phase 2 tasks for the card subtitle
+    int phase2Done = 0;
+    if (path.cueHierarchyDone) phase2Done++;
+    if (path.counterResponses.isNotEmpty) phase2Done++;
+    if (path.environmentalChangesDone) phase2Done++;
+    if (path.hrsPlanDone) phase2Done++;
+    if (path.module5.recoveryLetterWritten) phase2Done++;
+
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
-      itemCount: modules.length,
+      itemCount: modules.length + (showPhase2Card ? 1 : 0),
       separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (_, i) {
-        final m = modules[i];
+      itemBuilder: (context, i) {
+        if (showPhase2Card && i == 0) {
+          return _Phase2JourneyCard(
+            habitId: widget.habitId,
+            habitName: habitName,
+            tasksComplete: phase2Done,
+          );
+        }
+        final idx = showPhase2Card ? i - 1 : i;
+        final m = modules[idx];
         final mSessions = List<RecoverySession>.from(
             sessionsByModule[m.number] ?? [])
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -307,6 +327,80 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
           habitName: habitName,
         );
       },
+    );
+  }
+}
+
+// ── Phase 2 Journey card (shown in My Plan view when in Phase 2) ──────────────
+
+class _Phase2JourneyCard extends StatelessWidget {
+  final String habitId;
+  final String habitName;
+  final int tasksComplete;
+
+  const _Phase2JourneyCard({
+    required this.habitId,
+    required this.habitName,
+    required this.tasksComplete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final allDone = tasksComplete >= 5;
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => Phase2JourneyScreen(
+          habitId: habitId,
+          habitName: habitName,
+        ),
+      )),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: _kRpPurple.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _kRpPurple.withValues(alpha: 0.3)),
+        ),
+        child: Row(children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _kRpPurple.withValues(alpha: allDone ? 0.25 : 0.12),
+            ),
+            child: Icon(
+              allDone ? Icons.check_rounded : Icons.layers_rounded,
+              size: 18,
+              color: _kRpPurple,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Going Deeper — Phase 2 Tasks',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _kRpPurple)),
+                const SizedBox(height: 2),
+                Text(
+                  allDone
+                      ? 'All 5 tasks complete'
+                      : '$tasksComplete of 5 tasks complete',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.55)),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded,
+              size: 16, color: _kRpPurple.withValues(alpha: 0.6)),
+        ]),
+      ),
     );
   }
 }
@@ -694,7 +788,7 @@ class _PlanSectionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${rank + 1}.',
+            '$rank.',
             style: TextStyle(
               color: _kRpPurple.withValues(alpha: 0.7),
               fontSize: 12,

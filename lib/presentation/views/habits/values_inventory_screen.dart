@@ -147,8 +147,6 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
           _completionHasAway = hasAway;
         });
       }
-      await Future.delayed(const Duration(milliseconds: 3000));
-      if (mounted) Navigator.of(context).pop();
     } catch (_) {
       if (mounted) {
         setState(() => _saving = false);
@@ -162,7 +160,7 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
   @override
   Widget build(BuildContext context) {
     if (_done) {
-      return _CompletionView(hasAway: _completionHasAway);
+      return _WhatHappensNextView(hasAway: _completionHasAway);
     }
 
     final domain = _domains[_step];
@@ -271,11 +269,6 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
                             setState(() => _alignment[_step] = v),
                       ),
                       const SizedBox(height: 16),
-
-                      // Gap callout
-                      _GapCallout(
-                          gap: _importance[_step] - _alignment[_step]),
-                      const SizedBox(height: 28),
 
                       // Compass selector
                       _CompassSelector(
@@ -597,53 +590,11 @@ class _SliderRow extends StatelessWidget {
   }
 }
 
-// ── Gap callout ──────────────────────────────────────────────────────────────
+// ── What happens next view ────────────────────────────────────────────────────
 
-class _GapCallout extends StatelessWidget {
-  final int gap;
-  const _GapCallout({required this.gap});
-
-  @override
-  Widget build(BuildContext context) {
-    final String text;
-    final Color tint;
-
-    if (gap == 0) {
-      text = "You're living in alignment here.";
-      tint = MyWalkColor.sage;
-    } else if (gap < 0) {
-      text = "Living beyond what you value — that's also meaningful.";
-      tint = MyWalkColor.sage;
-    } else if (gap > 5) {
-      text = "There's a meaningful gap here.";
-      tint = _kRpPurple;
-    } else {
-      text = "Some room to grow here.";
-      tint = _kRpPurple.withValues(alpha: 0.7);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: tint.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-            fontSize: 12,
-            color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
-            fontStyle: FontStyle.italic),
-      ),
-    );
-  }
-}
-
-// ── Completion view ──────────────────────────────────────────────────────────
-
-class _CompletionView extends StatelessWidget {
+class _WhatHappensNextView extends StatelessWidget {
   final bool hasAway;
-  const _CompletionView({required this.hasAway});
+  const _WhatHappensNextView({required this.hasAway});
 
   @override
   Widget build(BuildContext context) {
@@ -658,15 +609,15 @@ class _CompletionView extends StatelessWidget {
           const Positioned.fill(
             child: IgnorePointer(child: DeepSpaceBackground()),
           ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(28, 40, 28, 40),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 60,
-                    height: 60,
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
                       color: _kRpPurple.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
@@ -677,19 +628,69 @@ class _CompletionView extends StatelessWidget {
                   const SizedBox(height: 20),
                   const Text('Values Map Saved',
                       style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: MyWalkColor.warmWhite)),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Text(
                     message,
-                    textAlign: TextAlign.center,
                     style: TextStyle(
                         fontSize: 14,
-                        color:
-                            MyWalkColor.warmWhite.withValues(alpha: 0.6),
-                        height: 1.5,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
+                        height: 1.6,
                         fontStyle: FontStyle.italic),
+                  ),
+                  const SizedBox(height: 32),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _kRpPurple.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: _kRpPurple.withValues(alpha: 0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'What happens next',
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _kRpPurple.withValues(alpha: 0.9)),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'From here, your job is to notice your pattern and record it — '
+                          'not to fight it, not to judge it, just to log it honestly.\n\n'
+                          'The more honest records you build up, the better you\'ll '
+                          'understand what\'s actually driving the pattern. That understanding '
+                          'is what Phase 2 builds on.',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color:
+                                  MyWalkColor.warmWhite.withValues(alpha: 0.65),
+                              height: 1.6),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kRpPurple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Back to my plan',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15)),
+                    ),
                   ),
                 ],
               ),

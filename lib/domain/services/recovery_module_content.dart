@@ -170,6 +170,27 @@ class RecoveryModuleContent {
     return sessionAffirmations[idx];
   }
 
+  // ── Phase 3 / 4 rotating card content ───────────────────────────────────
+
+  static const List<String> phase3EncouragementMessages = [
+    'Every day you hold the line, the pattern loses a little of its power.',
+    'The work you did in Phase 2 is still working — even on days it doesn\'t feel like it.',
+    'Steadfastness isn\'t the absence of struggle. It\'s coming back after the struggle.',
+    'You\'ve built real tools. They\'re still here, ready when you need them.',
+    'One honest step forward is worth more than a perfect plan you never start.',
+    'What you\'re doing is hard. Most people don\'t do this work. You are.',
+    'The compass is yours. The values are yours. The next step is yours.',
+    'Each time you don\'t act on the urge, the pattern weakens. That\'s neuroscience, not optimism.',
+  ];
+
+  static const List<String> phase3ReflectionPrompts = [
+    'Looking back over the past two weeks — what\'s working? What needs attention?',
+    'Where is your values compass pointing right now?',
+    'Is your coping plan still accurate, or has anything changed?',
+    'What\'s one thing that\'s become easier? What\'s one thing that still feels hard?',
+    'If you wrote your recovery letter today, what would you add to it?',
+  ];
+
   // ── Recovery Path home screen copy ──────────────────────────────────────
 
   static const String homeBeginTitle = 'Start Your Freedom Journey';

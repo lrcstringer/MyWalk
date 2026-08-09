@@ -138,14 +138,8 @@ class _EnvRestructuringTabState extends State<_EnvRestructuringTab> {
   List<TextEditingController> _controllers = [];
   List<String> _cueTexts = [];
   List<List<String>> _suggestions = [];
-  List<bool> _showVagueness = [];
   bool _saving = false;
   bool _saved = false;
-
-  static const _kVaguePhrases = [
-    'be strong', 'think positive', 'try harder',
-    'just stop', 'willpower', 'be better',
-  ];
 
   @override
   void initState() {
@@ -169,19 +163,10 @@ class _EnvRestructuringTabState extends State<_EnvRestructuringTab> {
     final cues = widget.cueHierarchy.take(3).toList();
     _cueTexts = cues.map((c) => c['cueText'] as String? ?? '').toList();
     _controllers = List.generate(cues.length, (_) => TextEditingController());
-    _showVagueness = List.filled(cues.length, false);
     _suggestions = _cueTexts.map((t) =>
       CueRubricService.environmentalSuggestionsFor(widget.habitType, t)).toList();
-    for (int i = 0; i < _controllers.length; i++) {
-      final idx = i;
-      _controllers[idx].addListener(() {
-        final vague = _isVague(_controllers[idx].text);
-        if (vague != _showVagueness[idx]) {
-          setState(() => _showVagueness[idx] = vague);
-        } else {
-          setState(() {});
-        }
-      });
+    for (final c in _controllers) {
+      c.addListener(() => setState(() {}));
     }
   }
 
@@ -193,17 +178,9 @@ class _EnvRestructuringTabState extends State<_EnvRestructuringTab> {
     super.dispose();
   }
 
-  bool _isVague(String text) {
-    final t = text.trim().toLowerCase();
-    if (t.isEmpty) return false;
-    if (t.length < 15) return true;
-    return _kVaguePhrases.any((p) => t.contains(p));
-  }
-
   bool get _canSave =>
       _controllers.isNotEmpty &&
-      _controllers.every((c) => c.text.trim().length >= 15) &&
-      !_showVagueness.any((v) => v);
+      _controllers.every((c) => c.text.trim().isNotEmpty);
 
   Future<void> _save() async {
     if (!_canSave) return;
@@ -281,7 +258,6 @@ class _EnvRestructuringTabState extends State<_EnvRestructuringTab> {
                 cueText: _cueTexts[i],
                 controller: _controllers[i],
                 suggestions: _suggestions[i],
-                showVagueness: _showVagueness[i],
                 readOnly: alreadySaved,
               )),
           if (!alreadySaved) ...[
@@ -319,14 +295,12 @@ class _EnvCueSection extends StatefulWidget {
   final String cueText;
   final TextEditingController controller;
   final List<String> suggestions;
-  final bool showVagueness;
   final bool readOnly;
 
   const _EnvCueSection({
     required this.cueText,
     required this.controller,
     required this.suggestions,
-    required this.showVagueness,
     required this.readOnly,
   });
 
@@ -384,16 +358,16 @@ class _EnvCueSectionState extends State<_EnvCueSection> {
               contentPadding: const EdgeInsets.all(12),
             ),
           ),
-          if (widget.showVagueness)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'Can you make this more specific — a concrete action, not a mindset?',
-                style: TextStyle(
-                    fontSize: 11,
-                    color: MyWalkColor.warmCoral.withValues(alpha: 0.85)),
-              ),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Be specific — e.g. "delete the app" not "use my phone less"',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
+                  fontStyle: FontStyle.italic),
             ),
+          ),
           if (!widget.readOnly) ...[
             const SizedBox(height: 8),
             Wrap(
@@ -485,10 +459,12 @@ class _HrsPlanTab extends StatefulWidget {
 class _HrsPlanTabState extends State<_HrsPlanTab> {
   late List<_PlanControllers> _planControllers;
   bool _saving = false;
+  bool _showHrsIntro = true;
 
   @override
   void initState() {
     super.initState();
+    if (widget.hrsPlanDone) _showHrsIntro = false;
     if (widget.existingPlans.isNotEmpty) {
       _planControllers =
           widget.existingPlans.map(_PlanControllers.fromPlan).toList();
@@ -509,11 +485,6 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
       p.dispose();
     }
     super.dispose();
-  }
-
-  bool _isVaguePlan(String text) {
-    final t = text.trim();
-    return t.isNotEmpty && t.length < 20;
   }
 
   Future<void> _save() async {
@@ -543,6 +514,52 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showHrsIntro) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Build Your Coping Plans',
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: MyWalkColor.warmWhite,
+                  height: 1.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'When a high-risk situation arrives, the best time to decide what to do was before it happened. '
+              'You\'re going to write a specific plan for each of your triggers — so when the moment comes, '
+              'you\'re executing a decision you already made.',
+              style: TextStyle(
+                  fontSize: 14,
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+                  height: 1.7),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => setState(() => _showHrsIntro = false),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kRpPurple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Build my plans',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 15)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       child: Column(
@@ -560,7 +577,6 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
           ..._planControllers.asMap().entries.map((e) => _PlanCard(
                 index: e.key,
                 controllers: e.value,
-                showVagueness: _isVaguePlan(e.value.firstResponse.text),
                 onRemove: _planControllers.length > 1
                     ? () =>
                         setState(() => _planControllers.removeAt(e.key))
@@ -607,13 +623,11 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
 class _PlanCard extends StatefulWidget {
   final int index;
   final _PlanControllers controllers;
-  final bool showVagueness;
   final VoidCallback? onRemove;
 
   const _PlanCard({
     required this.index,
     required this.controllers,
-    required this.showVagueness,
     this.onRemove,
   });
 
@@ -668,21 +682,23 @@ class _PlanCardState extends State<_PlanCard> {
               controller: widget.controllers.earlyWarnings),
           _PlanField(
               label: RecoveryModuleContent.m4FirstResponseLabel,
-              controller: widget.controllers.firstResponse),
-          if (widget.showVagueness)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                'The most effective plans are very specific — a concrete action, not a mindset. What exactly will you do?',
-                style: TextStyle(
-                    fontSize: 11,
-                    color: MyWalkColor.warmCoral.withValues(alpha: 0.85)),
-              ),
-            ),
+              controller: widget.controllers.firstResponse,
+              hint: 'Be specific — a concrete action, not a mindset'),
           _PlanField(
-              label: RecoveryModuleContent.m4ContactNameLabel,
+              label: '${RecoveryModuleContent.m4ContactNameLabel} (optional)',
               controller: widget.controllers.contactName,
+              hint: 'Name and contact, or a note to yourself',
               last: true),
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              'This is a good moment to consider setting up a support partner.',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
+                  fontStyle: FontStyle.italic),
+            ),
+          ),
         ],
       ),
     );
@@ -692,11 +708,13 @@ class _PlanCardState extends State<_PlanCard> {
 class _PlanField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
+  final String? hint;
   final bool last;
 
   const _PlanField({
     required this.label,
     required this.controller,
+    this.hint,
     this.last = false,
   });
 
@@ -718,6 +736,13 @@ class _PlanField extends StatelessWidget {
                 const TextStyle(color: MyWalkColor.warmWhite, fontSize: 13),
             maxLines: 2,
             decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: hint != null
+                  ? TextStyle(
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.25),
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic)
+                  : null,
               filled: true,
               fillColor: MyWalkColor.surfaceOverlay,
               border: OutlineInputBorder(
@@ -831,6 +856,14 @@ class _UrgeSurfingIntro extends StatelessWidget {
                     .read<RecoveryPathProvider>()
                     .markUrgeSurfingIntroSeen(habitId);
                 if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                          'The "Urge surfed" button will now appear on your habit card.'),
+                      duration: const Duration(seconds: 3),
+                      backgroundColor: const Color(0xFF8B7EC8),
+                    ),
+                  );
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ModuleSessionScreen(
                       habitId: habitId,

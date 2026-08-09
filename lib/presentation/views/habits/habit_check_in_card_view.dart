@@ -13,14 +13,12 @@ import '../shared/fruit_tag_row.dart';
 import '../shared/golden_pulse_view.dart';
 import 'habit_detail_view.dart';
 import 'habit_history_view.dart';
-import 'behaviour_log_screen.dart';
-import 'daily_check_in_screen.dart';
 import 'thought_examination_screen.dart';
 import 'guardrails_screen.dart';
-import 'lapse_recording_flow.dart';
+import 'record_a_moment_screen.dart';
 import '../../../domain/entities/recovery_path.dart';
-import '../../../domain/services/recovery_phase_calculator.dart';
 import '../journal/journal_entry_composer.dart';
+import 'my_freedom_plan_screen.dart';
 
 class HabitCheckInCardView extends StatefulWidget {
   final Habit habit;
@@ -190,9 +188,9 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                 if (isAbstain && !widget.isRetroactive) ...[
                   if (_habit.subcategoryId == 'breaking_habits') ...[
                     const SizedBox(height: 10),
-                    _breakingHabitsActionChips(context),
-                    const SizedBox(height: 2),
-                    _lapseLink(context),
+                    _recordAMomentButton(context),
+                    const SizedBox(height: 8),
+                    _breakingHabitsChips(context),
                   ],
                   const SizedBox(height: 12),
                   _partnerStrip(context),
@@ -504,18 +502,16 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     final path = prov.pathFor(habitId);
     const purple = Color(0xFF8B7EC8);
 
-    void openRP() => Navigator.of(context).pushNamed(
-          '/recovery-path',
-          arguments: {'habitId': habitId, 'habitName': _habit.name},
-        );
-
-    // Path hasn't loaded yet but the habit knows one exists — show nothing
-    // rather than the misleading "Begin" label.
+    // Path hasn't loaded yet but the habit knows one exists — show nothing.
     if (path == null && _habit.hasRecoveryPath) return const SizedBox.shrink();
 
+    // No path yet — "Begin" taps into RecoveryPathHomeScreen to start the plan.
     if (path == null) {
       return GestureDetector(
-        onTap: openRP,
+        onTap: () => Navigator.of(context).pushNamed(
+          '/recovery-path',
+          arguments: {'habitId': habitId, 'habitName': _habit.name},
+        ),
         behavior: HitTestBehavior.opaque,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -542,9 +538,18 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     final phase = prov.phaseFor(habitId);
     final day = prov.dayNumberFor(habitId);
     final checkInPending = !prov.checkInDoneToday(habitId);
+    final nextTask = phase == 2 ? _nextPhase2Task(path) : null;
+    final label = nextTask != null
+        ? 'Freedom Plan · Next: $nextTask'
+        : 'Freedom Plan · Phase $phase · Day $day';
 
     return GestureDetector(
-      onTap: openRP,
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => MyFreedomPlanScreen(
+          habitId: habitId,
+          habitName: _habit.name,
+        ),
+      )),
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -557,8 +562,9 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
           const SizedBox(width: 5),
           Expanded(
             child: Text(
-              'Freedom Plan · Phase $phase · Day $day',
+              label,
               style: TextStyle(fontSize: 12, color: purple.withValues(alpha: 0.85)),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           if (checkInPending || _hasPendingAction(path))
@@ -578,6 +584,15 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     );
   }
 
+  String? _nextPhase2Task(RecoveryPath path) {
+    if (!path.cueHierarchyDone) return 'Map your pattern cues';
+    if (path.counterResponses.isEmpty) return 'Examine your thoughts';
+    if (!path.environmentalChangesDone) return 'Change your environment';
+    if (!path.hrsPlanDone) return 'Build your coping plans';
+    if (!path.module5.recoveryLetterWritten) return 'Write your recovery letter';
+    return null;
+  }
+
   String _dayName(DateTime date) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[date.weekday - 1];
@@ -585,7 +600,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
 
   Widget _abstainButton() {
     if (_habit.subcategoryId == 'breaking_habits' && !widget.isRetroactive) {
-      return _breakingHabitsCheckInButton();
+      return const SizedBox.shrink();
     }
     if (_isCompleted) return const SizedBox.shrink();
     return SizedBox(
@@ -606,69 +621,49 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     );
   }
 
-  Widget _breakingHabitsCheckInButton() {
-    final prov = context.read<RecoveryPathProvider>();
-    final done = prov.checkInDoneToday(_habit.id);
+  Widget _recordAMomentButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: done
-            ? null
-            : () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => DailyCheckInScreen(
-                    habitId: _habit.id,
-                    habitName: _habit.name,
-                  ),
-                )),
-        icon: Icon(
-          done ? Icons.check_circle_outline : Icons.circle_outlined,
-          size: 16,
-        ),
-        label: Text(done ? 'Checked in today ✓' : 'How are you doing today?'),
+      child: ElevatedButton(
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => RecordAMomentScreen(habitId: _habit.id),
+        )),
         style: ElevatedButton.styleFrom(
-          backgroundColor: done
-              ? MyWalkColor.sage.withValues(alpha: 0.15)
-              : MyWalkColor.sage,
-          foregroundColor: MyWalkColor.charcoal,
-          disabledForegroundColor: MyWalkColor.sage.withValues(alpha: 0.55),
-          disabledBackgroundColor: MyWalkColor.sage.withValues(alpha: 0.12),
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          backgroundColor: const Color(0xFF8B7EC8),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 10),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
+        child: const Text('Record a moment',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
       ),
     );
   }
 
-  Widget _breakingHabitsActionChips(BuildContext context) {
+  Widget _breakingHabitsChips(BuildContext context) {
     final prov = context.read<RecoveryPathProvider>();
     final path = prov.pathFor(_habit.id);
     if (path == null) return const SizedBox.shrink();
 
-    final module2Unlocked = RecoveryPhaseCalculator.isModuleUnlocked(path, 2);
-    final module4Unlocked = RecoveryPhaseCalculator.isModuleUnlocked(path, 4);
+    final thoughtExamDone = path.cueHierarchyDone;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(children: [
-        _habitActionChip(
-          label: 'Log a moment',
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => BehaviourLogScreen(habitId: _habit.id),
-          )),
-        ),
-        if (module2Unlocked) ...[
-          const SizedBox(width: 6),
+        if (thoughtExamDone) ...[
           _habitActionChip(
             label: 'Examine a thought',
+            subtitle: '~5 min',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => ThoughtExaminationScreen(habitId: _habit.id),
             )),
           ),
         ],
-        if (module4Unlocked && path.urgeSurfingIntroSeen) ...[
-          const SizedBox(width: 6),
+        if (path.urgeSurfingIntroSeen) ...[
+          if (thoughtExamDone) const SizedBox(width: 6),
           _habitActionChip(
             label: 'Urge surfed',
+            subtitle: 'Log a surfed urge',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => GuardrailsScreen(
                 habitId: _habit.id,
@@ -678,10 +673,11 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
             )),
           ),
         ],
-        if (module2Unlocked && path.counterResponses.isNotEmpty) ...[
-          const SizedBox(width: 6),
+        if (path.counterResponses.isNotEmpty) ...[
+          if (thoughtExamDone || path.urgeSurfingIntroSeen) const SizedBox(width: 6),
           _habitActionChip(
             label: 'My counter-responses',
+            subtitle: 'Your saved responses',
             onTap: () => _openCounterResponseLibrary(context, path),
           ),
         ],
@@ -691,6 +687,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
 
   Widget _habitActionChip({
     required String label,
+    String? subtitle,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -703,35 +700,28 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
           border: Border.all(
               color: MyWalkColor.softGold.withValues(alpha: 0.25), width: 0.5),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: MyWalkColor.softGold.withValues(alpha: 0.8),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _lapseLink(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton(
-        onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => LapseRecordingFlow(habitId: _habit.id),
-        )),
-        style: TextButton.styleFrom(
-          padding: EdgeInsets.zero,
-          minimumSize: Size.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        child: Text(
-          'I had a moment',
-          style: TextStyle(
-              fontSize: 12,
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.35)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: MyWalkColor.softGold.withValues(alpha: 0.8),
+              ),
+            ),
+            if (subtitle != null) ...[
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: MyWalkColor.softGold.withValues(alpha: 0.45),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

@@ -145,7 +145,7 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
         setState(() {
           _aiLoading = false;
           _aiCandidates
-              .addAll(cues.map((t) => _CueCandidate(text: t, keep: true)));
+              .addAll(cues.map((t) => _CueCandidate(text: t, keep: null)));
         });
       }
     } catch (_) {
@@ -184,7 +184,7 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
     _entries.clear();
     // Kept AI candidates
     for (final c in _aiCandidates) {
-      if (c.keep) _entries.add(_CueEntry(text: c.text, isAi: true));
+      if (c.keep == true) _entries.add(_CueEntry(text: c.text, isAi: true));
     }
     // Discovery additions
     for (final q in _discoveryQuestions) {
@@ -230,7 +230,8 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
 
   bool get _canSave =>
       _entries.length >= 2 &&
-      _entries.every((e) => e.controller.text.trim().isNotEmpty);
+      _entries.every((e) => e.controller.text.trim().isNotEmpty) &&
+      _entries.every((e) => e.confirmed);
 
   bool get _discoveryComplete =>
       _discoveryQuestions.every((q) => _discoveryAnswers.containsKey(q.key));
@@ -326,6 +327,14 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
           const SizedBox(height: 16),
           Text(
             "Now let's look at what your logs are telling you — together.",
+            style: TextStyle(
+                fontSize: 15,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
+                height: 1.5),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "By the end, you'll have a personal map of what triggers your pattern — in your own words.",
             style: TextStyle(
                 fontSize: 15,
                 color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
@@ -474,8 +483,10 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (_, i) => _CueCandidateCard(
                   candidate: _aiCandidates[i],
-                  onToggle: () =>
-                      setState(() => _aiCandidates[i].keep = !_aiCandidates[i].keep),
+                  onKeep: () =>
+                      setState(() => _aiCandidates[i].keep = true),
+                  onRemove: () =>
+                      setState(() => _aiCandidates[i].keep = false),
                 ),
               ),
             ),
@@ -483,10 +494,13 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _onAiNext,
+                onPressed: _aiCandidates.every((c) => c.keep != null)
+                    ? _onAiNext
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _kRpPurple,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
@@ -606,6 +620,9 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
                   _entries.removeAt(i);
                 }),
                 onChanged: (_) => setState(() {}),
+                onConfirm: () {
+                  if (!e.confirmed) setState(() => e.confirmed = true);
+                },
               );
             },
           ),
@@ -626,11 +643,13 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Column(
             children: [
-              if (!_canSave && _entries.any((e) => e.controller.text.trim().isEmpty))
+              if (!_canSave)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
-                    'Fill in all trigger descriptions before saving.',
+                    _entries.any((e) => e.controller.text.trim().isEmpty)
+                        ? 'Fill in all trigger descriptions before saving.'
+                        : 'Tap each trigger to confirm your wording.',
                     style: TextStyle(
                         fontSize: 12,
                         color: MyWalkColor.warmCoral.withValues(alpha: 0.8)),
@@ -671,12 +690,13 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
 
 class _CueCandidate {
   String text;
-  bool keep;
+  bool? keep; // null = unactioned, true = keep, false = remove
   _CueCandidate({required this.text, required this.keep});
 }
 
 class _CueEntry {
   bool isAi;
+  bool confirmed = false;
   final TextEditingController controller;
   _CueEntry({required String text, required this.isAi})
       : controller = TextEditingController(text: text);
@@ -745,43 +765,65 @@ class _LogCard extends StatelessWidget {
 
 class _CueCandidateCard extends StatelessWidget {
   final _CueCandidate candidate;
-  final VoidCallback onToggle;
+  final VoidCallback onKeep;
+  final VoidCallback onRemove;
 
-  const _CueCandidateCard(
-      {required this.candidate, required this.onToggle});
+  const _CueCandidateCard({
+    required this.candidate,
+    required this.onKeep,
+    required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final keepSelected = candidate.keep == true;
+    final removeSelected = candidate.keep == false;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: candidate.keep
+        color: keepSelected
             ? _kRpPurple.withValues(alpha: 0.08)
-            : Colors.white.withValues(alpha: 0.03),
+            : removeSelected
+                ? Colors.white.withValues(alpha: 0.02)
+                : Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: candidate.keep
+          color: keepSelected
               ? _kRpPurple.withValues(alpha: 0.35)
-              : MyWalkColor.warmWhite.withValues(alpha: 0.08),
+              : removeSelected
+                  ? MyWalkColor.warmWhite.withValues(alpha: 0.05)
+                  : MyWalkColor.warmWhite.withValues(alpha: 0.08),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              candidate.text,
-              style: TextStyle(
-                  fontSize: 14,
-                  color: MyWalkColor.warmWhite
-                      .withValues(alpha: candidate.keep ? 0.85 : 0.4),
-                  height: 1.4),
-            ),
+          Text(
+            candidate.text,
+            style: TextStyle(
+                fontSize: 14,
+                color: MyWalkColor.warmWhite
+                    .withValues(alpha: removeSelected ? 0.3 : 0.85),
+                height: 1.4),
           ),
-          const SizedBox(width: 12),
-          _ToggleChip(
-            label: candidate.keep ? 'Keep' : 'Removed',
-            active: candidate.keep,
-            onTap: onToggle,
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _ActionChip(
+                label: '✓  Keep',
+                active: keepSelected,
+                onTap: onKeep,
+              ),
+              const SizedBox(width: 8),
+              _ActionChip(
+                label: '✗  Remove',
+                active: removeSelected,
+                activeColor: const Color(0xFFE57373),
+                activeBgColor: const Color(0x1AE57373),
+                onTap: onRemove,
+              ),
+            ],
           ),
         ],
       ),
@@ -789,28 +831,36 @@ class _CueCandidateCard extends StatelessWidget {
   }
 }
 
-class _ToggleChip extends StatelessWidget {
+class _ActionChip extends StatelessWidget {
   final String label;
   final bool active;
+  final Color? activeColor;
+  final Color? activeBgColor;
   final VoidCallback onTap;
 
-  const _ToggleChip(
-      {required this.label, required this.active, required this.onTap});
+  const _ActionChip({
+    required this.label,
+    required this.active,
+    this.activeColor,
+    this.activeBgColor,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = activeColor ?? _kRpPurple;
+    final effectiveBg =
+        activeBgColor ?? _kRpPurple.withValues(alpha: 0.18);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: active
-              ? _kRpPurple.withValues(alpha: 0.18)
-              : Colors.white.withValues(alpha: 0.06),
+          color: active ? effectiveBg : Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
               color: active
-                  ? _kRpPurple
+                  ? effectiveColor
                   : MyWalkColor.warmWhite.withValues(alpha: 0.12)),
         ),
         child: Text(label,
@@ -818,7 +868,7 @@ class _ToggleChip extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: active
-                    ? _kRpPurple
+                    ? effectiveColor
                     : MyWalkColor.warmWhite.withValues(alpha: 0.4))),
       ),
     );
@@ -931,6 +981,7 @@ class _RankCard extends StatelessWidget {
   final bool canDelete;
   final VoidCallback onDelete;
   final ValueChanged<String> onChanged;
+  final VoidCallback onConfirm;
 
   const _RankCard({
     super.key,
@@ -938,51 +989,76 @@ class _RankCard extends StatelessWidget {
     required this.canDelete,
     required this.onDelete,
     required this.onChanged,
+    required this.onConfirm,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: MyWalkColor.warmWhite.withValues(alpha: 0.08)),
+          color: entry.confirmed
+              ? MyWalkColor.warmWhite.withValues(alpha: 0.08)
+              : _kRpPurple.withValues(alpha: 0.3),
+          width: entry.confirmed ? 1 : 1.5,
+        ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.drag_handle_rounded,
-              color: Color(0x55FFFFFF), size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: entry.controller,
-              onChanged: onChanged,
-              maxLines: null,
-              style: const TextStyle(
-                  color: MyWalkColor.warmWhite, fontSize: 14, height: 1.5),
-              decoration: InputDecoration(
-                hintText: 'Describe the trigger situation…',
-                hintStyle: TextStyle(
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
-                    fontSize: 13),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+          if (!entry.confirmed)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+              child: Text(
+                'Tap to confirm your wording',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: _kRpPurple.withValues(alpha: 0.7),
+                    fontStyle: FontStyle.italic),
               ),
             ),
-          ),
-          if (canDelete)
-            IconButton(
-              onPressed: onDelete,
-              icon: Icon(Icons.close_rounded,
-                  size: 18,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+            child: Row(
+              children: [
+                const Icon(Icons.drag_handle_rounded,
+                    color: Color(0x55FFFFFF), size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: entry.controller,
+                    onChanged: (v) { onChanged(v); onConfirm(); },
+                    onTap: onConfirm,
+                    maxLines: null,
+                    style: const TextStyle(
+                        color: MyWalkColor.warmWhite, fontSize: 14, height: 1.5),
+                    decoration: InputDecoration(
+                      hintText: 'Describe the trigger situation…',
+                      hintStyle: TextStyle(
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
+                          fontSize: 13),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                if (canDelete)
+                  IconButton(
+                    onPressed: onDelete,
+                    icon: Icon(Icons.close_rounded,
+                        size: 18,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 36, minHeight: 36),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );
