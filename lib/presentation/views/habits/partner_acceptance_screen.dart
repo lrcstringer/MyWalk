@@ -108,7 +108,7 @@ class _PartnerAcceptanceScreenState extends State<PartnerAcceptanceScreen> {
               child: DeepSpaceBackground(),
             ),
           ),
-          SafeArea(
+          SafeArea(top: false,
         child: _loading
             ? const Center(
                 child: CircularProgressIndicator(color: MyWalkColor.golden))

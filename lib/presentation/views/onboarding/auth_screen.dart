@@ -5,6 +5,7 @@ import '../../../domain/repositories/iap_repository.dart';
 import '../../../domain/repositories/user_preferences_repository.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/network_error_dialog.dart';
 import 'paywall_screen.dart';
 
 enum _Mode { newUser, signIn }
@@ -59,7 +60,12 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _signIn() async {
     final auth = context.read<AuthService>();
     await auth.signIn();
-    if (!mounted || !auth.isAuthenticated) return;
+    if (!mounted) return;
+    if (auth.isOfflineError) {
+      await NetworkErrorDialog.show(context);
+      return;
+    }
+    if (!auth.isAuthenticated) return;
     setState(() => _processing = true);
     await _handleAuthComplete();
   }

@@ -349,8 +349,13 @@ service cloud.firestore {
 
       // recovery_sessions subcollection — owner only; no delete.
       match /recovery_sessions/{sessionId} {
-        allow read, create, update: if isSignedIn() &&
+        allow read, update: if isSignedIn() &&
           get(/databases/$(database)/documents/recovery_paths/$(habitId)).data.userId == request.auth.uid;
+        // CREATE: check userId on the incoming document directly — avoids a
+        // get() call that would fail if the parent path hasn't synced to the
+        // server yet (e.g. written offline or immediately before this write).
+        allow create: if isSignedIn() &&
+          request.resource.data.userId == request.auth.uid;
         allow delete: if false;
       }
     }

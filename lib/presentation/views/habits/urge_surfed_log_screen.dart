@@ -121,7 +121,7 @@ class _UrgeSurfedLogScreenState extends State<UrgeSurfedLogScreen> {
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(
+          SafeArea(top: false,
             child: Column(
               children: [
                 Expanded(

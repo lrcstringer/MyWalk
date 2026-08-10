@@ -254,7 +254,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(
+          SafeArea(top: false,
             child: Column(
               children: [
                 _StepDots(step: _step, total: 5),
@@ -317,7 +317,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(
+          SafeArea(top: false,
             child: Column(
               children: [
                 _StepDots(step: -1, total: 5),
@@ -781,7 +781,7 @@ class _StepDots extends StatelessWidget {
           if (step >= 0 && step < 4) ...[
             const SizedBox(width: 10),
             Text(
-              'Step ${step + 1} of 4',
+              'Step ${step + 1} of 5',
               style: TextStyle(
                   fontSize: 11,
                   color: _kRpPurple.withValues(alpha: 0.55),

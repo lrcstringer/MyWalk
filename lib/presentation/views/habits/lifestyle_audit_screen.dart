@@ -110,7 +110,7 @@ class _LifestyleAuditScreenState extends State<LifestyleAuditScreen> {
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(
+          SafeArea(top: false,
             child: Column(
               children: [
                 // Step dots

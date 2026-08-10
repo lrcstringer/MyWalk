@@ -186,7 +186,7 @@ class _BehaviourLogScreenState extends State<BehaviourLogScreen> {
       body: Stack(
         children: [
           const Positioned.fill(child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(
+          SafeArea(top: false,
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                   20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 20),

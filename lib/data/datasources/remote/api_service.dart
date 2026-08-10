@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
@@ -238,6 +239,7 @@ class APIError implements Exception {
   static const serverError = APIError._('Server error. Please try again.');
   static const unauthorized = APIError._('Please sign in to continue');
   static const decodingError = APIError._('Unexpected response format');
+  static const networkOffline = APIError._('No internet connection. Please check your connection and try again.');
 
   @override
   String toString() => message;
@@ -378,26 +380,34 @@ class APIService {
       urlString += '?input=$encoded';
     }
     final uri = Uri.parse(urlString);
-    final response = await http.get(uri, headers: await _buildAuthHeaders());
-    _checkStatus(response);
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return fromJson(body['result']['data']);
+    try {
+      final response = await http.get(uri, headers: await _buildAuthHeaders());
+      _checkStatus(response);
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return fromJson(body['result']['data']);
+    } on SocketException {
+      throw APIError.networkOffline;
+    }
   }
 
   Future<T> _postMutation<T>(String procedure, {required Map<String, dynamic> body, required T Function(Map<String, dynamic>) fromJson}) async {
     final uri = Uri.parse('$_baseURL/api/trpc/$procedure');
-    final authHeaders = await _buildAuthHeaders();
-    // tRPC server uses superjson transformer — wrap body in {"json": ...} so the
-    // server's superjson.deserialize() receives a valid SuperJSONResult.
-    final response = await http.post(uri, headers: {'Content-Type': 'application/json', ...authHeaders}, body: jsonEncode({'json': body}));
-    _checkStatus(response);
-    final responseBody = jsonDecode(response.body) as Map<String, dynamic>;
-    // Server response is superjson-encoded: { result: { data: { json: ..., meta: ... } } }
-    final data = responseBody['result']['data'];
-    final unwrapped = (data is Map<String, dynamic> && data.containsKey('json'))
-        ? data['json'] as Map<String, dynamic>
-        : data as Map<String, dynamic>;
-    return fromJson(unwrapped);
+    try {
+      final authHeaders = await _buildAuthHeaders();
+      // tRPC server uses superjson transformer — wrap body in {"json": ...} so the
+      // server's superjson.deserialize() receives a valid SuperJSONResult.
+      final response = await http.post(uri, headers: {'Content-Type': 'application/json', ...authHeaders}, body: jsonEncode({'json': body}));
+      _checkStatus(response);
+      final responseBody = jsonDecode(response.body) as Map<String, dynamic>;
+      // Server response is superjson-encoded: { result: { data: { json: ..., meta: ... } } }
+      final data = responseBody['result']['data'];
+      final unwrapped = (data is Map<String, dynamic> && data.containsKey('json'))
+          ? data['json'] as Map<String, dynamic>
+          : data as Map<String, dynamic>;
+      return fromJson(unwrapped);
+    } on SocketException {
+      throw APIError.networkOffline;
+    }
   }
 
   Future<Map<String, String>> _buildAuthHeaders() async {

@@ -4,6 +4,7 @@ import '../../../domain/entities/recovery_path.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
 import 'cue_hierarchy_screen.dart';
+import 'environmental_restructuring_screen.dart';
 import 'guardrails_screen.dart';
 import 'recovery_letter_screen.dart';
 import 'thought_examination_screen.dart';
@@ -71,14 +72,16 @@ class _JourneyBody extends StatelessWidget {
   static const _taskTitles = [
     'Map your pattern cues',
     'Examine your thoughts',
-    'Build your Guardrails',
+    'Change your environment',
+    'Build your coping plans',
     'Write your recovery letter',
   ];
 
   static const _taskDescriptions = [
     'Identify what triggers your pattern — in your own words.',
     'Slow down the thoughts that drive the urge.',
-    'Change your environment and build plans for every trigger.',
+    'Restructure your environment to make it harder to slip.',
+    'Build plans for every high-risk situation.',
     'A letter from your future self for when things get hard.',
   ];
 
@@ -86,8 +89,9 @@ class _JourneyBody extends StatelessWidget {
     switch (i) {
       case 0: return path.cueHierarchyDone;
       case 1: return path.counterResponses.isNotEmpty;
-      case 2: return path.environmentalChangesDone && path.hrsPlanDone;
-      case 3: return path.module5.recoveryLetterWritten;
+      case 2: return path.environmentalChangesDone;
+      case 3: return path.hrsPlanDone;
+      case 4: return path.module5.recoveryLetterWritten;
       default: return false;
     }
   }
@@ -97,7 +101,8 @@ class _JourneyBody extends StatelessWidget {
       case 0: return true;
       case 1: return true;
       case 2: return path.cueHierarchyDone;
-      case 3:
+      case 3: return path.cueHierarchyDone;
+      case 4:
         return path.cueHierarchyDone &&
             path.counterResponses.isNotEmpty &&
             path.environmentalChangesDone &&
@@ -111,7 +116,8 @@ class _JourneyBody extends StatelessWidget {
       case 0: return (path.cueHierarchyDraftStage > 0) && !path.cueHierarchyDone;
       case 1: return path.thoughtExaminationDraftStep > 0;
       case 2: return false;
-      case 3:
+      case 3: return false;
+      case 4:
         return (path.recoveryLetterDraft != null &&
                 path.recoveryLetterDraft!.trim().isNotEmpty) &&
             !path.module5.recoveryLetterWritten;
@@ -135,13 +141,20 @@ class _JourneyBody extends StatelessWidget {
         ));
       case 2:
         Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => EnvironmentalRestructuringScreen(
+            habitId: habitId,
+            habitType: path.habitType,
+          ),
+        ));
+      case 3:
+        Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => GuardrailsScreen(
             habitId: habitId,
             habitName: habitName,
             initialTab: 0,
           ),
         ));
-      case 3:
+      case 4:
         Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => RecoveryLetterScreen(habitId: habitId),
         ));
@@ -164,7 +177,7 @@ class _JourneyBody extends StatelessWidget {
                 letterSpacing: 0.2),
           ),
           const SizedBox(height: 16),
-          ...List.generate(4, (i) {
+          ...List.generate(5, (i) {
             final done = _isTaskDone(i);
             final inProgress = _isInProgress(i) && !done;
             final unlocked = _isUnlocked(i);
@@ -308,7 +321,8 @@ class _TaskCard extends StatelessWidget {
 
   String _lockCondition(int i) {
     if (i == 2) return 'Unlocks once your cue map is complete';
-    if (i == 3) return 'Unlocks once tasks 1–3 are complete';
+    if (i == 3) return 'Unlocks once your cue map is complete';
+    if (i == 4) return 'Unlocks once tasks 1–4 are complete';
     return '';
   }
 }

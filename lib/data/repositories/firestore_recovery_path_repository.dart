@@ -54,15 +54,17 @@ class FirestoreRecoveryPathRepository implements RecoveryPathRepository {
 
   @override
   Future<void> updatePath(RecoveryPath path) async {
-    await _paths.doc(path.id).update(path.toFirestore());
+    await _paths.doc(path.id).set(path.toFirestore(), SetOptions(merge: true));
   }
 
   @override
   Future<void> saveSession(RecoverySession session, {required String uid}) async {
     final encrypted = _enc.encryptField(session.responseText, uid) ?? '';
-    await _sessions(session.habitId)
-        .doc(session.id)
-        .set(session.toFirestore(encryptedText: encrypted));
+    final data = session.toFirestore(encryptedText: encrypted);
+    // userId included so the security rule can verify ownership directly,
+    // without a get() call on the parent recovery_paths document.
+    data['userId'] = uid;
+    await _sessions(session.habitId).doc(session.id).set(data);
   }
 
   @override

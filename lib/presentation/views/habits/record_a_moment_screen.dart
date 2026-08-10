@@ -4,18 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/recovery_session.dart';
-import '../../../domain/services/recovery_phase_calculator.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
 import 'lapse_recording_flow.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
 
+/// ONG01 — "Record a moment"
+///
+/// Phase versioning:
+///   Phase 1 (lighter)       → 3-field form, both branches
+///   Phase 2+ before letter  → Branch A: 4-field medium
+///                             Branch B: 4+compassion+nextstep medium
+///   Phase 2+ after letter   → Branch A: 4-field medium (unchanged)
+///                             Branch B: full LapseRecordingFlow
 enum _RecordVersion { lighter, medium, full }
 
-/// "Record a moment" — branches on "Did you act on it, or did you navigate it?".
-/// Version is determined by the user's current phase and whether they've written
-/// their recovery letter. Full version (Branch B only) routes to LapseRecordingFlow.
 class RecordAMomentScreen extends StatefulWidget {
   final String habitId;
 
@@ -26,39 +30,38 @@ class RecordAMomentScreen extends StatefulWidget {
 }
 
 class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
-  String? _branch; // null=unselected, 'navigated', 'acted'
+  // null = entry screen, 'navigated', 'acted_lighter', 'acted_medium'
+  String? _branch;
   bool _done = false;
   bool _saving = false;
   bool _hasLapseDraft = false;
+  String _doneAffirmation = '';
 
   String get _navDraftKey => 'ram_nav_draft_${widget.habitId}';
   String get _lapseFlagKey => 'ram_lapse_flag_${widget.habitId}';
 
-  // Phase 1 lighter fields (3 required)
-  final _happenedCtrl = TextEditingController();
-  final _phase1FeelingCtrl = TextEditingController();
-  final _nextStepCtrl = TextEditingController();
+  // Phase 1 lighter — 3 fields, shared by both branches
+  final _lHappenedCtrl = TextEditingController();
+  final _lFeelingCtrl = TextEditingController();
+  final _lNextStepCtrl = TextEditingController();
 
-  // Phase 2+ medium fields (3 required, 3 optional)
+  // Phase 2+ — 4 shared location/activity/emotion/thought fields
   final _locationCtrl = TextEditingController();
   final _activityCtrl = TextEditingController();
   final _emotionCtrl = TextEditingController();
   final _thoughtCtrl = TextEditingController();
+
+  // Phase 2+ Branch B medium additions
   final _compassionCtrl = TextEditingController();
-  final _immediateStepCtrl = TextEditingController();
+  final _medNextStepCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     for (final c in [
-      _happenedCtrl,
-      _phase1FeelingCtrl,
-      _nextStepCtrl,
-      _locationCtrl,
-      _activityCtrl,
-      _emotionCtrl,
-      _compassionCtrl,
-      _immediateStepCtrl,
+      _lHappenedCtrl, _lFeelingCtrl, _lNextStepCtrl,
+      _locationCtrl, _activityCtrl, _emotionCtrl, _thoughtCtrl,
+      _compassionCtrl, _medNextStepCtrl,
     ]) {
       c.addListener(() {
         setState(() {});
@@ -73,19 +76,26 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
 
   @override
   void dispose() {
-    _happenedCtrl.dispose();
-    _phase1FeelingCtrl.dispose();
-    _nextStepCtrl.dispose();
+    _lHappenedCtrl.dispose();
+    _lFeelingCtrl.dispose();
+    _lNextStepCtrl.dispose();
     _locationCtrl.dispose();
     _activityCtrl.dispose();
     _emotionCtrl.dispose();
     _thoughtCtrl.dispose();
     _compassionCtrl.dispose();
-    _immediateStepCtrl.dispose();
+    _medNextStepCtrl.dispose();
     super.dispose();
   }
 
-  // ── Draft persistence ─────────────────────────────────────────────────────
+  _RecordVersion _getVersion() {
+    final path = context.read<RecoveryPathProvider>().pathFor(widget.habitId);
+    if (path == null || path.currentPhase == 1) return _RecordVersion.lighter;
+    if (path.module5.recoveryLetterWritten) return _RecordVersion.full;
+    return _RecordVersion.medium;
+  }
+
+  // ── Draft ─────────────────────────────────────────────────────────────────
 
   Future<void> _loadDraft() async {
     final prefs = await SharedPreferences.getInstance();
@@ -100,15 +110,13 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
     }
     setState(() {
       _branch = data['branch'] as String?;
-      _happenedCtrl.text = (data['happened'] as String?) ?? '';
-      _phase1FeelingCtrl.text = (data['feeling'] as String?) ?? '';
-      _nextStepCtrl.text = (data['nextStep'] as String?) ?? '';
+      _lHappenedCtrl.text = (data['happened'] as String?) ?? '';
+      _lFeelingCtrl.text = (data['feeling'] as String?) ?? '';
+      _lNextStepCtrl.text = (data['lNextStep'] as String?) ?? '';
       _locationCtrl.text = (data['location'] as String?) ?? '';
       _activityCtrl.text = (data['activity'] as String?) ?? '';
       _emotionCtrl.text = (data['emotion'] as String?) ?? '';
       _thoughtCtrl.text = (data['thought'] as String?) ?? '';
-      _compassionCtrl.text = (data['compassion'] as String?) ?? '';
-      _immediateStepCtrl.text = (data['immediateStep'] as String?) ?? '';
     });
   }
 
@@ -117,15 +125,13 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_navDraftKey, jsonEncode({
       'branch': _branch,
-      'happened': _happenedCtrl.text,
-      'feeling': _phase1FeelingCtrl.text,
-      'nextStep': _nextStepCtrl.text,
+      'happened': _lHappenedCtrl.text,
+      'feeling': _lFeelingCtrl.text,
+      'lNextStep': _lNextStepCtrl.text,
       'location': _locationCtrl.text,
       'activity': _activityCtrl.text,
       'emotion': _emotionCtrl.text,
       'thought': _thoughtCtrl.text,
-      'compassion': _compassionCtrl.text,
-      'immediateStep': _immediateStepCtrl.text,
     }));
   }
 
@@ -148,60 +154,45 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
 
   void _resumeLapseFlow() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => LapseRecordingFlow(habitId: widget.habitId),
-      ),
+      MaterialPageRoute(builder: (_) => LapseRecordingFlow(habitId: widget.habitId)),
     );
   }
 
-  _RecordVersion _getVersion(RecoveryPathProvider prov) {
-    final path = prov.pathFor(widget.habitId);
-    if (path == null) return _RecordVersion.lighter;
-    final phase = RecoveryPhaseCalculator.calculate(path);
-    if (phase <= 1) return _RecordVersion.lighter;
-    if (path.module5.recoveryLetterWritten) return _RecordVersion.full;
-    return _RecordVersion.medium;
+  Future<void> _startLapseFlow() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_lapseFlagKey, true);
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => LapseRecordingFlow(habitId: widget.habitId)),
+    );
   }
 
-  bool get _canSaveLighter =>
-      _happenedCtrl.text.trim().isNotEmpty &&
-      _phase1FeelingCtrl.text.trim().isNotEmpty &&
-      _nextStepCtrl.text.trim().isNotEmpty;
+  // ── Can-save ──────────────────────────────────────────────────────────────
 
-  bool get _canSaveMedium =>
+  bool get _canSaveLighter =>
+      _lHappenedCtrl.text.trim().isNotEmpty &&
+      _lFeelingCtrl.text.trim().isNotEmpty &&
+      _lNextStepCtrl.text.trim().isNotEmpty;
+
+  bool get _canSaveMediumNav =>
+      _locationCtrl.text.trim().isNotEmpty &&
+      _activityCtrl.text.trim().isNotEmpty &&
+      _emotionCtrl.text.trim().isNotEmpty;
+
+  bool get _canSaveMediumActed =>
       _locationCtrl.text.trim().isNotEmpty &&
       _activityCtrl.text.trim().isNotEmpty &&
       _emotionCtrl.text.trim().isNotEmpty &&
-      _thoughtCtrl.text.trim().isNotEmpty;
+      _compassionCtrl.text.trim().isNotEmpty &&
+      _medNextStepCtrl.text.trim().isNotEmpty;
 
-  Future<void> _save(_RecordVersion version) async {
+  // ── Save ──────────────────────────────────────────────────────────────────
+
+  Future<void> _doSave(Map<String, dynamic> payload, {String affirmation = ''}) async {
     setState(() => _saving = true);
     try {
       final prov = context.read<RecoveryPathProvider>();
       final now = DateTime.now();
-      final Map<String, dynamic> payload;
-
-      if (version == _RecordVersion.lighter) {
-        payload = {
-          'branch': _branch,
-          'happened': _happenedCtrl.text.trim(),
-          'feeling': _phase1FeelingCtrl.text.trim(),
-          'nextStep': _nextStepCtrl.text.trim(),
-        };
-      } else {
-        payload = {
-          'branch': _branch,
-          'locationTime': _locationCtrl.text.trim(),
-          'activityBefore': _activityCtrl.text.trim(),
-          'emotionalState': _emotionCtrl.text.trim(),
-          'thoughtArose': _thoughtCtrl.text.trim(),
-          if (_compassionCtrl.text.trim().isNotEmpty)
-            'compassion': _compassionCtrl.text.trim(),
-          if (_immediateStepCtrl.text.trim().isNotEmpty)
-            'immediateStep': _immediateStepCtrl.text.trim(),
-        };
-      }
-
       final session = RecoverySession(
         id: '${widget.habitId}_m1BehaviourLog_${now.millisecondsSinceEpoch}',
         habitId: widget.habitId,
@@ -212,11 +203,9 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
       );
       await prov.saveSession(session);
       await _clearDraft();
+      _doneAffirmation = affirmation;
       if (mounted) {
-        setState(() {
-          _saving = false;
-          _done = true;
-        });
+        setState(() { _saving = false; _done = true; });
         await Future.delayed(const Duration(milliseconds: 2800));
         if (mounted) Navigator.of(context).pop();
       }
@@ -230,23 +219,67 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
     }
   }
 
+  Future<void> _saveLighterNavigated() => _doSave({
+    'branch': 'navigated_lighter',
+    'whatHappened': _lHappenedCtrl.text.trim(),
+    'emotionalState': _lFeelingCtrl.text.trim(),
+    'nextStep': _lNextStepCtrl.text.trim(),
+  }, affirmation: 'Logged. Every honest record brings you closer to understanding your pattern.');
+
+  Future<void> _saveLighterActed() => _doSave({
+    'branch': 'acted_lighter',
+    'whatHappened': _lHappenedCtrl.text.trim(),
+    'emotionalState': _lFeelingCtrl.text.trim(),
+    'nextStep': _lNextStepCtrl.text.trim(),
+  }, affirmation: 'Logged. Coming back and recording this honestly is the practice.');
+
+  Future<void> _saveMediumNavigated() => _doSave({
+    'branch': 'navigated',
+    'locationTime': _locationCtrl.text.trim(),
+    'activityBefore': _activityCtrl.text.trim(),
+    'emotionalState': _emotionCtrl.text.trim(),
+    if (_thoughtCtrl.text.trim().isNotEmpty) 'thoughtArose': _thoughtCtrl.text.trim(),
+  }, affirmation: 'Logged. Every honest record brings you closer to understanding your pattern.');
+
+  Future<void> _saveMediumActed() => _doSave({
+    'branch': 'acted_medium',
+    'locationTime': _locationCtrl.text.trim(),
+    'activityBefore': _activityCtrl.text.trim(),
+    'emotionalState': _emotionCtrl.text.trim(),
+    if (_thoughtCtrl.text.trim().isNotEmpty) 'thoughtArose': _thoughtCtrl.text.trim(),
+    'selfCompassion': _compassionCtrl.text.trim(),
+    'nextStep': _medNextStepCtrl.text.trim(),
+  }, affirmation: 'Logged. Coming back and recording this honestly is the practice.');
+
+  // ── Routing ────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<RecoveryPathProvider>();
-    final version = _getVersion(prov);
+    context.watch<RecoveryPathProvider>();
+    final version = _getVersion();
 
     if (_done) return _buildDoneScaffold();
-    if (_branch != null) return _buildForm(version);
+
+    if (_branch == null) {
+      if (_hasLapseDraft) return _buildLapseResumeScaffold();
+      return _buildEntryScaffold(version);
+    }
+
+    if (_branch == 'navigated') {
+      return version == _RecordVersion.lighter
+          ? _buildLighterForm(isActed: false)
+          : _buildMediumNavigatedForm();
+    }
+
+    if (_branch == 'acted_lighter') return _buildLighterForm(isActed: true);
+    if (_branch == 'acted_medium') return _buildMediumActedForm();
+
     return _buildEntryScaffold(version);
   }
 
-  // ── Entry screen ──────────────────────────────────────────────────────────
+  // ── Entry ──────────────────────────────────────────────────────────────────
 
   Widget _buildEntryScaffold(_RecordVersion version) {
-    if (_hasLapseDraft && version == _RecordVersion.full) {
-      return _buildLapseResumeScaffold();
-    }
-
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
@@ -254,18 +287,15 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
         elevation: 0,
         title: const Text(
           'Record a moment',
-          style: TextStyle(
-              color: MyWalkColor.warmWhite,
-              fontSize: 16,
-              fontWeight: FontWeight.w600),
+          style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16, fontWeight: FontWeight.w600),
         ),
         leading: const BackButton(color: MyWalkColor.warmWhite),
       ),
       body: Stack(
         children: [
-          const Positioned.fill(
-              child: IgnorePointer(child: DeepSpaceBackground())),
+          const Positioned.fill(child: IgnorePointer(child: DeepSpaceBackground())),
           SafeArea(
+            top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: Column(
@@ -275,67 +305,45 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                     'Did you act on it, or did you navigate it?',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: MyWalkColor.warmWhite,
-                        height: 1.35),
+                        fontSize: 18, fontWeight: FontWeight.w700,
+                        color: MyWalkColor.warmWhite, height: 1.35),
                   ),
                   const Spacer(),
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {
-                            setState(() => _branch = 'navigated');
-                            _saveDraft();
-                          },
+                          onPressed: () => setState(() => _branch = 'navigated'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: MyWalkColor.warmWhite,
-                            side: BorderSide(
-                                color: MyWalkColor.warmWhite
-                                    .withValues(alpha: 0.3)),
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                            side: BorderSide(color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: const Text('I navigated it',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w500, fontSize: 15)),
+                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () async {
+                          onPressed: () {
                             if (version == _RecordVersion.full) {
-                              final prefs =
-                                  await SharedPreferences.getInstance();
-                              await prefs.setBool(_lapseFlagKey, true);
-                              if (!mounted) return;
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (_) => LapseRecordingFlow(
-                                      habitId: widget.habitId),
-                                ),
-                              );
+                              _startLapseFlow();
+                            } else if (version == _RecordVersion.medium) {
+                              setState(() => _branch = 'acted_medium');
                             } else {
-                              setState(() => _branch = 'acted');
+                              setState(() => _branch = 'acted_lighter');
                             }
                           },
                           style: OutlinedButton.styleFrom(
                             foregroundColor: MyWalkColor.warmWhite,
-                            side: BorderSide(
-                                color: MyWalkColor.warmWhite
-                                    .withValues(alpha: 0.3)),
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                            side: BorderSide(color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: const Text('I acted on it',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w500, fontSize: 15)),
+                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
                         ),
                       ),
                     ],
@@ -350,6 +358,8 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
     );
   }
 
+  // ── Lapse draft resume ─────────────────────────────────────────────────────
+
   Widget _buildLapseResumeScaffold() {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
@@ -358,18 +368,15 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
         elevation: 0,
         title: const Text(
           'Record a moment',
-          style: TextStyle(
-              color: MyWalkColor.warmWhite,
-              fontSize: 16,
-              fontWeight: FontWeight.w600),
+          style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16, fontWeight: FontWeight.w600),
         ),
         leading: const BackButton(color: MyWalkColor.warmWhite),
       ),
       body: Stack(
         children: [
-          const Positioned.fill(
-              child: IgnorePointer(child: DeepSpaceBackground())),
+          const Positioned.fill(child: IgnorePointer(child: DeepSpaceBackground())),
           SafeArea(
+            top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: Column(
@@ -380,9 +387,7 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                     decoration: BoxDecoration(
                       color: _kRpPurple.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: _kRpPurple.withValues(alpha: 0.2),
-                          width: 0.75),
+                      border: Border.all(color: _kRpPurple.withValues(alpha: 0.2), width: 0.75),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,18 +395,15 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                         const Text(
                           'It looks like you were working through something earlier.',
                           style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: MyWalkColor.warmWhite,
-                              height: 1.4),
+                              fontSize: 16, fontWeight: FontWeight.w600,
+                              color: MyWalkColor.warmWhite, height: 1.4),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Do you want to continue from where you were?',
                           style: TextStyle(
                               fontSize: 14,
-                              color: MyWalkColor.warmWhite
-                                  .withValues(alpha: 0.65),
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
                               height: 1.5),
                         ),
                         const SizedBox(height: 20),
@@ -412,14 +414,11 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _kRpPurple,
                               foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 13),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             child: const Text('Continue',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600, fontSize: 15)),
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -430,8 +429,7 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                               'Start fresh',
                               style: TextStyle(
                                   fontSize: 13,
-                                  color: MyWalkColor.warmWhite
-                                      .withValues(alpha: 0.45)),
+                                  color: MyWalkColor.warmWhite.withValues(alpha: 0.45)),
                             ),
                           ),
                         ),
@@ -448,14 +446,9 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
     );
   }
 
-  // ── Form ─────────────────────────────────────────────────────────────────
+  // ── Phase 1 lighter form — 3 fields, both branches ────────────────────────
 
-  Widget _buildForm(_RecordVersion version) {
-    final isLighter = version == _RecordVersion.lighter;
-    final canSave = isLighter ? _canSaveLighter : _canSaveMedium;
-    final badgeLabel =
-        _branch == 'navigated' ? 'Navigated' : 'Acted on it';
-
+  Widget _buildLighterForm({required bool isActed}) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       resizeToAvoidBottomInset: true,
@@ -464,10 +457,7 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
         elevation: 0,
         title: const Text(
           'Record a moment',
-          style: TextStyle(
-              color: MyWalkColor.warmWhite,
-              fontSize: 16,
-              fontWeight: FontWeight.w600),
+          style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16, fontWeight: FontWeight.w600),
         ),
         leading: BackButton(
           color: MyWalkColor.warmWhite,
@@ -476,16 +466,16 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
       ),
       body: Stack(
         children: [
-          const Positioned.fill(
-              child: IgnorePointer(child: DeepSpaceBackground())),
+          const Positioned.fill(child: IgnorePointer(child: DeepSpaceBackground())),
           SafeArea(
+            top: false,
             child: Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: _StepBadge(label: badgeLabel),
+                    child: _StepBadge(label: isActed ? 'Acted on it' : 'Navigated'),
                   ),
                 ),
                 Expanded(
@@ -493,41 +483,46 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: isLighter
-                          ? _lighterFields()
-                          : _mediumFields(),
+                      children: [
+                        _RamField(
+                          label: 'What happened, and where were you?',
+                          controller: _lHappenedCtrl,
+                          autofocus: true,
+                        ),
+                        _RamField(
+                          label: 'How were you feeling?',
+                          controller: _lFeelingCtrl,
+                        ),
+                        _RamField(
+                          label: "What's one thing you'll do right now?",
+                          controller: _lNextStepCtrl,
+                          last: true,
+                        ),
+                      ],
                     ),
                   ),
                 ),
                 Padding(
                   padding: EdgeInsets.fromLTRB(
-                      20,
-                      8,
-                      20,
-                      MediaQuery.of(context).viewInsets.bottom + 20),
+                      20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 20),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed:
-                          canSave && !_saving ? () => _save(version) : null,
+                      onPressed: _canSaveLighter && !_saving
+                          ? (isActed ? _saveLighterActed : _saveLighterNavigated)
+                          : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _kRpPurple,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor:
-                            _kRpPurple.withValues(alpha: 0.3),
+                        disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _saving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
+                          ? const SizedBox(width: 18, height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Text('Save',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 15)),
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                     ),
                   ),
                 ),
@@ -539,71 +534,208 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
     );
   }
 
-  List<Widget> _lighterFields() => [
-        _RamField(
-          label: 'What happened, and where were you?',
-          controller: _happenedCtrl,
-          autofocus: true,
-        ),
-        _RamField(
-          label: 'How were you feeling?',
-          controller: _phase1FeelingCtrl,
-        ),
-        _RamField(
-          label: "What's one thing you'll do right now?",
-          controller: _nextStepCtrl,
-          last: true,
-        ),
-      ];
+  // ── Phase 2+ navigated form — 4 fields ────────────────────────────────────
 
-  List<Widget> _mediumFields() => [
-        _RamField(
-          label: 'Where were you? What time of day was it?',
-          hint: 'e.g. Home alone, 11pm · Office, after a difficult meeting',
-          controller: _locationCtrl,
-          autofocus: true,
+  Widget _buildMediumNavigatedForm() {
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Record a moment',
+          style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        _RamField(
-          label: 'What were you doing immediately before?',
-          controller: _activityCtrl,
+        leading: BackButton(
+          color: MyWalkColor.warmWhite,
+          onPressed: () => setState(() => _branch = null),
         ),
-        _RamField(
-          label:
-              'What were you feeling emotionally? Name it + rate intensity out of 10.',
-          controller: _emotionCtrl,
+      ),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: IgnorePointer(child: DeepSpaceBackground())),
+          SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _StepBadge(label: 'Navigated'),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _RamField(
+                          label: 'Where were you? What time of day was it?',
+                          hint: 'e.g. Home alone, 11pm · Office, after a difficult meeting',
+                          controller: _locationCtrl,
+                          autofocus: true,
+                        ),
+                        _RamField(
+                          label: 'What were you doing immediately before?',
+                          controller: _activityCtrl,
+                        ),
+                        _RamField(
+                          label: 'What were you feeling emotionally? Name it + rate intensity out of 10.',
+                          controller: _emotionCtrl,
+                        ),
+                        _RamField(
+                          label: 'What thought arose just before?',
+                          hint: 'Even a single sentence is fine.',
+                          controller: _thoughtCtrl,
+                          optional: true,
+                          last: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                      20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _canSaveMediumNav && !_saving ? _saveMediumNavigated : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kRpPurple,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _saving
+                          ? const SizedBox(width: 18, height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Save',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Phase 2+ acted medium form — 4+compassion+nextstep ───────────────────
+
+  Widget _buildMediumActedForm() {
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Record a moment',
+          style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        _RamField(
-          label: 'What thought arose just before? Even a single sentence is fine.',
-          controller: _thoughtCtrl,
-          optional: true,
+        leading: BackButton(
+          color: MyWalkColor.warmWhite,
+          onPressed: () => setState(() => _branch = null),
         ),
-        _RamField(
-          label:
-              'What would you say to yourself with compassion about this moment?',
-          controller: _compassionCtrl,
-          optional: true,
-        ),
-        _RamField(
-          label: "What's your immediate next step right now?",
-          controller: _immediateStepCtrl,
-          optional: true,
-          last: true,
-        ),
-      ];
+      ),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: IgnorePointer(child: DeepSpaceBackground())),
+          SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _StepBadge(label: 'Acted on it'),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _RamField(
+                          label: 'Where were you? What time of day was it?',
+                          hint: 'e.g. Home alone, 11pm · Office, after a difficult meeting',
+                          controller: _locationCtrl,
+                          autofocus: true,
+                        ),
+                        _RamField(
+                          label: 'What were you doing immediately before?',
+                          controller: _activityCtrl,
+                        ),
+                        _RamField(
+                          label: 'What were you feeling emotionally? Name it + rate intensity out of 10.',
+                          controller: _emotionCtrl,
+                        ),
+                        _RamField(
+                          label: 'What thought arose just before?',
+                          hint: 'Even a single sentence is fine.',
+                          controller: _thoughtCtrl,
+                          optional: true,
+                        ),
+                        _RamField(
+                          label: 'What would you say to a good friend who had just gone through exactly this moment?',
+                          controller: _compassionCtrl,
+                        ),
+                        _RamField(
+                          label: "What's one thing you'll do right now?",
+                          controller: _medNextStepCtrl,
+                          last: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                      20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _canSaveMediumActed && !_saving ? _saveMediumActed : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kRpPurple,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _saving
+                          ? const SizedBox(width: 18, height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Save',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // ── Completion ────────────────────────────────────────────────────────────
 
   Widget _buildDoneScaffold() {
-    final affirmation = _branch == 'navigated'
-        ? 'Logged. Every honest record brings you closer to understanding your pattern.'
-        : 'Logged. Coming back and recording this honestly is the practice.';
-
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       body: Stack(
         children: [
-          const Positioned.fill(
-              child: IgnorePointer(child: DeepSpaceBackground())),
+          const Positioned.fill(child: IgnorePointer(child: DeepSpaceBackground())),
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -617,12 +749,11 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                       color: _kRpPurple.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.check_rounded,
-                        color: _kRpPurple, size: 28),
+                    child: const Icon(Icons.check_rounded, color: _kRpPurple, size: 28),
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    affirmation,
+                    _doneAffirmation,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontSize: 15,
@@ -639,7 +770,7 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
   }
 }
 
-// ── Shared widgets ────────────────────────────────────────────────────────────
+// ── Shared widgets ─────────────────────────────────────────────────────────────
 
 class _StepBadge extends StatelessWidget {
   final String label;

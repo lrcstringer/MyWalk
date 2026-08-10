@@ -199,7 +199,7 @@ class _EditHabitViewState extends State<EditHabitView> {
           ),
           SingleChildScrollView(
         controller: widget.scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        padding: EdgeInsets.fromLTRB(16, 24, 16, 24 + MediaQuery.of(context).padding.bottom),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _headerSection(),
           if (_categoryId != null) ...[

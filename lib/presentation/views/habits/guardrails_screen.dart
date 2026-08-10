@@ -223,7 +223,7 @@ class _EnvRestructuringTabState extends State<_EnvRestructuringTab> {
     final alreadySaved = widget.environmentalChangesDone || _saved;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 32 + MediaQuery.of(context).padding.bottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -516,7 +516,7 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
   Widget build(BuildContext context) {
     if (_showHrsIntro) {
       return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+        padding: EdgeInsets.fromLTRB(24, 32, 24, 32 + MediaQuery.of(context).padding.bottom),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -561,7 +561,7 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 32 + MediaQuery.of(context).padding.bottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -834,7 +834,7 @@ class _UrgeSurfingIntro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+      padding: EdgeInsets.fromLTRB(20, 24, 20, 32 + MediaQuery.of(context).padding.bottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -964,7 +964,7 @@ class _UrgeSurfingSession extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+      padding: EdgeInsets.fromLTRB(20, 24, 20, 32 + MediaQuery.of(context).padding.bottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

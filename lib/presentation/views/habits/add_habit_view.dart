@@ -216,15 +216,18 @@ class _AddHabitViewState extends State<AddHabitView> {
               child: DeepSpaceBackground(),
             ),
           ),
-          SingleChildScrollView(
-        controller: widget.scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
-        child: _step == 1
-            ? _step1Content()
-            : _step == 2
-                ? _subcategoryPicker()
-                : _habitDetails(isPremium),
-      ),
+          SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              controller: widget.scrollController,
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+              child: _step == 1
+                  ? _step1Content()
+                  : _step == 2
+                      ? _subcategoryPicker()
+                      : _habitDetails(isPremium),
+            ),
+          ),
         ],
       ),
     );
@@ -1398,7 +1401,7 @@ class _AddHabitViewState extends State<AddHabitView> {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text(
-                  'Support/Accountability Partner',
+                  'Support/Accountability Partner (optional)',
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -1461,7 +1464,7 @@ class _AddHabitViewState extends State<AddHabitView> {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text(
-                  'Recovery/Freedom Plan',
+                  'Recovery/Freedom Plan (optional)',
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,

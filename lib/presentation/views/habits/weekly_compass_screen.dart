@@ -142,7 +142,7 @@ class _WeeklyCompassScreenState extends State<WeeklyCompassScreen> {
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(
+          SafeArea(top: false,
             child: Column(
               children: [
                 Padding(

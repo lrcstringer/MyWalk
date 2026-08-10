@@ -28,7 +28,7 @@ class BreakingFreeEncouragingScreen extends StatelessWidget {
           const Positioned.fill(
             child: IgnorePointer(child: DeepSpaceBackground()),
           ),
-          SafeArea(
+          SafeArea(top: false,
             child: Column(
               children: [
                 Expanded(

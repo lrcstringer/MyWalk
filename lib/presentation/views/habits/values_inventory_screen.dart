@@ -5,6 +5,7 @@ import '../../../domain/entities/recovery_session.dart';
 import '../../../domain/services/recovery_module_content.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/recovery_path_provider.dart';
+import '../../providers/habit_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/partner_invite_dialog.dart';
 import 'breaking_free_encouraging_screen.dart';
@@ -91,7 +92,7 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
   }
 
   bool get _isCurrentStepValid {
-    return _controllers[_step].text.trim().length >= 10 &&
+    return _controllers[_step].text.trim().length >= 100 &&
         _compassDir[_step] != null;
   }
 
@@ -141,6 +142,20 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
           .join('\n\n');
 
       final prov = context.read<RecoveryPathProvider>();
+
+      // During onboarding, startPath() hasn't been called yet so the
+      // recovery_paths document doesn't exist in Firestore. Create it now
+      // so saveValuesInventoryEntries and saveSession can write to it.
+      if (prov.pathFor(widget.habitId) == null) {
+        final hp = context.read<HabitProvider>();
+        await prov.startPath(widget.habitId);
+        // Mark the habit so the Freedom Plan pill loads on the Today card.
+        final habit = hp.habits.where((h) => h.id == widget.habitId).firstOrNull;
+        if (habit != null && !habit.hasRecoveryPath) {
+          await hp.updateHabit(habit.copyWith(hasRecoveryPath: true));
+        }
+      }
+
       final now = DateTime.now();
       final session = RecoverySession(
         id: '${widget.habitId}_m3ValuesInventory_${now.millisecondsSinceEpoch}',
@@ -189,11 +204,12 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
       } else {
         setState(() => _done = true);
       }
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('ValuesInventory save error: $e\n$st');
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Couldn't save. Check your connection.")),
+          const SnackBar(content: Text("Save failed. Please try again.")),
         );
       }
     }
@@ -240,131 +256,139 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
           const Positioned.fill(
             child: IgnorePointer(child: DeepSpaceBackground()),
           ),
-          Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Domain counter
-                      Text(
-                        'Domain ${_step + 1} of ${_domains.length}',
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
-                            letterSpacing: 0.3),
-                      ),
-                      const SizedBox(height: 6),
+          SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Domain counter
+                        Text(
+                          'Domain ${_step + 1} of ${_domains.length}',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
+                              letterSpacing: 0.3),
+                        ),
+                        const SizedBox(height: 6),
 
-                      // Progress dots
-                      Row(
-                        children: List.generate(_domains.length, (i) {
-                          final active = i == _step;
-                          final done = i < _step;
-                          return Container(
-                            margin: const EdgeInsets.only(right: 5),
-                            width: active ? 14 : 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: done || active
-                                  ? _kRpPurple
-                                  : _kRpPurple.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 24),
+                        // Progress dots
+                        Row(
+                          children: List.generate(_domains.length, (i) {
+                            final active = i == _step;
+                            final done = i < _step;
+                            return Container(
+                              margin: const EdgeInsets.only(right: 5),
+                              width: active ? 14 : 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: done || active
+                                    ? _kRpPurple
+                                    : _kRpPurple.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 24),
 
-                      // Domain name
-                      Text(
-                        domain,
-                        style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: MyWalkColor.warmWhite,
-                            height: 1.3),
-                      ),
-                      const SizedBox(height: 20),
+                        // Domain name
+                        Text(
+                          domain,
+                          style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: MyWalkColor.warmWhite,
+                              height: 1.3),
+                        ),
+                        const SizedBox(height: 20),
 
-                      // Reflection text field
-                      _ReflectionField(
-                        controller: _controllers[_step],
-                        domain: domain,
-                      ),
-                      const SizedBox(height: 24),
+                        // Reflection text field
+                        _ReflectionField(
+                          controller: _controllers[_step],
+                          domain: domain,
+                        ),
+                        const SizedBox(height: 24),
 
-                      // Consistency slider (single slider per spec)
-                      _SliderRow(
-                        label: 'How consistently am I living this?',
-                        value: _alignment[_step],
-                        onChanged: (v) =>
-                            setState(() => _alignment[_step] = v),
-                      ),
-                      const SizedBox(height: 16),
+                        // Consistency slider (single slider per spec)
+                        _SliderRow(
+                          label: 'How consistently am I living this?',
+                          value: _alignment[_step],
+                          onChanged: (v) =>
+                              setState(() => _alignment[_step] = v),
+                        ),
+                        const SizedBox(height: 16),
 
-                      // Compass selector
-                      _CompassSelector(
-                        selected: _compassDir[_step],
-                        onSelected: (val) =>
-                            setState(() => _compassDir[_step] = val),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Pinned button
-              if (isLast)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: (_saving || !_isCurrentStepValid) ? null : _save,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kRpPurple,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: _saving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
-                          : const Text('Save my values',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 15)),
-                    ),
-                  ),
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                  child: Center(
-                    child: TextButton(
-                      onPressed: _isCurrentStepValid ? _advanceStep : null,
-                      child: Text(
-                        'Next → Domain ${_step + 2}',
-                        style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: _isCurrentStepValid
-                                ? _kRpPurple.withValues(alpha: 0.85)
-                                : _kRpPurple.withValues(alpha: 0.3)),
-                      ),
+                        // Compass selector
+                        _CompassSelector(
+                          selected: _compassDir[_step],
+                          onSelected: (val) =>
+                              setState(() => _compassDir[_step] = val),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                     ),
                   ),
                 ),
-            ],
+
+                // Pinned button
+                if (isLast)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: (_saving || !_isCurrentStepValid) ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kRpPurple,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: _saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Text('Save my values',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600, fontSize: 15)),
+                      ),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isCurrentStepValid ? _advanceStep : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kRpPurple,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(
+                          'Next → ${_domains[_step + 1]}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -396,45 +420,57 @@ class _ValuesIntroPage extends StatelessWidget {
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        RecoveryModuleContent.m3InventoryIntro,
-                        style: TextStyle(
-                            fontSize: 15,
-                            color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
-                            height: 1.65),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: onStart,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kRpPurple,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+          SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'The Role of your Values in Breaking Patterns',
+                          style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: MyWalkColor.warmWhite,
+                              height: 1.3),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          RecoveryModuleContent.m3InventoryIntro,
+                          style: TextStyle(
+                              fontSize: 15,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
+                              height: 1.65),
+                        ),
+                      ],
                     ),
-                    child: const Text('Start →',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 15)),
                   ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onStart,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kRpPurple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Start →',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -496,6 +532,14 @@ class _ReflectionField extends StatelessWidget {
           ),
           keyboardType: TextInputType.multiline,
           textCapitalization: TextCapitalization.sentences,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Minimum 100 characters required',
+          style: TextStyle(
+              fontSize: 11,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.35),
+              fontStyle: FontStyle.italic),
         ),
       ],
     );
@@ -798,49 +842,54 @@ class _WhatHappensNextView extends StatelessWidget {
           const Positioned.fill(
             child: IgnorePointer(child: DeepSpaceBackground()),
           ),
-          SafeArea(
+          SafeArea(top: false,
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(28, 24, 28, 40),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Plan created banner ──────────────────────────────
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
                       color: _kRpPurple.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: _kRpPurple.withValues(alpha: 0.25)),
                     ),
-                    child: const Icon(Icons.route_rounded,
-                        color: _kRpPurple, size: 26),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_rounded,
+                            color: _kRpPurple, size: 22),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Your Freedom Plan has been created',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  MyWalkColor.warmWhite.withValues(alpha: 0.9),
+                              height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'What Happens Next?',
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: MyWalkColor.warmWhite,
+                        height: 1.3),
                   ),
                   const SizedBox(height: 20),
+
+                  // ── Body ─────────────────────────────────────────────
                   Text(
                     'For the next six days there\'s nothing required except to keep a brief record of any time you slip into the pattern you\'re working on — or even if you felt a strong urge but didn\'t act on it.',
-                    style: TextStyle(
-                        fontSize: 15,
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
-                        height: 1.65),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'You can change unwanted patterns and this plan will help you do that. It is based on solid behavioural change research and is designed to make this as easy as possible for you. So, be encouraged.',
-                    style: TextStyle(
-                        fontSize: 15,
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
-                        height: 1.65),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'The first goal is merely to begin tracking behaviour. You cannot change what you cannot see. Most problematic habits feel chaotic and uncontrollable partly because the pattern is invisible — things seem to \'just happen.\' The first job is to make the invisible visible: map the specific cues, emotional states, thoughts, and consequences. This data becomes the foundation for everything else. Self-monitoring is one of the most robustly supported behaviour change techniques. What many people discover within two weeks is that their behaviour clusters around a surprisingly small number of cue-state combinations (perhaps three to five distinct patterns). This recognition is itself therapeutic — you will see that the patterns you want to break aren\'t necessarily random and chaotic but follow certain cues, and when you know what those cues are they become manageable by you.',
-                    style: TextStyle(
-                        fontSize: 15,
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
-                        height: 1.65),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'We\'re not keeping a record of guilt or wrongs here. We\'re starting to gather the data we need to see whether there are any patterns — cues that tend to trigger this behaviour — so we can start doing something about them.',
                     style: TextStyle(
                         fontSize: 15,
                         color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
@@ -854,19 +903,65 @@ class _WhatHappensNextView extends StatelessWidget {
                           color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
                           height: 1.65),
                       children: const [
+                        TextSpan(text: 'You\'ll see a '),
                         TextSpan(
-                          text: 'Don\'t try to change anything yet. Just observe and record.',
+                          text: '\'Record a moment\'',
                           style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        TextSpan(
+                          text:
+                              ' button on your habit card. Tap it whenever something happens — the sooner after the moment, the better. Above all, be brutally honest. No one can read what you enter — it\'s all encrypted. It\'s between you and God and there is nothing you can say that He has not heard or seen and He wants us to lay everything before Him with honesty as He cares.',
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'You\'ll see a \'Record a moment\' button on your habit card. Tap it whenever something happens — the sooner after the moment, the better. Above all, be brutally honest. No one can read what you enter — it\'s all encrypted. It\'s between you and God and there is nothing you can say that He has not heard or seen and He wants us to lay everything before Him with honesty as He cares.',
+                    'Don\'t try to change anything yet. Just observe and record.',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
+                        height: 1.65),
+                  ),
+                  const SizedBox(height: 24),
+                  Divider(
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.12),
+                      thickness: 1),
+                  const SizedBox(height: 20),
+
+                  // ── Why section ───────────────────────────────────────
+                  const Text(
+                    'Why do we do this?',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: MyWalkColor.warmWhite,
+                        height: 1.4),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'You can change unwanted patterns and this plan will help you do that. It is based on solid behavioral change research and is designed to make this as easy as possible for you. So, be encouraged.',
                     style: TextStyle(
                         fontSize: 15,
                         color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
+                        height: 1.65),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Our first goal is merely to begin tracking behavior. One cannot change what you cannot see.\n\nMost problematic habits feel chaotic and uncontrollable partly because the pattern is invisible — things seem to \'just happen.\' The first job is to make the invisible visible: map the specific cues, emotional states, thoughts, and consequences. This data becomes the foundation for everything else.\n\nSelf-monitoring is one of the most robust behavior change techniques. What many people discover within two weeks is that their behavior clusters around a surprisingly small number of cues (perhaps three to five distinct patterns). This recognition is itself therapeutic — you will see that the patterns you want to break aren\'t necessarily random and chaotic but follow certain cues, and when you know what those cues are they become manageable by you.',
+                    style: TextStyle(
+                        fontSize: 15,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.72),
+                        height: 1.65),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'We\'re not keeping a record of guilt or wrongs here.\n\nWe\'re starting to gather the data we need to see whether there are any patterns — cues that tend to trigger this behavior — so we can start doing something about them.',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
                         height: 1.65),
                   ),
                   const SizedBox(height: 32),

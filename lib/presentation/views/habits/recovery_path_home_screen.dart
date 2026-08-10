@@ -360,7 +360,7 @@ class _BeginBodyState extends State<_BeginBody> {
   Widget build(BuildContext context) {
     final userIsPremium = context.read<StoreProvider>().isPremium;
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+      padding: EdgeInsets.fromLTRB(20, 8, 20, 40 + MediaQuery.of(context).padding.bottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -500,7 +500,7 @@ class _ActiveBody extends StatelessWidget {
     final compassDone = prov.compassDoneThisWeek(habitId);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 40 + MediaQuery.of(context).padding.bottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

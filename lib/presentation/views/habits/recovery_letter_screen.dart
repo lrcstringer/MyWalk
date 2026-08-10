@@ -134,7 +134,7 @@ class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(
+          SafeArea(top: false,
             child: Column(
               children: [
                 Expanded(
@@ -301,7 +301,7 @@ class _AveIntroScreen extends StatelessWidget {
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(
+          SafeArea(top: false,
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
               child: Column(

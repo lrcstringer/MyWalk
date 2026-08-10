@@ -10,13 +10,15 @@ import 'guardrails_screen.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
 
-/// ONG01-B — 4-screen "I acted on it" lapse flow.
+/// ONG01-B — 5-screen "I acted on it" lapse flow.
+/// Always shown in full regardless of phase or letter status.
 ///
-/// B1 (step 0) — Stop the Spiral   [full immersive, no AppBar, badge "1 of 4"]
-/// B2 (step 1) — Your Letter       [letter card + compassion, AppBar "Your letter"]
-/// B3 (step 2) — Forensic          [4 fields, AppBar "What happened"]
-/// B4 (step 3) — Recommit          [2 fields, AppBar "Going forward"]
-/// Completion (step 4)
+/// B1 (step 0) — Stop the Spiral    [full immersive · no AppBar · badge "1 of 5"]
+/// B2 (step 1) — What Happened      [4 fields · AppBar "What happened" · badge "2 of 5"]
+/// B3 (step 2) — Your Letter        [letter + compassion · AppBar "Your letter" · badge "3 of 5"]
+/// B4 (step 3) — Forensic           [1 field · AppBar "What happened" · badge "4 of 5"]
+/// B5 (step 4) — Recommit           [2 fields · AppBar "Going forward" · badge "5 of 5"]
+/// Completion  (step 5)
 class LapseRecordingFlow extends StatefulWidget {
   final String habitId;
 
@@ -28,16 +30,19 @@ class LapseRecordingFlow extends StatefulWidget {
 
 class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
   int _step = 0;
-  bool _letterRead = false; // B3 Variant A: reveals compassion field
+  bool _letterRead = false;
 
-  // B3 — Forensic (first 3 required, thought optional)
-  final _situationCtrl = TextEditingController();
-  final _emotionCtrl = TextEditingController();
-  final _thoughtCtrl = TextEditingController();
-  final _forensicGapCtrl = TextEditingController();
+  // B2 — What Happened (fields 1–3 required, thought optional)
+  final _b2LocationCtrl = TextEditingController();
+  final _b2ActivityCtrl = TextEditingController();
+  final _b2EmotionCtrl = TextEditingController();
+  final _b2ThoughtCtrl = TextEditingController();
 
-  // B2 — Self-compassion (required)
+  // B3 — Self-compassion (required)
   final _selfCompassionCtrl = TextEditingController();
+
+  // B4 — Forensic gap (required)
+  final _forensicGapCtrl = TextEditingController();
 
   // B5 — Recommit (both required)
   final _copingPlanGapCtrl = TextEditingController();
@@ -50,10 +55,12 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
   void initState() {
     super.initState();
     for (final c in [
-      _situationCtrl,
-      _emotionCtrl,
-      _forensicGapCtrl,
+      _b2LocationCtrl,
+      _b2ActivityCtrl,
+      _b2EmotionCtrl,
+      _b2ThoughtCtrl,
       _selfCompassionCtrl,
+      _forensicGapCtrl,
       _copingPlanGapCtrl,
       _recommittedValueCtrl,
     ]) {
@@ -63,11 +70,12 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
 
   @override
   void dispose() {
-    _situationCtrl.dispose();
-    _emotionCtrl.dispose();
-    _thoughtCtrl.dispose();
-    _forensicGapCtrl.dispose();
+    _b2LocationCtrl.dispose();
+    _b2ActivityCtrl.dispose();
+    _b2EmotionCtrl.dispose();
+    _b2ThoughtCtrl.dispose();
     _selfCompassionCtrl.dispose();
+    _forensicGapCtrl.dispose();
     _copingPlanGapCtrl.dispose();
     _recommittedValueCtrl.dispose();
     super.dispose();
@@ -77,13 +85,15 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
     switch (_step) {
       case 0:
         return true;
-      case 1:
+      case 1: // B2 — What Happened
+        return _b2LocationCtrl.text.trim().isNotEmpty &&
+            _b2ActivityCtrl.text.trim().isNotEmpty &&
+            _b2EmotionCtrl.text.trim().isNotEmpty;
+      case 2: // B3 — Letter + compassion
         return _selfCompassionCtrl.text.trim().isNotEmpty;
-      case 2:
-        return _situationCtrl.text.trim().isNotEmpty &&
-            _emotionCtrl.text.trim().isNotEmpty &&
-            _forensicGapCtrl.text.trim().isNotEmpty;
-      case 3:
+      case 3: // B4 — Forensic
+        return _forensicGapCtrl.text.trim().isNotEmpty;
+      case 4: // B5 — Recommit
         return _copingPlanGapCtrl.text.trim().isNotEmpty &&
             _recommittedValueCtrl.text.trim().isNotEmpty;
       default:
@@ -98,12 +108,13 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
       final now = DateTime.now();
       final payload = jsonEncode({
         'branch': 'acted',
-        'situation': _situationCtrl.text.trim(),
-        'emotionalState': _emotionCtrl.text.trim(),
-        if (_thoughtCtrl.text.trim().isNotEmpty)
-          'thoughtArose': _thoughtCtrl.text.trim(),
-        'forensicGap': _forensicGapCtrl.text.trim(),
+        'locationTime': _b2LocationCtrl.text.trim(),
+        'activityBefore': _b2ActivityCtrl.text.trim(),
+        'emotionalState': _b2EmotionCtrl.text.trim(),
+        if (_b2ThoughtCtrl.text.trim().isNotEmpty)
+          'thoughtArose': _b2ThoughtCtrl.text.trim(),
         'selfCompassion': _selfCompassionCtrl.text.trim(),
+        'forensicGap': _forensicGapCtrl.text.trim(),
         'copingPlanGap': _copingPlanGapCtrl.text.trim(),
         'recommittedValue': _recommittedValueCtrl.text.trim(),
         'copingPlanUpdated': _copingPlanUpdated,
@@ -128,7 +139,7 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
       await prov.saveSession(session);
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('ram_lapse_flag_${widget.habitId}');
-      if (mounted) setState(() { _saving = false; _step = 4; });
+      if (mounted) setState(() { _saving = false; _step = 5; });
     } catch (_) {
       if (mounted) {
         setState(() => _saving = false);
@@ -141,7 +152,10 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
 
   void _onBack() {
     if (_step > 0) {
-      setState(() => _step--);
+      setState(() {
+        if (_step == 2) _letterRead = false;
+        _step--;
+      });
     } else {
       Navigator.of(context).pop();
     }
@@ -149,16 +163,17 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
 
   String get _appBarTitle {
     switch (_step) {
-      case 1: return 'Your letter';
-      case 2: return 'What happened';
-      case 3: return 'Going forward';
+      case 1: return 'What happened';
+      case 2: return 'Your letter';
+      case 3: return 'What happened';
+      case 4: return 'Going forward';
       default: return '';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_step == 4) return const _CompletionView();
+    if (_step == 5) return const _CompletionView();
     if (_step == 0) return _buildB1();
 
     return Scaffold(
@@ -184,13 +199,14 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
           SafeArea(
+            top: false,
             child: Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: _StepBadge(label: '${_step + 1} of 4'),
+                    child: _StepBadge(label: '${_step + 1} of 5'),
                   ),
                 ),
                 Expanded(child: _buildCurrentStep()),
@@ -204,14 +220,13 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
 
   Widget _buildCurrentStep() {
     switch (_step) {
-      case 1: return _buildB3(); // letter + compassion
-      case 2: return _buildB4(); // forensic (4 fields)
-      case 3: return _buildB5(); // recommit
+      case 1: return _buildB2();
+      case 2: return _buildB3();
+      case 3: return _buildB4();
+      case 4: return _buildB5();
       default: return const SizedBox.shrink();
     }
   }
-
-
 
   // ── B1 — Stop the Spiral (full immersive, no AppBar) ─────────────────────
 
@@ -223,13 +238,14 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
           SafeArea(
+            top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
               child: Column(
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: _StepBadge(label: '1 of 4'),
+                    child: _StepBadge(label: '1 of 5'),
                   ),
                   const Spacer(),
                   const Text(
@@ -279,6 +295,57 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
     );
   }
 
+  // ── B2 — What Happened (4 fields) ────────────────────────────────────────
+
+  Widget _buildB2() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _RamField(
+            label: 'Where were you? What time of day was it?',
+            hint: 'e.g. Home alone, 11pm · Office, after a difficult meeting',
+            controller: _b2LocationCtrl,
+            autofocus: true,
+          ),
+          _RamField(
+            label: 'What were you doing immediately before?',
+            controller: _b2ActivityCtrl,
+          ),
+          _RamField(
+            label: 'How were you feeling emotionally?',
+            controller: _b2EmotionCtrl,
+          ),
+          _RamField(
+            label: 'What thought arose just before?',
+            hint: 'e.g. "I deserve this." · "Just this once." · "I can\'t cope right now."',
+            controller: _b2ThoughtCtrl,
+            optional: true,
+            last: true,
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _canAdvance ? () => setState(() => _step = 2) : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kRpPurple,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Continue',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── B3 — Your Letter + Self-Compassion ───────────────────────────────────
 
   Widget _buildB3() {
@@ -295,7 +362,6 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (hasLetter) ...[
-            // Variant A — letter written
             Text(
               'Your recovery letter',
               style: TextStyle(
@@ -332,7 +398,6 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
                 ),
               ),
           ] else ...[
-            // Variant B — no letter written yet
             _LetterCard(
               text:
                   "You haven't written your recovery letter yet. That's okay — you'll get to it.\n\n"
@@ -348,7 +413,8 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
               isLetter: false,
             ),
           ],
-          if (hasLetter && !_letterRead) const SizedBox.shrink()
+          if (hasLetter && !_letterRead)
+            const SizedBox.shrink()
           else ...[
             const SizedBox(height: 24),
             const Text(
@@ -386,7 +452,7 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed:
-                    _canAdvance ? () => setState(() => _step = 2) : null,
+                    _canAdvance ? () => setState(() => _step = 3) : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _kRpPurple,
                   foregroundColor: Colors.white,
@@ -406,7 +472,7 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
     );
   }
 
-  // ── B4 — Forensic (4 fields) ─────────────────────────────────────────────
+  // ── B4 — Forensic (1 field — situation/emotion/thought already in B2) ────
 
   Widget _buildB4() {
     return SingleChildScrollView(
@@ -424,29 +490,25 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
           ),
           const SizedBox(height: 20),
           _RamField(
-            label: 'What was the situation just before? Where were you, what were you doing?',
-            controller: _situationCtrl,
-            autofocus: true,
-          ),
-          _RamField(
-            label: 'What were you feeling emotionally?',
-            controller: _emotionCtrl,
-          ),
-          _RamField(
-            label: 'What thought arose just before?',
-            controller: _thoughtCtrl,
-            optional: true,
-          ),
-          _RamField(
             label: 'Where did your coping plan not hold — and what do you think got in the way?',
             controller: _forensicGapCtrl,
+            autofocus: true,
             last: true,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '(Situation, emotion, and thought already captured in the previous step — just this one question here)',
+            style: TextStyle(
+                fontSize: 12,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.35),
+                fontStyle: FontStyle.italic,
+                height: 1.5),
           ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _canAdvance ? () => setState(() => _step = 3) : null,
+              onPressed: _canAdvance ? () => setState(() => _step = 4) : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kRpPurple,
                 foregroundColor: Colors.white,
@@ -582,10 +644,9 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
       ),
     );
   }
-
 }
 
-// ── Shared field widgets ──────────────────────────────────────────────────────
+// ── Shared field widget ───────────────────────────────────────────────────────
 
 class _StepBadge extends StatelessWidget {
   final String label;

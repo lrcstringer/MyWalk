@@ -149,7 +149,7 @@ class _ModuleSessionScreenState extends State<ModuleSessionScreen> {
           left: 20,
           right: 20,
           top: 8,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom + 24,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

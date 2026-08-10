@@ -107,9 +107,22 @@ class RecoveryModuleContent {
   ];
 
   static const String m3InventoryIntro =
-      'For each area of life, rate how important it is to you and how well '
-      'you\'re living it right now. This isn\'t about judgement — it\'s about '
-      'seeing where the gaps are.';
+      'It\'s important to know what you are moving toward, not just what you '
+      'are moving away from. Change driven purely by avoidance ("I want to stop '
+      'doing this") tends to be unstable — fuelled by shame, fear, or negative '
+      'consequence, and it tells you nothing about what to replace the behaviour '
+      'with, or why the effort of change is worth making on a difficult day.\n\n'
+      'Values-based motivation connects change to who you genuinely want to be '
+      'and what you genuinely want your life to contain. This is the component '
+      'that answers "what am I actually for?" It provides an orientation that '
+      'survives slip ups and this is important as a slip-up is not a catastrophe, '
+      'just a bump in the road.\n\n'
+      'We are going to go through 8 life domains asking for each (1) What matters '
+      'most to me in this area? (2) How consistently am I currently living that?\n\n'
+      'It does not matter if you are unsure on some of these. Capture what you '
+      'currently think and feel and remember there is no right answer. You can '
+      'always come back and change things if your thinking or feeling about them '
+      'changes over time.';
 
   static const String m3ImportanceLabel = 'How important is this to you?';
   static const String m3AlignmentLabel = 'How well are you living it?';

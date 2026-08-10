@@ -6,6 +6,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -26,6 +27,7 @@ class AuthService extends ChangeNotifier {
   String? _phone;
   bool _isLoading = false;
   String? _error;
+  bool _isOfflineError = false;
   // Guards against double-registration of the Firebase auth listener.
   bool _initCalled = false;
 
@@ -45,6 +47,7 @@ class AuthService extends ChangeNotifier {
   String? get phone => _phone;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isOfflineError => _isOfflineError;
 
   /// True when the device should use Apple Sign In (iOS), false for Google (Android).
   static bool get isApplePlatform => Platform.isIOS || Platform.isMacOS;
@@ -118,6 +121,7 @@ class AuthService extends ChangeNotifier {
   Future<void> signInWithApple() async {
     _isLoading = true;
     _error = null;
+    _isOfflineError = false;
     notifyListeners();
 
     try {
@@ -180,7 +184,13 @@ class AuthService extends ChangeNotifier {
         providers: ['apple.com'],
       );
     } on FirebaseAuthException catch (e) {
-      _error = _friendlyAuthError(e);
+      if (e.code == 'network-request-failed') {
+        _isOfflineError = true;
+      } else {
+        _error = _friendlyAuthError(e);
+      }
+    } on SocketException {
+      _isOfflineError = true;
     } catch (e) {
       _error = e.toString();
     }
@@ -194,6 +204,7 @@ class AuthService extends ChangeNotifier {
   Future<void> signInWithGoogle() async {
     _isLoading = true;
     _error = null;
+    _isOfflineError = false;
     notifyListeners();
 
     try {
@@ -245,7 +256,19 @@ class AuthService extends ChangeNotifier {
         providers: ['google.com'],
       );
     } on FirebaseAuthException catch (e) {
-      _error = _friendlyAuthError(e);
+      if (e.code == 'network-request-failed') {
+        _isOfflineError = true;
+      } else {
+        _error = _friendlyAuthError(e);
+      }
+    } on PlatformException catch (e) {
+      if (e.code == 'network_error') {
+        _isOfflineError = true;
+      } else {
+        _error = e.toString();
+      }
+    } on SocketException {
+      _isOfflineError = true;
     } catch (e) {
       _error = e.toString();
     }

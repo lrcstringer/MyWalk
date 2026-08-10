@@ -292,7 +292,7 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(child: _buildStage()),
+          SafeArea(top: false,child: _buildStage()),
         ],
       ),
     );
@@ -1171,7 +1171,7 @@ class _RankCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
               child: Text(
-                'Tap to confirm your wording',
+                'Tap to use your own words',
                 style: TextStyle(
                     fontSize: 11,
                     color: _kRpPurple.withValues(alpha: 0.7),

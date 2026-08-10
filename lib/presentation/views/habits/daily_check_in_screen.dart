@@ -178,7 +178,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> {
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
           SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+            padding: EdgeInsets.fromLTRB(24, 16, 24, 40 + MediaQuery.of(context).padding.bottom),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

@@ -101,7 +101,7 @@ class _EnvironmentalRestructuringScreenState
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(
+          SafeArea(top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
               child: Column(
@@ -173,7 +173,7 @@ class _EnvironmentalRestructuringScreenState
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          SafeArea(
+          SafeArea(top: false,
             child: Column(
               children: [
                 Expanded(

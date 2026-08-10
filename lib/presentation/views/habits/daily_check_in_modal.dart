@@ -125,7 +125,7 @@ class _CheckInSheetState extends State<_CheckInSheet> {
         color: Color(0xFF1C1C2E),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomPadding),
+      padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomPadding + MediaQuery.of(context).padding.bottom),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

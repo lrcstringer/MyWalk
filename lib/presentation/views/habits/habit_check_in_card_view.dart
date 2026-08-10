@@ -18,6 +18,7 @@ import 'guardrails_screen.dart';
 import 'record_a_moment_screen.dart';
 import '../../../domain/entities/recovery_path.dart';
 import '../journal/journal_entry_composer.dart';
+import 'recovery_path_home_screen.dart';
 
 class HabitCheckInCardView extends StatefulWidget {
   final Habit habit;
@@ -75,8 +76,13 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   }
 
   Future<void> _loadLogCount() async {
-    final count = await context.read<RecoveryPathProvider>().getBehaviourLogCount(_habit.id);
-    if (mounted) setState(() => _logCount = count);
+    try {
+      final count = await context.read<RecoveryPathProvider>().getBehaviourLogCount(_habit.id);
+      if (mounted) setState(() => _logCount = count);
+    } catch (_) {
+      // Silently ignore — count stays at 0 if sessions can't be read yet
+      // (e.g. recovery_paths document hasn't synced to Firestore server).
+    }
   }
 
   void _refreshState() {
@@ -507,10 +513,12 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     // No path yet — "Begin" taps into RecoveryPathHomeScreen to start the plan.
     if (path == null) {
       return GestureDetector(
-        onTap: () => Navigator.of(context).pushNamed(
-          '/recovery-path',
-          arguments: {'habitId': habitId, 'habitName': _habit.name},
-        ),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => RecoveryPathHomeScreen(
+            habitId: habitId,
+            habitName: _habit.name,
+          ),
+        )),
         behavior: HitTestBehavior.opaque,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -543,10 +551,12 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         : 'Freedom Plan · Phase $phase · Day $day';
 
     return GestureDetector(
-      onTap: () => Navigator.of(context).pushNamed(
-        '/recovery-path',
-        arguments: {'habitId': habitId, 'habitName': _habit.name},
-      ),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => RecoveryPathHomeScreen(
+          habitId: habitId,
+          habitName: _habit.name,
+        ),
+      )),
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
