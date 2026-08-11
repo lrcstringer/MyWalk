@@ -18,7 +18,8 @@ import 'guardrails_screen.dart';
 import 'record_a_moment_screen.dart';
 import '../../../domain/entities/recovery_path.dart';
 import '../journal/journal_entry_composer.dart';
-import 'recovery_path_home_screen.dart';
+import 'my_freedom_plan_screen.dart';
+import '../practices/breaking_free_intro_screen.dart';
 
 class HabitCheckInCardView extends StatefulWidget {
   final Habit habit;
@@ -191,7 +192,8 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                   _verseSection(),
                 ],
                 if (isAbstain && !widget.isRetroactive) ...[
-                  if (_habit.subcategoryId == 'breaking_habits') ...[
+                  if (_habit.subcategoryId == 'breaking_habits' ||
+                      _habit.hasRecoveryPath) ...[
                     const SizedBox(height: 10),
                     _recordAMomentButton(context),
                     const SizedBox(height: 8),
@@ -248,7 +250,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                 children: [
                   Text(
                     _habit.subcategoryId == 'breaking_habits'
-                        ? 'Breaking Patterns: ${_habit.name}'
+                        ? 'Breaking Patterns: ${_habit.displayName}'
                         : _habit.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
@@ -412,7 +414,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                   habitId: _habit.id,
                   habitName: _habit.name,
                   habitLabel: _habit.subcategoryId == 'breaking_habits'
-                      ? 'Breaking Patterns: ${_habit.name}'
+                      ? 'Breaking Patterns: ${_habit.displayName}'
                       : null,
                 ),
         child: Container(
@@ -510,11 +512,11 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     // Path hasn't loaded yet but the habit knows one exists — show nothing.
     if (path == null && _habit.hasRecoveryPath) return const SizedBox.shrink();
 
-    // No path yet — "Begin" taps into RecoveryPathHomeScreen to start the plan.
+    // No path yet — "Begin" opens the intro/setup flow (same as Add Practice).
     if (path == null) {
       return GestureDetector(
         onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => RecoveryPathHomeScreen(
+          builder: (_) => BreakingFreeIntroScreen(
             habitId: habitId,
             habitName: _habit.name,
           ),
@@ -552,7 +554,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
 
     return GestureDetector(
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => RecoveryPathHomeScreen(
+        builder: (_) => MyFreedomPlanScreen(
           habitId: habitId,
           habitName: _habit.name,
         ),
@@ -606,7 +608,8 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   }
 
   Widget _abstainButton() {
-    if (_habit.subcategoryId == 'breaking_habits' && !widget.isRetroactive) {
+    if ((_habit.subcategoryId == 'breaking_habits' || _habit.hasRecoveryPath) &&
+        !widget.isRetroactive) {
       return const SizedBox.shrink();
     }
     if (_isCompleted) return const SizedBox.shrink();
@@ -652,7 +655,10 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     final path = prov.pathFor(_habit.id);
     if (path == null) return const SizedBox.shrink();
 
-    final thoughtExamDone = path.counterResponses.isNotEmpty;
+    final dbg = prov.debugChipsEnabled(_habit.id);
+    final thoughtExamDone = path.counterResponses.isNotEmpty || dbg;
+    final urgeSurfingShown = path.urgeSurfingIntroSeen || dbg;
+    final counterResponsesShown = path.counterResponses.isNotEmpty || dbg;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -666,7 +672,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
             )),
           ),
         ],
-        if (path.urgeSurfingIntroSeen) ...[
+        if (urgeSurfingShown) ...[
           if (thoughtExamDone) const SizedBox(width: 6),
           _habitActionChip(
             label: 'Urge surfed',
@@ -680,8 +686,8 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
             )),
           ),
         ],
-        if (path.counterResponses.isNotEmpty) ...[
-          if (thoughtExamDone || path.urgeSurfingIntroSeen) const SizedBox(width: 6),
+        if (counterResponsesShown) ...[
+          if (thoughtExamDone || urgeSurfingShown) const SizedBox(width: 6),
           _habitActionChip(
             label: 'My counter-responses',
             subtitle: 'Your saved responses',

@@ -254,6 +254,8 @@ class Habit {
   final bool reminderEnabled;
   final int reminderHour;
   final int reminderMinute;
+  // Optional display alias — shown on Today card instead of name (Breaking Patterns only)
+  final String? displayAlias;
 
   const Habit({
     required this.id,
@@ -291,6 +293,7 @@ class Habit {
     this.reminderEnabled = false,
     this.reminderHour = 8,
     this.reminderMinute = 0,
+    this.displayAlias,
   });
 
   factory Habit.create({
@@ -380,6 +383,7 @@ class Habit {
     bool? reminderEnabled,
     int? reminderHour,
     int? reminderMinute,
+    Object? displayAlias = _keep,
   }) =>
       Habit(
         id: id,
@@ -421,7 +425,13 @@ class Habit {
         reminderEnabled: reminderEnabled ?? this.reminderEnabled,
         reminderHour: reminderHour ?? this.reminderHour,
         reminderMinute: reminderMinute ?? this.reminderMinute,
+        displayAlias: identical(displayAlias, _keep)
+            ? this.displayAlias
+            : displayAlias as String?,
       );
+
+  String get displayName =>
+      displayAlias != null && displayAlias!.trim().isNotEmpty ? displayAlias! : name;
 
   Set<int> get activeDaySet {
     if (activeDays.isEmpty) return {1, 2, 3, 4, 5, 6, 7};
@@ -514,6 +524,7 @@ class Habit {
         'reminderEnabled': reminderEnabled,
         'reminderHour': reminderHour,
         'reminderMinute': reminderMinute,
+        if (displayAlias != null && displayAlias!.isNotEmpty) 'displayAlias': displayAlias,
       };
 
   factory Habit.fromFirestore(
@@ -569,6 +580,7 @@ class Habit {
       reminderEnabled: data['reminderEnabled'] as bool? ?? false,
       reminderHour: (data['reminderHour'] as num?)?.toInt() ?? 8,
       reminderMinute: (data['reminderMinute'] as num?)?.toInt() ?? 0,
+      displayAlias: data['displayAlias'] as String?,
     );
   }
 }

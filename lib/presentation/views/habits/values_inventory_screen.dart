@@ -224,6 +224,7 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
     if (_showIntro) {
       return _ValuesIntroPage(
         onStart: () => setState(() => _showIntro = false),
+        setupMode: widget.setupMode,
       );
     }
 
@@ -400,7 +401,8 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
 
 class _ValuesIntroPage extends StatelessWidget {
   final VoidCallback onStart;
-  const _ValuesIntroPage({required this.onStart});
+  final bool setupMode;
+  const _ValuesIntroPage({required this.onStart, this.setupMode = false});
 
   @override
   Widget build(BuildContext context) {
@@ -414,7 +416,11 @@ class _ValuesIntroPage extends StatelessWidget {
                 color: MyWalkColor.warmWhite,
                 fontSize: 16,
                 fontWeight: FontWeight.w600)),
-        leading: BackButton(color: MyWalkColor.warmWhite),
+        // In setup mode the user must complete values — block back nav.
+        leading: setupMode
+            ? const SizedBox.shrink()
+            : BackButton(color: MyWalkColor.warmWhite),
+        automaticallyImplyLeading: !setupMode,
       ),
       body: Stack(
         children: [

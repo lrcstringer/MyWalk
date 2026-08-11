@@ -25,6 +25,10 @@ class RecoveryPathProvider extends ChangeNotifier {
   String? _errorFor(String habitId) => _errors[habitId];
   final Map<String, String?> _errors = {};
 
+  // Debug-only overrides — in-memory, never persisted, reset on app restart.
+  final Map<String, int> _debugPhaseOverrides = {};
+  final Map<String, bool> _debugChipsEnabled = {};
+
   @override
   void dispose() {
     AuthService.shared.removeListener(_onAuthChanged);
@@ -39,6 +43,8 @@ class RecoveryPathProvider extends ChangeNotifier {
       _checkInDoneToday.clear();
       _compassDoneThisWeek.clear();
       _zeroLogNudgeChecked.clear();
+      _debugPhaseOverrides.clear();
+      _debugChipsEnabled.clear();
       notifyListeners();
     }
   }
@@ -54,9 +60,29 @@ class RecoveryPathProvider extends ChangeNotifier {
       _compassDoneThisWeek[habitId] ?? false;
 
   int phaseFor(String habitId) {
+    if (_debugPhaseOverrides.containsKey(habitId)) {
+      return _debugPhaseOverrides[habitId]!;
+    }
     final path = _paths[habitId];
     if (path == null) return 1;
     return RecoveryPhaseCalculator.calculate(path);
+  }
+
+  int? debugPhaseOverride(String habitId) => _debugPhaseOverrides[habitId];
+  bool debugChipsEnabled(String habitId) => _debugChipsEnabled[habitId] ?? false;
+
+  void setDebugPhaseOverride(String habitId, int? phase) {
+    if (phase == null) {
+      _debugPhaseOverrides.remove(habitId);
+    } else {
+      _debugPhaseOverrides[habitId] = phase;
+    }
+    notifyListeners();
+  }
+
+  void setDebugChipsEnabled(String habitId, bool enabled) {
+    _debugChipsEnabled[habitId] = enabled;
+    notifyListeners();
   }
 
   bool isModuleUnlocked(String habitId, int moduleNumber) {

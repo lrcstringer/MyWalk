@@ -28,6 +28,7 @@ class EditHabitView extends StatefulWidget {
 
 class _EditHabitViewState extends State<EditHabitView> {
   late final TextEditingController _nameController;
+  late final TextEditingController _aliasController;
   late final TextEditingController _purposeController;
   late final TextEditingController _triggerController;
   late final TextEditingController _copingController;
@@ -48,6 +49,7 @@ class _EditHabitViewState extends State<EditHabitView> {
   late bool _reminderEnabled;
   late int _reminderHour;
   late int _reminderMinute;
+  bool _deleting = false;
 
   static const _copingSuggestions = ['Pray first', 'Call a friend', 'Go for a walk', 'Read my verse', 'Journal it out'];
 
@@ -56,6 +58,7 @@ class _EditHabitViewState extends State<EditHabitView> {
     super.initState();
     final h = widget.habit;
     _nameController = TextEditingController(text: h.name);
+    _aliasController = TextEditingController(text: h.displayAlias ?? '');
     _purposeController = TextEditingController(text: h.purposeStatement);
     _triggerController = TextEditingController(text: h.trigger);
     _copingController = TextEditingController(text: h.copingPlan);
@@ -90,6 +93,7 @@ class _EditHabitViewState extends State<EditHabitView> {
   @override
   void dispose() {
     _nameController.dispose();
+    _aliasController.dispose();
     _purposeController.dispose();
     _triggerController.dispose();
     _copingController.dispose();
@@ -133,6 +137,9 @@ class _EditHabitViewState extends State<EditHabitView> {
       reminderEnabled: _reminderEnabled,
       reminderHour: _reminderHour,
       reminderMinute: _reminderMinute,
+      displayAlias: _aliasController.text.trim().isEmpty
+          ? null
+          : _aliasController.text.trim(),
     );
     context.read<HabitProvider>().updateHabit(updated);
     // Update portfolio habit counts for changed tags.
@@ -267,6 +274,32 @@ class _EditHabitViewState extends State<EditHabitView> {
           const SizedBox(height: 40),
         ]),
       ),
+        if (_deleting)
+          const Positioned.fill(
+            child: ColoredBox(
+              color: Color(0xCC1A1A2E),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      color: MyWalkColor.warmWhite,
+                      strokeWidth: 2,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Deleting...',
+                      style: TextStyle(
+                        color: MyWalkColor.warmWhite,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -926,7 +959,6 @@ class _EditHabitViewState extends State<EditHabitView> {
   }
 
   Future<void> _confirmDelete() async {
-    final checkIns = widget.habit.totalCompletedDays();
     final habitName = widget.habit.name;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -934,13 +966,11 @@ class _EditHabitViewState extends State<EditHabitView> {
         backgroundColor: MyWalkColor.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
-          'Delete habit?',
+          'Delete Practice',
           style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 17, fontWeight: FontWeight.w600),
         ),
         content: Text(
-          checkIns == 0
-              ? '"$habitName" has no check-ins. Deleting it is permanent and cannot be undone.'
-              : '"$habitName" has $checkIns ${checkIns == 1 ? 'check-in' : 'check-ins'}. Deleting it will permanently remove all your data for this habit and cannot be undone.',
+          'Deleting "$habitName" is permanent and cannot be undone.',
           style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 14, height: 1.5),
         ),
         actions: [
@@ -956,15 +986,17 @@ class _EditHabitViewState extends State<EditHabitView> {
       ),
     );
     if (confirmed == true && mounted) {
+      setState(() => _deleting = true);
       final accountabilityProv = context.read<AccountabilityProvider>();
       final habitProv = context.read<HabitProvider>();
       final habit = widget.habit;
-      Navigator.pop(context); // dismiss EditHabitView
-      Navigator.pop(context); // dismiss HabitDetailView
       await accountabilityProv
           .endPartnershipsForHabit(habit.id, reason: 'deleted')
           .catchError((_) {});
       await habitProv.deleteHabit(habit);
+      if (!mounted) return;
+      Navigator.pop(context); // dismiss EditHabitView
+      Navigator.pop(context); // dismiss HabitDetailView
     }
   }
 
@@ -1009,6 +1041,7 @@ class _EditHabitViewState extends State<EditHabitView> {
   }
 
   Widget _nameSection() {
+    final isBreaking = widget.habit.subcategoryId == 'breaking_habits';
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('Practice Name',
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
@@ -1039,6 +1072,30 @@ class _EditHabitViewState extends State<EditHabitView> {
             contentPadding: const EdgeInsets.all(12),
           ),
         ),
+      if (isBreaking) ...[
+        const SizedBox(height: 16),
+        Text('How it appears on your Today card (optional)',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+                color: MyWalkColor.softGold.withValues(alpha: 0.6))),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _aliasController,
+          style: const TextStyle(fontSize: 16, color: MyWalkColor.warmWhite),
+          decoration: InputDecoration(
+            hintText: 'e.g. "My battle" · Leave blank to use the practice name',
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+            filled: true,
+            fillColor: MyWalkColor.cardBackground,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.all(12),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Useful if you prefer a private name that others won\'t recognise.',
+          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3)),
+        ),
+      ],
     ]);
   }
 

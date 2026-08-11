@@ -35,6 +35,7 @@ class MyFreedomPlanScreen extends StatelessWidget {
       body: Column(
         children: [
           _PhaseDashboard(habitId: habitId),
+          _DebugPanel(habitId: habitId),
           Expanded(
             child: FreedomJourneyTab(habitId: habitId),
           ),
@@ -215,6 +216,107 @@ class _Phase2SubSteps extends StatelessWidget {
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+}
+
+// ── Debug panel (dev-only) ────────────────────────────────────────────────────
+
+class _DebugPanel extends StatelessWidget {
+  final String habitId;
+  const _DebugPanel({required this.habitId});
+
+  static const _kRed = Color(0xFFCC2222);
+
+  @override
+  Widget build(BuildContext context) {
+    final prov = context.watch<RecoveryPathProvider>();
+    final override = prov.debugPhaseOverride(habitId);
+    final chipsOn = prov.debugChipsEnabled(habitId);
+
+    return Container(
+      color: const Color(0xFF1A0505),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.bug_report_rounded, size: 10, color: _kRed),
+            const SizedBox(width: 4),
+            const Text('DEV', style: TextStyle(
+              fontSize: 10, fontWeight: FontWeight.w700,
+              color: _kRed, letterSpacing: 1.2,
+            )),
+          ]),
+          const SizedBox(height: 6),
+          Row(children: [
+            ...List.generate(4, (i) {
+              final phase = i + 1;
+              final isActive = override == phase;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: GestureDetector(
+                  onTap: () => prov.setDebugPhaseOverride(
+                      habitId, isActive ? null : phase),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? _kRed.withValues(alpha: 0.18)
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: isActive
+                            ? _kRed
+                            : Colors.white.withValues(alpha: 0.18),
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text('Phase $phase',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isActive
+                              ? _kRed
+                              : Colors.white.withValues(alpha: 0.4),
+                          fontWeight: isActive
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        )),
+                  ),
+                ),
+              );
+            }),
+            const Spacer(),
+            GestureDetector(
+              onTap: () => prov.setDebugChipsEnabled(habitId, !chipsOn),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: chipsOn
+                      ? _kRed.withValues(alpha: 0.18)
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: chipsOn
+                        ? _kRed
+                        : Colors.white.withValues(alpha: 0.18),
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text('Chips ${chipsOn ? "ON" : "OFF"}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: chipsOn
+                          ? _kRed
+                          : Colors.white.withValues(alpha: 0.4),
+                      fontWeight:
+                          chipsOn ? FontWeight.w600 : FontWeight.w400,
+                    )),
+              ),
+            ),
+          ]),
+        ],
       ),
     );
   }

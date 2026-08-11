@@ -245,6 +245,7 @@ class HabitProvider extends ChangeNotifier {
     String? subcategoryName,
     String notes = '',
     String referenceUrl = '',
+    String? displayAlias,
   }) async {
     final created = Habit.create(
       name: name,
@@ -264,12 +265,13 @@ class HabitProvider extends ChangeNotifier {
       notes: notes,
       referenceUrl: referenceUrl,
     );
-    final habit = (categoryId != null)
+    final habit = (categoryId != null || displayAlias != null)
         ? created.copyWith(
             categoryId: categoryId,
             subcategoryId: subcategoryId,
             categoryName: categoryName,
             subcategoryName: subcategoryName,
+            displayAlias: displayAlias,
           )
         : created;
     await _repository.insertHabit(habit);

@@ -57,7 +57,9 @@ String _snippetFor(RecoverySession s) {
   try {
     final decoded = jsonDecode(text);
     if (decoded is Map) {
-      for (final v in decoded.values) {
+      for (final entry in decoded.entries) {
+        if (_kSkipFields.contains(entry.key)) continue;
+        final v = entry.value;
         if (v is String && v.isNotEmpty) {
           return v.length > 80 ? '${v.substring(0, 80)}…' : v;
         }
@@ -65,6 +67,45 @@ String _snippetFor(RecoverySession s) {
     }
   } catch (_) {}
   return text.length > 100 ? '${text.substring(0, 100)}…' : text;
+}
+
+const _kSkipFields = {'branch', 'copingPlanUpdated', 'emotionRating'};
+
+const _kFieldLabels = <String, String>{
+  'locationTime':       'Where were you? What time of day was it?',
+  'activityBefore':     'What were you doing immediately before?',
+  'emotionalState':     'How were you feeling emotionally?',
+  'emotionName':        'How were you feeling emotionally?',
+  'thoughtArose':       'What thought arose just before?',
+  'selfCompassion':     'What would you say to a good friend?',
+  'forensicGap':        'Where did your coping plan not hold?',
+  'copingPlanGap':      'What would need to be different next time?',
+  'recommittedValue':   'Which Values matter most going forward?',
+  'whatHappened':       'What happened?',
+  'nextStep':           'Immediate next step',
+};
+
+List<Map<String, String>> _expandedPairs(RecoverySession s) {
+  final text = s.responseText;
+  if (text.isEmpty) return [];
+  try {
+    final decoded = jsonDecode(text);
+    if (decoded is Map) {
+      final pairs = <Map<String, String>>[];
+      for (final entry in decoded.entries) {
+        final key = entry.key as String;
+        if (_kSkipFields.contains(key)) continue;
+        final value = entry.value;
+        if (value == null || value == false) continue;
+        final valueStr = value.toString().trim();
+        if (valueStr.isEmpty || valueStr == 'false') continue;
+        final label = _kFieldLabels[key] ?? key;
+        pairs.add({'label': label, 'value': valueStr});
+      }
+      if (pairs.isNotEmpty) return pairs;
+    }
+  } catch (_) {}
+  return [{'label': '', 'value': text}];
 }
 
 // ── Main widget ───────────────────────────────────────────────────────────────
@@ -223,6 +264,18 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
 
     final modules = [
       _ModuleSection(
+        number: 3,
+        name: 'Anchor to Your Values',
+        isLocked: false,
+        lockedMessage: '',
+        isComplete: path.module3.valuesInventoryDone,
+        cues: const [],
+        counterResponses: const [],
+        valuesInventory: path.module3.valuesInventory,
+        hrsPlan: const [],
+        recoveryLetter: null,
+      ),
+      _ModuleSection(
         number: 1,
         name: 'Know Your Pattern',
         isLocked: false,
@@ -243,18 +296,6 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
         cues: const [],
         counterResponses: path.counterResponses,
         valuesInventory: const [],
-        hrsPlan: const [],
-        recoveryLetter: null,
-      ),
-      _ModuleSection(
-        number: 3,
-        name: 'Anchor to Your Values',
-        isLocked: false,
-        lockedMessage: '',
-        isComplete: path.module3.valuesInventoryDone,
-        cues: const [],
-        counterResponses: const [],
-        valuesInventory: path.module3.valuesInventory,
         hrsPlan: const [],
         recoveryLetter: null,
       ),
@@ -480,14 +521,49 @@ class _JourneyEntryCardState extends State<_JourneyEntryCard> {
             ),
             if (widget.snippet.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(
-                _expanded ? widget.session.responseText : widget.snippet,
-                style: TextStyle(
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
-                  fontSize: 13,
-                  height: 1.5,
+              if (_expanded)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _expandedPairs(widget.session).map((pair) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (pair['label']!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 3),
+                              child: Text(
+                                pair['label']!,
+                                style: TextStyle(
+                                  color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          Text(
+                            pair['value']!,
+                            style: TextStyle(
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
+                              fontSize: 13,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                )
+              else
+                Text(
+                  widget.snippet,
+                  style: TextStyle(
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
                 ),
-              ),
             ],
           ],
         ),

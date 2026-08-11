@@ -12,11 +12,17 @@ const _kPurple = Color(0xFF8B7EC8);
 class BreakingFreeIntroScreen extends StatelessWidget {
   final HabitCategoryModel? categoryModel;
   final HabitSubcategoryModel? subcategoryModel;
+  // When provided, the habit already exists — skip AddHabitView and go
+  // straight to ValuesInventoryScreen for this habit.
+  final String? habitId;
+  final String? habitName;
 
   const BreakingFreeIntroScreen({
     super.key,
     this.categoryModel,
     this.subcategoryModel,
+    this.habitId,
+    this.habitName,
   });
 
   @override
@@ -165,6 +171,22 @@ class BreakingFreeIntroScreen extends StatelessWidget {
   }
 
   Future<void> _startPractice(BuildContext context) async {
+    // Existing habit — skip AddHabitView and go straight to Values Inventory.
+    if (habitId != null) {
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ValuesInventoryScreen(
+            habitId: habitId!,
+            habitName: habitName ?? '',
+            setupMode: true,
+            wantsRecoveryPath: true,
+          ),
+        ),
+      );
+      return;
+    }
+
     HabitCategoryModel? catModel = categoryModel;
     HabitSubcategoryModel? subModel = subcategoryModel;
 
@@ -196,8 +218,8 @@ class BreakingFreeIntroScreen extends StatelessWidget {
     if (result is! Map || result['saved'] != true) return;
     if (!context.mounted) return;
 
-    final habitId = result['habitId'] as String;
-    final habitName = result['habitName'] as String;
+    final newHabitId = result['habitId'] as String;
+    final newHabitName = result['habitName'] as String;
     final wantsPartner = result['wantsPartner'] as bool;
     final wantsRecoveryPath = result['wantsRecoveryPath'] as bool;
 
@@ -206,8 +228,8 @@ class BreakingFreeIntroScreen extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (_) => ValuesInventoryScreen(
-          habitId: habitId,
-          habitName: habitName,
+          habitId: newHabitId,
+          habitName: newHabitName,
           setupMode: true,
           wantsPartner: wantsPartner,
           wantsRecoveryPath: wantsRecoveryPath,

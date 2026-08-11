@@ -133,6 +133,7 @@ class _AddHabitViewState extends State<AddHabitView> {
   Set<int> _activeDays = {1, 2, 3, 4, 5, 6, 7};
   String _trigger = '';
   String _copingPlan = '';
+  String _displayAlias = '';
   bool _wantsPartner = false;
   bool _wantsRecoveryPath = false;
   List<FruitType> _selectedFruits = [];
@@ -622,6 +623,22 @@ class _AddHabitViewState extends State<AddHabitView> {
           value: _habitName,
           onChanged: (v) => setState(() => _habitName = v),
         ),
+
+        if (_subcategoryId == 'breaking_habits') ...[
+          const SizedBox(height: 16),
+          _label('How it appears on your Today card (optional)'),
+          const SizedBox(height: 8),
+          _textField(
+            hint: 'e.g. "My battle" · Leave blank to use the practice name',
+            value: _displayAlias,
+            onChanged: (v) => setState(() => _displayAlias = v),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Useful if you prefer a private name that others won\'t recognise.',
+            style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3)),
+          ),
+        ],
         const SizedBox(height: 20),
 
         // Purpose
@@ -1708,6 +1725,7 @@ class _AddHabitViewState extends State<AddHabitView> {
           : _subcategoryName,
       notes: notesJson,
       referenceUrl: refUrl,
+      displayAlias: _displayAlias.trim().isEmpty ? null : _displayAlias.trim(),
     );
     if (_selectedFruits.isNotEmpty) {
       fruitProvider.onHabitTagsChanged([], _selectedFruits);
