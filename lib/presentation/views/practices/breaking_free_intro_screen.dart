@@ -172,6 +172,8 @@ class BreakingFreeIntroScreen extends StatelessWidget {
 
   Future<void> _startPractice(BuildContext context) async {
     // Existing habit — skip AddHabitView and go straight to Values Inventory.
+    // wantsRecoveryPath: false — the user will activate the plan separately via
+    // "Freedom Plan — Begin" on the card strip → RecoveryPathHomeScreen.
     if (habitId != null) {
       await Navigator.push<void>(
         context,
@@ -180,7 +182,7 @@ class BreakingFreeIntroScreen extends StatelessWidget {
             habitId: habitId!,
             habitName: habitName ?? '',
             setupMode: true,
-            wantsRecoveryPath: true,
+            wantsRecoveryPath: false,
           ),
         ),
       );

@@ -319,6 +319,15 @@ class RecoveryPathProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> activatePlan(String habitId) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = path.copyWith(planActive: true);
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    notifyListeners();
+  }
+
   Future<void> markPhase2TransitionShown(String habitId) async {
     final path = _paths[habitId];
     if (path == null) return;

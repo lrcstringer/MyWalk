@@ -319,6 +319,10 @@ class RecoveryPath {
   final bool phase2TransitionShown;
   final bool phase4TransitionShown;
 
+  // Whether the user has intentionally activated the Freedom Plan.
+  // false = path doc exists for values storage only; true = plan is running.
+  final bool planActive;
+
   const RecoveryPath({
     required this.id,
     required this.userId,
@@ -353,6 +357,7 @@ class RecoveryPath {
     this.midPointReflectionDone = false,
     this.phase2TransitionShown = false,
     this.phase4TransitionShown = false,
+    this.planActive = false,
   });
 
   RecoveryPath copyWith({
@@ -385,6 +390,7 @@ class RecoveryPath {
     bool? midPointReflectionDone,
     bool? phase2TransitionShown,
     bool? phase4TransitionShown,
+    bool? planActive,
   }) =>
       RecoveryPath(
         id: id,
@@ -431,6 +437,7 @@ class RecoveryPath {
             phase2TransitionShown ?? this.phase2TransitionShown,
         phase4TransitionShown:
             phase4TransitionShown ?? this.phase4TransitionShown,
+        planActive: planActive ?? this.planActive,
       );
 
   Map<String, dynamic> toFirestore() => {
@@ -471,6 +478,7 @@ class RecoveryPath {
         'midPointReflectionDone': midPointReflectionDone,
         'phase2TransitionShown': phase2TransitionShown,
         'phase4TransitionShown': phase4TransitionShown,
+        'planActive': planActive,
       };
 
   factory RecoveryPath.fromFirestore(DocumentSnapshot doc) {
@@ -554,6 +562,9 @@ class RecoveryPath {
       midPointReflectionDone: (d['midPointReflectionDone'] as bool?) ?? false,
       phase2TransitionShown: (d['phase2TransitionShown'] as bool?) ?? false,
       phase4TransitionShown: (d['phase4TransitionShown'] as bool?) ?? false,
+      // Absent in old docs (written before this field existed) → treat as active.
+      // New values-only docs have planActive: false written explicitly by startPath().
+      planActive: (d['planActive'] as bool?) ?? true,
     );
   }
 }

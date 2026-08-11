@@ -53,7 +53,7 @@ class BreakingFreeEncouragingScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'You can start your Freedom Plan at any time from your habit card on the Today tab.',
+                          'You can start your Freedom Plan at any time from your breaking patterns card on the Today screen.',
                           style: TextStyle(
                               fontSize: 14,
                               color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
@@ -81,7 +81,7 @@ class BreakingFreeEncouragingScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14)),
                       ),
                       child: const Text(
-                        'Take me to my habit',
+                        'Take me to my Practice',
                         style: TextStyle(
                             fontWeight: FontWeight.w700, fontSize: 15),
                       ),

@@ -19,6 +19,7 @@ import 'record_a_moment_screen.dart';
 import '../../../domain/entities/recovery_path.dart';
 import '../journal/journal_entry_composer.dart';
 import 'my_freedom_plan_screen.dart';
+import 'recovery_path_home_screen.dart';
 import '../practices/breaking_free_intro_screen.dart';
 
 class HabitCheckInCardView extends StatefulWidget {
@@ -512,36 +513,47 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     // Path hasn't loaded yet but the habit knows one exists — show nothing.
     if (path == null && _habit.hasRecoveryPath) return const SizedBox.shrink();
 
-    // No path yet — "Begin" opens the intro/setup flow (same as Add Practice).
-    if (path == null) {
-      return GestureDetector(
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => BreakingFreeIntroScreen(
-            habitId: habitId,
-            habitName: _habit.name,
-          ),
-        )),
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: purple.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(children: [
-            const Icon(Icons.route_rounded, size: 14, color: purple),
-            const SizedBox(width: 5),
-            Expanded(
-              child: Text('Freedom Plan — Begin',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: purple.withValues(alpha: 0.85))),
+    // Helper to build the "Freedom Plan — Begin" strip tapping to a given screen.
+    Widget beginStrip(Widget destination) => GestureDetector(
+          onTap: () => Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => destination)),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: purple.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
             ),
-            Icon(Icons.chevron_right_rounded,
-                size: 14, color: purple.withValues(alpha: 0.5)),
-          ]),
-        ),
-      );
+            child: Row(children: [
+              const Icon(Icons.route_rounded, size: 14, color: purple),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text('Freedom Plan — Begin',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: purple.withValues(alpha: 0.85))),
+              ),
+              Icon(Icons.chevron_right_rounded,
+                  size: 14, color: purple.withValues(alpha: 0.5)),
+            ]),
+          ),
+        );
+
+    // No path at all — full intro/setup flow.
+    if (path == null) {
+      return beginStrip(BreakingFreeIntroScreen(
+        habitId: habitId,
+        habitName: _habit.name,
+      ));
+    }
+
+    // Path exists but plan not yet activated — go straight to the Freedom Plan
+    // home screen which shows "Start Your Freedom Journey" / "Begin my Freedom Journey".
+    if (!path.planActive) {
+      return beginStrip(RecoveryPathHomeScreen(
+        habitId: habitId,
+        habitName: _habit.name,
+      ));
     }
 
     final phase = prov.phaseFor(habitId);

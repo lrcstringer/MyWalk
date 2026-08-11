@@ -92,7 +92,7 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
   }
 
   bool get _isCurrentStepValid {
-    return _controllers[_step].text.trim().length >= 100 &&
+    return _controllers[_step].text.trim().length >= 60 &&
         _compassDir[_step] != null;
   }
 
@@ -131,8 +131,6 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
         ),
       );
 
-      final hasAway = entries.any((e) => e.compassDirection == 'away');
-
       final summary = entries
           .map((e) =>
               '${e.domain}: importance=${e.importance}, '
@@ -143,17 +141,26 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
 
       final prov = context.read<RecoveryPathProvider>();
 
-      // During onboarding, startPath() hasn't been called yet so the
-      // recovery_paths document doesn't exist in Firestore. Create it now
-      // so saveValuesInventoryEntries and saveSession can write to it.
+      // Ensure a recovery_paths document exists so saveValuesInventoryEntries
+      // and saveSession can write to it. Created with planActive: false —
+      // activation only happens if the user explicitly chose the Freedom Plan.
       if (prov.pathFor(widget.habitId) == null) {
         final hp = context.read<HabitProvider>();
         await prov.startPath(widget.habitId);
-        // Mark the habit so the Freedom Plan pill loads on the Today card.
+        if (!mounted) return;
         final habit = hp.habits.where((h) => h.id == widget.habitId).firstOrNull;
         if (habit != null && !habit.hasRecoveryPath) {
           await hp.updateHabit(habit.copyWith(hasRecoveryPath: true));
         }
+      }
+
+      // Activate the plan only when the user explicitly chose it.
+      if (widget.wantsRecoveryPath) {
+        final path = prov.pathFor(widget.habitId);
+        if (path != null && !path.planActive) {
+          await prov.activatePlan(widget.habitId);
+        }
+        if (!mounted) return;
       }
 
       final now = DateTime.now();
@@ -172,14 +179,6 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
 
       if (!mounted) return;
       setState(() => _saving = false);
-
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => _ValuesCompletionDialog(hasAway: hasAway),
-      );
-
-      if (!mounted) return;
 
       if (widget.setupMode) {
         if (widget.wantsPartner) {
@@ -202,7 +201,8 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
           );
         }
       } else {
-        setState(() => _done = true);
+        // Accessed from within the plan (not setup) — just return.
+        if (mounted) Navigator.of(context).pop();
       }
     } catch (e, st) {
       debugPrint('ValuesInventory save error: $e\n$st');
@@ -541,11 +541,10 @@ class _ReflectionField extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Minimum 100 characters required',
+          'Minimum 60 characters required',
           style: TextStyle(
               fontSize: 11,
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.35),
-              fontStyle: FontStyle.italic),
+              color: MyWalkColor.softGold.withValues(alpha: 0.8)),
         ),
       ],
     );
@@ -747,75 +746,6 @@ class _SliderRow extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-// ── Completion dialog ─────────────────────────────────────────────────────────
-
-class _ValuesCompletionDialog extends StatelessWidget {
-  final bool hasAway;
-  const _ValuesCompletionDialog({required this.hasAway});
-
-  @override
-  Widget build(BuildContext context) {
-    final message = hasAway
-        ? 'You can see where this pattern is pulling against what matters to you. That\'s your compass — not a judgement, just information.'
-        : 'You\'ve mapped what matters to you. As you work through this journey, this is your compass — the life you\'re building toward.';
-
-    return Dialog(
-      backgroundColor: MyWalkColor.charcoal,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: _kRpPurple.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.map_outlined, color: _kRpPurple, size: 22),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Values map saved',
-              style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: MyWalkColor.warmWhite),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              message,
-              style: TextStyle(
-                  fontSize: 14,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
-                  height: 1.6),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kRpPurple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('See what\'s next',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

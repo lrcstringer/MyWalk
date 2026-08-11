@@ -144,13 +144,21 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
 
   Future<void> _begin() async {
     final prov = context.read<RecoveryPathProvider>();
-    final hp = context.read<HabitProvider>();
-    await prov.startPath(widget.habitId);
-    if (!mounted) return;
-    // Also mark habit as having a recovery path.
-    final habit = hp.habits.where((h) => h.id == widget.habitId).firstOrNull;
-    if (habit != null) {
-      await hp.updateHabit(habit.copyWith(hasRecoveryPath: true));
+    final existingPath = prov.pathFor(widget.habitId);
+    if (existingPath != null) {
+      // Path already exists (values saved during practice creation) — just activate.
+      await prov.activatePlan(widget.habitId);
+    } else {
+      // No path at all — create then activate, and mark the habit.
+      final hp = context.read<HabitProvider>();
+      await prov.startPath(widget.habitId);
+      if (!mounted) return;
+      await prov.activatePlan(widget.habitId);
+      if (!mounted) return;
+      final habit = hp.habits.where((h) => h.id == widget.habitId).firstOrNull;
+      if (habit != null && !habit.hasRecoveryPath) {
+        await hp.updateHabit(habit.copyWith(hasRecoveryPath: true));
+      }
     }
   }
 
@@ -252,7 +260,7 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
     final path = prov.pathFor(habitId);
     final isLoading = prov.isLoadingFor(habitId);
     final hasError = prov.errorFor(habitId) != null;
-    final started = path != null;
+    final started = path != null && path.planActive;
 
     if (started && !isLoading) {
       _maybeShowCheckInModal(prov);
