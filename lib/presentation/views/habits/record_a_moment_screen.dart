@@ -217,39 +217,39 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                         fontSize: 18, fontWeight: FontWeight.w700,
                         color: MyWalkColor.warmWhite, height: 1.35),
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 28),
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(
+                        child: ElevatedButton(
                           onPressed: () => setState(() => _branch = 'navigated'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: MyWalkColor.warmWhite,
-                            side: BorderSide(color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: MyWalkColor.sage,
+                            foregroundColor: MyWalkColor.charcoal,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: const Text('I navigated it',
-                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: OutlinedButton(
+                        child: ElevatedButton(
                           onPressed: _startLapseFlow,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: MyWalkColor.warmWhite,
-                            side: BorderSide(color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: MyWalkColor.golden,
+                            foregroundColor: MyWalkColor.charcoal,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: const Text('I acted on it',
-                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const Spacer(),
                 ],
               ),
             ),

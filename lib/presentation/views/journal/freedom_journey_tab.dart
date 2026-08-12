@@ -52,6 +52,10 @@ String _dateLabel(DateTime dt) {
 }
 
 String _snippetFor(RecoverySession s) {
+  if (s.sessionType == RecoverySessionType.m3ValuesInventory) {
+    final values = _parseValuesText(s.responseText);
+    return values.isEmpty ? '' : '${values.length} domains mapped';
+  }
   final text = s.responseText;
   if (text.isEmpty) return '';
   try {
@@ -106,6 +110,43 @@ List<Map<String, String>> _expandedPairs(RecoverySession s) {
     }
   } catch (_) {}
   return [{'label': '', 'value': text}];
+}
+
+class _ParsedValue {
+  final String domain;
+  final String importance;
+  final String alignment;
+  final String compassDirection;
+  final String reflection;
+  const _ParsedValue({
+    required this.domain,
+    required this.importance,
+    required this.alignment,
+    required this.compassDirection,
+    required this.reflection,
+  });
+}
+
+List<_ParsedValue> _parseValuesText(String text) {
+  final result = <_ParsedValue>[];
+  for (final p in text.split('\n\n').where((p) => p.trim().isNotEmpty)) {
+    final colonIdx = p.indexOf(': ');
+    if (colonIdx == -1) continue;
+    final domain = p.substring(0, colonIdx).trim();
+    final rest = p.substring(colonIdx + 2);
+    final importanceMatch = RegExp(r'importance=(\d+)').firstMatch(rest);
+    final alignmentMatch = RegExp(r'alignment=(\d+)').firstMatch(rest);
+    final compassMatch = RegExp(r'compassDirection=(\w+)').firstMatch(rest);
+    final reflIdx = rest.indexOf('reflection=');
+    result.add(_ParsedValue(
+      domain: domain,
+      importance: importanceMatch?.group(1) ?? '5',
+      alignment: alignmentMatch?.group(1) ?? '5',
+      compassDirection: compassMatch?.group(1) ?? 'neutral',
+      reflection: reflIdx >= 0 ? rest.substring(reflIdx + 'reflection='.length).trim() : '',
+    ));
+  }
+  return result;
 }
 
 // ── Main widget ───────────────────────────────────────────────────────────────
@@ -350,8 +391,15 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
         }
         final idx = showPhase2Card ? i - 1 : i;
         final m = modules[idx];
-        final mSessions = List<RecoverySession>.from(
-            sessionsByModule[m.number] ?? [])
+        final baseSessions = List<RecoverySession>.from(
+            sessionsByModule[m.number] ?? []);
+        if (m.number == 1) {
+          // "I acted on it" moments are saved as m5LapseResponse (moduleNumber 5)
+          // but belong in Know Your Pattern alongside navigated moments.
+          baseSessions.addAll((sessionsByModule[5] ?? [])
+              .where((s) => s.sessionType == RecoverySessionType.m5LapseResponse));
+        }
+        final mSessions = baseSessions
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         return _PlanSectionCard(
           data: m,
@@ -522,39 +570,41 @@ class _JourneyEntryCardState extends State<_JourneyEntryCard> {
             if (widget.snippet.isNotEmpty) ...[
               const SizedBox(height: 8),
               if (_expanded)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _expandedPairs(widget.session).map((pair) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Column(
+                widget.session.sessionType == RecoverySessionType.m3ValuesInventory
+                    ? _buildValuesExpanded()
+                    : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (pair['label']!.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 3),
-                              child: Text(
-                                pair['label']!,
-                                style: TextStyle(
-                                  color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
+                        children: _expandedPairs(widget.session).map((pair) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (pair['label']!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 3),
+                                    child: Text(
+                                      pair['label']!,
+                                      style: TextStyle(
+                                        color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                Text(
+                                  pair['value']!,
+                                  style: TextStyle(
+                                    color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
+                                    fontSize: 13,
+                                    height: 1.5,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          Text(
-                            pair['value']!,
-                            style: TextStyle(
-                              color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
-                              fontSize: 13,
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                )
+                          );
+                        }).toList(),
+                      )
               else
                 Text(
                   widget.snippet,
@@ -568,6 +618,69 @@ class _JourneyEntryCardState extends State<_JourneyEntryCard> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildValuesExpanded() {
+    final values = _parseValuesText(widget.session.responseText);
+    if (values.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: values.map((v) {
+        final compassIcon = v.compassDirection == 'toward'
+            ? Icons.arrow_upward
+            : v.compassDirection == 'away'
+                ? Icons.arrow_downward
+                : Icons.remove;
+        final compassColor = v.compassDirection == 'toward'
+            ? MyWalkColor.sage
+            : v.compassDirection == 'away'
+                ? MyWalkColor.warmCoral
+                : MyWalkColor.warmWhite.withValues(alpha: 0.3);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      v.domain,
+                      style: TextStyle(
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.9),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(compassIcon, size: 14, color: compassColor),
+                ],
+              ),
+              const SizedBox(height: 3),
+              Text(
+                'importance = ${v.importance}   alignment = ${v.alignment}',
+                style: TextStyle(
+                  color: _kRpPurple.withValues(alpha: 0.7),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (v.reflection.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  v.reflection,
+                  style: TextStyle(
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.6),
+                    fontSize: 12,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

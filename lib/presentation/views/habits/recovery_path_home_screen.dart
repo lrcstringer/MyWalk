@@ -9,7 +9,6 @@ import '../../../domain/entities/recovery_session.dart';
 import '../../../domain/services/recovery_module_content.dart';
 import '../../../domain/services/recovery_phase_calculator.dart';
 import '../../providers/recovery_path_provider.dart';
-import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import 'module_session_screen.dart';
@@ -143,23 +142,19 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
   }
 
   Future<void> _begin() async {
-    final prov = context.read<RecoveryPathProvider>();
-    final existingPath = prov.pathFor(widget.habitId);
-    if (existingPath != null) {
-      // Path already exists (values saved during practice creation) — just activate.
-      await prov.activatePlan(widget.habitId);
-    } else {
-      // No path at all — create then activate, and mark the habit.
-      final hp = context.read<HabitProvider>();
-      await prov.startPath(widget.habitId);
-      if (!mounted) return;
-      await prov.activatePlan(widget.habitId);
-      if (!mounted) return;
-      final habit = hp.habits.where((h) => h.id == widget.habitId).firstOrNull;
-      if (habit != null && !habit.hasRecoveryPath) {
-        await hp.updateHabit(habit.copyWith(hasRecoveryPath: true));
-      }
-    }
+    // Navigate to values entry. ValuesInventoryScreen handles path creation,
+    // plan activation, and shows the "What Happens Next" screen on completion.
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ValuesInventoryScreen(
+          habitId: widget.habitId,
+          habitName: widget.habitName,
+          setupMode: true,
+          wantsRecoveryPath: true,
+        ),
+      ),
+    );
   }
 
   void _openModule(int moduleNumber) {

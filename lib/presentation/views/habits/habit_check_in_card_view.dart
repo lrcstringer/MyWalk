@@ -19,6 +19,7 @@ import 'record_a_moment_screen.dart';
 import '../../../domain/entities/recovery_path.dart';
 import '../journal/journal_entry_composer.dart';
 import 'my_freedom_plan_screen.dart';
+import 'phase2_journey_screen.dart';
 import 'recovery_path_home_screen.dart';
 import '../practices/breaking_free_intro_screen.dart';
 
@@ -566,10 +567,9 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
 
     return GestureDetector(
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => MyFreedomPlanScreen(
-          habitId: habitId,
-          habitName: _habit.name,
-        ),
+        builder: (_) => nextTask != null
+            ? Phase2JourneyScreen(habitId: habitId, habitName: _habit.name)
+            : MyFreedomPlanScreen(habitId: habitId, habitName: _habit.name),
       )),
       behavior: HitTestBehavior.opaque,
       child: Container(
