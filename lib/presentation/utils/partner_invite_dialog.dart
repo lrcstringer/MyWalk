@@ -5,6 +5,340 @@ import '../../domain/repositories/accountability_repository.dart';
 import '../providers/accountability_provider.dart';
 import '../theme/app_theme.dart';
 
+// ── Full-screen partner invite (used in setup flow) ───────────────────────────
+
+enum _InviteStatus { idle, loading, inAppSent, noAccount }
+
+class PartnerInviteScreen extends StatefulWidget {
+  final String habitId;
+  final String habitName;
+  final String? habitLabel;
+
+  const PartnerInviteScreen({
+    super.key,
+    required this.habitId,
+    required this.habitName,
+    this.habitLabel,
+  });
+
+  @override
+  State<PartnerInviteScreen> createState() => _PartnerInviteScreenState();
+}
+
+class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
+  final _emailController = TextEditingController();
+  _InviteStatus _status = _InviteStatus.idle;
+  InviteResult? _result;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final prov = context.read<AccountabilityProvider>();
+    final email = _emailController.text.trim();
+    setState(() => _status = _InviteStatus.loading);
+    try {
+      final result = await prov.createInvite(
+        habitId: widget.habitId,
+        habitName: widget.habitName,
+        habitLabel: widget.habitLabel,
+        recipientEmail: email.isEmpty ? null : email,
+      );
+      if (!mounted) return;
+      if (result.inAppSent) {
+        setState(() { _status = _InviteStatus.inAppSent; _result = result; });
+      } else if (email.isNotEmpty) {
+        setState(() { _status = _InviteStatus.noAccount; _result = result; });
+      } else {
+        await _shareInvite(result, widget.habitLabel ?? widget.habitName);
+        if (mounted) Navigator.of(context).pop();
+      }
+    } catch (e) {
+      debugPrint('createInvite failed: $e');
+      if (mounted) setState(() => _status = _InviteStatus.idle);
+    }
+  }
+
+  Future<void> _share() async {
+    if (_result != null) {
+      await _shareInvite(_result!, widget.habitLabel ?? widget.habitName);
+    }
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: const BackButton(color: MyWalkColor.warmWhite),
+        title: const Text(
+          'Invite a support partner',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite,
+              fontSize: 17,
+              fontWeight: FontWeight.w600),
+        ),
+        actions: [
+          if (_status == _InviteStatus.idle || _status == _InviteStatus.loading)
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Skip',
+                  style: TextStyle(
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                      fontSize: 14)),
+            ),
+        ],
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: _buildBody(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    switch (_status) {
+      case _InviteStatus.loading:
+        return const Center(child: CircularProgressIndicator(color: MyWalkColor.sage));
+
+      case _InviteStatus.inAppSent:
+        return _SuccessView(
+          shortCode: _result!.shortCode,
+          onDone: () => Navigator.of(context).pop(),
+        );
+
+      case _InviteStatus.noAccount:
+        return _NoAccountView(
+          onShare: _share,
+          onCancel: () => Navigator.of(context).pop(),
+        );
+
+      case _InviteStatus.idle:
+        return _FormView(
+          emailController: _emailController,
+          onSubmit: _submit,
+          onSkip: () => Navigator.of(context).pop(),
+        );
+    }
+  }
+}
+
+class _FormView extends StatelessWidget {
+  final TextEditingController emailController;
+  final VoidCallback onSubmit;
+  final VoidCallback onSkip;
+
+  const _FormView({
+    required this.emailController,
+    required this.onSubmit,
+    required this.onSkip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'If you know their MyWalk email address:',
+          style: TextStyle(
+              color: MyWalkColor.sage,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              height: 1.4),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Enter it below and they will receive an in-app notification immediately.',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              fontSize: 13,
+              height: 1.5),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: emailController,
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'their@email (optional)',
+            hintStyle: TextStyle(
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.35),
+                fontSize: 13),
+            enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.2))),
+            focusedBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: MyWalkColor.sage)),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.1), height: 1),
+        const SizedBox(height: 24),
+        const Text(
+          "If you don't know their email address:",
+          style: TextStyle(
+              color: MyWalkColor.sage,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              height: 1.4),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Just tap Continue and a link will be created that you can share via WhatsApp, Email or SMS.',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              fontSize: 13,
+              height: 1.5),
+        ),
+        const Spacer(),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: onSubmit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MyWalkColor.sage,
+              foregroundColor: MyWalkColor.charcoal,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Continue',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuccessView extends StatelessWidget {
+  final String shortCode;
+  final VoidCallback onDone;
+
+  const _SuccessView({required this.shortCode, required this.onDone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.check_circle_rounded, color: MyWalkColor.sage, size: 64),
+        const SizedBox(height: 20),
+        const Text(
+          'Invitation sent',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite,
+              fontSize: 22,
+              fontWeight: FontWeight.w600),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          "They'll see it in their MyWalk notifications.",
+          style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+              fontSize: 14,
+              height: 1.5),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Backup share code: $shortCode',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
+              fontSize: 12),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 40),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: onDone,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MyWalkColor.sage,
+              foregroundColor: MyWalkColor.charcoal,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Done',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NoAccountView extends StatelessWidget {
+  final VoidCallback onShare;
+  final VoidCallback onCancel;
+
+  const _NoAccountView({required this.onShare, required this.onCancel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.info_outline_rounded,
+            color: MyWalkColor.warmWhite.withValues(alpha: 0.5), size: 48),
+        const SizedBox(height: 20),
+        const Text(
+          'No account found',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite,
+              fontSize: 22,
+              fontWeight: FontWeight.w600),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          "We couldn't find a MyWalk account with that email. Share a link instead — they can use it once they've installed the app.",
+          style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+              fontSize: 14,
+              height: 1.5),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 40),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: onShare,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MyWalkColor.sage,
+              foregroundColor: MyWalkColor.charcoal,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Share link',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: onCancel,
+          child: Text('Cancel',
+              style: TextStyle(
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                  fontSize: 14)),
+        ),
+      ],
+    );
+  }
+}
+
 /// Shows the full partner-invite flow: email dialog → createInvite → in-app
 /// confirmation or share sheet. Identical UX whether triggered from the
 /// Today card or the Breaking Free setup screen.

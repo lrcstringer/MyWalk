@@ -31,6 +31,7 @@ class FirestoreRecoveryPathRepository implements RecoveryPathRepository {
   Future<RecoveryPath> startPath({
     required String habitId,
     required String userId,
+    String habitType = '',
   }) async {
     final now = DateTime.now();
     // Initialize lastCheckInAt to epoch so scheduled CF reminder queries
@@ -40,6 +41,7 @@ class FirestoreRecoveryPathRepository implements RecoveryPathRepository {
       userId: userId,
       habitId: habitId,
       startedAt: now,
+      habitType: habitType,
       module1: RecoveryModule1State(
         lastCheckInAt: DateTime.fromMillisecondsSinceEpoch(0),
       ),

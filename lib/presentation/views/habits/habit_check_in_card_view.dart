@@ -686,42 +686,60 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     final urgeSurfingShown = path.urgeSurfingIntroSeen || dbg;
     final counterResponsesShown = path.counterResponses.isNotEmpty || dbg;
 
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        if (thoughtExamDone)
-          _habitActionChip(
-            label: 'Examine a thought',
-            subtitle: '~5 min',
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => ThoughtExaminationScreen(
-                habitId: _habit.id,
-                accentColor: MyWalkColor.bpThoughts,
-              ),
-            )),
-          ),
-        if (urgeSurfingShown)
-          _habitActionChip(
-            label: 'Urge surfed',
-            subtitle: 'Log a surfed urge',
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => GuardrailsScreen(
-                habitId: _habit.id,
-                habitName: _habit.name,
-                initialTab: 2,
-                accentColor: MyWalkColor.bpGuardrails,
-              ),
-            )),
-          ),
-        if (counterResponsesShown)
-          _habitActionChip(
-            label: 'My counter-responses',
-            subtitle: 'Your saved responses',
-            onTap: () => _openCounterResponseLibrary(context, path),
-          ),
-      ],
-    );
+    final chips = <Widget>[
+      if (thoughtExamDone)
+        _habitActionChip(
+          label: 'Examine a thought',
+          subtitle: '~5 min',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => ThoughtExaminationScreen(
+              habitId: _habit.id,
+              accentColor: MyWalkColor.bpThoughts,
+            ),
+          )),
+        ),
+      if (urgeSurfingShown)
+        _habitActionChip(
+          label: 'Urge surfed',
+          subtitle: 'Log a surfed urge',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => GuardrailsScreen(
+              habitId: _habit.id,
+              habitName: _habit.name,
+              initialTab: 2,
+              accentColor: MyWalkColor.bpGuardrails,
+            ),
+          )),
+        ),
+      if (counterResponsesShown)
+        _habitActionChip(
+          label: 'Read my Counter-Responses',
+          subtitle: 'Your saved responses',
+          onTap: () => _openCounterResponseLibrary(context, path),
+        ),
+    ];
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    final rows = <Widget>[];
+    for (int i = 0; i < chips.length; i += 2) {
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 6));
+      if (i + 1 < chips.length) {
+        rows.add(Row(children: [
+          Expanded(child: chips[i]),
+          const SizedBox(width: 6),
+          Expanded(child: chips[i + 1]),
+        ]));
+      } else {
+        rows.add(Row(children: [
+          Expanded(child: chips[i]),
+          const SizedBox(width: 6),
+          const Expanded(child: SizedBox.shrink()),
+        ]));
+      }
+    }
+
+    return Column(children: rows);
   }
 
   Widget _habitActionChip({

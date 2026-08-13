@@ -10,6 +10,7 @@ abstract class RecoveryPathRepository {
   Future<RecoveryPath> startPath({
     required String habitId,
     required String userId,
+    String habitType = '',
   });
 
   /// Writes back the path document (e.g. after phase change or module update).

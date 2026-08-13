@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +37,10 @@ class CueHierarchyScreen extends StatefulWidget {
 class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
   Color get _kRpPurple => widget.accentColor;
 
+  String get _effectiveHabitType => widget.habitType.isNotEmpty
+      ? widget.habitType
+      : CueRubricService.habitTypeFrom(widget.habitName);
+
   int _stage = 0;
   bool _done = false;
   bool _saving = false;
@@ -49,7 +52,6 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
 
   // Stage 2 — AI candidates + fill-in gap fields
   bool _aiLoading = false;
-  bool _aiSkipped = false;
   final List<_CueCandidate> _aiCandidates = [];
   final TextEditingController _gapTimeCtrl = TextEditingController();
   final TextEditingController _gapFeelingCtrl = TextEditingController();
@@ -137,72 +139,90 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
 
   void _onLogsNext() {
     _goToStage(2);
-    _runAiAnalysis();
+    _analyseLocally();
   }
 
-  Future<void> _runAiAnalysis() async {
-    setState(() => _aiLoading = true);
-    try {
-      final rubric = CueRubricService.rubricFor(widget.habitType);
-      final logEntries = <Map<String, dynamic>>[];
-      for (final session in _logs) {
-        try {
-          final parsed = jsonDecode(session.responseText) as Map<String, dynamic>;
-          logEntries.add({
-            'date': DateFormat('yyyy-MM-dd').format(session.createdAt),
-            'locationTime': parsed['locationTime'] ?? '',
-            'activityBefore': parsed['activityBefore'] ?? '',
-            'emotionName': parsed['emotionName'] ?? '',
-            'emotionRating': parsed['emotionRating'] ?? 0,
-            'thoughtArose': parsed['thoughtArose'] ?? '',
-          });
-        } catch (_) {}
-      }
+  void _analyseLocally() {
+    final rubric = CueRubricService.rubricFor(_effectiveHabitType);
 
-      if (logEntries.isEmpty) { _skipAi(); return; }
-
-      final callable = FirebaseFunctions.instance.httpsCallable(
-        'rpAnalyseCues',
-        options: HttpsCallableOptions(timeout: const Duration(seconds: 25)),
-      );
-      final result = await callable.call({
-        'habitType': widget.habitType,
-        'logs': logEntries,
-        'primaryCues': rubric.primaryCues,
-      });
-
-      final data = result.data as Map<String, dynamic>;
-      final cues = (data['cues'] as List<dynamic>?)
-              ?.whereType<String>()
-              .where((s) => s.trim().isNotEmpty)
-              .toList() ??
-          [];
-
-      if (cues.isEmpty) { _skipAi(); return; }
-
-      if (mounted) {
-        setState(() {
-          _aiLoading = false;
-          _aiCandidates
-              .addAll(cues.map((t) => _CueCandidate(text: t, keep: null)));
+    // Parse log fields for heuristic analysis.
+    final parsed = <Map<String, dynamic>>[];
+    for (final session in _logs) {
+      try {
+        final data = jsonDecode(session.responseText) as Map<String, dynamic>;
+        final emotion = (data['emotionName'] as String?)?.isNotEmpty == true
+            ? data['emotionName'] as String
+            : (data['emotionalState'] as String?) ?? '';
+        parsed.add({
+          'loc': (data['locationTime'] as String? ?? '').toLowerCase(),
+          'act': (data['activityBefore'] as String? ?? '').toLowerCase(),
+          'emo': emotion.toLowerCase(),
+          'rating': (data['emotionRating'] as num?)?.toDouble() ?? 0.0,
         });
+      } catch (_) {}
+    }
+
+    final candidates = <_CueCandidate>[];
+
+    // 1. All rubric primary cues — user accepts/rejects each.
+    for (final cue in rubric.primaryCues) {
+      candidates.add(_CueCandidate(text: cue, keep: null));
+    }
+
+    // 2. Simple heuristics from the actual logs (needs ≥ 2 entries).
+    if (parsed.length >= 2) {
+      final n = parsed.length;
+
+      bool hits(Map<String, dynamic> e, List<String> words) =>
+          words.any((w) => (e['loc'] as String).contains(w) ||
+              (e['act'] as String).contains(w));
+
+      int count(List<String> words) =>
+          parsed.where((e) => hits(e, words)).length;
+
+      // Time of day
+      final nightCount = count(['night', 'late ', 'midnight', 'evening', '10pm', '11pm', '12am', '1am', '2am', '3am']);
+      final morningCount = count(['morning', '6am', '7am', '8am', '9am']);
+      final afternoonCount = count(['afternoon', 'after lunch', '2pm', '3pm', '4pm', '5pm']);
+
+      if (nightCount >= 2 || nightCount / n >= 0.4) {
+        candidates.add(_CueCandidate(text: 'Late evenings or nights', keep: null));
+      } else if (morningCount >= 2 || morningCount / n >= 0.4) {
+        candidates.add(_CueCandidate(text: 'Morning routines', keep: null));
+      } else if (afternoonCount >= 2 || afternoonCount / n >= 0.4) {
+        candidates.add(_CueCandidate(text: 'Afternoon periods', keep: null));
       }
-    } catch (_) {
-      if (mounted) _skipAi();
+
+      // Alone / private
+      final aloneCount = count(['alone', 'private', 'bedroom', 'by myself', 'solitude', 'home alone']);
+      if (aloneCount >= 2 || aloneCount / n >= 0.4) {
+        candidates.add(_CueCandidate(text: 'When alone or in private', keep: null));
+      }
+
+      // Stress / emotional demand
+      final ratings = parsed.map((e) => e['rating'] as double).where((r) => r > 0).toList();
+      if (ratings.isNotEmpty) {
+        final highCount = ratings.where((r) => r >= 6).length;
+        if (highCount >= 2 || highCount / ratings.length >= 0.5) {
+          candidates.add(_CueCandidate(text: 'Emotionally demanding or stressful moments', keep: null));
+        }
+      }
+
+      // Boredom / low stimulation
+      final boredomCount = count(['bored', 'boredom', 'restless', 'idle', 'nothing to do', 'procrastinat']);
+      if (boredomCount >= 2 || boredomCount / n >= 0.4) {
+        candidates.add(_CueCandidate(text: 'Boredom or low stimulation', keep: null));
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _aiLoading = false;
+        _aiCandidates.addAll(candidates);
+      });
     }
   }
 
-  void _skipAi() {
-    _setupDiscovery();
-    setState(() {
-      _aiLoading = false;
-      _aiSkipped = true;
-      _stage = 3;
-    });
-    context
-        .read<RecoveryPathProvider>()
-        .saveCueHierarchyDraft(widget.habitId, 3);
-  }
 
   void _onAiNext() {
     // Add non-empty gap answers as additional kept candidates.
@@ -222,7 +242,7 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
 
   void _setupDiscovery() {
     _discoveryQuestions =
-        CueRubricService.discoveryQuestionsFor(widget.habitType, _logs);
+        CueRubricService.discoveryQuestionsFor(_effectiveHabitType, _logs);
   }
 
   void _onDiscoveryNext() {
@@ -241,7 +261,7 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
       final ans = _discoveryAnswers[q.key];
       if (ans == 'yes' || ans == 'sometimes') {
         _entries.add(_CueEntry(
-          text: CueRubricService.cueTextFromDiscovery(widget.habitType, q.key),
+          text: CueRubricService.cueTextFromDiscovery(_effectiveHabitType, q.key),
           isAi: false,
         ));
       }
@@ -711,9 +731,7 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
           child: Text(
-            _aiSkipped
-                ? "Let's look at some common patterns together."
-                : 'Based on what we know about this pattern, do any of these ring true?',
+            'Based on what we know about this pattern, do any of these ring true?',
             style: TextStyle(
                 fontSize: 14,
                 color: MyWalkColor.warmWhite.withValues(alpha: 0.6),

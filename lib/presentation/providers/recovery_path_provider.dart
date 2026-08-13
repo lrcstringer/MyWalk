@@ -160,9 +160,9 @@ class RecoveryPathProvider extends ChangeNotifier {
 
   // ── Start path ───────────────────────────────────────────────────────────
 
-  Future<RecoveryPath> startPath(String habitId) async {
+  Future<RecoveryPath> startPath(String habitId, {String habitType = ''}) async {
     final uid = AuthService.shared.userId!;
-    final path = await _repo.startPath(habitId: habitId, userId: uid);
+    final path = await _repo.startPath(habitId: habitId, userId: uid, habitType: habitType);
     _paths[habitId] = path;
     _checkInDoneToday[habitId] = false;
     _compassDoneThisWeek[habitId] = false;

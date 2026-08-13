@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/recovery_path.dart';
 import '../../../domain/entities/recovery_session.dart';
+import '../../../domain/services/cue_rubric_service.dart';
 import '../../../domain/services/recovery_module_content.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/recovery_path_provider.dart';
@@ -172,9 +173,10 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
       // activation only happens if the user explicitly chose the Freedom Plan.
       if (prov.pathFor(widget.habitId) == null) {
         final hp = context.read<HabitProvider>();
-        await prov.startPath(widget.habitId);
-        if (!mounted) return;
         final habit = hp.habits.where((h) => h.id == widget.habitId).firstOrNull;
+        final derivedType = CueRubricService.habitTypeFrom(habit?.name ?? '');
+        await prov.startPath(widget.habitId, habitType: derivedType);
+        if (!mounted) return;
         if (habit != null && !habit.hasRecoveryPath) {
           await hp.updateHabit(habit.copyWith(hasRecoveryPath: true));
         }
@@ -208,12 +210,13 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
 
       if (widget.setupMode) {
         if (widget.wantsPartner) {
-          await showPartnerInviteDialog(
-            context,
-            habitId: widget.habitId,
-            habitName: widget.habitName,
-            habitLabel: 'Breaking Patterns: ${widget.habitName}',
-          );
+          await Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => PartnerInviteScreen(
+              habitId: widget.habitId,
+              habitName: widget.habitName,
+              habitLabel: 'Breaking Patterns: ${widget.habitName}',
+            ),
+          ));
         }
         if (!mounted) return;
         if (widget.wantsRecoveryPath) {
@@ -272,8 +275,10 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
           onPressed: () {
             if (_step > 0) {
               setState(() => _step--);
-            } else {
+            } else if (widget.setupMode) {
               setState(() => _showIntro = true);
+            } else {
+              Navigator.of(context).pop();
             }
           },
         ),

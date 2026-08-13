@@ -39,13 +39,28 @@ export const rpAnalyseCues = onCall(
       throw new HttpsError('invalid-argument', 'logs must be a non-empty array');
     }
 
-    const systemPrompt = `You are analysing behaviour logs from a recovery app to identify cue patterns.
-The user is working on overcoming: ${habitType}.
-Based on these logs, identify 2-4 specific cue patterns — combinations of situation and emotional state that reliably precede the behaviour.
-Format each pattern as a plain-language statement under 12 words, written as a situation description (not advice).
-Known common cues for this habit type: ${JSON.stringify(primaryCues)}
-Respond with ONLY a JSON array of strings. No explanation. No markdown. Example:
-["Late evenings when feeling flat or stressed","After difficult conversations at work"]`;
+    // Situational-only prompt: never names the habit or behaviour, only analyses
+    // the context fields (when/where/emotion/thought) to find trigger patterns.
+    const systemPrompt = `You are a clinical support tool for a behaviour-change recovery app.
+Your task is to analyse journal entries from a person working to identify the situational triggers that precede a compulsive behaviour they are trying to change.
+
+Each journal entry records only the CONTEXT before the moment — not the behaviour itself. Focus exclusively on:
+- When and where they were (locationTime)
+- What they were doing immediately before (activityBefore)
+- Their emotional state (emotionName, emotionRating 1–10)
+- Any thought that arose (thoughtArose)
+
+Identify 2–4 recurring situational patterns across these entries. Each pattern should describe a specific combination of situation and emotional state that appears as a reliable trigger context.
+
+Common trigger contexts to watch for: ${JSON.stringify(primaryCues)}
+
+Rules:
+- Each pattern must be under 12 words
+- Write as a situation description, not advice
+- Focus on WHEN/WHERE/HOW the person feels — not on any behaviour
+- Respond with ONLY a JSON array of strings, no markdown, no explanation
+
+Example output: ["Late evenings when feeling flat or stressed","After difficult conversations at work"]`;
 
     const userMessage = JSON.stringify(
       logs.map((l) => ({
@@ -74,13 +89,19 @@ Respond with ONLY a JSON array of strings. No explanation. No markdown. Example:
 
     let cues: string[];
     try {
-      const parsed = JSON.parse(rawContent.text.trim());
+      const rawText = rawContent.text.trim();
+      console.log('[rpAnalyseCues] raw response:', rawText.slice(0, 500));
+      // Extract the first JSON array from anywhere in the response
+      const match = rawText.match(/\[[\s\S]*?\]/);
+      if (!match) throw new Error('no JSON array found');
+      const parsed = JSON.parse(match[0]);
       if (!Array.isArray(parsed)) throw new Error('not an array');
       cues = parsed
         .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
         .slice(0, 4);
       if (cues.length === 0) throw new Error('empty cue list');
-    } catch {
+    } catch (e) {
+      console.error('[rpAnalyseCues] parse error:', e);
       throw new HttpsError('internal', 'Failed to parse cue suggestions from Claude');
     }
 

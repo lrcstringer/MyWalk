@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/recovery_path.dart';
 import '../../../domain/entities/recovery_session.dart';
-import '../../../domain/services/recovery_phase_calculator.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
@@ -169,7 +168,7 @@ class FreedomJourneyTab extends StatefulWidget {
 }
 
 class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
-  int _view = 0; // 0 = My Journey, 1 = My Plan
+  int _view = 1; // 0 = My Journey, 1 = My Plan
   List<RecoverySession>? _sessions;
   bool _loading = true;
   // Last Week and Earlier start collapsed; Today and This Week start open.
@@ -349,7 +348,7 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
       if (h.id == widget.habitId) { habitName = h.name; break; }
     }
 
-    final phase = RecoveryPhaseCalculator.calculate(path);
+    final phase = prov.phaseFor(widget.habitId);
     final showPhase2Tasks = phase >= 2;
 
     final bool letterLocked = !path.cueHierarchyDone ||
