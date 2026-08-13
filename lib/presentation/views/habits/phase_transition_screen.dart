@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import 'phase2_journey_screen.dart';
+import 'my_freedom_plan_screen.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
 
@@ -153,7 +153,7 @@ class _Phase1To2Screen extends StatelessWidget {
                       onPressed: () {
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
-                            builder: (_) => Phase2JourneyScreen(
+                            builder: (_) => MyFreedomPlanScreen(
                               habitId: habitId,
                               habitName: habitName,
                             ),

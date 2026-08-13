@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../../domain/entities/recovery_path.dart';
 import '../journal/freedom_journey_tab.dart';
 
 class MyFreedomPlanScreen extends StatelessWidget {
@@ -63,7 +62,6 @@ class _PhaseDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final prov = context.watch<RecoveryPathProvider>();
     final currentPhase = prov.phaseFor(habitId);
-    final path = prov.pathFor(habitId);
 
     return Container(
       color: MyWalkColor.charcoal,
@@ -88,8 +86,6 @@ class _PhaseDashboard extends StatelessWidget {
               }).toList(),
             ),
           ),
-          if (currentPhase == 2 && path != null)
-            _Phase2SubSteps(path: path),
           Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
         ],
       ),
@@ -153,69 +149,6 @@ class _PhasePill extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Phase2SubSteps extends StatelessWidget {
-  final RecoveryPath path;
-  const _Phase2SubSteps({required this.path});
-
-  static const _purple = Color(0xFF8B7EC8);
-
-  @override
-  Widget build(BuildContext context) {
-    final steps = [
-      (label: 'Cue map', done: path.cueHierarchyDone),
-      (label: 'Thoughts', done: path.counterResponses.isNotEmpty),
-      (label: 'Environment', done: path.environmentalChangesDone),
-      (label: 'Guardrails', done: path.hrsPlanDone),
-      (label: 'Letter', done: path.module5.recoveryLetterWritten),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 0, 16, 10),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: steps.map((s) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: s.done
-                          ? _purple
-                          : Colors.transparent,
-                      border: s.done
-                          ? null
-                          : Border.all(
-                              color: _purple.withValues(alpha: 0.35),
-                              width: 1,
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    s.label,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: s.done
-                          ? _purple.withValues(alpha: 0.8)
-                          : Colors.white.withValues(alpha: 0.28),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
       ),
     );
   }

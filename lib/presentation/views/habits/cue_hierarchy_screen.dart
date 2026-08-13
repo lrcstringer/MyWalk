@@ -21,12 +21,14 @@ class CueHierarchyScreen extends StatefulWidget {
   final String habitId;
   final String habitName;
   final String habitType;
+  final Color accentColor;
 
   const CueHierarchyScreen({
     super.key,
     required this.habitId,
     required this.habitName,
     required this.habitType,
+    this.accentColor = _kRpPurple,
   });
 
   @override
@@ -34,6 +36,8 @@ class CueHierarchyScreen extends StatefulWidget {
 }
 
 class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
+  Color get _kRpPurple => widget.accentColor;
+
   int _stage = 0;
   bool _done = false;
   bool _saving = false;
@@ -57,16 +61,35 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
 
   // Stage 4 — rank/edit
   final List<_CueEntry> _entries = [];
+  bool _reviewMode = false; // true when cueHierarchyDone — loads saved cues
 
   @override
   void initState() {
     super.initState();
     _loadLogs();
 
-    // Resume from draft if any.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final path = context.read<RecoveryPathProvider>().pathFor(widget.habitId);
-      if (path != null && path.cueHierarchyDraftStage > 0) {
+      if (path == null) return;
+      if (path.cueHierarchyDone && path.cueHierarchy.isNotEmpty) {
+        // Review/edit mode — load saved cues into stage 4.
+        final sorted = List<Map<String, dynamic>>.from(path.cueHierarchy)
+          ..sort((a, b) =>
+              (a['rank'] as int? ?? 0).compareTo(b['rank'] as int? ?? 0));
+        setState(() {
+          _reviewMode = true;
+          _entries.clear();
+          for (final cue in sorted) {
+            final e = _CueEntry(
+              text: cue['cueText'] as String? ?? '',
+              isAi: cue['isAiSuggested'] as bool? ?? false,
+            );
+            e.confirmed = true;
+            _entries.add(e);
+          }
+          _stage = 4;
+        });
+      } else if (path.cueHierarchyDraftStage > 0) {
         setState(() => _stage = path.cueHierarchyDraftStage.clamp(0, 4));
       }
     });
@@ -83,8 +106,13 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
   Future<void> _loadLogs() async {
     try {
       final prov = context.read<RecoveryPathProvider>();
-      final logs = await prov.getSessionsByType(
-          widget.habitId, RecoverySessionType.m1BehaviourLog);
+      final all = await prov.getAllSessions(widget.habitId);
+      final logs = all
+          .where((s) =>
+              s.sessionType == RecoverySessionType.m1BehaviourLog ||
+              s.sessionType == RecoverySessionType.m5LapseResponse)
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       if (mounted) {
         setState(() {
           _logs = logs;
@@ -239,7 +267,13 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
       await context
           .read<RecoveryPathProvider>()
           .saveCueHierarchy(widget.habitId, cues);
-      if (mounted) setState(() { _saving = false; _done = true; });
+      if (mounted) {
+        if (_reviewMode) {
+          Navigator.of(context).pop();
+        } else {
+          setState(() { _saving = false; _done = true; });
+        }
+      }
     } catch (_) {
       if (mounted) {
         setState(() => _saving = false);
@@ -273,10 +307,10 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
         leading: BackButton(
           color: MyWalkColor.warmWhite,
           onPressed: () {
-            if (_stage > 0) {
-              setState(() => _stage--);
-            } else {
+            if (_reviewMode || _stage == 0) {
               Navigator.of(context).pop();
+            } else {
+              setState(() => _stage--);
             }
           },
         ),
@@ -338,7 +372,7 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
                     color: _kRpPurple.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.route_rounded, color: _kRpPurple, size: 28),
+                  child: Icon(Icons.route_rounded, color: _kRpPurple, size: 28),
                 ),
                 const SizedBox(height: 24),
                 const Text(
@@ -411,21 +445,74 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
             ),
           ),
         ),
+        if (!_logsLoading && _logs.length < 5)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: MyWalkColor.golden.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: MyWalkColor.golden.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'A few more moments needed',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: MyWalkColor.golden.withValues(alpha: 0.9),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'You\'ve logged ${_logs.length} moment${_logs.length == 1 ? '' : 's'} so far. '
+                    'To build an accurate pattern map, keep logging for another week and come back — '
+                    'the more you record, the more reliable your map will be.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _onEntryNext,
+              onPressed: (!_logsLoading && _logs.length >= 5)
+                  ? _onEntryNext
+                  : _logsLoading
+                      ? null
+                      : () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _kRpPurple,
+                backgroundColor: (!_logsLoading && _logs.length >= 5)
+                    ? _kRpPurple
+                    : MyWalkColor.warmWhite.withValues(alpha: 0.1),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text("Let's go",
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+              child: _logsLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(
+                      _logs.length >= 5 ? "Let's go" : 'Keep logging',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 15),
+                    ),
             ),
           ),
         ),
@@ -451,7 +538,7 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
         ),
         Expanded(
           child: _logsLoading
-              ? const Center(
+              ? Center(
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: _kRpPurple))
               : _logs.isEmpty
@@ -515,7 +602,7 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
 
   Widget _buildAi() {
     if (_aiLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -614,7 +701,7 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_stage == 3) _onDiscoveryNext();
       });
-      return const Center(
+      return Center(
           child: CircularProgressIndicator(strokeWidth: 2, color: _kRpPurple));
     }
 
@@ -738,8 +825,8 @@ class _CueHierarchyScreenState extends State<CueHierarchyScreen> {
             child: TextButton.icon(
               onPressed: () =>
                   setState(() => _entries.add(_CueEntry(text: '', isAi: false))),
-              icon: const Icon(Icons.add, color: _kRpPurple, size: 18),
-              label: const Text('Add your own',
+              icon: Icon(Icons.add, color: _kRpPurple, size: 18),
+              label: Text('Add your own',
                   style: TextStyle(color: _kRpPurple, fontSize: 13)),
             ),
           ),
@@ -821,12 +908,31 @@ class _LogCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel =
-        DateFormat('EEE d MMM').format(session.createdAt);
-    // Parse what we can from the responseText JSON.
-    final preview = session.responseText.length > 60
-        ? '${session.responseText.substring(0, 60)}…'
-        : session.responseText;
+    final dateLabel = DateFormat('EEE d MMM').format(session.createdAt);
+
+    Map<String, dynamic> parsed = {};
+    try {
+      parsed = jsonDecode(session.responseText) as Map<String, dynamic>;
+    } catch (_) {}
+
+    final branch = parsed['branch'] as String? ?? '';
+    final locationTime = parsed['locationTime'] as String? ?? '';
+    final activityBefore = parsed['activityBefore'] as String? ?? '';
+    final emotionalState = parsed['emotionalState'] as String? ?? '';
+    final thoughtArose = parsed['thoughtArose'] as String? ?? '';
+    final branchLabel = branch == 'acted' ? 'Acted on it' : 'Navigated it';
+    final branchColor = branch == 'acted'
+        ? MyWalkColor.golden.withValues(alpha: 0.85)
+        : MyWalkColor.sage.withValues(alpha: 0.85);
+
+    final fields = <(String, String)>[
+      if (locationTime.isNotEmpty) ('Where / when', locationTime),
+      if (activityBefore.isNotEmpty) ('What was happening', activityBefore),
+      if (emotionalState.isNotEmpty) ('How you felt', emotionalState),
+      if (thoughtArose.isNotEmpty) ('Thought that arose', thoughtArose),
+    ];
+
+    final previewText = fields.isNotEmpty ? fields.first.$2 : '';
 
     return GestureDetector(
       onTap: onToggle,
@@ -842,24 +948,60 @@ class _LogCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(dateLabel,
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: _kRpPurple.withValues(alpha: 0.8))),
-            const SizedBox(height: 6),
-            Text(
-              expanded ? session.responseText : preview,
-              style: TextStyle(
-                  fontSize: 13,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
-                  height: 1.5),
-            ),
-            if (!expanded && session.responseText.length > 60)
-              Text('tap to expand',
+            Row(children: [
+              Text(dateLabel,
                   style: TextStyle(
                       fontSize: 11,
-                      color: MyWalkColor.warmWhite.withValues(alpha: 0.3))),
+                      fontWeight: FontWeight.w600,
+                      color: _kRpPurple.withValues(alpha: 0.8))),
+              const SizedBox(width: 8),
+              Text(branchLabel,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: branchColor)),
+            ]),
+            const SizedBox(height: 6),
+            if (expanded)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: fields.map((f) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(f.$1,
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
+                              fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 2),
+                      Text(f.$2,
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
+                              height: 1.45)),
+                    ],
+                  ),
+                )).toList(),
+              )
+            else ...[
+              if (previewText.isNotEmpty)
+                Text(
+                  previewText.length > 80
+                      ? '${previewText.substring(0, 80)}…'
+                      : previewText,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+                      height: 1.5),
+                ),
+              if (fields.length > 1)
+                Text('tap to expand',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.3))),
+            ],
           ],
         ),
       ),

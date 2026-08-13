@@ -8,11 +8,20 @@ import '../../../domain/services/recovery_phase_calculator.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
+import '../habits/cue_hierarchy_screen.dart';
 import '../habits/guardrails_screen.dart';
-import '../habits/phase2_journey_screen.dart';
 import '../habits/recovery_letter_screen.dart';
+import '../habits/thought_examination_screen.dart';
+import '../habits/values_inventory_screen.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
+
+// Per-task accent colours — sourced from MyWalkColor so other files can share them
+const _kAccentValues     = MyWalkColor.bpValues;
+const _kAccentCueMap     = MyWalkColor.bpCueMap;
+const _kAccentThoughts   = MyWalkColor.bpThoughts;
+const _kAccentGuardrails = MyWalkColor.bpGuardrails;
+const _kAccentLetter     = MyWalkColor.bpLetter;
 
 const Map<String, String> _kSessionLabels = {
   'm1DailyCheckIn': 'Daily Check-In',
@@ -163,7 +172,8 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
   int _view = 0; // 0 = My Journey, 1 = My Plan
   List<RecoverySession>? _sessions;
   bool _loading = true;
-  final Set<int> _expandedModules = {1};
+  // Last Week and Earlier start collapsed; Today and This Week start open.
+  final Set<String> _collapsedGroups = {'Last Week', 'Earlier'};
 
   @override
   void initState() {
@@ -266,16 +276,61 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
         ),
       );
     }
-    return ListView.separated(
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final startOfThisWeek = today.subtract(Duration(days: today.weekday - 1));
+    final startOfLastWeek = startOfThisWeek.subtract(const Duration(days: 7));
+
+    String bucket(DateTime dt) {
+      final d = DateTime(dt.year, dt.month, dt.day);
+      if (!d.isBefore(today)) return 'Today';
+      if (!d.isBefore(startOfThisWeek)) return 'This Week';
+      if (!d.isBefore(startOfLastWeek)) return 'Last Week';
+      return 'Earlier';
+    }
+
+    const bucketOrder = ['Today', 'This Week', 'Last Week', 'Earlier'];
+    final buckets = <String, List<RecoverySession>>{};
+    for (final s in sessions) {
+      buckets.putIfAbsent(bucket(s.createdAt), () => []).add(s);
+    }
+
+    final items = <Widget>[];
+    for (final key in bucketOrder) {
+      final group = buckets[key];
+      if (group == null) continue;
+      final isExpanded = !_collapsedGroups.contains(key);
+      items.add(_JourneyGroupHeader(
+        label: key,
+        count: group.length,
+        isExpanded: isExpanded,
+        onToggle: () => setState(() {
+          if (_collapsedGroups.contains(key)) {
+            _collapsedGroups.remove(key);
+          } else {
+            _collapsedGroups.add(key);
+          }
+        }),
+      ));
+      if (isExpanded) {
+        for (final s in group) {
+          items.add(Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _JourneyEntryCard(
+              session: s,
+              label: _sessionLabel(s),
+              dateLabel: _dateLabel(s.createdAt),
+              snippet: _snippetFor(s),
+            ),
+          ));
+        }
+      }
+      items.add(const SizedBox(height: 4));
+    }
+
+    return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
-      itemCount: sessions.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (_, i) => _JourneyEntryCard(
-        session: sessions[i],
-        label: _sessionLabel(sessions[i]),
-        dateLabel: _dateLabel(sessions[i].createdAt),
-        snippet: _snippetFor(sessions[i]),
-      ),
+      children: items,
     );
   }
 
@@ -294,201 +349,633 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
       if (h.id == widget.habitId) { habitName = h.name; break; }
     }
 
-    final sessionsByModule = <int, List<RecoverySession>>{};
-    for (final s in (_sessions ?? [])) {
-      sessionsByModule.putIfAbsent(s.moduleNumber, () => []).add(s);
-    }
-
-    final sortedCues = List<Map<String, dynamic>>.from(path.cueHierarchy)
-      ..sort((a, b) =>
-          (a['rank'] as int? ?? 0).compareTo(b['rank'] as int? ?? 0));
-
-    final modules = [
-      _ModuleSection(
-        number: 3,
-        name: 'Anchor to Your Values',
-        isLocked: false,
-        lockedMessage: '',
-        isComplete: path.module3.valuesInventoryDone,
-        cues: const [],
-        counterResponses: const [],
-        valuesInventory: path.module3.valuesInventory,
-        hrsPlan: const [],
-        recoveryLetter: null,
-      ),
-      _ModuleSection(
-        number: 1,
-        name: 'Know Your Pattern',
-        isLocked: false,
-        lockedMessage: '',
-        isComplete: path.cueHierarchyDone,
-        cues: sortedCues,
-        counterResponses: const [],
-        valuesInventory: const [],
-        hrsPlan: const [],
-        recoveryLetter: null,
-      ),
-      _ModuleSection(
-        number: 2,
-        name: 'Examine Your Thoughts',
-        isLocked: !RecoveryPhaseCalculator.isModuleUnlocked(path, 2),
-        lockedMessage: 'Unlocks when your cue map is complete.',
-        isComplete: path.counterResponses.isNotEmpty,
-        cues: const [],
-        counterResponses: path.counterResponses,
-        valuesInventory: const [],
-        hrsPlan: const [],
-        recoveryLetter: null,
-      ),
-      _ModuleSection(
-        number: 4,
-        name: 'Build Your Guardrails',
-        isLocked: !RecoveryPhaseCalculator.isModuleUnlocked(path, 4),
-        lockedMessage: 'Unlocks when your cue map is complete.',
-        isComplete: path.hrsPlanDone,
-        cues: const [],
-        counterResponses: const [],
-        valuesInventory: const [],
-        hrsPlan: path.module4.hrsPlan,
-        recoveryLetter: null,
-      ),
-      _ModuleSection(
-        number: 5,
-        name: 'Navigate Lapses',
-        isLocked: !RecoveryPhaseCalculator.isModuleUnlocked(path, 5),
-        lockedMessage: 'Unlocks after 30 days or your first lapse.',
-        isComplete: path.module5.recoveryLetterWritten,
-        cues: const [],
-        counterResponses: const [],
-        valuesInventory: const [],
-        hrsPlan: const [],
-        recoveryLetter: path.recoveryLetterDraft,
-      ),
-    ];
-
     final phase = RecoveryPhaseCalculator.calculate(path);
-    final showPhase2Card = phase == 2;
+    final showPhase2Tasks = phase >= 2;
 
-    // Count completed Phase 2 tasks for the card subtitle
-    int phase2Done = 0;
-    if (path.cueHierarchyDone) phase2Done++;
-    if (path.counterResponses.isNotEmpty) phase2Done++;
-    if (path.environmentalChangesDone) phase2Done++;
-    if (path.hrsPlanDone) phase2Done++;
-    if (path.module5.recoveryLetterWritten) phase2Done++;
+    final bool letterLocked = !path.cueHierarchyDone ||
+        path.counterResponses.isEmpty ||
+        !path.hrsPlanDone ||
+        !path.environmentalChangesDone ||
+        !path.urgeSurfingIntroSeen;
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
-      itemCount: modules.length + (showPhase2Card ? 1 : 0),
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, i) {
-        if (showPhase2Card && i == 0) {
-          return _Phase2JourneyCard(
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+      children: [
+        _PlanTaskCard(
+          title: 'Anchor to Your Values',
+          accent: _kAccentValues,
+          isDone: path.module3.valuesInventoryDone,
+          isLocked: false,
+          hasDraft: path.valuesInventoryDraftStep > 0 &&
+              !path.module3.valuesInventoryDone,
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => ValuesInventoryScreen(
+              habitId: widget.habitId,
+              habitName: habitName,
+              accentColor: _kAccentValues,
+            ),
+          )),
+        ),
+        if (showPhase2Tasks) ...[
+          const SizedBox(height: 10),
+          _PlanTaskCard(
+            title: 'Map Your Pattern Cues',
+            accent: _kAccentCueMap,
+            isDone: path.cueHierarchyDone,
+            isLocked: false,
+            hasDraft: path.cueHierarchyDraftStage > 0 && !path.cueHierarchyDone,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => CueHierarchyScreen(
+                habitId: widget.habitId,
+                habitName: habitName,
+                habitType: path.habitType ?? '',
+                accentColor: _kAccentCueMap,
+              ),
+            )),
+          ),
+          const SizedBox(height: 10),
+          _PlanTaskCard(
+            title: 'Examine Your Thoughts',
+            accent: _kAccentThoughts,
+            isDone: path.counterResponses.isNotEmpty,
+            isLocked: false,
+            hasDraft: path.thoughtExaminationDraftStep > 0,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => ThoughtExaminationScreen(
+                habitId: widget.habitId,
+                accentColor: _kAccentThoughts,
+              ),
+            )),
+          ),
+          const SizedBox(height: 10),
+          _GuardrailsPlanCard(
             habitId: widget.habitId,
             habitName: habitName,
-            tasksComplete: phase2Done,
-          );
-        }
-        final idx = showPhase2Card ? i - 1 : i;
-        final m = modules[idx];
-        final baseSessions = List<RecoverySession>.from(
-            sessionsByModule[m.number] ?? []);
-        if (m.number == 1) {
-          // "I acted on it" moments are saved as m5LapseResponse (moduleNumber 5)
-          // but belong in Know Your Pattern alongside navigated moments.
-          baseSessions.addAll((sessionsByModule[5] ?? [])
-              .where((s) => s.sessionType == RecoverySessionType.m5LapseResponse));
-        }
-        final mSessions = baseSessions
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        return _PlanSectionCard(
-          data: m,
-          sessions: mSessions,
-          isExpanded: _expandedModules.contains(m.number),
-          onToggle: () => setState(() {
-            if (_expandedModules.contains(m.number)) {
-              _expandedModules.remove(m.number);
-            } else {
-              _expandedModules.add(m.number);
-            }
-          }),
-          habitId: widget.habitId,
-          habitName: habitName,
-        );
-      },
+            path: path,
+            isLocked: !path.cueHierarchyDone,
+          ),
+          const SizedBox(height: 10),
+          _PlanTaskCard(
+            title: 'Write Your Recovery Letter',
+            accent: _kAccentLetter,
+            isDone: path.module5.recoveryLetterWritten,
+            isLocked: letterLocked,
+            lockedMessage: 'Complete all previous tasks first.',
+            hasDraft: path.recoveryLetterDraft != null &&
+                !path.module5.recoveryLetterWritten,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => RecoveryLetterScreen(
+                habitId: widget.habitId,
+                accentColor: _kAccentLetter,
+              ),
+            )),
+          ),
+        ],
+      ],
     );
   }
 }
 
-// ── Phase 2 Journey card (shown in My Plan view when in Phase 2) ──────────────
+// ── My Plan task cards ────────────────────────────────────────────────────────
 
-class _Phase2JourneyCard extends StatelessWidget {
-  final String habitId;
-  final String habitName;
-  final int tasksComplete;
+class _PlanTaskCard extends StatelessWidget {
+  final String title;
+  final Color accent;
+  final bool isDone;
+  final bool isLocked;
+  final String lockedMessage;
+  final bool hasDraft;
+  final VoidCallback? onTap;
 
-  const _Phase2JourneyCard({
-    required this.habitId,
-    required this.habitName,
-    required this.tasksComplete,
+  const _PlanTaskCard({
+    required this.title,
+    required this.accent,
+    required this.isDone,
+    this.isLocked = false,
+    this.lockedMessage = '',
+    this.hasDraft = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final allDone = tasksComplete >= 5;
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => Phase2JourneyScreen(
-          habitId: habitId,
-          habitName: habitName,
-        ),
-      )),
-      child: Container(
-        padding: const EdgeInsets.all(14),
+    if (isLocked) {
+      return Container(
         decoration: BoxDecoration(
-          color: _kRpPurple.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _kRpPurple.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),
-        child: Row(children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _kRpPurple.withValues(alpha: allDone ? 0.25 : 0.12),
-            ),
-            child: Icon(
-              allDone ? Icons.check_rounded : Icons.layers_rounded,
-              size: 18,
-              color: _kRpPurple,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Going Deeper — Phase 2 Tasks',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _kRpPurple)),
-                const SizedBox(height: 2),
-                Text(
-                  allDone
-                      ? 'All 5 tasks complete'
-                      : '$tasksComplete of 5 tasks complete',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: MyWalkColor.warmWhite.withValues(alpha: 0.55)),
+                Container(width: 4, color: accent.withValues(alpha: 0.2)),
+                Expanded(
+                  child: Container(
+                    color: Colors.white.withValues(alpha: 0.03),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+                      child: Row(
+                        children: [
+                          _CompletionDot(isDone: false, isLocked: true, accent: accent),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
+                                  ),
+                                ),
+                                if (lockedMessage.isNotEmpty) ...[
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    lockedMessage,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: MyWalkColor.warmWhite.withValues(alpha: 0.2),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          Icon(Icons.chevron_right_rounded,
-              size: 16, color: _kRpPurple.withValues(alpha: 0.6)),
-        ]),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.05),
+            offset: const Offset(0, -1),
+            blurRadius: 0,
+          ),
+          BoxShadow(
+            color: accent.withValues(alpha: isDone ? 0.28 : 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+            spreadRadius: -3,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: IntrinsicHeight(
+          child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 4,
+              color: isDone ? accent : accent.withValues(alpha: 0.55),
+            ),
+            Expanded(
+              child: Container(
+                color: MyWalkColor.cardBackground,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+                  child: Row(
+                    children: [
+                      _CompletionDot(isDone: isDone, isLocked: false, accent: accent),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: isDone
+                                ? MyWalkColor.warmWhite.withValues(alpha: 0.7)
+                                : MyWalkColor.warmWhite.withValues(alpha: 0.95),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _TaskActionButton(
+                        isDone: isDone,
+                        hasDraft: hasDraft,
+                        onTap: onTap,
+                        accent: accent,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompletionDot extends StatelessWidget {
+  final bool isDone;
+  final bool isLocked;
+  final Color accent;
+  const _CompletionDot({required this.isDone, required this.isLocked, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 26,
+      height: 26,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isDone ? accent : Colors.transparent,
+        border: Border.all(
+          color: isLocked
+              ? Colors.white.withValues(alpha: 0.15)
+              : isDone
+                  ? accent
+                  : accent.withValues(alpha: 0.45),
+          width: 1.5,
+        ),
+        boxShadow: isDone
+            ? [BoxShadow(color: accent.withValues(alpha: 0.45), blurRadius: 8, spreadRadius: -1)]
+            : null,
+      ),
+      child: isDone
+          ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+          : isLocked
+              ? Icon(Icons.lock_outline_rounded,
+                  size: 12, color: Colors.white.withValues(alpha: 0.25))
+              : null,
+    );
+  }
+}
+
+class _TaskActionButton extends StatelessWidget {
+  final bool isDone;
+  final bool hasDraft;
+  final VoidCallback? onTap;
+  final Color accent;
+  const _TaskActionButton(
+      {required this.isDone, required this.hasDraft, required this.accent, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final String label = isDone ? 'Edit' : hasDraft ? 'Resume' : 'Start';
+    final Color bg = isDone
+        ? Colors.transparent
+        : hasDraft
+            ? MyWalkColor.golden.withValues(alpha: 0.18)
+            : accent.withValues(alpha: 0.18);
+    final Color fg = isDone
+        ? MyWalkColor.warmWhite.withValues(alpha: 0.45)
+        : hasDraft
+            ? MyWalkColor.golden
+            : accent;
+    final Color border = isDone
+        ? MyWalkColor.warmWhite.withValues(alpha: 0.15)
+        : hasDraft
+            ? MyWalkColor.golden.withValues(alpha: 0.5)
+            : accent.withValues(alpha: 0.55);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: border),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600, color: fg)),
+      ),
+    );
+  }
+}
+
+class _GuardrailsPlanCard extends StatelessWidget {
+  final String habitId;
+  final String habitName;
+  final RecoveryPath path;
+  final bool isLocked;
+
+  const _GuardrailsPlanCard({
+    required this.habitId,
+    required this.habitName,
+    required this.path,
+    required this.isLocked,
+  });
+
+  void _openTab(BuildContext context, int tab) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => GuardrailsScreen(
+        habitId: habitId,
+        habitName: habitName,
+        initialTab: tab,
+        accentColor: _kAccentGuardrails,
+      ),
+    ));
+  }
+
+  int get _firstIncompleteTab {
+    if (!path.hrsPlanDone) return 1;
+    if (!path.environmentalChangesDone) return 0;
+    if (!path.urgeSurfingIntroSeen) return 2;
+    return 0;
+  }
+
+  bool get _allDone =>
+      path.hrsPlanDone &&
+      path.environmentalChangesDone &&
+      path.urgeSurfingIntroSeen;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool done = _allDone;
+    const accent = _kAccentGuardrails;
+
+    if (isLocked) {
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(width: 4, color: accent.withValues(alpha: 0.2)),
+                Expanded(
+                  child: Container(
+                    color: Colors.white.withValues(alpha: 0.03),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+                      child: Row(
+                        children: [
+                          _CompletionDot(isDone: false, isLocked: true, accent: accent),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Build Your Guardrails',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Unlocks when your cue map is complete.',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: MyWalkColor.warmWhite.withValues(alpha: 0.2),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.05),
+            offset: const Offset(0, -1),
+            blurRadius: 0,
+          ),
+          BoxShadow(
+            color: accent.withValues(alpha: done ? 0.28 : 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+            spreadRadius: -3,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 4,
+                color: done ? accent : accent.withValues(alpha: 0.55),
+              ),
+            Expanded(
+              child: Container(
+                color: MyWalkColor.cardBackground,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          _CompletionDot(isDone: done, isLocked: false, accent: accent),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Build Your Guardrails',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: done
+                                    ? MyWalkColor.warmWhite.withValues(alpha: 0.7)
+                                    : MyWalkColor.warmWhite.withValues(alpha: 0.95),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _TaskActionButton(
+                            isDone: done,
+                            hasDraft: false,
+                            accent: accent,
+                            onTap: () => _openTab(context, _firstIncompleteTab),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          _GuardrailsPill(
+                            label: 'High-Risk Plan',
+                            isDone: path.hrsPlanDone,
+                            accent: accent,
+                            onTap: () => _openTab(context, 1),
+                          ),
+                          _GuardrailsPill(
+                            label: 'Change Your Environment',
+                            isDone: path.environmentalChangesDone,
+                            accent: accent,
+                            onTap: () => _openTab(context, 0),
+                          ),
+                          _GuardrailsPill(
+                            label: 'Urge Surfing',
+                            isDone: path.urgeSurfingIntroSeen,
+                            accent: accent,
+                            onTap: () => _openTab(context, 2),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GuardrailsPill extends StatelessWidget {
+  final String label;
+  final bool isDone;
+  final VoidCallback onTap;
+  final Color accent;
+
+  const _GuardrailsPill({
+    required this.label,
+    required this.isDone,
+    required this.onTap,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isDone ? accent.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDone
+                ? accent.withValues(alpha: 0.45)
+                : MyWalkColor.warmWhite.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isDone) ...[
+              Icon(Icons.check_circle_rounded, size: 11, color: accent),
+              const SizedBox(width: 4),
+            ] else ...[
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
+                color: isDone
+                    ? accent
+                    : MyWalkColor.warmWhite.withValues(alpha: 0.55),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Journey group header ──────────────────────────────────────────────────────
+
+class _JourneyGroupHeader extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+
+  const _JourneyGroupHeader({
+    required this.label,
+    required this.count,
+    required this.isExpanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onToggle,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _kRpPurple.withValues(alpha: 0.75),
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 11,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.3),
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              isExpanded
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: _kRpPurple.withValues(alpha: 0.5),
+            ),
+          ],
+        ),
       ),
     );
   }

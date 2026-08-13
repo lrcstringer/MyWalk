@@ -19,7 +19,6 @@ import 'record_a_moment_screen.dart';
 import '../../../domain/entities/recovery_path.dart';
 import '../journal/journal_entry_composer.dart';
 import 'my_freedom_plan_screen.dart';
-import 'phase2_journey_screen.dart';
 import 'recovery_path_home_screen.dart';
 import '../practices/breaking_free_intro_screen.dart';
 
@@ -197,11 +196,15 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                   if (_habit.subcategoryId == 'breaking_habits' ||
                       _habit.hasRecoveryPath) ...[
                     const SizedBox(height: 10),
+                    Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08), height: 1),
+                    const SizedBox(height: 10),
                     _recordAMomentButton(context),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     _breakingHabitsChips(context),
                   ],
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08), height: 1),
+                  const SizedBox(height: 10),
                   _partnerStrip(context),
                   const SizedBox(height: 8),
                   _rpStrip(context),
@@ -431,7 +434,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
             const SizedBox(width: 5),
             Expanded(
               child: Text(
-                accountabilityProv.isLoading ? 'Creating invite…' : 'Add a support/prayer partner',
+                accountabilityProv.isLoading ? 'Creating invite…' : 'Create a Support/Accountability Partner',
                 style: TextStyle(
                     fontSize: 12,
                     color: MyWalkColor.warmWhite.withValues(alpha: 0.55)),
@@ -562,14 +565,12 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     final checkInPending = !prov.checkInDoneToday(habitId);
     final nextTask = phase == 2 ? _nextPhase2Task(path) : null;
     final label = nextTask != null
-        ? 'Freedom Plan · Next: $nextTask'
-        : 'Freedom Plan · Phase $phase · Day $day';
+        ? 'Freedom Plan · Going Deeper: $nextTask'
+        : 'Freedom Plan · ${_phaseLabel(phase)} · Day $day';
 
     return GestureDetector(
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => nextTask != null
-            ? Phase2JourneyScreen(habitId: habitId, habitName: _habit.name)
-            : MyFreedomPlanScreen(habitId: habitId, habitName: _habit.name),
+        builder: (_) => MyFreedomPlanScreen(habitId: habitId, habitName: _habit.name),
       )),
       behavior: HitTestBehavior.opaque,
       child: Container(
@@ -608,10 +609,23 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   String? _nextPhase2Task(RecoveryPath path) {
     if (!path.cueHierarchyDone) return 'Map your pattern cues';
     if (path.counterResponses.isEmpty) return 'Examine your thoughts';
-    if (!path.environmentalChangesDone) return 'Change your environment';
-    if (!path.hrsPlanDone) return 'Build your coping plans';
-    if (!path.module5.recoveryLetterWritten) return 'Write your recovery letter';
+    if (!path.hrsPlanDone ||
+        !path.environmentalChangesDone ||
+        !path.urgeSurfingIntroSeen) {
+      return 'Build Your Guardrails';
+    }
+    if (!path.module5.recoveryLetterWritten) return 'Write Your Recovery Letter';
     return null;
+  }
+
+  String _phaseLabel(int phase) {
+    switch (phase) {
+      case 1: return 'Getting Started';
+      case 2: return 'Going Deeper';
+      case 3: return 'Sustained Practice';
+      case 4: return 'Maintenance';
+      default: return 'Phase $phase';
+    }
   }
 
   String _dayName(DateTime date) {
@@ -672,20 +686,22 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     final urgeSurfingShown = path.urgeSurfingIntroSeen || dbg;
     final counterResponsesShown = path.counterResponses.isNotEmpty || dbg;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(children: [
-        if (thoughtExamDone) ...[
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        if (thoughtExamDone)
           _habitActionChip(
             label: 'Examine a thought',
             subtitle: '~5 min',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => ThoughtExaminationScreen(habitId: _habit.id),
+              builder: (_) => ThoughtExaminationScreen(
+                habitId: _habit.id,
+                accentColor: MyWalkColor.bpThoughts,
+              ),
             )),
           ),
-        ],
-        if (urgeSurfingShown) ...[
-          if (thoughtExamDone) const SizedBox(width: 6),
+        if (urgeSurfingShown)
           _habitActionChip(
             label: 'Urge surfed',
             subtitle: 'Log a surfed urge',
@@ -694,19 +710,17 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                 habitId: _habit.id,
                 habitName: _habit.name,
                 initialTab: 2,
+                accentColor: MyWalkColor.bpGuardrails,
               ),
             )),
           ),
-        ],
-        if (counterResponsesShown) ...[
-          if (thoughtExamDone || urgeSurfingShown) const SizedBox(width: 6),
+        if (counterResponsesShown)
           _habitActionChip(
             label: 'My counter-responses',
             subtitle: 'Your saved responses',
             onTap: () => _openCounterResponseLibrary(context, path),
           ),
-        ],
-      ]),
+      ],
     );
   }
 

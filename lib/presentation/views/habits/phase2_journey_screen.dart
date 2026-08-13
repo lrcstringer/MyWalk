@@ -133,11 +133,12 @@ class _JourneyBody extends StatelessWidget {
             habitId: habitId,
             habitName: habitName,
             habitType: path.habitType,
+            accentColor: MyWalkColor.bpCueMap,
           ),
         ));
       case 1:
         Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => ThoughtExaminationScreen(habitId: habitId),
+          builder: (_) => ThoughtExaminationScreen(habitId: habitId, accentColor: MyWalkColor.bpThoughts),
         ));
       case 2:
         Navigator.of(context).push(MaterialPageRoute(
@@ -152,11 +153,12 @@ class _JourneyBody extends StatelessWidget {
             habitId: habitId,
             habitName: habitName,
             initialTab: 0,
+            accentColor: MyWalkColor.bpGuardrails,
           ),
         ));
       case 4:
         Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => RecoveryLetterScreen(habitId: habitId),
+          builder: (_) => RecoveryLetterScreen(habitId: habitId, accentColor: MyWalkColor.bpLetter),
         ));
     }
   }

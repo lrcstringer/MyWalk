@@ -26,6 +26,13 @@ class MyWalkColor {
   static const surfaceOverlay = Color(0x0AFFFFFF); // white 4%
   static const inputBackground = Color(0x1AFFFFFF); // white 10%
 
+  // Breaking Patterns — per-task accent colours
+  static const bpValues     = Color(0xFFE8B86D); // warm amber  — Anchor to Your Values
+  static const bpCueMap     = Color(0xFF5BC4A8); // soft teal   — Map Your Pattern Cues
+  static const bpThoughts   = Color(0xFF9B7FD4); // deep violet — Examine Your Thoughts
+  static const bpGuardrails = Color(0xFFE07B5A); // warm coral  — Build Your Guardrails
+  static const bpLetter     = Color(0xFF6FA8D8); // steel blue  — Write Your Recovery Letter
+
   static const LinearGradient goldenGradient = LinearGradient(
     colors: [Color(0xFFD4A843), Color(0xFFE8D5A3)],
     begin: Alignment.topLeft,

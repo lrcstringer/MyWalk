@@ -13,14 +13,17 @@ const _kRpPurple = Color(0xFF8B7EC8);
 /// Free-text letter with soft guidance. Draft saves on every change.
 class RecoveryLetterScreen extends StatefulWidget {
   final String habitId;
+  final Color accentColor;
 
-  const RecoveryLetterScreen({super.key, required this.habitId});
+  const RecoveryLetterScreen({super.key, required this.habitId, this.accentColor = _kRpPurple});
 
   @override
   State<RecoveryLetterScreen> createState() => _RecoveryLetterScreenState();
 }
 
 class _RecoveryLetterScreenState extends State<RecoveryLetterScreen> {
+  Color get _kRpPurple => widget.accentColor;
+
   final TextEditingController _letterCtrl = TextEditingController();
   bool _saving = false;
   bool _showAveIntro = false;

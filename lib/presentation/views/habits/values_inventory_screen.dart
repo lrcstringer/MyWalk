@@ -21,6 +21,7 @@ class ValuesInventoryScreen extends StatefulWidget {
   final bool setupMode;
   final bool wantsPartner;
   final bool wantsRecoveryPath;
+  final Color accentColor;
 
   const ValuesInventoryScreen({
     super.key,
@@ -29,6 +30,7 @@ class ValuesInventoryScreen extends StatefulWidget {
     this.setupMode = false,
     this.wantsPartner = false,
     this.wantsRecoveryPath = false,
+    this.accentColor = _kRpPurple,
   });
 
   @override
@@ -36,6 +38,8 @@ class ValuesInventoryScreen extends StatefulWidget {
 }
 
 class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
+  Color get _kRpPurple => widget.accentColor;
+
   final List<String> _domains = RecoveryModuleContent.m3ValuesDomains;
   late final List<int> _importance;       // 1–10
   late final List<int> _alignment;        // 1–10
@@ -74,10 +78,32 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
   void _restoreDraft() {
     final path =
         context.read<RecoveryPathProvider>().pathFor(widget.habitId);
-    if (path == null || path.valuesInventoryDraftStep == 0) return;
+    if (path == null) return;
+
+    // Edit mode: values already saved — load them and skip the intro.
+    if (path.module3.valuesInventoryDone &&
+        path.module3.valuesInventory.isNotEmpty) {
+      final existing = path.module3.valuesInventory;
+      setState(() {
+        _showIntro = false;
+        _step = 0;
+        for (int i = 0; i < existing.length && i < _domains.length; i++) {
+          final entry = existing[i];
+          _importance[i] = entry.importance;
+          _alignment[i] = entry.alignment;
+          _reflection[i] = entry.reflectionText;
+          _controllers[i].text = entry.reflectionText;
+          _compassDir[i] = entry.compassDirection;
+        }
+      });
+      return;
+    }
+
+    // Resume an in-progress draft.
+    if (path.valuesInventoryDraftStep == 0) return;
     final draft = path.valuesInventoryDraft;
     setState(() {
-      _showIntro = false; // skip intro when resuming a draft
+      _showIntro = false;
       _step = path.valuesInventoryDraftStep.clamp(0, _domains.length - 1);
       for (int i = 0; i < draft.length && i < _domains.length; i++) {
         final item = draft[i];

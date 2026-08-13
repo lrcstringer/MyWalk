@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/recovery_path.dart';
+import '../../../domain/entities/recovery_session.dart';
 import '../../../domain/services/cue_rubric_service.dart';
 import '../../../domain/services/recovery_module_content.dart';
 import '../../providers/recovery_path_provider.dart';
@@ -17,12 +18,14 @@ class GuardrailsScreen extends StatefulWidget {
   final String habitName;
   /// Optional initial tab index (0=env, 1=HRS, 2=urge surfing).
   final int initialTab;
+  final Color accentColor;
 
   const GuardrailsScreen({
     super.key,
     required this.habitId,
     required this.habitName,
     this.initialTab = 0,
+    this.accentColor = _kRpPurple,
   });
 
   @override
@@ -31,6 +34,8 @@ class GuardrailsScreen extends StatefulWidget {
 
 class _GuardrailsScreenState extends State<GuardrailsScreen>
     with SingleTickerProviderStateMixin {
+  Color get _kRpPurple => widget.accentColor;
+
   late final TabController _tabs;
 
   @override
@@ -145,6 +150,9 @@ class _EnvRestructuringTabState extends State<_EnvRestructuringTab> {
   void initState() {
     super.initState();
     _rebuild();
+    if (widget.environmentalChangesDone) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadSavedChanges());
+    }
   }
 
   @override
@@ -157,6 +165,9 @@ class _EnvRestructuringTabState extends State<_EnvRestructuringTab> {
       }
       _rebuild();
     }
+    if (!old.environmentalChangesDone && widget.environmentalChangesDone) {
+      _loadSavedChanges();
+    }
   }
 
   void _rebuild() {
@@ -168,6 +179,29 @@ class _EnvRestructuringTabState extends State<_EnvRestructuringTab> {
     for (final c in _controllers) {
       c.addListener(() => setState(() {}));
     }
+  }
+
+  Future<void> _loadSavedChanges() async {
+    if (!mounted) return;
+    final prov = context.read<RecoveryPathProvider>();
+    final sessions = await prov.getSessionsByType(
+      widget.habitId,
+      RecoverySessionType.m4EnvironmentalRestructuring,
+    );
+    if (!mounted || sessions.isEmpty) return;
+    sessions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final blocks = sessions.first.responseText.split('\n\n');
+    for (var i = 0; i < blocks.length && i < _controllers.length; i++) {
+      final block = blocks[i];
+      final prefix = '${_cueTexts[i]}: ';
+      if (block.startsWith(prefix)) {
+        _controllers[i].text = block.substring(prefix.length);
+      } else {
+        final colonIdx = block.indexOf(': ');
+        if (colonIdx >= 0) _controllers[i].text = block.substring(colonIdx + 2);
+      }
+    }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -215,6 +249,7 @@ class _EnvRestructuringTabState extends State<_EnvRestructuringTab> {
             habitId: widget.habitId,
             habitName: widget.habitName,
             habitType: widget.habitType,
+            accentColor: MyWalkColor.bpCueMap,
           ),
         )),
       );
@@ -587,7 +622,7 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
             TextButton.icon(
               onPressed: () =>
                   setState(() => _planControllers.add(_PlanControllers.blank())),
-              icon: const Icon(Icons.add_rounded, size: 16, color: _kRpPurple),
+              icon: Icon(Icons.add_rounded, size: 16, color: _kRpPurple),
               label: const Text('Add another plan',
                   style: TextStyle(fontSize: 13, color: _kRpPurple)),
             ),
@@ -934,7 +969,7 @@ class _UrgeSurfingIntro extends StatelessWidget {
                       content: const Text(
                           'The "Urge surfed" button will now appear on your habit card.'),
                       duration: const Duration(seconds: 3),
-                      backgroundColor: const Color(0xFF8B7EC8),
+                      backgroundColor: _kRpPurple,
                     ),
                   );
                 }
@@ -1086,7 +1121,7 @@ class _GateView extends StatelessWidget {
           TextButton(
             onPressed: onTap,
             child: Text(buttonLabel,
-                style: const TextStyle(color: _kRpPurple, fontSize: 14)),
+                style: TextStyle(color: _kRpPurple, fontSize: 14)),
           ),
         ],
       ),

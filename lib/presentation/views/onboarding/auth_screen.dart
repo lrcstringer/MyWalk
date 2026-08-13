@@ -248,7 +248,8 @@ class _AuthScreenState extends State<AuthScreen> {
             child: Row(
               children: [
                 _tab('New here?', _mode == _Mode.newUser,
-                    () => setState(() => _mode = _Mode.newUser)),
+                    () => setState(() => _mode = _Mode.newUser),
+                    activeColor: MyWalkColor.golden),
                 _tab('Sign in', _mode == _Mode.signIn,
                     () => setState(() => _mode = _Mode.signIn)),
               ],
@@ -347,14 +348,15 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  Widget _tab(String label, bool selected, VoidCallback onTap) {
+  Widget _tab(String label, bool selected, VoidCallback onTap,
+      {Color activeColor = MyWalkColor.golden}) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? MyWalkColor.golden : Colors.transparent,
+            color: selected ? activeColor : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(

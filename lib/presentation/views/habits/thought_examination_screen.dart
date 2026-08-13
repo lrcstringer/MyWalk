@@ -50,8 +50,9 @@ const _kStep3Example =
 /// Heterogeneous step types: text field, grid select, dual fields, text+chip, two-button.
 class ThoughtExaminationScreen extends StatefulWidget {
   final String habitId;
+  final Color accentColor;
 
-  const ThoughtExaminationScreen({super.key, required this.habitId});
+  const ThoughtExaminationScreen({super.key, required this.habitId, this.accentColor = _kRpPurple});
 
   @override
   State<ThoughtExaminationScreen> createState() =>
@@ -59,6 +60,8 @@ class ThoughtExaminationScreen extends StatefulWidget {
 }
 
 class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
+  Color get _kRpPurple => widget.accentColor;
+
   bool _showOpening = true;
   int _step = 0;
   _Phase _phase = _Phase.input;
@@ -83,6 +86,9 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
   bool _saving = false;
   bool _savedToLibraryFirst = false;
 
+  // Review mode — entered when counterResponses exists and no draft is active
+  bool _reviewMode = false;
+
   @override
   void initState() {
     super.initState();
@@ -96,8 +102,10 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
       c.addListener(() => setState(() {}));
     }
 
-    // Restore draft if available
-    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreDraft());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _restoreDraft();
+      _maybeEnterReviewMode();
+    });
   }
 
   @override
@@ -124,6 +132,28 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
       _step2aCtrl.text = (draft['step2a'] as String?) ?? '';
       _step2bCtrl.text = (draft['step2b'] as String?) ?? '';
       _step3Ctrl.text = (draft['step3'] as String?) ?? '';
+    });
+  }
+
+  void _maybeEnterReviewMode() {
+    final path = context.read<RecoveryPathProvider>().pathFor(widget.habitId);
+    if (path == null || path.counterResponses.isEmpty) return;
+    // Draft takes priority — if a draft is in progress, don't clobber it.
+    if (path.thoughtExaminationDraftStep > 0) return;
+    final cr = path.counterResponses.last;
+    final errorType = cr['errorType'] as String? ?? '';
+    setState(() {
+      _reviewMode = true;
+      _showOpening = false;
+      _step0Ctrl.text = cr['thought'] as String? ?? '';
+      _step3Ctrl.text = cr['alternative'] as String? ?? '';
+      final known = _kThoughtTypes.any((t) => t.key == errorType);
+      if (known) {
+        _step1Selection = errorType;
+      } else {
+        _step1Selection = 'other';
+        _step1OtherCtrl.text = errorType;
+      }
     });
   }
 
@@ -221,6 +251,10 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
   }
 
   void _onBack() {
+    if (_reviewMode) {
+      Navigator.of(context).pop();
+      return;
+    }
     if (_step > 0) {
       setState(() => _step--);
     } else {
@@ -232,6 +266,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
   Widget build(BuildContext context) {
     if (_phase == _Phase.affirmation) return _AffirmationView();
     if (_phase == _Phase.postSave) return _PostSaveView(habitId: widget.habitId, showCounterResponseNotification: _savedToLibraryFirst);
+    if (_reviewMode) return _buildReviewScaffold();
     if (_showOpening) return _buildOpeningScaffold();
 
     return Scaffold(
@@ -290,6 +325,117 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
                     ),
                   ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatReviewDate(dynamic createdAt) {
+    DateTime? dt;
+    if (createdAt is Timestamp) dt = createdAt.toDate();
+    if (dt == null) return '';
+    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${dt.day} ${m[dt.month - 1]} ${dt.year}';
+  }
+
+  Widget _buildReviewScaffold() {
+    final path = context.read<RecoveryPathProvider>().pathFor(widget.habitId);
+    final cr = (path != null && path.counterResponses.isNotEmpty)
+        ? path.counterResponses.last
+        : null;
+    final thought = cr?['thought'] as String? ?? '';
+    final errorType = cr?['errorType'] as String? ?? '';
+    final alternative = cr?['alternative'] as String? ?? '';
+    final dateStr = _formatReviewDate(cr?['createdAt']);
+    final typeDesc = _kThoughtTypes
+        .where((t) => t.key == errorType)
+        .map((t) => t.description)
+        .firstOrNull ?? errorType;
+
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(RecoveryModuleContent.m2Title,
+            style: TextStyle(
+                color: MyWalkColor.warmWhite,
+                fontSize: 16,
+                fontWeight: FontWeight.w600)),
+        leading: BackButton(
+          color: MyWalkColor.warmWhite,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+              child: IgnorePointer(child: DeepSpaceBackground())),
+          SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Container(
+                        width: 3, height: 18,
+                        decoration: BoxDecoration(
+                            color: _kRpPurple,
+                            borderRadius: BorderRadius.circular(2))),
+                    const SizedBox(width: 10),
+                    Text('Most recent examination',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: _kRpPurple.withValues(alpha: 0.9))),
+                    const Spacer(),
+                    if (dateStr.isNotEmpty)
+                      Text(dateStr,
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.4))),
+                  ]),
+                  const SizedBox(height: 20),
+                  _ReviewSection(label: 'The thought', value: thought),
+                  if (typeDesc.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _ReviewSection(label: 'Thought type', value: typeDesc),
+                  ],
+                  const SizedBox(height: 16),
+                  _ReviewSection(label: 'Your counter-response', value: alternative),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => setState(() {
+                        _reviewMode = false;
+                        _showOpening = true;
+                        _step = 0;
+                        _step0Ctrl.clear();
+                        _step1Selection = null;
+                        _step1OtherCtrl.clear();
+                        _step2aCtrl.clear();
+                        _step2bCtrl.clear();
+                        _step3Ctrl.clear();
+                      }),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kRpPurple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Examine a new thought',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -744,6 +890,43 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
             child: const Text('No, just this once',
                 style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15)),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Review section widget ─────────────────────────────────────────────────────
+
+class _ReviewSection extends StatelessWidget {
+  final String label;
+  final String value;
+  const _ReviewSection({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: _kRpPurple.withValues(alpha: 0.7),
+                letterSpacing: 0.6)),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: MyWalkColor.surfaceOverlay,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(value,
+              style: const TextStyle(
+                  fontSize: 14,
+                  color: MyWalkColor.warmWhite,
+                  height: 1.55)),
         ),
       ],
     );

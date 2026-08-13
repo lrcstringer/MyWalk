@@ -15,7 +15,7 @@ import 'module_session_screen.dart';
 import 'values_inventory_screen.dart';
 import 'guardrails_screen.dart';
 import 'record_a_moment_screen.dart';
-import 'phase2_journey_screen.dart';
+import 'my_freedom_plan_screen.dart';
 import 'phase_transition_screen.dart';
 import 'recovery_letter_screen.dart';
 import 'daily_check_in_modal.dart';
@@ -152,6 +152,7 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
           habitName: widget.habitName,
           setupMode: true,
           wantsRecoveryPath: true,
+          accentColor: MyWalkColor.bpValues,
         ),
       ),
     );
@@ -169,7 +170,7 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
 
         if (!inventoryDone) {
           Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => ValuesInventoryScreen(habitId: habitId),
+            builder: (_) => ValuesInventoryScreen(habitId: habitId, accentColor: MyWalkColor.bpValues),
           ));
         } else if (!compassDone) {
           Navigator.of(context).push(MaterialPageRoute(
@@ -181,7 +182,7 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
 
       case 2:
         Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => ThoughtExaminationScreen(habitId: habitId),
+          builder: (_) => ThoughtExaminationScreen(habitId: habitId, accentColor: MyWalkColor.bpThoughts),
         ));
 
       case 4:
@@ -189,6 +190,7 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
           builder: (_) => GuardrailsScreen(
             habitId: habitId,
             habitName: widget.habitName,
+            accentColor: MyWalkColor.bpGuardrails,
           ),
         ));
 
@@ -197,7 +199,7 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
         final letterWritten = path?.module5.recoveryLetterWritten ?? false;
         if (!letterWritten) {
           Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => RecoveryLetterScreen(habitId: habitId),
+            builder: (_) => RecoveryLetterScreen(habitId: habitId, accentColor: MyWalkColor.bpLetter),
           ));
         } else {
           // Letter exists — offer quarterly review.
@@ -223,7 +225,7 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
 
   void _openPhase2JourneyView() {
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => Phase2JourneyScreen(
+      builder: (_) => MyFreedomPlanScreen(
         habitId: widget.habitId,
         habitName: widget.habitName,
       ),
