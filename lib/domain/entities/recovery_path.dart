@@ -304,6 +304,7 @@ class RecoveryPath {
   // Draft state for resumable flows
   final int thoughtExaminationDraftStep;
   final Map<String, dynamic>? thoughtExaminationDraft;
+  final Map<String, dynamic>? thoughtExaminationResult;
   final int valuesInventoryDraftStep;
   final List<Map<String, dynamic>> valuesInventoryDraft;
   final int cueHierarchyDraftStage;
@@ -349,6 +350,7 @@ class RecoveryPath {
     this.quarterlyReviewDueDays = const [90, 180, 270, 360],
     this.thoughtExaminationDraftStep = 0,
     this.thoughtExaminationDraft,
+    this.thoughtExaminationResult,
     this.valuesInventoryDraftStep = 0,
     this.valuesInventoryDraft = const [],
     this.cueHierarchyDraftStage = 0,
@@ -382,6 +384,7 @@ class RecoveryPath {
     List<int>? quarterlyReviewDueDays,
     int? thoughtExaminationDraftStep,
     Map<String, dynamic>? thoughtExaminationDraft,
+    Map<String, dynamic>? thoughtExaminationResult,
     int? valuesInventoryDraftStep,
     List<Map<String, dynamic>>? valuesInventoryDraft,
     int? cueHierarchyDraftStage,
@@ -423,6 +426,8 @@ class RecoveryPath {
             thoughtExaminationDraftStep ?? this.thoughtExaminationDraftStep,
         thoughtExaminationDraft:
             thoughtExaminationDraft ?? this.thoughtExaminationDraft,
+        thoughtExaminationResult:
+            thoughtExaminationResult ?? this.thoughtExaminationResult,
         valuesInventoryDraftStep:
             valuesInventoryDraftStep ?? this.valuesInventoryDraftStep,
         valuesInventoryDraft: valuesInventoryDraft ?? this.valuesInventoryDraft,
@@ -470,6 +475,7 @@ class RecoveryPath {
         'quarterlyReviewDueDays': quarterlyReviewDueDays,
         'thoughtExaminationDraftStep': thoughtExaminationDraftStep,
         'thoughtExaminationDraft': thoughtExaminationDraft,
+        'thoughtExaminationResult': thoughtExaminationResult,
         'valuesInventoryDraftStep': valuesInventoryDraftStep,
         'valuesInventoryDraft': valuesInventoryDraft,
         'cueHierarchyDraftStage': cueHierarchyDraftStage,
@@ -519,6 +525,11 @@ class RecoveryPath {
         ? Map<String, dynamic>.from(rawTEDraft)
         : null;
 
+    final rawTEResult = d['thoughtExaminationResult'];
+    final thoughtExaminationResult = rawTEResult is Map
+        ? Map<String, dynamic>.from(rawTEResult)
+        : null;
+
     final rawQRDays = d['quarterlyReviewDueDays'];
     final quarterlyReviewDueDays = rawQRDays is List
         ? rawQRDays.whereType<int>().toList()
@@ -553,6 +564,7 @@ class RecoveryPath {
       thoughtExaminationDraftStep:
           (d['thoughtExaminationDraftStep'] as int?) ?? 0,
       thoughtExaminationDraft: thoughtExaminationDraft,
+      thoughtExaminationResult: thoughtExaminationResult,
       valuesInventoryDraftStep: (d['valuesInventoryDraftStep'] as int?) ?? 0,
       valuesInventoryDraft: valuesInventoryDraft,
       cueHierarchyDraftStage: (d['cueHierarchyDraftStage'] as int?) ?? 0,

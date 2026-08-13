@@ -351,8 +351,10 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
     final phase = prov.phaseFor(widget.habitId);
     final showPhase2Tasks = phase >= 2;
 
+    final bool thoughtExamDone =
+        path.thoughtExaminationResult != null || path.counterResponses.isNotEmpty;
     final bool letterLocked = !path.cueHierarchyDone ||
-        path.counterResponses.isEmpty ||
+        !thoughtExamDone ||
         !path.hrsPlanDone ||
         !path.environmentalChangesDone ||
         !path.urgeSurfingIntroSeen;
@@ -396,7 +398,7 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
           _PlanTaskCard(
             title: 'Examine Your Thoughts',
             accent: _kAccentThoughts,
-            isDone: path.counterResponses.isNotEmpty,
+            isDone: thoughtExamDone,
             isLocked: false,
             hasDraft: path.thoughtExaminationDraftStep > 0,
             onTap: () => Navigator.of(context).push(MaterialPageRoute(

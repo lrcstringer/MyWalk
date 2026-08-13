@@ -13,7 +13,6 @@ import '../shared/fruit_tag_row.dart';
 import '../shared/golden_pulse_view.dart';
 import 'habit_detail_view.dart';
 import 'habit_history_view.dart';
-import 'thought_examination_screen.dart';
 import 'guardrails_screen.dart';
 import 'record_a_moment_screen.dart';
 import '../../../domain/entities/recovery_path.dart';
@@ -608,7 +607,8 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
 
   String? _nextPhase2Task(RecoveryPath path) {
     if (!path.cueHierarchyDone) return 'Map your pattern cues';
-    if (path.counterResponses.isEmpty) return 'Examine your thoughts';
+    if (path.thoughtExaminationResult == null && path.counterResponses.isEmpty)
+      return 'Examine your thoughts';
     if (!path.hrsPlanDone ||
         !path.environmentalChangesDone ||
         !path.urgeSurfingIntroSeen) {
@@ -682,22 +682,13 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     if (path == null) return const SizedBox.shrink();
 
     final dbg = prov.debugChipsEnabled(_habit.id);
-    final thoughtExamDone = path.counterResponses.isNotEmpty || dbg;
     final urgeSurfingShown = path.urgeSurfingIntroSeen || dbg;
-    final counterResponsesShown = path.counterResponses.isNotEmpty || dbg;
+    final counterResponsesShown =
+        path.thoughtExaminationResult != null ||
+        path.counterResponses.isNotEmpty ||
+        dbg;
 
     final chips = <Widget>[
-      if (thoughtExamDone)
-        _habitActionChip(
-          label: 'Examine a thought',
-          subtitle: '~5 min',
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => ThoughtExaminationScreen(
-              habitId: _habit.id,
-              accentColor: MyWalkColor.bpThoughts,
-            ),
-          )),
-        ),
       if (urgeSurfingShown)
         _habitActionChip(
           label: 'Urge surfed',
@@ -791,8 +782,10 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) =>
-          _CounterResponseLibrary(responses: path.counterResponses),
+      builder: (_) => _CounterResponseLibrary(
+            result: path.thoughtExaminationResult,
+            legacyResponses: path.counterResponses,
+          ),
     );
   }
 
@@ -1057,11 +1050,30 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
 // ── Counter-response library bottom sheet ─────────────────────────────────────
 
 class _CounterResponseLibrary extends StatelessWidget {
-  final List<Map<String, dynamic>> responses;
-  const _CounterResponseLibrary({required this.responses});
+  final Map<String, dynamic>? result;
+  final List<Map<String, dynamic>> legacyResponses;
+
+  const _CounterResponseLibrary({
+    required this.legacyResponses,
+    this.result,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // New format: show Q5 counter-responses then Q4 friend encouragement.
+    // Legacy format: show the old counterResponses list.
+    final List<String> counterResponses = result != null
+        ? (result!['counterResponses'] as List?)?.cast<String>() ?? []
+        : legacyResponses
+            .map((r) => r['alternative'] as String? ?? '')
+            .where((s) => s.isNotEmpty)
+            .toList();
+    final String friendEncouragement = result != null
+        ? (result!['friendEncouragement'] as String?) ?? ''
+        : '';
+
+    final bool isEmpty = counterResponses.isEmpty && friendEncouragement.isEmpty;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1088,7 +1100,7 @@ class _CounterResponseLibrary extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Flexible(
-          child: responses.isEmpty
+          child: isEmpty
               ? Padding(
                   padding: const EdgeInsets.all(20),
                   child: Text('No counter-responses saved yet.',
@@ -1096,40 +1108,42 @@ class _CounterResponseLibrary extends StatelessWidget {
                           fontSize: 13,
                           color: MyWalkColor.warmWhite.withValues(alpha: 0.5))),
                 )
-              : ListView.separated(
+              : ListView(
                   shrinkWrap: true,
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  itemCount: responses.length,
-                  separatorBuilder: (_, _) => Divider(
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.07),
-                    height: 1,
-                  ),
-                  itemBuilder: (_, i) {
-                    final r = responses[i];
-                    final thought = r['thought'] as String? ?? '';
-                    final alternative = r['alternative'] as String? ?? '';
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (thought.isNotEmpty) ...[
-                            Text('"$thought"',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    fontStyle: FontStyle.italic,
-                                    color: MyWalkColor.warmWhite
-                                        .withValues(alpha: 0.45))),
-                            const SizedBox(height: 4),
-                          ],
-                          Text(alternative,
+                  children: [
+                    ...counterResponses.map((cr) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(cr,
                               style: const TextStyle(
-                                  fontSize: 13,
-                                  color: MyWalkColor.warmWhite)),
-                        ],
+                                  fontSize: 13, color: MyWalkColor.warmWhite)),
+                        )),
+                    if (counterResponses.isNotEmpty && friendEncouragement.isNotEmpty)
+                      Divider(
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.07),
+                          height: 1),
+                    if (friendEncouragement.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('What I\'d say to a friend',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: MyWalkColor.warmWhite
+                                        .withValues(alpha: 0.45),
+                                    letterSpacing: 0.4)),
+                            const SizedBox(height: 6),
+                            Text(friendEncouragement,
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    color: MyWalkColor.warmWhite)),
+                          ],
+                        ),
                       ),
-                    );
-                  },
+                  ],
                 ),
         ),
       ],

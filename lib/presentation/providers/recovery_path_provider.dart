@@ -551,41 +551,27 @@ class RecoveryPathProvider extends ChangeNotifier {
     await _repo.updatePath(updated);
   }
 
+  Future<void> saveThoughtExaminationResult(
+    String habitId,
+    Map<String, dynamic> result,
+  ) async {
+    final path = _paths[habitId];
+    if (path == null) return;
+    final updated = path.copyWith(
+      thoughtExaminationResult: result,
+      thoughtExaminationDraftStep: 0,
+    );
+    _paths[habitId] = updated;
+    await _repo.updatePath(updated);
+    notifyListeners();
+  }
+
   Future<void> clearThoughtExaminationDraft(String habitId) async {
     final path = _paths[habitId];
     if (path == null) return;
-    final updated = RecoveryPath(
-      id: path.id,
-      userId: path.userId,
-      habitId: path.habitId,
-      startedAt: path.startedAt,
-      currentPhase: path.currentPhase,
-      module1: path.module1,
-      module3: path.module3,
-      module4: path.module4,
-      module5: path.module5,
-      totalLapses: path.totalLapses,
-      lastLapseAt: path.lastLapseAt,
-      recoveryLetterDraft: path.recoveryLetterDraft,
-      counterResponses: path.counterResponses,
-      habitType: path.habitType,
-      cueHierarchyDone: path.cueHierarchyDone,
-      cueHierarchy: path.cueHierarchy,
-      environmentalChangesDone: path.environmentalChangesDone,
-      hrsPlanDone: path.hrsPlanDone,
-      urgeSurfingIntroSeen: path.urgeSurfingIntroSeen,
-      module5IntroSeen: path.module5IntroSeen,
-      lapseButtonAvailableFrom: path.lapseButtonAvailableFrom,
-      lastLifestyleAuditAt: path.lastLifestyleAuditAt,
-      quarterlyReviewDueDays: path.quarterlyReviewDueDays,
+    final updated = path.copyWith(
       thoughtExaminationDraftStep: 0,
       thoughtExaminationDraft: null,
-      valuesInventoryDraftStep: path.valuesInventoryDraftStep,
-      valuesInventoryDraft: path.valuesInventoryDraft,
-      cueHierarchyDraftStage: path.cueHierarchyDraftStage,
-      dailyCheckInEmotionalRating: path.dailyCheckInEmotionalRating,
-      dailyCheckInOutcome: path.dailyCheckInOutcome,
-      midPointReflectionDone: path.midPointReflectionDone,
     );
     _paths[habitId] = updated;
     await _repo.updatePath(updated);
