@@ -535,12 +535,19 @@ class RecoveryPath {
         ? rawQRDays.whereType<int>().toList()
         : const <int>[90, 180, 270, 360];
 
+    final rawPlanActive = d['planActive'] as bool?;
+    final storedPhase = (d['currentPhase'] as int?) ?? 1;
+    // Absent → active (old docs). Explicitly false but phase > 1 → self-heal
+    // corrupted docs. False on phase 1 → genuinely not yet activated.
+    final healedPlanActive =
+        rawPlanActive == null ? true : (rawPlanActive || storedPhase > 1);
+
     return RecoveryPath(
       id: doc.id,
       userId: d['userId'] as String,
       habitId: d['habitId'] as String,
       startedAt: (d['startedAt'] as Timestamp).toDate(),
-      currentPhase: (d['currentPhase'] as int?) ?? 1,
+      currentPhase: storedPhase,
       module1: RecoveryModule1State.fromMap(d['module1'] as Map<String, dynamic>?),
       module3: RecoveryModule3State.fromMap(d['module3'] as Map<String, dynamic>?),
       module4: RecoveryModule4State.fromMap(d['module4'] as Map<String, dynamic>?),
@@ -574,9 +581,7 @@ class RecoveryPath {
       midPointReflectionDone: (d['midPointReflectionDone'] as bool?) ?? false,
       phase2TransitionShown: (d['phase2TransitionShown'] as bool?) ?? false,
       phase4TransitionShown: (d['phase4TransitionShown'] as bool?) ?? false,
-      // Absent in old docs (written before this field existed) → treat as active.
-      // New values-only docs have planActive: false written explicitly by startPath().
-      planActive: (d['planActive'] as bool?) ?? true,
+      planActive: healedPlanActive,
     );
   }
 }

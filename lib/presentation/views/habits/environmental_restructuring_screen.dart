@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../domain/services/cue_rubric_service.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
-
 
 class EnvironmentalRestructuringScreen extends StatefulWidget {
   final String habitId;
@@ -25,8 +23,8 @@ class EnvironmentalRestructuringScreen extends StatefulWidget {
 class _EnvironmentalRestructuringScreenState
     extends State<EnvironmentalRestructuringScreen> {
   late final List<Map<String, dynamic>> _cues;
-  late final List<TextEditingController> _controllers;
-  late final List<List<String>> _suggestions;
+  // One list of controllers per cue — supports multiple changes per cue.
+  late final List<List<TextEditingController>> _controllers;
   bool _showIntro = true;
   bool _saving = false;
   bool _done = false;
@@ -37,39 +35,39 @@ class _EnvironmentalRestructuringScreenState
     final path = context.read<RecoveryPathProvider>().pathFor(widget.habitId);
     final hierarchy = path?.cueHierarchy ?? [];
     _cues = hierarchy.take(3).toList();
+    _controllers = List.generate(_cues.length, (_) => [_makeCtrl()]);
+  }
 
-    _controllers = List.generate(_cues.length, (_) => TextEditingController());
-    _suggestions = _cues.map((c) {
-      final cueText = c['cueText'] as String? ?? '';
-      return CueRubricService.environmentalSuggestionsFor(
-          widget.habitType, cueText);
-    }).toList();
-
-    for (final c in _controllers) {
-      c.addListener(() => setState(() {}));
-    }
+  TextEditingController _makeCtrl() {
+    final c = TextEditingController();
+    c.addListener(() => setState(() {}));
+    return c;
   }
 
   @override
   void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
+    for (final list in _controllers) {
+      for (final c in list) c.dispose();
     }
     super.dispose();
   }
 
   bool get _canSave =>
-      _controllers.isNotEmpty &&
-      _controllers.every((c) => c.text.trim().isNotEmpty);
+      _cues.isNotEmpty &&
+      _controllers.every((list) => list.any((c) => c.text.trim().isNotEmpty));
 
   Future<void> _save() async {
     if (!_canSave) return;
     setState(() => _saving = true);
     try {
-      final changes = List.generate(_cues.length, (i) => {
-        'cue': _cues[i]['cueText'] as String? ?? '',
-        'change': _controllers[i].text.trim(),
-      });
+      final changes = <Map<String, dynamic>>[];
+      for (int i = 0; i < _cues.length; i++) {
+        final cueText = _cues[i]['cueText'] as String? ?? '';
+        for (final ctrl in _controllers[i]) {
+          final text = ctrl.text.trim();
+          if (text.isNotEmpty) changes.add({'cue': cueText, 'change': text});
+        }
+      }
       await context
           .read<RecoveryPathProvider>()
           .markEnvironmentalChangesDone(widget.habitId, changes);
@@ -178,29 +176,59 @@ class _EnvironmentalRestructuringScreenState
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Intro callout
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: _kRpPurple.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: _kRpPurple.withValues(alpha: 0.18)),
-                          ),
-                          child: Text(
-                            'Willpower works worst exactly when you need it most. '
-                            'Making concrete changes to your environment is more effective '
-                            'than relying on willpower in the moment.',
-                            style: TextStyle(
-                                fontSize: 13,
-                                color:
-                                    MyWalkColor.warmWhite.withValues(alpha: 0.7),
-                                height: 1.5),
-                          ),
+                        // Heading + explanatory copy
+                        const Text(
+                          'What changing your environment is about',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: MyWalkColor.warmWhite),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Willpower is often weakest when you most need it. One way to change the situation is to change your environment or context so that the habit is harder and alternatives are easier. For each of the cues you identified earlier, we are going to record at least one concrete change you can make to increase the friction between cue and behaviour or more easily enable an alternative choice.',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+                              height: 1.6),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Here are some examples to help you think of ideas:',
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.75)),
+                        ),
+                        const SizedBox(height: 10),
+                        _ExampleRow(
+                          label: 'Procrastination',
+                          text: 'Work in designated spaces with minimal distraction; use website blockers during focus periods; make the first action on any task the smallest possible step (open the document; write one sentence).',
+                        ),
+                        _ExampleRow(
+                          label: 'Gambling',
+                          text: 'Self-exclusion from gambling sites and physical venues; remove gambling apps; block gambling sites at the router level; give financial oversight to a trusted person during early recovery.',
+                        ),
+                        _ExampleRow(
+                          label: 'Alcohol',
+                          text: 'Do not keep alcohol at home; identify two or three alcohol-free social alternatives; plan non-drinking responses for common social situations in advance.',
+                        ),
+                        _ExampleRow(
+                          label: 'Pornography',
+                          text: 'Content filtering on devices, removing the habit browser from the home screen, device-free bedroom rule, support/accountability partner established.',
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Let\'s now go through your cues and add concrete changes you will make.',
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.8),
+                              height: 1.5),
                         ),
                         const SizedBox(height: 24),
 
@@ -208,10 +236,10 @@ class _EnvironmentalRestructuringScreenState
                           _emptyState()
                         else
                           ...List.generate(_cues.length, (i) => _CueSection(
-                                cueText:
-                                    _cues[i]['cueText'] as String? ?? '',
-                                controller: _controllers[i],
-                                suggestions: _suggestions[i],
+                                cueText: _cues[i]['cueText'] as String? ?? '',
+                                controllers: _controllers[i],
+                                onAdd: () => setState(() =>
+                                    _controllers[i].add(_makeCtrl())),
                               )),
                       ],
                     ),
@@ -266,34 +294,51 @@ class _EnvironmentalRestructuringScreenState
   }
 }
 
-// ── Cue section ───────────────────────────────────────────────────────────────
+// ── Example row ───────────────────────────────────────────────────────────────
 
-class _CueSection extends StatefulWidget {
-  final String cueText;
-  final TextEditingController controller;
-  final List<String> suggestions;
-
-  const _CueSection({
-    required this.cueText,
-    required this.controller,
-    required this.suggestions,
-  });
-
-  @override
-  State<_CueSection> createState() => _CueSectionState();
-}
-
-class _CueSectionState extends State<_CueSection> {
-  final Set<int> _dismissedSuggestions = {};
+class _ExampleRow extends StatelessWidget {
+  final String label;
+  final String text;
+  const _ExampleRow({required this.label, required this.text});
 
   @override
   Widget build(BuildContext context) {
-    final visibleSuggestions = widget.suggestions
-        .asMap()
-        .entries
-        .where((e) => !_dismissedSuggestions.contains(e.key))
-        .toList();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: RichText(
+        text: TextSpan(
+          style: TextStyle(
+              fontSize: 13,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
+              height: 1.55),
+          children: [
+            TextSpan(
+                text: '$label — ',
+                style: const TextStyle(fontWeight: FontWeight.w600,
+                    color: _kRpPurple)),
+            TextSpan(text: text),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
+// ── Cue section ───────────────────────────────────────────────────────────────
+
+class _CueSection extends StatelessWidget {
+  final String cueText;
+  final List<TextEditingController> controllers;
+  final VoidCallback onAdd;
+
+  const _CueSection({
+    required this.cueText,
+    required this.controllers,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
       child: Column(
@@ -307,7 +352,7 @@ class _CueSectionState extends State<_CueSection> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              widget.cueText,
+              cueText,
               style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -316,35 +361,36 @@ class _CueSectionState extends State<_CueSection> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'What one concrete change will you make?',
+            'What concrete change will you make?',
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: MyWalkColor.warmWhite),
           ),
           const SizedBox(height: 8),
-          TextField(
-            controller: widget.controller,
-            minLines: 2,
-            maxLines: null,
-            style: const TextStyle(
-                color: MyWalkColor.warmWhite, fontSize: 14, height: 1.5),
-            decoration: InputDecoration(
-              hintText:
-                  'e.g. Move my phone charger to the hallway before 9pm',
-              hintStyle: TextStyle(
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
-                  fontSize: 13),
-              filled: true,
-              fillColor: MyWalkColor.surfaceOverlay,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+          ...List.generate(controllers.length, (i) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: TextField(
+              controller: controllers[i],
+              minLines: 2,
+              maxLines: null,
+              style: const TextStyle(
+                  color: MyWalkColor.warmWhite, fontSize: 14, height: 1.5),
+              decoration: InputDecoration(
+                hintText: 'e.g. Move my phone charger to the hallway before 9pm',
+                hintStyle: TextStyle(
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.28),
+                    fontSize: 13),
+                filled: true,
+                fillColor: MyWalkColor.surfaceOverlay,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.all(14),
               ),
-              contentPadding: const EdgeInsets.all(14),
             ),
-          ),
-          const SizedBox(height: 6),
+          )),
           Text(
             'Be specific — e.g. "delete the app" not "use my phone less"',
             style: TextStyle(
@@ -352,72 +398,26 @@ class _CueSectionState extends State<_CueSection> {
                 color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
                 fontStyle: FontStyle.italic),
           ),
-          if (visibleSuggestions.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: visibleSuggestions.map((entry) {
-                return _SuggestionChip(
-                  label: entry.value,
-                  onTap: () =>
-                      widget.controller.text = entry.value,
-                  onDismiss: () =>
-                      setState(() => _dismissedSuggestions.add(entry.key)),
-                );
-              }).toList(),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ── Suggestion chip ───────────────────────────────────────────────────────────
-
-class _SuggestionChip extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final VoidCallback onDismiss;
-
-  const _SuggestionChip({
-    required this.label,
-    required this.onTap,
-    required this.onDismiss,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.12)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(label,
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: onAdd,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_circle_outline_rounded,
+                    size: 16, color: _kRpPurple.withValues(alpha: 0.8)),
+                const SizedBox(width: 6),
+                Text(
+                  'Add another concrete change',
                   style: TextStyle(
-                      fontSize: 12,
-                      color: MyWalkColor.warmWhite.withValues(alpha: 0.65))),
+                      fontSize: 13,
+                      color: _kRpPurple.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w500),
+                ),
+              ],
             ),
-            const SizedBox(width: 4),
-            GestureDetector(
-              onTap: onDismiss,
-              behavior: HitTestBehavior.opaque,
-              child: Icon(Icons.close_rounded,
-                  size: 14,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

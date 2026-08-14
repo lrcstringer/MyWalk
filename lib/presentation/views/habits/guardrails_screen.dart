@@ -7,7 +7,6 @@ import '../../../domain/services/recovery_module_content.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
 import 'cue_hierarchy_screen.dart';
-import 'urge_surfed_log_screen.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
 
@@ -556,7 +555,7 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Build Your Coping Plans',
+              'Build Your High Risk Situation (HRS) Coping Plans',
               style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -622,9 +621,9 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
             TextButton.icon(
               onPressed: () =>
                   setState(() => _planControllers.add(_PlanControllers.blank())),
-              icon: Icon(Icons.add_rounded, size: 16, color: _kRpPurple),
+              icon: Icon(Icons.add_rounded, size: 17, color: _kRpPurple),
               label: const Text('Add another plan',
-                  style: TextStyle(fontSize: 13, color: _kRpPurple)),
+                  style: TextStyle(fontSize: 14, color: _kRpPurple, fontWeight: FontWeight.w600)),
             ),
           const SizedBox(height: 16),
           SizedBox(
@@ -730,7 +729,7 @@ class _PlanCardState extends State<_PlanCard> {
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(
-              'This is a good moment to consider setting up a support partner.',
+              'This is a good time to consider setting up a support/accountability partner, if you haven\'t already.',
               style: TextStyle(
                   fontSize: 11,
                   color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
@@ -854,17 +853,23 @@ class _UrgeSurfingTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!urgeSurfingIntroSeen) {
-      return _UrgeSurfingIntro(habitId: habitId, habitName: habitName);
-    }
-    return _UrgeSurfingSession(habitId: habitId, habitName: habitName);
+    return _UrgeSurfingIntro(
+      habitId: habitId,
+      habitName: habitName,
+      showButton: !urgeSurfingIntroSeen,
+    );
   }
 }
 
 class _UrgeSurfingIntro extends StatelessWidget {
   final String habitId;
   final String habitName;
-  const _UrgeSurfingIntro({required this.habitId, required this.habitName});
+  final bool showButton;
+  const _UrgeSurfingIntro({
+    required this.habitId,
+    required this.habitName,
+    this.showButton = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -887,6 +892,31 @@ class _UrgeSurfingIntro extends StatelessWidget {
                 height: 1.65),
           ),
           const SizedBox(height: 16),
+          Text(
+            'Repeated urge surfing weakens the cue-response association over time and builds experiential confidence that urges do not require action.',
+            style: TextStyle(
+                fontSize: 13,
+                color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
+                height: 1.55),
+          ),
+          const SizedBox(height: 10),
+          Text.rich(
+            TextSpan(
+              style: TextStyle(
+                  fontSize: 13,
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
+                  height: 1.55),
+              children: [
+                const TextSpan(text: 'You can do this by tapping the \''),
+                const TextSpan(
+                    text: 'Urge surfed',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+                const TextSpan(
+                    text: '\' button on the practice card. You\'ll be asked to record what happened: what was the urge, how did it feel, did it rise and then decrease, and how long did that take.'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
           Text(
             'When an urge arises:',
             style: TextStyle(
@@ -923,122 +953,44 @@ class _UrgeSurfingIntro extends StatelessWidget {
               ],
             ),
           )),
-          const SizedBox(height: 8),
-          Text(
-            'Repeated urge surfing weakens the cue-response association over time and builds experiential confidence that urges do not require action.',
-            style: TextStyle(
-                fontSize: 13,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
-                height: 1.55),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'You can do this by tapping the \'Urge surfed\' button on the practice card. You\'ll be asked to record what happened: what was the urge, how did it feel, did it rise and then decrease, and how long did that take.',
-            style: TextStyle(
-                fontSize: 13,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
-                height: 1.55),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: _kRpPurple.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _kRpPurple.withValues(alpha: 0.18)),
-            ),
-            child: Text(
-              'Education only — no fields to fill in here. Use this skill via the \'Urge surfed\' button on your habit card whenever an urge arises.',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
-                  height: 1.5),
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () async {
-                await context
-                    .read<RecoveryPathProvider>()
-                    .markUrgeSurfingIntroSeen(habitId);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                          'The "Urge surfed" button will now appear on your habit card.'),
-                      duration: const Duration(seconds: 3),
-                      backgroundColor: _kRpPurple,
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kRpPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Got it — I understand urge surfing',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UrgeSurfingSession extends StatelessWidget {
-  final String habitId;
-  final String habitName;
-  const _UrgeSurfingSession({required this.habitId, required this.habitName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 24, 20, 32 + MediaQuery.of(context).padding.bottom),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            RecoveryModuleContent.m4UrgeSurfingHint,
-            style: TextStyle(
-                fontSize: 13,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.55),
-                height: 1.5),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => UrgeSurfedLogScreen(
-                    habitId: habitId,
-                    habitName: habitName,
-                  ),
+          if (showButton) ...[
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  await context
+                      .read<RecoveryPathProvider>()
+                      .markUrgeSurfingIntroSeen(habitId);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text(
+                            'The "Urge surfed" button will now appear on your habit card.'),
+                        duration: const Duration(seconds: 3),
+                        backgroundColor: _kRpPurple,
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kRpPurple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-              ),
-              icon: const Icon(Icons.waves_rounded, size: 16),
-              label: const Text('Log a surfed urge',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kRpPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                child: const Text('Got it — I understand urge surfing',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
+
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 

@@ -398,7 +398,7 @@ class _FreedomJourneyTabState extends State<FreedomJourneyTab> {
           _PlanTaskCard(
             title: 'Examine Your Thoughts',
             accent: _kAccentThoughts,
-            isDone: thoughtExamDone,
+            isDone: path.thoughtExaminationResult != null,
             isLocked: false,
             hasDraft: path.thoughtExaminationDraftStep > 0,
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
@@ -825,31 +825,6 @@ class _GuardrailsPlanCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          _GuardrailsPill(
-                            label: 'High-Risk Plan',
-                            isDone: path.hrsPlanDone,
-                            accent: accent,
-                            onTap: () => _openTab(context, 1),
-                          ),
-                          _GuardrailsPill(
-                            label: 'Change Your Environment',
-                            isDone: path.environmentalChangesDone,
-                            accent: accent,
-                            onTap: () => _openTab(context, 0),
-                          ),
-                          _GuardrailsPill(
-                            label: 'Urge Surfing',
-                            isDone: path.urgeSurfingIntroSeen,
-                            accent: accent,
-                            onTap: () => _openTab(context, 2),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -863,68 +838,6 @@ class _GuardrailsPlanCard extends StatelessWidget {
   }
 }
 
-class _GuardrailsPill extends StatelessWidget {
-  final String label;
-  final bool isDone;
-  final VoidCallback onTap;
-  final Color accent;
-
-  const _GuardrailsPill({
-    required this.label,
-    required this.isDone,
-    required this.onTap,
-    required this.accent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: isDone ? accent.withValues(alpha: 0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDone
-                ? accent.withValues(alpha: 0.45)
-                : MyWalkColor.warmWhite.withValues(alpha: 0.2),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isDone) ...[
-              Icon(Icons.check_circle_rounded, size: 11, color: accent),
-              const SizedBox(width: 4),
-            ] else ...[
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
-                ),
-              ),
-              const SizedBox(width: 4),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
-                color: isDone
-                    ? accent
-                    : MyWalkColor.warmWhite.withValues(alpha: 0.55),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ── Journey group header ──────────────────────────────────────────────────────
 

@@ -69,6 +69,7 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
   bool _editMode = false;
   bool _saving = false;
   bool _isFirstSave = false;
+  bool _didInit = false;
 
   // Q1 — dynamic thought list (min 1)
   final List<TextEditingController> _thoughtCtrls = [];
@@ -96,7 +97,15 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
     _q4Ctrl = TextEditingController()..addListener(() => setState(() {}));
     _addThoughtCtrl('');
     _addCounterCtrl('');
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initFromPath());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didInit) {
+      _didInit = true;
+      _initFromPath();
+    }
   }
 
   @override
@@ -125,23 +134,18 @@ class _ThoughtExaminationScreenState extends State<ThoughtExaminationScreen> {
     final path = context.read<RecoveryPathProvider>().pathFor(widget.habitId);
     if (path == null) return;
 
-    if (path.thoughtExaminationResult != null &&
-        path.thoughtExaminationDraftStep == 0) {
+    if (path.thoughtExaminationResult != null) {
       _loadFromMap(path.thoughtExaminationResult!, isResult: true);
-      setState(() {
-        _showOpening = false;
-        _editMode = true;
-      });
+      _showOpening = false;
+      _editMode = true;
       return;
     }
 
     if (path.thoughtExaminationDraftStep > 0 &&
         path.thoughtExaminationDraft != null) {
       _loadFromMap(path.thoughtExaminationDraft!, isResult: false);
-      setState(() {
-        _showOpening = false;
-        _step = path.thoughtExaminationDraftStep;
-      });
+      _showOpening = false;
+      _step = path.thoughtExaminationDraftStep;
     }
   }
 
