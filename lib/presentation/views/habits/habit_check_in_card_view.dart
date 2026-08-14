@@ -14,6 +14,7 @@ import '../shared/golden_pulse_view.dart';
 import 'habit_detail_view.dart';
 import 'habit_history_view.dart';
 import 'guardrails_screen.dart';
+import 'urge_surfed_log_screen.dart';
 import 'record_a_moment_screen.dart';
 import '../../../domain/entities/recovery_path.dart';
 import '../journal/journal_entry_composer.dart';
@@ -694,11 +695,9 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
           label: 'Urge surfed',
           subtitle: 'Log a surfed urge',
           onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => GuardrailsScreen(
+            builder: (_) => UrgeSurfedLogScreen(
               habitId: _habit.id,
               habitName: _habit.name,
-              initialTab: 2,
-              accentColor: MyWalkColor.bpGuardrails,
             ),
           )),
         ),

@@ -10,14 +10,17 @@ import 'guardrails_screen.dart';
 const _kRpPurple = Color(0xFF8B7EC8);
 
 /// UNG01 — Urge surfed log. 7-question form capturing a completed urge-surfing session.
+/// Pass [existingSession] to pre-populate for editing; save overwrites it in Firestore.
 class UrgeSurfedLogScreen extends StatefulWidget {
   final String habitId;
   final String habitName;
+  final RecoverySession? existingSession;
 
   const UrgeSurfedLogScreen({
     super.key,
     required this.habitId,
     this.habitName = '',
+    this.existingSession,
   });
 
   @override
@@ -37,12 +40,28 @@ class _UrgeSurfedLogScreenState extends State<UrgeSurfedLogScreen> {
   bool _saving = false;
   bool _done = false;
 
+  bool get _isEditing => widget.existingSession != null;
+
   @override
   void initState() {
     super.initState();
     for (final c in [_triggerCtrl, _feelingCtrl]) {
       c.addListener(() => setState(() {}));
     }
+    if (_isEditing) _populate(widget.existingSession!);
+  }
+
+  void _populate(RecoverySession session) {
+    try {
+      final data = jsonDecode(session.responseText) as Map<String, dynamic>;
+      _triggerCtrl.text = data['trigger'] as String? ?? '';
+      _feelingCtrl.text = data['feeling'] as String? ?? '';
+      _riseAndDecrease = data['riseAndDecrease'] as String?;
+      _duration = data['duration'] as String?;
+      _activatedPlan = data['activatedPlan'] as String?;
+      _lookedAtResponses = data['lookedAtCounterResponses'] as String?;
+      _otherCtrl.text = data['otherThoughts'] as String? ?? '';
+    } catch (_) {}
   }
 
   @override
@@ -74,19 +93,22 @@ class _UrgeSurfedLogScreenState extends State<UrgeSurfedLogScreen> {
         if (_lookedAtResponses != null) 'lookedAtCounterResponses': _lookedAtResponses,
         if (_otherCtrl.text.trim().isNotEmpty) 'otherThoughts': _otherCtrl.text.trim(),
       };
+      final existing = widget.existingSession;
       final session = RecoverySession(
-        id: '${widget.habitId}_m4UrgeSurfing_${now.millisecondsSinceEpoch}',
+        id: existing?.id ?? '${widget.habitId}_m4UrgeSurfing_${now.millisecondsSinceEpoch}',
         habitId: widget.habitId,
         sessionType: RecoverySessionType.m4UrgeSurfing,
         moduleNumber: 4,
         responseText: jsonEncode(payload),
-        createdAt: now,
+        createdAt: existing?.createdAt ?? now,
       );
       await prov.saveSession(session);
       if (mounted) {
-        setState(() { _saving = false; _done = true; });
-        await Future.delayed(const Duration(milliseconds: 2800));
-        if (mounted) Navigator.of(context).pop();
+        if (_isEditing) {
+          Navigator.of(context).pop();
+        } else {
+          setState(() { _saving = false; _done = true; });
+        }
       }
     } catch (_) {
       if (mounted) {
@@ -206,8 +228,7 @@ class _UrgeSurfedLogScreenState extends State<UrgeSurfedLogScreen> {
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(
-                      20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -247,33 +268,58 @@ class _UrgeSurfedLogScreenState extends State<UrgeSurfedLogScreen> {
         children: [
           const Positioned.fill(
               child: IgnorePointer(child: DeepSpaceBackground())),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: _kRpPurple.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+          SafeArea(
+            child: Column(
+              children: [
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: _kRpPurple.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check_rounded,
+                            color: _kRpPurple, size: 28),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Logged. Every time you ride one out, the urge loses a little of its power.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 15,
+                            color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                            height: 1.6),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kRpPurple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Done',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15)),
                     ),
-                    child: const Icon(Icons.check_rounded,
-                        color: _kRpPurple, size: 28),
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Logged. Every time you ride one out, the urge loses a little of its power.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 15,
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
-                        height: 1.6),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
