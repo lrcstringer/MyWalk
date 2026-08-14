@@ -646,6 +646,7 @@ class _HrsPlanTabState extends State<_HrsPlanTab> {
                 index: e.key,
                 total: _planControllers.length,
                 controllers: e.value,
+                initiallyExpanded: !widget.hrsPlanDone,
                 onRemove: _planControllers.length > 1
                     ? () =>
                         setState(() => _planControllers.removeAt(e.key))
@@ -693,12 +694,14 @@ class _PlanCard extends StatefulWidget {
   final int index;
   final int total;
   final _PlanControllers controllers;
+  final bool initiallyExpanded;
   final VoidCallback? onRemove;
 
   const _PlanCard({
     required this.index,
     required this.total,
     required this.controllers,
+    required this.initiallyExpanded,
     this.onRemove,
   });
 
@@ -707,70 +710,102 @@ class _PlanCard extends StatefulWidget {
 }
 
 class _PlanCardState extends State<_PlanCard> {
+  late bool _expanded;
+
   @override
   void initState() {
     super.initState();
-    widget.controllers.firstResponse.addListener(() => setState(() {}));
+    _expanded = widget.initiallyExpanded;
+    for (final ctrl in [widget.controllers.situation, widget.controllers.firstResponse]) {
+      ctrl.addListener(() => setState(() {}));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final situationText = widget.controllers.situation.text.trim();
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: MyWalkColor.cardBackground,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: _kRpPurple.withValues(alpha: 0.15), width: 0.75),
+        border: Border.all(color: _kRpPurple.withValues(alpha: 0.15), width: 0.75),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Plan ${widget.index + 1} of ${widget.total}',
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: widget.initiallyExpanded,
+          onExpansionChanged: (v) => setState(() => _expanded = v),
+          tilePadding: const EdgeInsets.fromLTRB(14, 4, 10, 4),
+          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          title: Text(
+            'Plan ${widget.index + 1} of ${widget.total}',
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _kRpPurple.withValues(alpha: 0.8)),
+          ),
+          subtitle: !_expanded && situationText.isNotEmpty
+              ? Text(
+                  situationText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: _kRpPurple.withValues(alpha: 0.8))),
-              if (widget.onRemove != null)
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.6)),
+                )
+              : null,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.onRemove != null) ...[
                 GestureDetector(
                   onTap: widget.onRemove,
                   child: Icon(Icons.close_rounded,
                       size: 16,
                       color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
                 ),
+                const SizedBox(width: 10),
+              ],
+              AnimatedRotation(
+                turns: _expanded ? 0.5 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: Icon(Icons.expand_more_rounded,
+                    size: 20,
+                    color: _kRpPurple.withValues(alpha: 0.7)),
+              ),
             ],
           ),
-          const SizedBox(height: 10),
-          _PlanField(
-              label: RecoveryModuleContent.m4SituationLabel,
-              controller: widget.controllers.situation),
-          _PlanField(
-              label: RecoveryModuleContent.m4EarlyWarningsLabel,
-              controller: widget.controllers.earlyWarnings),
-          _PlanField(
-              label: RecoveryModuleContent.m4FirstResponseLabel,
-              controller: widget.controllers.firstResponse,
-              hint: 'Be specific — a concrete action, not a mindset'),
-          _PlanField(
-              label: '${RecoveryModuleContent.m4ContactNameLabel} (optional)',
-              controller: widget.controllers.contactName,
-              hint: 'Name and contact, or a note to yourself',
-              last: true),
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              'This is a good time to consider setting up a support/accountability partner, if you haven\'t already.',
-              style: TextStyle(
-                  fontSize: 11,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
-                  fontStyle: FontStyle.italic),
+          children: [
+            _PlanField(
+                label: RecoveryModuleContent.m4SituationLabel,
+                controller: widget.controllers.situation),
+            _PlanField(
+                label: RecoveryModuleContent.m4EarlyWarningsLabel,
+                controller: widget.controllers.earlyWarnings),
+            _PlanField(
+                label: RecoveryModuleContent.m4FirstResponseLabel,
+                controller: widget.controllers.firstResponse,
+                hint: 'Be specific — a concrete action, not a mindset'),
+            _PlanField(
+                label: '${RecoveryModuleContent.m4ContactNameLabel} (optional)',
+                controller: widget.controllers.contactName,
+                hint: 'Name and contact, or a note to yourself',
+                last: true),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'This is a good time to consider setting up a support/accountability partner, if you haven\'t already.',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.38),
+                    fontStyle: FontStyle.italic),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
