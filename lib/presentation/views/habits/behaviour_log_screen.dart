@@ -188,8 +188,7 @@ class _BehaviourLogScreenState extends State<BehaviourLogScreen> {
           const Positioned.fill(child: IgnorePointer(child: DeepSpaceBackground())),
           SafeArea(top: false,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                  20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

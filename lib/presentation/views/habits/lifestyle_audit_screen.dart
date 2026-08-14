@@ -141,8 +141,7 @@ class _LifestyleAuditScreenState extends State<LifestyleAuditScreen> {
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(20, 8, 20,
-                      MediaQuery.of(context).viewInsets.bottom + 20),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

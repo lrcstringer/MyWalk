@@ -443,9 +443,7 @@ class _ComposeBar extends StatelessWidget {
               left: 12,
               right: 12,
               top: 8,
-              bottom: MediaQuery.of(context).viewInsets.bottom +
-                  MediaQuery.of(context).padding.bottom +
-                  8,
+              bottom: MediaQuery.of(context).padding.bottom + 8,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
