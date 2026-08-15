@@ -483,8 +483,8 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         style: ElevatedButton.styleFrom(
           backgroundColor: _kPartnerColor,
           foregroundColor: Colors.white,
-          padding: _kButtonStyle.padding,
-          shape: RoundedRectangleBorder(borderRadius: _kButtonStyle.borderRadius),
+          padding: _kPadding,
+          shape: _kShape,
         ),
       ),
     );
