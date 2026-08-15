@@ -82,7 +82,7 @@ class _PartnershipDetailScreenState extends State<PartnershipDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: MyWalkColor.surfaceOverlay,
+        backgroundColor: MyWalkColor.charcoal,
         title: const Text('End partnership?',
             style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
         content: Text(

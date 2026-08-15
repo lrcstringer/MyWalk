@@ -23,6 +23,7 @@ import '../../providers/journal_theme_provider.dart';
 import '../../theme/app_theme.dart';
 import '../journal/journal_theme_picker.dart';
 import '../shared/mywalk_paywall_view.dart';
+import 'feedback_view.dart';
 import 'profile_edit_view.dart';
 
 class SettingsView extends StatefulWidget {
@@ -315,6 +316,10 @@ class _SettingsViewState extends State<SettingsView> {
                 _sectionHeader('Group Notifications'),
                 const SizedBox(height: 8),
                 _circleNotificationsSection(),
+                const SizedBox(height: 20),
+                _sectionHeader('Feedback'),
+                const SizedBox(height: 8),
+                _feedbackRow(),
                 const SizedBox(height: 20),
                 _sectionHeader('About'),
                 const SizedBox(height: 8),
@@ -750,6 +755,42 @@ class _SettingsViewState extends State<SettingsView> {
             activeThumbColor: MyWalkColor.softGold,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _feedbackRow() {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const FeedbackView())),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: MyWalkDecorations.card,
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: MyWalkColor.sage.withValues(alpha: 0.12)),
+            child: const Icon(Icons.rate_review_rounded,
+                size: 18, color: MyWalkColor.sage),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Provide Feedback to Us',
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: MyWalkColor.warmWhite)),
+              Text('Share your thoughts and suggestions',
+                  style: TextStyle(fontSize: 12, color: MyWalkColor.softGold)),
+            ]),
+          ),
+          Icon(Icons.chevron_right_rounded,
+              color: Colors.white.withValues(alpha: 0.3), size: 18),
+        ]),
       ),
     );
   }

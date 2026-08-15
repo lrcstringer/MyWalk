@@ -612,7 +612,7 @@ class _AddHabitViewState extends State<AddHabitView> {
 
         // ── CHOOSE THE PATTERN (abstain only) ─────────────────────────────
         if (isAbstain && _selectedSubcategoryModel != null)
-          _sectionHeader('CHOOSE THE PATTERN YOU WISH TO BREAK', MyWalkColor.golden),
+          _sectionHeader('CHOOSE THE PATTERN YOU WISH TO BREAK', MyWalkColor.eventPurple),
 
         // Subcategory content card (Key Verse, Examples, Supporting Verses)
         if (_selectedSubcategoryModel != null && !(_selectedCategoryModel?.isCustom ?? true))
@@ -832,7 +832,7 @@ class _AddHabitViewState extends State<AddHabitView> {
 
         // Support options (abstain only)
         if (isAbstain) ...[
-          _sectionHeader('SELECT SUPPORT OPTIONS', MyWalkColor.sage),
+          _sectionHeader('SELECT SUPPORT OPTIONS', MyWalkColor.eventPurple),
           _partnerSection(),
           const SizedBox(height: 20),
           _recoveryPathTeaserCard(),
@@ -2005,7 +2005,7 @@ class _AddHabitViewState extends State<AddHabitView> {
       text,
       style: TextStyle(
         fontSize: 11,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w700,
         color: MyWalkColor.softGold.withValues(alpha: 0.6),
       ),
     );

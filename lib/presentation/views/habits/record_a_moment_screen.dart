@@ -399,8 +399,7 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                           controller: _emotionCtrl,
                         ),
                         _RamField(
-                          label: 'What thought arose just before?',
-                          hint: 'e.g. "I deserve this." · "Just this once." · "I can\'t cope right now."',
+                          label: 'What, if anything, did you do, or what allowed you to navigate the moment this time?',
                           controller: _thoughtCtrl,
                           last: true,
                         ),

@@ -194,11 +194,11 @@ class _FormView extends StatelessWidget {
         Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.1), height: 1),
         const SizedBox(height: 24),
         const Text(
-          "If you don't know their email address:",
+          "If you don't know their MyWalk email address:",
           style: TextStyle(
               color: MyWalkColor.sage,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
               height: 1.4),
         ),
         const SizedBox(height: 6),
@@ -382,28 +382,6 @@ class _ReadyToShareView extends StatelessWidget {
               height: 1.5),
         ),
         const SizedBox(height: 20),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: MyWalkColor.surfaceOverlay,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.1),
-                  width: 0.75),
-            ),
-            child: SingleChildScrollView(
-              child: Text(
-                message,
-                style: TextStyle(
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
-                    fontSize: 13,
-                    height: 1.6),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -492,11 +470,11 @@ Future<void> showPartnerInviteDialog(
           const SizedBox(height: 16),
           // Option 2
           const Text(
-            "If you don't know their email address:",
+            "If you don't know their MyWalk email address:",
             style: TextStyle(
                 color: MyWalkColor.sage,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
                 height: 1.4),
           ),
           const SizedBox(height: 4),
@@ -663,28 +641,6 @@ class _SharePreviewSheet extends StatelessWidget {
                   color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
                   fontSize: 13,
                   height: 1.5),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: MyWalkColor.surfaceOverlay,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: MyWalkColor.warmWhite.withValues(alpha: 0.1),
-                      width: 0.75),
-                ),
-                child: SingleChildScrollView(
-                  child: Text(
-                    message,
-                    style: TextStyle(
-                        color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
-                        fontSize: 13,
-                        height: 1.6),
-                  ),
-                ),
-              ),
             ),
             const SizedBox(height: 20),
             SizedBox(
