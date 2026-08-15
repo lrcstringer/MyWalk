@@ -8,7 +8,6 @@ import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
 import 'guardrails_screen.dart';
 
-const _kRpPurple = Color(0xFF8B7EC8);
 
 /// ONG01-B — 5-screen "I acted on it" lapse flow.
 /// Always shown in full regardless of phase or letter status.
@@ -279,8 +278,8 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
                     child: ElevatedButton(
                       onPressed: () => setState(() => _step = 1),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _kRpPurple,
-                        foregroundColor: Colors.white,
+                        backgroundColor: MyWalkColor.golden,
+                        foregroundColor: MyWalkColor.charcoal,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -334,9 +333,9 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
             child: ElevatedButton(
               onPressed: _canAdvance ? () => setState(() => _step = 2) : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _kRpPurple,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                backgroundColor: MyWalkColor.golden,
+                foregroundColor: MyWalkColor.charcoal,
+                disabledBackgroundColor: MyWalkColor.golden.withValues(alpha: 0.3),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -371,7 +370,7 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: _kRpPurple.withValues(alpha: 0.9)),
+                  color: MyWalkColor.golden.withValues(alpha: 0.9)),
             ),
             const SizedBox(height: 8),
             _LetterCard(text: letter, isLetter: true),
@@ -390,8 +389,8 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
                 child: OutlinedButton(
                   onPressed: () => setState(() => _letterRead = true),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _kRpPurple,
-                    side: const BorderSide(color: _kRpPurple),
+                    foregroundColor: MyWalkColor.golden,
+                    side: BorderSide(color: MyWalkColor.golden),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
@@ -465,16 +464,16 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
                       }
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _kRpPurple,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                  backgroundColor: MyWalkColor.golden,
+                  foregroundColor: MyWalkColor.charcoal,
+                  disabledBackgroundColor: MyWalkColor.golden.withValues(alpha: 0.3),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 child: _saving
                     ? const SizedBox(width: 18, height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        child: CircularProgressIndicator(strokeWidth: 2, color: MyWalkColor.charcoal))
                     : const Text('Continue',
                         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
               ),
@@ -535,7 +534,7 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
             child: Text(
               'Update my coping plan →',
               style: TextStyle(
-                  color: _kRpPurple.withValues(alpha: 0.8), fontSize: 13),
+                  color: MyWalkColor.golden.withValues(alpha: 0.8), fontSize: 13),
             ),
           ),
           const SizedBox(height: 16),
@@ -544,9 +543,9 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
             child: ElevatedButton(
               onPressed: _canAdvance && !_saving ? _save : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _kRpPurple,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                backgroundColor: MyWalkColor.golden,
+                foregroundColor: MyWalkColor.charcoal,
+                disabledBackgroundColor: MyWalkColor.golden.withValues(alpha: 0.3),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -556,7 +555,7 @@ class _LapseRecordingFlowState extends State<LapseRecordingFlow> {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
+                          strokeWidth: 2, color: MyWalkColor.charcoal))
                   : const Text('Save and update my plan',
                       style: TextStyle(
                           fontWeight: FontWeight.w600, fontSize: 14)),
@@ -579,13 +578,13 @@ class _StepBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _kRpPurple.withValues(alpha: 0.15),
+        color: MyWalkColor.golden.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label,
         style: const TextStyle(
-            fontSize: 12, fontWeight: FontWeight.w600, color: _kRpPurple),
+            fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.golden),
       ),
     );
   }
@@ -682,12 +681,12 @@ class _LetterCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isLetter
-            ? _kRpPurple.withValues(alpha: 0.07)
+            ? MyWalkColor.golden.withValues(alpha: 0.07)
             : const Color(0xFFF59E0B).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isLetter
-              ? _kRpPurple.withValues(alpha: 0.2)
+              ? MyWalkColor.golden.withValues(alpha: 0.2)
               : const Color(0xFFF59E0B).withValues(alpha: 0.25),
           width: 0.75,
         ),

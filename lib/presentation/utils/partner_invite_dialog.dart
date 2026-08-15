@@ -7,7 +7,7 @@ import '../theme/app_theme.dart';
 
 // ── Full-screen partner invite (used in setup flow) ───────────────────────────
 
-enum _InviteStatus { idle, loading, inAppSent, noAccount }
+enum _InviteStatus { idle, loading, inAppSent, noAccount, readyToShare }
 
 class PartnerInviteScreen extends StatefulWidget {
   final String habitId;
@@ -53,8 +53,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
       } else if (email.isNotEmpty) {
         setState(() { _status = _InviteStatus.noAccount; _result = result; });
       } else {
-        await _shareInvite(result, widget.habitLabel ?? widget.habitName);
-        if (mounted) Navigator.of(context).pop();
+        setState(() { _status = _InviteStatus.readyToShare; _result = result; });
       }
     } catch (e) {
       debugPrint('createInvite failed: $e');
@@ -62,7 +61,11 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
     }
   }
 
-  Future<void> _share() async {
+  void _goToSharePreview() {
+    setState(() => _status = _InviteStatus.readyToShare);
+  }
+
+  Future<void> _doShare() async {
     if (_result != null) {
       await _shareInvite(_result!, widget.habitLabel ?? widget.habitName);
     }
@@ -117,8 +120,15 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
 
       case _InviteStatus.noAccount:
         return _NoAccountView(
-          onShare: _share,
+          onShare: _goToSharePreview,
           onCancel: () => Navigator.of(context).pop(),
+        );
+
+      case _InviteStatus.readyToShare:
+        return _ReadyToShareView(
+          result: _result!,
+          label: widget.habitLabel ?? widget.habitName,
+          onShare: _doShare,
         );
 
       case _InviteStatus.idle:
@@ -339,6 +349,82 @@ class _NoAccountView extends StatelessWidget {
   }
 }
 
+class _ReadyToShareView extends StatelessWidget {
+  final InviteResult result;
+  final String label;
+  final VoidCallback onShare;
+
+  const _ReadyToShareView({
+    required this.result,
+    required this.label,
+    required this.onShare,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final message = _buildShareMessage(result, label);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Your invitation is ready',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite,
+              fontSize: 18,
+              fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Choose how to send it to your support partner — WhatsApp, email, SMS, and more.',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+              fontSize: 13,
+              height: 1.5),
+        ),
+        const SizedBox(height: 20),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: MyWalkColor.surfaceOverlay,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.1),
+                  width: 0.75),
+            ),
+            child: SingleChildScrollView(
+              child: Text(
+                message,
+                style: TextStyle(
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
+                    fontSize: 13,
+                    height: 1.6),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: onShare,
+            icon: const Icon(Icons.share_rounded, size: 18),
+            label: const Text('Choose how to send',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MyWalkColor.sage,
+              foregroundColor: MyWalkColor.charcoal,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Shows the full partner-invite flow: email dialog → createInvite → in-app
 /// confirmation or share sheet. Identical UX whether triggered from the
 /// Today card or the Breaking Free setup screen.
@@ -491,10 +577,10 @@ Future<void> showPartnerInviteDialog(
           ),
         );
         if (confirmed == true && context.mounted) {
-          await _shareInvite(result, habitLabel ?? habitName);
+          await _showSharePreviewSheet(context, result, habitLabel ?? habitName);
         }
       } else {
-        await _shareInvite(result, habitLabel ?? habitName);
+        await _showSharePreviewSheet(context, result, habitLabel ?? habitName);
       }
     }
   } catch (e) {
@@ -507,8 +593,7 @@ Future<void> showPartnerInviteDialog(
   }
 }
 
-Future<void> _shareInvite(InviteResult result, String label) async {
-  await Share.share(
+String _buildShareMessage(InviteResult result, String label) =>
     'Please walk with me on my $label journey.\n\n'
     'IF YOU ALREADY HAVE MYWALK ON YOUR MOBILE:\n\n'
     '1) Tap this link: ${result.shareUrl}\n\n'
@@ -519,6 +604,111 @@ Future<void> _shareInvite(InviteResult result, String label) async {
     'Then either:\n\n'
     '1) Come back to this email and tap this link: ${result.shareUrl}\n\n'
     'Or\n\n'
-    '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${result.shortCode}',
+    '2) Tap on the Notifications Bell at the top on the app screen and then on the "Have an Invite Code?" card and enter this code: ${result.shortCode}';
+
+Future<void> _shareInvite(InviteResult result, String label) async {
+  await Share.share(_buildShareMessage(result, label));
+}
+
+Future<void> _showSharePreviewSheet(
+    BuildContext context, InviteResult result, String label) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: MyWalkColor.charcoal,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (_) => _SharePreviewSheet(result: result, label: label),
   );
+}
+
+class _SharePreviewSheet extends StatelessWidget {
+  final InviteResult result;
+  final String label;
+
+  const _SharePreviewSheet({required this.result, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final message = _buildShareMessage(result, label);
+    final height = MediaQuery.of(context).size.height * 0.8;
+    return SizedBox(
+      height: height,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const Text(
+              'Your invitation is ready',
+              style: TextStyle(
+                  color: MyWalkColor.warmWhite,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Choose how to send it to your support partner — WhatsApp, email, SMS, and more.',
+              style: TextStyle(
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+                  fontSize: 13,
+                  height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.surfaceOverlay,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.1),
+                      width: 0.75),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    message,
+                    style: TextStyle(
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
+                        fontSize: 13,
+                        height: 1.6),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await Share.share(message);
+                },
+                icon: const Icon(Icons.share_rounded, size: 18),
+                label: const Text('Choose how to send',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MyWalkColor.sage,
+                  foregroundColor: MyWalkColor.charcoal,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

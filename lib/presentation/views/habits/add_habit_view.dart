@@ -121,6 +121,7 @@ class _AddHabitViewState extends State<AddHabitView> {
     _notesFocusNode.dispose();
     _notesScrollController.dispose();
     _referenceUrlController.dispose();
+    _customPatternCtrl.dispose();
     super.dispose();
   }
 
@@ -144,6 +145,7 @@ class _AddHabitViewState extends State<AddHabitView> {
   final FocusNode _notesFocusNode = FocusNode();
   final ScrollController _notesScrollController = ScrollController();
   final TextEditingController _referenceUrlController = TextEditingController();
+  final TextEditingController _customPatternCtrl = TextEditingController();
 
   // ── App bar ──────────────────────────────────────────────────────────────
 
@@ -608,25 +610,50 @@ class _AddHabitViewState extends State<AddHabitView> {
         _categoryChipsRow(),
         const SizedBox(height: 20),
 
+        // ── CHOOSE THE PATTERN (abstain only) ─────────────────────────────
+        if (isAbstain && _selectedSubcategoryModel != null)
+          _sectionHeader('CHOOSE THE PATTERN YOU WISH TO BREAK', MyWalkColor.golden),
+
         // Subcategory content card (Key Verse, Examples, Supporting Verses)
         if (_selectedSubcategoryModel != null && !(_selectedCategoryModel?.isCustom ?? true))
           _subcategoryContentCard(_selectedSubcategoryModel!),
 
-        // ── ABOUT THIS PRACTICE ───────────────────────────────────────────
-        _sectionHeader(isAbstain ? 'Name your practice' : 'ABOUT THIS PRACTICE', MyWalkColor.sage),
+        // ── ABOUT THIS PRACTICE (non-abstain only) ────────────────────────
+        if (!isAbstain) _sectionHeader('ABOUT THIS PRACTICE', MyWalkColor.sage),
 
-        // Name
+        // Practice Name — read-only display for abstain (driven by chip/custom field)
         _label('Practice Name'),
         const SizedBox(height: 8),
-        _textField(
-          hint: isAbstain ? 'e.g. Pornography, Alcohol, Social media…' : 'e.g. Morning run',
-          value: _habitName,
-          onChanged: (v) => setState(() => _habitName = v),
-        ),
+        if (isAbstain)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: MyWalkColor.surfaceOverlay,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              _habitName.isNotEmpty
+                  ? _habitName
+                  : 'Select a pattern above or enter your own',
+              style: TextStyle(
+                color: _habitName.isNotEmpty
+                    ? MyWalkColor.warmWhite
+                    : Colors.white.withValues(alpha: 0.3),
+                fontSize: 14,
+              ),
+            ),
+          )
+        else
+          _textField(
+            hint: 'e.g. Morning run',
+            value: _habitName,
+            onChanged: (v) => setState(() => _habitName = v),
+          ),
 
         if (_subcategoryId == 'breaking_habits') ...[
           const SizedBox(height: 16),
-          _label('How it appears on your Today card (optional)'),
+          _label('You can enter a practice name that will appear on your Today screen if you don\'t want one of the defined names to appear (optional)'),
           const SizedBox(height: 8),
           _textField(
             hint: 'e.g. "My battle" · Leave blank to use the practice name',
@@ -642,7 +669,7 @@ class _AddHabitViewState extends State<AddHabitView> {
         const SizedBox(height: 20),
 
         // Purpose
-        _label('Your Why', inline: true),
+        _label(isAbstain ? 'Your Why – enter why breaking this pattern is important to you.' : 'Your Why', inline: true),
         const SizedBox(height: 8),
         _textField(
           hint: 'Why does this matter to you and to God?',
@@ -803,8 +830,9 @@ class _AddHabitViewState extends State<AddHabitView> {
         _anchoringSection(isAbstain),
         const SizedBox(height: 28),
 
-        // Support/Accountability Partner + Recovery Path (abstain only)
+        // Support options (abstain only)
         if (isAbstain) ...[
+          _sectionHeader('SELECT SUPPORT OPTIONS', MyWalkColor.sage),
           _partnerSection(),
           const SizedBox(height: 20),
           _recoveryPathTeaserCard(),
@@ -919,6 +947,32 @@ class _AddHabitViewState extends State<AddHabitView> {
                     ),
                   ],
                 ),
+
+                // Supporting Verses link — right under the verse
+                if (sub.supportingVerses.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () => _showSupportingVerses(sub),
+                    child: Row(
+                      children: [
+                        Icon(Icons.menu_book_outlined,
+                            size: 14, color: MyWalkColor.golden.withValues(alpha: 0.7)),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Supporting Verses (${sub.supportingVerses.length})',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: MyWalkColor.golden.withValues(alpha: 0.8),
+                            fontWeight: FontWeight.w500,
+                            decoration: TextDecoration.underline,
+                            decorationColor: MyWalkColor.golden.withValues(alpha: 0.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 12),
                 Divider(
                     color: MyWalkColor.golden.withValues(alpha: 0.12), thickness: 0.5),
@@ -927,16 +981,12 @@ class _AddHabitViewState extends State<AddHabitView> {
 
               // Examples
               if (sub.examples.isNotEmpty) ...[
-                Divider(
-                    color: MyWalkColor.golden.withValues(alpha: 0.12), thickness: 0.5),
-                const SizedBox(height: 12),
                 Text(
-                  'EXAMPLES',
+                  'Select a pre-defined pattern or enter your own',
                   style: TextStyle(
-                    fontSize: 9,
-                    letterSpacing: 1.4,
-                    fontWeight: FontWeight.w600,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.5),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: MyWalkColor.softGold.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -944,16 +994,19 @@ class _AddHabitViewState extends State<AddHabitView> {
                   spacing: 6,
                   runSpacing: 6,
                   children: sub.examples.map((ex) => GestureDetector(
-                    onTap: () => setState(() => _habitName = ex),
+                    onTap: () => setState(() {
+                      _habitName = ex;
+                      _customPatternCtrl.clear();
+                    }),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: _habitName == ex
+                        color: _habitName == ex && _customPatternCtrl.text.isEmpty
                             ? MyWalkColor.golden.withValues(alpha: 0.2)
                             : MyWalkColor.cardBackground,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: _habitName == ex
+                          color: _habitName == ex && _customPatternCtrl.text.isEmpty
                               ? MyWalkColor.golden.withValues(alpha: 0.5)
                               : Colors.white.withValues(alpha: 0.08),
                           width: 0.5,
@@ -963,7 +1016,7 @@ class _AddHabitViewState extends State<AddHabitView> {
                         ex,
                         style: TextStyle(
                           fontSize: 12,
-                          color: _habitName == ex
+                          color: _habitName == ex && _customPatternCtrl.text.isEmpty
                               ? MyWalkColor.golden
                               : Colors.white.withValues(alpha: 0.6),
                         ),
@@ -971,34 +1024,31 @@ class _AddHabitViewState extends State<AddHabitView> {
                     ),
                   )).toList(),
                 ),
-                const SizedBox(height: 12),
-              ],
-
-              // Supporting Verses link
-              if (sub.supportingVerses.isNotEmpty) ...[
-                Divider(
-                    color: MyWalkColor.golden.withValues(alpha: 0.12), thickness: 0.5),
                 const SizedBox(height: 10),
-                GestureDetector(
-                  onTap: () => _showSupportingVerses(sub),
-                  child: Row(
-                    children: [
-                      Icon(Icons.menu_book_outlined,
-                          size: 14, color: MyWalkColor.golden.withValues(alpha: 0.7)),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Supporting Verses (${sub.supportingVerses.length})',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: MyWalkColor.golden.withValues(alpha: 0.8),
-                          fontWeight: FontWeight.w500,
-                          decoration: TextDecoration.underline,
-                          decorationColor: MyWalkColor.golden.withValues(alpha: 0.4),
-                        ),
-                      ),
-                    ],
+                TextField(
+                  controller: _customPatternCtrl,
+                  onChanged: (v) => setState(() => _habitName = v),
+                  style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Enter your own practice…',
+                    hintStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
+                    filled: true,
+                    fillColor: MyWalkColor.cardBackground,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                          color: MyWalkColor.golden.withValues(alpha: 0.4), width: 1),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
                 ),
+                const SizedBox(height: 4),
               ],
             ],
           ),
@@ -1244,20 +1294,36 @@ class _AddHabitViewState extends State<AddHabitView> {
           behavior: HitTestBehavior.opaque,
           child: Row(
             children: [
+              Container(
+                width: 3,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: MyWalkColor.eventPurple.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
               Text(
                 'NOTES',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 9,
+                  letterSpacing: 1.4,
                   fontWeight: FontWeight.w600,
-                  color: MyWalkColor.softGold.withValues(alpha: 0.5),
-                  letterSpacing: 0.8,
+                  color: MyWalkColor.eventPurple.withValues(alpha: 0.6),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Divider(
+                  color: MyWalkColor.eventPurple.withValues(alpha: 0.18),
+                  thickness: 0.5,
+                ),
+              ),
+              const SizedBox(width: 8),
               Icon(
                 _notesExpanded ? Icons.expand_less : Icons.expand_more,
                 size: 16,
-                color: MyWalkColor.softGold.withValues(alpha: 0.4),
+                color: MyWalkColor.eventPurple.withValues(alpha: 0.5),
               ),
             ],
           ),
@@ -1556,16 +1622,7 @@ class _AddHabitViewState extends State<AddHabitView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'REFERENCE LINK',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: MyWalkColor.softGold.withValues(alpha: 0.5),
-            letterSpacing: 0.8,
-          ),
-        ),
-        const SizedBox(height: 4),
+        _sectionHeader('REFERENCE LINK', MyWalkColor.eventPurple),
         Text(
           'Attach an article, video, or resource that inspires this habit.',
           style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4)),
@@ -1838,7 +1895,7 @@ class _AddHabitViewState extends State<AddHabitView> {
           ),
           const SizedBox(height: 10),
           _textField(
-            hint: 'Or write your own plan\u2026',
+            hint: 'Or enter your own action\u2026',
             value: _copingPlan,
             onChanged: (v) => setState(() => _copingPlan = v),
           ),

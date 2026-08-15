@@ -205,9 +205,9 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                   const SizedBox(height: 10),
                   Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08), height: 1),
                   const SizedBox(height: 10),
-                  _partnerStrip(context),
-                  const SizedBox(height: 8),
                   _rpStrip(context),
+                  Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08), height: 16),
+                  _partnerStrip(context),
                 ],
               ],
             ),
@@ -405,92 +405,87 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   }
 
   Widget _partnerStrip(BuildContext context) {
+    const _kPartnerColor = Color(0xFF2E6B5E);
+    const _kPadding = EdgeInsets.symmetric(vertical: 10);
+    const _kShape = RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)));
+
     final partnership = context
         .watch<AccountabilityProvider>()
         .partnershipForHabit(_habit.id);
 
     if (partnership == null) {
       final accountabilityProv = context.watch<AccountabilityProvider>();
-      return GestureDetector(
-        onTap: accountabilityProv.isLoading
-            ? null
-            : () => showPartnerInviteDialog(
-                  context,
-                  habitId: _habit.id,
-                  habitName: _habit.name,
-                  habitLabel: _habit.subcategoryId == 'breaking_habits'
-                      ? 'Breaking Patterns: ${_habit.displayName}'
-                      : null,
-                ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: MyWalkColor.warmWhite.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(8),
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: accountabilityProv.isLoading
+              ? null
+              : () => showPartnerInviteDialog(
+                    context,
+                    habitId: _habit.id,
+                    habitName: _habit.name,
+                    habitLabel: _habit.subcategoryId == 'breaking_habits'
+                        ? 'Breaking Patterns: ${_habit.displayName}'
+                        : null,
+                  ),
+          icon: const Icon(Icons.handshake_rounded, size: 16),
+          label: Text(
+            accountabilityProv.isLoading ? 'Creating invite…' : 'Invite a Support Partner',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
-          child: Row(children: [
-            Icon(Icons.add_rounded, size: 14,
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.55)),
-            const SizedBox(width: 5),
-            Expanded(
-              child: Text(
-                accountabilityProv.isLoading ? 'Creating invite…' : 'Create a Support/Accountability Partner',
-                style: TextStyle(
-                    fontSize: 12,
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.55)),
-              ),
-            ),
-          ]),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _kPartnerColor,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: _kPartnerColor.withValues(alpha: 0.4),
+            padding: _kPadding,
+            shape: _kShape,
+          ),
         ),
       );
     }
 
     if (partnership.status == PartnershipStatus.pending) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: MyWalkColor.warmWhite.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(children: [
-          Icon(Icons.hourglass_top_rounded, size: 14,
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.45)),
-          const SizedBox(width: 5),
-          Expanded(
-            child: Text('Waiting for partner…',
-                style: TextStyle(
-                    fontSize: 12,
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.45))),
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: null,
+          icon: const Icon(Icons.hourglass_top_rounded, size: 16),
+          label: const Text(
+            'Waiting for partner…',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
-        ]),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: MyWalkColor.warmWhite.withValues(alpha: 0.08),
+            foregroundColor: MyWalkColor.warmWhite.withValues(alpha: 0.45),
+            disabledBackgroundColor: MyWalkColor.warmWhite.withValues(alpha: 0.08),
+            disabledForegroundColor: MyWalkColor.warmWhite.withValues(alpha: 0.45),
+            padding: _kPadding,
+            shape: _kShape,
+          ),
+        ),
       );
     }
 
     // Active partnership — navigate to message thread
-    return GestureDetector(
-      onTap: () => Navigator.of(context).pushNamed(
-        '/partnership-detail',
-        arguments: partnership,
-      ),
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: MyWalkColor.warmWhite.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(8),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => Navigator.of(context).pushNamed(
+          '/partnership-detail',
+          arguments: partnership,
         ),
-        child: Row(children: [
-          const Icon(Icons.handshake_rounded, size: 14, color: MyWalkColor.sage),
-          const SizedBox(width: 5),
-          Expanded(
-            child: Text(
-              'Reach out to ${partnership.partnerDisplayName ?? 'your partner'}',
-              style: TextStyle(fontSize: 12, color: MyWalkColor.sage.withValues(alpha: 0.9)),
-            ),
-          ),
-          Icon(Icons.chevron_right_rounded,
-              size: 14, color: MyWalkColor.sage.withValues(alpha: 0.5)),
-        ]),
+        icon: const Icon(Icons.handshake_rounded, size: 16),
+        label: Text(
+          'Reach out to ${partnership.partnerDisplayName ?? 'your partner'}',
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _kPartnerColor,
+          foregroundColor: Colors.white,
+          padding: _kButtonStyle.padding,
+          shape: RoundedRectangleBorder(borderRadius: _kButtonStyle.borderRadius),
+        ),
       ),
     );
   }

@@ -8,7 +8,6 @@ import '../../providers/recovery_path_provider.dart';
 import '../../theme/app_theme.dart';
 import 'lapse_recording_flow.dart';
 
-const _kRpPurple = Color(0xFF8B7EC8);
 
 /// ONG01 — "Record a moment"
 ///
@@ -286,9 +285,9 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: _kRpPurple.withValues(alpha: 0.08),
+                      color: MyWalkColor.golden.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: _kRpPurple.withValues(alpha: 0.2), width: 0.75),
+                      border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.2), width: 0.75),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,8 +312,8 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                           child: ElevatedButton(
                             onPressed: _resumeLapseFlow,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _kRpPurple,
-                              foregroundColor: Colors.white,
+                              backgroundColor: MyWalkColor.golden,
+                              foregroundColor: MyWalkColor.charcoal,
                               padding: const EdgeInsets.symmetric(vertical: 13),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
@@ -416,9 +415,9 @@ class _RecordAMomentScreenState extends State<RecordAMomentScreen> {
                     child: ElevatedButton(
                       onPressed: _canSaveNav && !_saving ? _saveNavigated : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _kRpPurple,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: _kRpPurple.withValues(alpha: 0.3),
+                        backgroundColor: MyWalkColor.sage,
+                        foregroundColor: MyWalkColor.charcoal,
+                        disabledBackgroundColor: MyWalkColor.sage.withValues(alpha: 0.3),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -451,13 +450,13 @@ class _StepBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _kRpPurple.withValues(alpha: 0.15),
+        color: MyWalkColor.sage.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label,
         style: const TextStyle(
-            fontSize: 12, fontWeight: FontWeight.w600, color: _kRpPurple),
+            fontSize: 12, fontWeight: FontWeight.w600, color: MyWalkColor.sage),
       ),
     );
   }

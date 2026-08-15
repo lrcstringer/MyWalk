@@ -571,11 +571,29 @@ class _ReflectionField extends StatelessWidget {
           textCapitalization: TextCapitalization.sentences,
         ),
         const SizedBox(height: 6),
-        Text(
-          'Minimum 60 characters required',
-          style: TextStyle(
-              fontSize: 11,
-              color: MyWalkColor.softGold.withValues(alpha: 0.8)),
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: controller,
+          builder: (_, value, __) {
+            final met = value.text.length >= 60;
+            return Row(
+              children: [
+                if (met) ...[
+                  const Icon(Icons.check_circle_rounded,
+                      size: 13, color: MyWalkColor.sage),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  met ? 'Minimum met' : 'Minimum 60 characters required',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: met
+                        ? MyWalkColor.sage
+                        : MyWalkColor.warmCoral.withValues(alpha: 0.9),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
