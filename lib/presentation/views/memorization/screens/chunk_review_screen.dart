@@ -4,8 +4,8 @@ import '../../../../data/services/chunking_service.dart';
 import '../../../../domain/entities/memorization_item.dart';
 import '../../../../domain/utils/hint_generator.dart';
 import '../../../../presentation/providers/memorization_provider.dart';
+import '../../../../presentation/providers/navigation_provider.dart';
 import '../../../../presentation/theme/app_theme.dart';
-import 'initial_memorization_screen.dart';
 
 class ChunkReviewScreen extends StatefulWidget {
   final MemorizationItem item;
@@ -108,7 +108,7 @@ class _ChunkReviewScreenState extends State<ChunkReviewScreen> {
                       style: MyWalkButtonStyle.primary(),
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: const Text('Begin memorizing'),
-                      onPressed: _onBeginMemorizing,
+                      onPressed: () => _onBeginMemorizing(),
                     ),
                   ),
                 ],
@@ -214,14 +214,47 @@ class _ChunkReviewScreenState extends State<ChunkReviewScreen> {
     ).whenComplete(ctrl.dispose);
   }
 
-  void _onBeginMemorizing() {
+  Future<void> _onBeginMemorizing() async {
     final confirmed = widget.item.copyWith(chunks: _chunks);
     context.read<MemorizationProvider>().createItem(confirmed);
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => InitialMemorizationScreen(item: confirmed),
+    // Save provider ref before the dialog — context may be stale after pop.
+    final navProvider = context.read<NavigationProvider>();
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Your scripture is saved',
+          style: TextStyle(
+            color: MyWalkColor.warmWhite,
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
+        ),
+        content: Text(
+          'Head to your Today screen and tap the Scripture Memorization card to begin your first session.',
+          style: TextStyle(
+            color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+            fontSize: 13,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'Go to Today',
+              style: TextStyle(color: MyWalkColor.golden, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
+    if (!mounted) return;
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    navProvider.switchToTab(0);
   }
 }
 

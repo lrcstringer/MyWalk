@@ -385,7 +385,7 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
         .map((c) => c.id)
         .toList();
 
-    await context.read<MemorizationProvider>().completeReview(
+    final nextReview = await context.read<MemorizationProvider>().completeReview(
           item: widget.item,
           mode: ReviewMode.recitation,
           qualityScore: qualityScore,
@@ -402,14 +402,27 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
       MaterialPageRoute(
         builder: (ctx) => MemorizationCelebration(
           message: passed ? 'Well spoken!' : 'Keep pressing in',
-          subtitle: passed
-              ? 'God\'s Word is being hidden in your heart.'
-              : 'Every attempt draws you closer. Come back tomorrow.',
+          subtitle: _reviewSubtitle(nextReview, passed),
           onContinue: () =>
               Navigator.of(ctx).popUntil((r) => r.isFirst || r.settings.name == '/'),
         ),
       ),
     );
+  }
+
+  String _reviewSubtitle(DateTime nextReview, bool passed) {
+    final diff = nextReview.difference(DateTime.now());
+    final String when;
+    if (diff.inHours < 24) {
+      final h = diff.inHours.clamp(1, 23);
+      when = '$h hour${h == 1 ? '' : 's'}';
+    } else {
+      final d = diff.inDays;
+      when = '$d day${d == 1 ? '' : 's'}';
+    }
+    return passed
+        ? 'Your next review is in $when.\nKeep coming back — repetition is how the Word takes root.'
+        : 'Your next review is in $when.\nConsistency is the key — keep showing up.';
   }
 }
 

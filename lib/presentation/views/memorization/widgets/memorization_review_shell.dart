@@ -121,7 +121,12 @@ class _MemorizationReviewShellState extends State<MemorizationReviewShell> {
   }
 
   void _onChunkResult({required bool success, List<String> missedIds = const []}) {
-    HapticFeedback.selectionClick();
+    if (success) {
+      HapticFeedback.lightImpact();
+    } else {
+      HapticFeedback.mediumImpact();
+      Future.delayed(const Duration(milliseconds: 120), HapticFeedback.mediumImpact);
+    }
     if (success) {
       _successCount++;
     } else {
@@ -153,7 +158,7 @@ class _MemorizationReviewShellState extends State<MemorizationReviewShell> {
       confidence: _confidence,
     );
 
-    await context.read<MemorizationProvider>().completeReview(
+    final nextReview = await context.read<MemorizationProvider>().completeReview(
           item: widget.item,
           mode: widget.mode,
           qualityScore: qualityScore,
@@ -171,9 +176,7 @@ class _MemorizationReviewShellState extends State<MemorizationReviewShell> {
           message: passed
               ? 'Well done!'
               : 'Keep pressing in — every review matters.',
-          subtitle: passed
-              ? 'God\'s Word is taking root in your heart.'
-              : 'Come back tomorrow. Consistency is the key.',
+          subtitle: _reviewSubtitle(nextReview, passed),
           onContinue: () =>
               Navigator.of(ctx).popUntil((r) => r.isFirst || r.settings.name == '/'),
         ),
@@ -185,6 +188,21 @@ class _MemorizationReviewShellState extends State<MemorizationReviewShell> {
     final m = (seconds ~/ 60).toString().padLeft(2, '0');
     final s = (seconds % 60).toString().padLeft(2, '0');
     return '$m:$s';
+  }
+
+  String _reviewSubtitle(DateTime nextReview, bool passed) {
+    final diff = nextReview.difference(DateTime.now());
+    final String when;
+    if (diff.inHours < 24) {
+      final h = diff.inHours.clamp(1, 23);
+      when = '$h hour${h == 1 ? '' : 's'}';
+    } else {
+      final d = diff.inDays;
+      when = '$d day${d == 1 ? '' : 's'}';
+    }
+    return passed
+        ? 'Your next review is in $when.\nKeep coming back — repetition is how the Word takes root.'
+        : 'Your next review is in $when.\nConsistency is the key — keep showing up.';
   }
 }
 

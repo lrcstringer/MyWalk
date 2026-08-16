@@ -84,6 +84,12 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _onRefresh() async {
+    // Providers are stream-driven; forcing a rebuild re-evaluates all watched state.
+    setState(() {});
+    await Future.delayed(const Duration(milliseconds: 600));
+  }
+
   @override
   Widget build(BuildContext context) {
     final habitProvider = context.watch<HabitProvider>();
@@ -116,7 +122,12 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
               child: DeepSpaceBackground(),
             ),
           ),
-          CustomScrollView(
+          RefreshIndicator(
+            color: MyWalkColor.golden,
+            backgroundColor: MyWalkColor.cardBackground,
+            onRefresh: _onRefresh,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 SliverAppBar(
                   backgroundColor: MyWalkColor.charcoal,
@@ -249,6 +260,7 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                   ),
                 ),
               ],
+            ),
           ),
         Align(
           alignment: Alignment.bottomCenter,
@@ -348,10 +360,10 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
               child: Text(
                 title.toUpperCase(),
                 style: TextStyle(
-                  fontSize: 11,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 13,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white.withValues(alpha: 0.85),
                 ),
               ),
             ),

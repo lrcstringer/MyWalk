@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../../data/datasources/remote/auth_service.dart';
 import '../../data/services/memorization_notification_service.dart';
 import '../../data/services/sm2_service.dart';
-import '../../domain/entities/memorization_circle.dart';
 import '../../domain/entities/memorization_item.dart';
 import '../../domain/repositories/memorization_repository.dart';
 
@@ -101,6 +100,11 @@ class MemorizationProvider extends ChangeNotifier {
     MemorizationNotificationService.instance.scheduleReviewReminder(item).ignore();
   }
 
+  Future<void> deleteItem(MemorizationItem item) async {
+    await _repository.deleteItem(item.id);
+    MemorizationNotificationService.instance.cancelReminder(item.id).ignore();
+  }
+
   Future<void> deleteAllItems() async {
     final all = List<MemorizationItem>.from(_items);
     await Future.wait(all.map((item) => _repository.deleteItem(item.id)));
@@ -112,9 +116,6 @@ class MemorizationProvider extends ChangeNotifier {
     MemorizationNotificationService.instance.cancelReminder(item.id).ignore();
   }
 
-  // Resets SM2 scheduling in-place so the user can redo the memorization
-  // process without creating a second parallel review-date sequence.
-  // History stats are preserved; only the scheduling state is reset.
   Future<void> restartItem(MemorizationItem item) async {
     final restarted = item.copyWith(
       status: MemorizationStatus.active,
@@ -131,7 +132,7 @@ class MemorizationProvider extends ChangeNotifier {
   // Review completion — computes SM2 and writes attempt atomically
   // ---------------------------------------------------------------------------
 
-  Future<void> completeReview({
+  Future<DateTime> completeReview({
     required MemorizationItem item,
     required ReviewMode mode,
     required int qualityScore,
@@ -144,7 +145,6 @@ class MemorizationProvider extends ChangeNotifier {
   }) async {
     final now = DateTime.now();
 
-    // Compute SM2 result.
     final sm2 = SM2Service.computeNextReview(
       qualityScore: qualityScore,
       currentEF: item.easeFactor,
@@ -155,7 +155,6 @@ class MemorizationProvider extends ChangeNotifier {
       reviewedAt: now,
     );
 
-    // Build the attempt record.
     final attempt = ReviewAttempt.create(
       mode: mode,
       qualityScore: qualityScore,
@@ -170,7 +169,6 @@ class MemorizationProvider extends ChangeNotifier {
       easeFactorAfter: sm2.newEaseFactor,
     );
 
-    // Update chunk strength scores.
     final updatedChunks = item.chunks.map((chunk) {
       final missed = missedChunkIds.contains(chunk.id);
       return chunk.copyWith(
@@ -179,7 +177,6 @@ class MemorizationProvider extends ChangeNotifier {
       );
     }).toList();
 
-    // Compute streak based on consecutive review days.
     final lastReview = item.lastReviewedAt;
     final today = DateTime(now.year, now.month, now.day);
     final int newStreakCount;
@@ -189,21 +186,19 @@ class MemorizationProvider extends ChangeNotifier {
       final lastDay = DateTime(lastReview.year, lastReview.month, lastReview.day);
       final yesterday = today.subtract(const Duration(days: 1));
       if (lastDay == today) {
-        newStreakCount = item.streakCount; // already reviewed today, no change
+        newStreakCount = item.streakCount;
       } else if (lastDay == yesterday) {
-        newStreakCount = item.streakCount + 1; // consecutive day
+        newStreakCount = item.streakCount + 1;
       } else {
-        newStreakCount = 1; // streak broken — reset
+        newStreakCount = 1;
       }
     }
 
-    // Determine if item has crossed mastery threshold (masteryPercent >= 90%).
     final newSuccessful = qualityScore >= 3
         ? item.successfulAttempts + 1
         : item.successfulAttempts;
     final newTotal = item.totalAttempts + 1;
     final newMastery = newTotal == 0 ? 0.0 : (newSuccessful / newTotal) * 100;
-    // Use sm2.newRepetitionCount (post-update value), not item.repetitionCount (pre-update).
     final newStatus = newMastery >= 90 && sm2.newRepetitionCount >= 3
         ? MemorizationStatus.mastered
         : item.status;
@@ -221,21 +216,17 @@ class MemorizationProvider extends ChangeNotifier {
       status: newStatus,
     );
 
-    // Atomic Firestore batch: attempt + updated item.
-    // Firestore queues writes offline and syncs when connectivity returns.
     await _repository.saveAttempt(
       attempt: attempt,
       updatedItem: updatedItem,
     );
 
-    // Schedule the next review reminder (local + FCM).
     MemorizationNotificationService.instance
         .scheduleReviewReminder(updatedItem)
         .ignore();
 
-    // If linked to a habit sub-category, trigger a habit check-in.
-    // (Habit integration wired via callback to avoid a circular provider dependency.)
     _onReviewComplete?.call(updatedItem);
+    return updatedItem.nextReviewDate;
   }
 
   // ---------------------------------------------------------------------------
@@ -244,39 +235,6 @@ class MemorizationProvider extends ChangeNotifier {
 
   Stream<List<ReviewAttempt>> watchAttempts(String itemId) =>
       _repository.watchAttempts(itemId);
-
-  // ---------------------------------------------------------------------------
-  // Circles — delegated to repository
-  // ---------------------------------------------------------------------------
-
-  Stream<List<MemorizationCircle>> watchCircles() =>
-      _repository.watchCircles();
-
-  Future<void> saveCircle(MemorizationCircle circle) =>
-      _repository.saveCircle(circle);
-
-  Future<void> updateCircle(MemorizationCircle circle) =>
-      _repository.updateCircle(circle);
-
-  Future<void> updateMemberMastery({
-    required String circleId,
-    required String uid,
-    required double masteryPercent,
-  }) =>
-      _repository.updateMemberMastery(
-        circleId: circleId,
-        uid: uid,
-        masteryPercent: masteryPercent,
-      );
-
-  Stream<List<CircleComment>> watchCircleComments(String circleId) =>
-      _repository.watchCircleComments(circleId);
-
-  Future<void> addCircleComment({
-    required String circleId,
-    required String text,
-  }) =>
-      _repository.addCircleComment(circleId: circleId, text: text);
 
   // ---------------------------------------------------------------------------
   // Optional callback — set by the widget tree when wiring habit integration.

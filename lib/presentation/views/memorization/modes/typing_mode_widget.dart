@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../domain/entities/memorization_item.dart';
 import '../../../../domain/utils/text_similarity.dart';
 import '../../../../presentation/theme/app_theme.dart';
@@ -153,6 +154,13 @@ class _TypingModeWidgetState extends State<TypingModeWidget> {
 
     final sim = levenshteinSimilarity(userText, widget.chunk.text);
     final diff = wordDiff(userText, widget.chunk.text);
+
+    if (sim >= 0.7) {
+      HapticFeedback.lightImpact();
+    } else {
+      HapticFeedback.mediumImpact();
+      Future.delayed(const Duration(milliseconds: 120), HapticFeedback.mediumImpact);
+    }
 
     setState(() {
       _submitted = true;

@@ -26,6 +26,8 @@ class GlobalDashboardScreen extends StatelessWidget {
         items.where((i) => i.status == MemorizationStatus.mastered).length;
     final maxStreak = items.fold<int>(
         0, (max, i) => i.streakCount > max ? i.streakCount : max);
+    final totalWords = items.fold<int>(
+        0, (sum, i) => sum + i.fullText.trim().split(RegExp(r'\s+')).length);
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
@@ -59,6 +61,7 @@ class GlobalDashboardScreen extends StatelessWidget {
                   totalAttempts: totalAttempts,
                   masteredCount: masteredCount,
                   maxStreak: maxStreak,
+                  totalWords: totalWords,
                 ),
                 const SizedBox(height: 16),
                 _ItemsList(items: items),
@@ -143,25 +146,37 @@ class _SummaryGrid extends StatelessWidget {
   final int totalAttempts;
   final int masteredCount;
   final int maxStreak;
+  final int totalWords;
 
   const _SummaryGrid({
     required this.itemCount,
     required this.totalAttempts,
     required this.masteredCount,
     required this.maxStreak,
+    required this.totalWords,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        _StatTile(label: 'Verses', value: '$itemCount'),
-        const SizedBox(width: 10),
-        _StatTile(label: 'Reviews', value: '$totalAttempts'),
-        const SizedBox(width: 10),
-        _StatTile(label: 'Mastered', value: '$masteredCount'),
-        const SizedBox(width: 10),
-        _StatTile(label: 'Best streak', value: '${maxStreak}d'),
+        Row(
+          children: [
+            _StatTile(label: 'Verses', value: '$itemCount'),
+            const SizedBox(width: 10),
+            _StatTile(label: 'Reviews', value: '$totalAttempts'),
+            const SizedBox(width: 10),
+            _StatTile(label: 'Mastered', value: '$masteredCount'),
+            const SizedBox(width: 10),
+            _StatTile(label: 'Best streak', value: '${maxStreak}d'),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _StatTile(
+          label: 'Words in your heart',
+          value: '$totalWords',
+          wide: true,
+        ),
       ],
     );
   }
@@ -170,40 +185,41 @@ class _SummaryGrid extends StatelessWidget {
 class _StatTile extends StatelessWidget {
   final String label;
   final String value;
+  final bool wide;
 
-  const _StatTile({required this.label, required this.value});
+  const _StatTile({required this.label, required this.value, this.wide = false});
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: MyWalkColor.cardBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: MyWalkColor.warmWhite,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
+    final container = Container(
+      width: wide ? double.infinity : null,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: MyWalkColor.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: MyWalkColor.warmWhite,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
-                fontSize: 11,
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
+              fontSize: 11,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+    return wide ? container : Expanded(child: container);
   }
 }
 

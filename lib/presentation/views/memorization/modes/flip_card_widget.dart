@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../domain/entities/memorization_item.dart';
 import '../../../../presentation/theme/app_theme.dart';
 
@@ -52,6 +53,7 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
 
   void _flip() {
     if (_answered) return;
+    HapticFeedback.selectionClick();
     if (_flipped) {
       _ctrl.reverse();
     } else {
@@ -192,6 +194,12 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
 
   void _onAnswer({required bool knew}) {
     setState(() => _answered = true);
+    if (knew) {
+      HapticFeedback.lightImpact();
+    } else {
+      HapticFeedback.mediumImpact();
+      Future.delayed(const Duration(milliseconds: 120), HapticFeedback.mediumImpact);
+    }
     widget.onResult(
       success: knew,
       missedIds: knew ? [] : [widget.chunk.id],

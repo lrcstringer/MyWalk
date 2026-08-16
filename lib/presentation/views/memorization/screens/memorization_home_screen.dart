@@ -7,7 +7,6 @@ import '../../../../presentation/theme/app_theme.dart';
 import '../../../../presentation/views/shared/mywalk_paywall_view.dart';
 import '../memorization_router.dart';
 import '../widgets/memorization_list_tile.dart';
-import 'memorization_circles_screen.dart';
 
 class MemorizationHomeScreen extends StatefulWidget {
   const MemorizationHomeScreen({super.key});
@@ -49,15 +48,6 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.groups_2_outlined),
-            tooltip: 'Groups',
-            onPressed: () => Navigator.of(context).push<void>(
-              MaterialPageRoute(
-                builder: (_) => const MemorizationCirclesScreen(),
-              ),
-            ),
-          ),
           IconButton(
             icon: const Icon(Icons.bar_chart_outlined),
             tooltip: 'My Progress',
@@ -156,11 +146,29 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
     MemorizationProvider provider,
     MemorizationItem item,
   ) {
+    if (!item.initialEncounterComplete) {
+      return MemorizationListTile(
+        item: item,
+        onTap: () => MemorizationRouter.pushInitialMemorization(
+          context,
+          item,
+          startStep: item.currentInitialStep,
+        ),
+        onReview: () => MemorizationRouter.pushInitialMemorization(
+          context,
+          item,
+          startStep: item.currentInitialStep,
+        ),
+        onArchive: () => provider.archiveItem(item),
+        onDelete: () => provider.deleteItem(item),
+      );
+    }
     return MemorizationListTile(
       item: item,
       onTap: () => MemorizationRouter.pushItemDashboard(context, item),
       onReview: () => MemorizationRouter.pushModeSelection(context, item),
       onArchive: () => provider.archiveItem(item),
+      onDelete: () => provider.deleteItem(item),
     );
   }
 
@@ -168,9 +176,9 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
     Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => const MyWalkPaywallView(
-          contextTitle: 'Unlock unlimited memorization',
+          contextTitle: 'Unlock scripture memorization',
           contextMessage:
-              'Free tier: up to 3 items with Flip Card & Fill the Word. Premium: unlimited items, all 5 modes, and analytics.',
+              'Premium: unlimited verses, all 5 review modes, and full analytics dashboard.',
         ),
       ),
     );

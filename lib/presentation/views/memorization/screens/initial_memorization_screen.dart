@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../../data/services/tts_service.dart';
 import '../../../../domain/entities/memorization_item.dart';
+import '../../../../presentation/providers/memorization_provider.dart';
 import '../../../../presentation/theme/app_theme.dart';
 import '../widgets/memorization_celebration.dart';
 
@@ -13,8 +15,13 @@ import '../widgets/memorization_celebration.dart';
 
 class InitialMemorizationScreen extends StatefulWidget {
   final MemorizationItem item;
+  final int startStep;
 
-  const InitialMemorizationScreen({super.key, required this.item});
+  const InitialMemorizationScreen({
+    super.key,
+    required this.item,
+    this.startStep = 0,
+  });
 
   @override
   State<InitialMemorizationScreen> createState() =>
@@ -26,6 +33,12 @@ class _InitialMemorizationScreenState extends State<InitialMemorizationScreen> {
   int _chunkIndex = 0;
   bool _flipped = false;
   bool _ttsPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _step = widget.startStep.clamp(0, 3);
+  }
 
   static const _stepTitles = [
     'Listen',
@@ -114,11 +127,17 @@ class _InitialMemorizationScreenState extends State<InitialMemorizationScreen> {
 
   void _nextStep() {
     HapticFeedback.selectionClick();
+    final newStep = _step + 1;
     setState(() {
-      _step++;
+      _step = newStep;
       _chunkIndex = 0;
       _flipped = false;
     });
+    if (newStep < 4) {
+      context.read<MemorizationProvider>().updateItem(
+        widget.item.copyWith(currentInitialStep: newStep),
+      );
+    }
   }
 
   void _nextChunkOrStep() {
@@ -151,6 +170,13 @@ class _InitialMemorizationScreenState extends State<InitialMemorizationScreen> {
   }
 
   void _onComplete() {
+    context.read<MemorizationProvider>().updateItem(
+      widget.item.copyWith(
+        initialEncounterComplete: true,
+        currentInitialStep: 0,
+        nextReviewDate: DateTime.now().add(const Duration(hours: 12)),
+      ),
+    );
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (ctx) => MemorizationCelebration(
@@ -366,34 +392,21 @@ class _VisualStep extends StatelessWidget {
               color: MyWalkColor.cardBackground,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(
-              children: [
-                Text(
-                  chunk.text,
-                  style: const TextStyle(
-                    color: MyWalkColor.warmWhite,
-                    fontSize: 20,
-                    height: 1.7,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  chunk.hint,
-                  style: TextStyle(
-                    color: MyWalkColor.golden.withValues(alpha: 0.7),
-                    fontSize: 14,
-                    fontFamily: 'monospace',
-                    letterSpacing: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+            child: Text(
+              chunk.hint,
+              style: TextStyle(
+                color: MyWalkColor.golden.withValues(alpha: 0.8),
+                fontSize: 18,
+                fontFamily: 'monospace',
+                letterSpacing: 2.0,
+                height: 1.7,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
           const Spacer(),
           Text(
-            'Read the hint. Try to recall the phrase from the first letters.',
+            'Use the first letters to recall the phrase from memory.',
             style: TextStyle(
               color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
               fontSize: 14,

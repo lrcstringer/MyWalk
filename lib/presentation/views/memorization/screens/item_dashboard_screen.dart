@@ -6,6 +6,7 @@ import '../../../../presentation/theme/app_theme.dart';
 import '../widgets/achievement_badge.dart';
 import '../widgets/attempt_timeline.dart';
 import '../widgets/chunk_heat_map.dart';
+import '../widgets/review_calendar_heatmap.dart';
 import '../memorization_router.dart';
 
 class ItemDashboardScreen extends StatelessWidget {
@@ -354,16 +355,23 @@ class _AttemptsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SectionCard(
-      child: StreamBuilder<List<ReviewAttempt>>(
-        stream: context
-            .read<MemorizationProvider>()
-            .watchAttempts(item.id),
-        builder: (context, snapshot) {
-          final attempts = snapshot.data ?? [];
-          return AttemptTimeline(attempts: attempts);
-        },
-      ),
+    return StreamBuilder<List<ReviewAttempt>>(
+      stream: context.read<MemorizationProvider>().watchAttempts(item.id),
+      builder: (context, snapshot) {
+        final attempts = snapshot.data ?? [];
+        final dates = attempts.map((a) => a.attemptedAt).toList();
+        return Column(
+          children: [
+            _SectionCard(
+              child: ReviewCalendarHeatmap(reviewDates: dates),
+            ),
+            const SizedBox(height: 16),
+            _SectionCard(
+              child: AttemptTimeline(attempts: attempts),
+            ),
+          ],
+        );
+      },
     );
   }
 }

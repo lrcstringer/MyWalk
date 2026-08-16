@@ -119,6 +119,8 @@ class MemorizationItem {
   /// Audio
   final String? audioUrl;  // user's own voice recording
   final String? ttsUrl;    // cached TTS audio (item-level, for full text)
+  final int currentInitialStep;       // 0–3; which step to resume on next open
+  final bool initialEncounterComplete; // SM2 active once true
 
   const MemorizationItem({
     required this.id,
@@ -139,6 +141,8 @@ class MemorizationItem {
     required this.streakCount,
     this.audioUrl,
     this.ttsUrl,
+    this.currentInitialStep = 0,
+    this.initialEncounterComplete = false,
   });
 
   double get masteryPercent =>
@@ -191,6 +195,8 @@ class MemorizationItem {
     int? streakCount,
     String? audioUrl,
     String? ttsUrl,
+    int? currentInitialStep,
+    bool? initialEncounterComplete,
   }) {
     return MemorizationItem(
       id: id,
@@ -211,6 +217,8 @@ class MemorizationItem {
       streakCount: streakCount ?? this.streakCount,
       audioUrl: audioUrl ?? this.audioUrl,
       ttsUrl: ttsUrl ?? this.ttsUrl,
+      currentInitialStep: currentInitialStep ?? this.currentInitialStep,
+      initialEncounterComplete: initialEncounterComplete ?? this.initialEncounterComplete,
     );
   }
 
@@ -234,6 +242,8 @@ class MemorizationItem {
         'streakCount': streakCount,
         'audioUrl': audioUrl,
         'ttsUrl': ttsUrl,
+        'currentInitialStep': currentInitialStep,
+        'initialEncounterComplete': initialEncounterComplete,
       };
 
   factory MemorizationItem.fromFirestore(DocumentSnapshot doc) {
@@ -263,6 +273,8 @@ class MemorizationItem {
       streakCount: (data['streakCount'] as num? ?? 0).toInt(),
       audioUrl: data['audioUrl'] as String?,
       ttsUrl: data['ttsUrl'] as String?,
+      currentInitialStep: (data['currentInitialStep'] as num? ?? 0).toInt(),
+      initialEncounterComplete: data['initialEncounterComplete'] as bool? ?? false,
     );
   }
 }

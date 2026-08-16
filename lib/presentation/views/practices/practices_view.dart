@@ -748,57 +748,12 @@ class _MemorizationCard extends StatelessWidget {
     if (hasItems) {
       MemorizationRouter.pushHome(context);
     } else {
-      _showActivationDialog(context);
+      final nav = Navigator.of(context);
+      nav.pop(); // close the MiniApps bottom sheet
+      nav.push<void>(MaterialPageRoute(
+        builder: (_) => const MemorizationInputScreen(),
+      ));
     }
-  }
-
-  void _showActivationDialog(BuildContext context) {
-    const purple = Color(0xFF8B7EC8);
-    // Save the navigator before the dialog opens so we can still use it
-    // after dismissing both the dialog and the bottom sheet.
-    final nav = Navigator.of(context);
-
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: MyWalkColor.charcoal,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Memorization mini-app created',
-          style: TextStyle(
-              color: MyWalkColor.warmWhite,
-              fontWeight: FontWeight.w700,
-              fontSize: 16),
-        ),
-        content: Text(
-          'Access it on your Today screen. Add your first verse to get started.',
-          style: TextStyle(
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
-              fontSize: 13,
-              height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Got it',
-                style: TextStyle(
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.4))),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);   // close dialog
-              nav.pop();            // close the MiniApps bottom sheet
-              nav.push<void>(MaterialPageRoute(
-                builder: (_) => const MemorizationInputScreen(),
-              ));
-            },
-            child: const Text('Add my first verse',
-                style: TextStyle(
-                    color: purple, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

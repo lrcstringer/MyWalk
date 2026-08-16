@@ -193,10 +193,10 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                 else ...[
                   _header(accentColor,
                       showLock: hasPin,
+                      showExpand: isAbstain && !hasPin,
                       onLock: hasPin
                           ? () => context.read<HabitProvider>().lockHabit(_habit.id)
                           : null),
-                  if (isAbstain && !hasPin) _expandToggle(),
                   if (!isAbstain || hasPin || _isExpanded) ...[
                     const SizedBox(height: 8),
                     _trackingUI(accentColor),
@@ -244,7 +244,8 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     );
   }
 
-  Widget _header(Color accentColor, {bool showLock = false, VoidCallback? onLock}) {
+  Widget _header(Color accentColor,
+      {bool showLock = false, bool showExpand = false, VoidCallback? onLock}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -329,6 +330,22 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Icon(Icons.check_circle_rounded, color: accentColor, size: 24),
+              ),
+            if (showExpand)
+              GestureDetector(
+                onTap: () => setState(() => _isExpanded = !_isExpanded),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 20,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
               ),
           ],
         ),
@@ -537,27 +554,6 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     for (final f in focusNodes) {
       f.dispose();
     }
-  }
-
-  Widget _expandToggle() {
-    return GestureDetector(
-      onTap: () => setState(() => _isExpanded = !_isExpanded),
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Center(
-          child: AnimatedRotation(
-            turns: _isExpanded ? 0.5 : 0,
-            duration: const Duration(milliseconds: 200),
-            child: Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 20,
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _actionPill({

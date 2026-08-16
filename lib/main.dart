@@ -225,7 +225,7 @@ void main() async {
         ChangeNotifierProvider<MemorizationProvider>(
           create: (context) => MemorizationProvider(
             memorizationRepository,
-            () => context.read<EngagementService>().isPremium,
+            () => context.read<StoreProvider>().isPremium,
           ),
         ),
         Provider<RecoveryPathRepository>.value(value: recoveryPathRepository),

@@ -21,14 +21,14 @@ class ModeSelectionScreen extends StatelessWidget {
       icon: Icons.flip,
       title: 'Meditate & Reveal',
       description: 'See the hint, flip to reveal the phrase.',
-      premium: false,
+      premium: true,
     ),
     _ModeInfo(
       mode: ReviewMode.cloze,
       icon: Icons.text_fields,
       title: 'Fill the Word',
       description: 'Tap the missing words to complete each phrase.',
-      premium: false,
+      premium: true,
     ),
     _ModeInfo(
       mode: ReviewMode.progressive,
@@ -144,7 +144,7 @@ class ModeSelectionScreen extends StatelessWidget {
         builder: (_) => const MyWalkPaywallView(
           contextTitle: 'Premium review modes',
           contextMessage:
-              'Unlock Step by Step, Write It Out, and Speak It Aloud — plus unlimited items and analytics.',
+              'Premium unlocks all 5 review modes, unlimited verses, and full analytics.',
         ),
       ),
     );

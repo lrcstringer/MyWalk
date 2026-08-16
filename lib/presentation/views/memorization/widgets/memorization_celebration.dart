@@ -9,14 +9,11 @@ class MemorizationCelebration extends StatefulWidget {
   final String message;
   final String subtitle;
   final VoidCallback onContinue;
-  final VoidCallback? onShare;
-
   const MemorizationCelebration({
     super.key,
     required this.message,
     required this.subtitle,
     required this.onContinue,
-    this.onShare,
   });
 
   @override
@@ -136,19 +133,6 @@ class _MemorizationCelebrationState extends State<MemorizationCelebration>
                   ),
                 ),
                 const Spacer(),
-                if (widget.onShare != null) ...[
-                  OutlinedButton.icon(
-                    onPressed: widget.onShare,
-                    icon: const Icon(Icons.share_outlined, size: 18),
-                    label: const Text('Share with my group'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: MyWalkColor.warmWhite,
-                      side: BorderSide(color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
-                      minimumSize: const Size(double.infinity, 48),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
                 ElevatedButton(
                   style: MyWalkButtonStyle.primary(),
                   onPressed: widget.onContinue,

@@ -7,6 +7,7 @@ class MemorizationListTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onReview;
   final VoidCallback onArchive;
+  final VoidCallback onDelete;
 
   const MemorizationListTile({
     super.key,
@@ -14,6 +15,7 @@ class MemorizationListTile extends StatelessWidget {
     required this.onTap,
     required this.onReview,
     required this.onArchive,
+    required this.onDelete,
   });
 
   @override
@@ -107,7 +109,16 @@ class MemorizationListTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        _DueChip(item: item),
+                        if (!item.initialEncounterComplete)
+                          Text(
+                            'Step ${item.currentInitialStep + 1} of 4 ready',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: MyWalkColor.golden,
+                            ),
+                          )
+                        else
+                          _DueChip(item: item),
                         if (item.streakCount > 0) ...[
                           const SizedBox(width: 8),
                           _StreakBadge(count: item.streakCount),
@@ -117,24 +128,60 @@ class MemorizationListTile extends StatelessWidget {
                   ],
                 ),
               ),
-              // Review button (only if due)
-              if (isDue)
-                FilledButton(
-                  onPressed: onReview,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: MyWalkColor.golden,
-                    foregroundColor: MyWalkColor.charcoal,
-                    minimumSize: const Size(72, 36),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (item.initialEncounterComplete && isDue)
+                    FilledButton(
+                      onPressed: onReview,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: MyWalkColor.golden,
+                        foregroundColor: MyWalkColor.charcoal,
+                        minimumSize: const Size(72, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: const Text('Review', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                    ),
+                  IconButton(
+                    icon: Icon(Icons.more_vert, color: MyWalkColor.warmWhite.withValues(alpha: 0.4)),
+                    onPressed: () => _showOptions(context),
                   ),
-                  child: const Text('Review', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                )
-              else
-                Icon(Icons.chevron_right, color: MyWalkColor.warmWhite.withValues(alpha: 0.4)),
+                ],
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showOptions(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.cardBackground,
+        title: Text(item.title, style: const TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w600)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: MyWalkColor.warmWhite.withValues(alpha: 0.5))),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onArchive();
+            },
+            child: const Text('Archive', style: TextStyle(color: MyWalkColor.golden)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onDelete();
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

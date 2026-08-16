@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../domain/entities/memorization_item.dart';
 import '../../../../presentation/theme/app_theme.dart';
 
@@ -299,13 +300,20 @@ class _ClozeModeWidgetState extends State<ClozeModeWidget> {
   }
 
   void _checkAnswers() {
+    final allCorrect = _tokens.every((t) {
+      if (!t.isBlank) return true;
+      return t.userAnswer?.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z]'), '') ==
+          t.text.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z]'), '');
+    });
+    if (allCorrect) {
+      HapticFeedback.lightImpact();
+    } else {
+      HapticFeedback.mediumImpact();
+      Future.delayed(const Duration(milliseconds: 120), HapticFeedback.mediumImpact);
+    }
     setState(() {
       _submitted = true;
-      _allCorrect = _tokens.every((t) {
-        if (!t.isBlank) return true;
-        return t.userAnswer?.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z]'), '') ==
-            t.text.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z]'), '');
-      });
+      _allCorrect = allCorrect;
     });
   }
 
