@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'weekly_compass_screen.dart';
-import 'thought_examination_screen.dart';
 import 'mid_point_reflection_screen.dart';
 import 'lifestyle_audit_screen.dart';
 import '../../../domain/entities/recovery_path.dart';
@@ -13,11 +11,9 @@ import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import 'module_session_screen.dart';
 import 'values_inventory_screen.dart';
-import 'guardrails_screen.dart';
 import 'record_a_moment_screen.dart';
 import 'my_freedom_plan_screen.dart';
 import 'phase_transition_screen.dart';
-import 'recovery_letter_screen.dart';
 import 'daily_check_in_modal.dart';
 import '../journal/freedom_journey_tab.dart';
 
@@ -39,8 +35,9 @@ class RecoveryPathHomeScreen extends StatefulWidget {
 }
 
 class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
-  int _daysSinceLastLog = 0;
-  bool _checkInModalTriggered = false;
+  // -1 = not yet loaded (sentinel so we don't queue dialogs before async data arrives)
+  int _daysSinceLastLog = -1;
+  bool _dialogsQueued = false;
   bool _phaseTransitionDispatched = false;
 
   @override
@@ -52,21 +49,179 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
     });
   }
 
-  void _maybeShowCheckInModal(RecoveryPathProvider prov) {
-    if (_checkInModalTriggered) return;
-    _checkInModalTriggered = true;
-    final dayNumber = prov.dayNumberFor(widget.habitId);
-    if (dayNumber % 3 != 0) return;
-    if (prov.checkInDoneToday(widget.habitId)) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      showDailyCheckInModal(
-        context,
-        habitId: widget.habitId,
-        habitName: widget.habitName,
-      );
+  // ── Dialog queue ─────────────────────────────────────────────────────────────
+
+  /// Collects every due prompt for this session and shows them sequentially.
+  /// Runs at most once per screen load (guarded by [_dialogsQueued]).
+  /// Only called after [_daysSinceLastLog] has been resolved (>= 0).
+  void _maybeQueueDialogs(
+      RecoveryPathProvider prov, RecoveryPath path, int phase) {
+    if (_dialogsQueued) return;
+    _dialogsQueued = true;
+
+    final day = prov.dayNumberFor(widget.habitId);
+    final queue = <Future<void> Function()>[];
+
+    // 1. Daily check-in (every 3rd day)
+    if (day % 3 == 0 && !prov.checkInDoneToday(widget.habitId)) {
+      queue.add(() => showDailyCheckInDialog(
+            context,
+            habitId: widget.habitId,
+            habitName: widget.habitName,
+          ));
+    }
+
+    // 2. Mid-point reflection (phase 1, days 8–10)
+    if (phase == 1 && day >= 8 && day <= 10 && !path.midPointReflectionDone) {
+      queue.add(() => _showRpDialog(
+            title: 'Mid-Point Reflection',
+            body: 'You\'re around day 8–10 of your path. A good moment to step back and reflect on what\'s been coming up so far.',
+            actionLabel: 'Reflect now',
+            onAction: _openMidPointReflection,
+          ));
+    }
+
+    // 3. 5-day no-log nudge (phase 1)
+    if (phase == 1 && _daysSinceLastLog >= 5) {
+      queue.add(() => _showRpDialog(
+            title: 'How\'s it going?',
+            body: 'It\'s been a few days since you recorded a moment. If you\'ve had any situations come up, now is a good time to capture them.',
+            actionLabel: 'Record one now',
+            dismissLabel: 'Skip',
+            onAction: _openRecordAMoment,
+          ));
+    }
+
+    // 4. Monthly balance check (phase 3+, every 30 days)
+    if (phase >= 3 && prov.isLifestyleAuditDue(path)) {
+      queue.add(() => _showRpDialog(
+            title: 'Monthly Balance Check',
+            body: 'It\'s time for your monthly check-in on the broader picture — sleep, relationships, stress, and the areas of life beyond the pattern.',
+            actionLabel: 'Begin check-in',
+            onAction: _openLifestyleAudit,
+          ));
+    }
+
+    // 5. Fortnightly reflection (phase 3+, every 14 days from day 14)
+    if (phase >= 3 && day >= 14 && day % 14 == 0) {
+      final prompts = RecoveryModuleContent.phase3ReflectionPrompts;
+      final prompt = prompts[(day ~/ 14) % prompts.length];
+      queue.add(() => _showRpDialog(
+            title: 'Fortnightly Reflection',
+            body: prompt,
+            actionLabel: 'Open Freedom Journey',
+            dismissLabel: 'Skip',
+            onAction: _openFreedomJourneyTab,
+          ));
+    }
+
+    // 6. Quarterly review (phase 4, at days 90 / 180 / 270 / 360)
+    if (phase >= 4 && prov.isQuarterlyReviewDue(path, day)) {
+      queue.add(() => _showRpDialog(
+            title: 'Quarterly Review',
+            body: 'Every 90 days, it\'s worth sitting with your recovery letter and reflecting on where you are now. This is a considered reflection, not a quick check-in.',
+            actionLabel: 'Begin review',
+            onAction: _openQuarterlyReview,
+          ));
+    }
+
+    if (queue.isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      for (final show in queue) {
+        if (!mounted) return;
+        await show();
+      }
     });
   }
+
+  /// Shared styled dialog for all announcement-style prompts.
+  Future<void> _showRpDialog({
+    required String title,
+    required String body,
+    required String actionLabel,
+    required VoidCallback onAction,
+    String dismissLabel = 'Later',
+  }) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C2E),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: MyWalkColor.warmWhite,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                body,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
+                  height: 1.55,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: Text(
+                      dismissLabel,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      onAction();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _kRpPurple,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text(
+                      actionLabel,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Phase transitions ────────────────────────────────────────────────────────
 
   void _maybeShowPhaseTransition(
       RecoveryPathProvider prov, RecoveryPath path, int phase) {
@@ -105,6 +260,8 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
     }
   }
 
+  // ── Navigation helpers ───────────────────────────────────────────────────────
+
   void _openFreedomJourneyTab() {
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => Scaffold(
@@ -142,8 +299,6 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
   }
 
   Future<void> _begin() async {
-    // Navigate to values entry. ValuesInventoryScreen handles path creation,
-    // plan activation, and shows the "What Happens Next" screen on completion.
     await Navigator.push<void>(
       context,
       MaterialPageRoute(
@@ -158,63 +313,17 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
     );
   }
 
-  void _openModule(int moduleNumber) {
-    final prov = context.read<RecoveryPathProvider>();
-    final habitId = widget.habitId;
-
-    switch (moduleNumber) {
-      case 3:
-        final path = prov.pathFor(habitId);
-        final inventoryDone = path?.module3.valuesInventoryDone ?? false;
-        final compassDone = prov.compassDoneThisWeek(habitId);
-
-        if (!inventoryDone) {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => ValuesInventoryScreen(habitId: habitId, accentColor: MyWalkColor.bpValues),
-          ));
-        } else if (!compassDone) {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => WeeklyCompassScreen(habitId: habitId),
-          ));
-        } else {
-          _showDoneSnack('Weekly compass done — check back next week.');
-        }
-
-      case 2:
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => ThoughtExaminationScreen(habitId: habitId, accentColor: MyWalkColor.bpThoughts),
-        ));
-
-      case 4:
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => GuardrailsScreen(
-            habitId: habitId,
-            habitName: widget.habitName,
-            accentColor: MyWalkColor.bpGuardrails,
-          ),
-        ));
-
-      case 5:
-        final path = prov.pathFor(habitId);
-        final letterWritten = path?.module5.recoveryLetterWritten ?? false;
-        if (!letterWritten) {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => RecoveryLetterScreen(habitId: habitId, accentColor: MyWalkColor.bpLetter),
-          ));
-        } else {
-          // Letter exists — offer quarterly review.
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => ModuleSessionScreen(
-              habitId: habitId,
-              sessionType: RecoverySessionType.m5QuarterlyReview,
-              moduleNumber: 5,
-              title: RecoveryModuleContent.m5QuarterlyReviewTitle,
-              prompts: RecoveryModuleContent.m5QuarterlyReviewPrompts,
-              hint: RecoveryModuleContent.m5QuarterlyReviewHint,
-            ),
-          ));
-        }
-    }
+  void _openQuarterlyReview() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ModuleSessionScreen(
+        habitId: widget.habitId,
+        sessionType: RecoverySessionType.m5QuarterlyReview,
+        moduleNumber: 5,
+        title: RecoveryModuleContent.m5QuarterlyReviewTitle,
+        prompts: RecoveryModuleContent.m5QuarterlyReviewPrompts,
+        hint: RecoveryModuleContent.m5QuarterlyReviewHint,
+      ),
+    ));
   }
 
   void _openRecordAMoment() {
@@ -244,12 +353,6 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
     ));
   }
 
-  void _showDoneSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<RecoveryPathProvider>();
@@ -259,10 +362,10 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
     final hasError = prov.errorFor(habitId) != null;
     final started = path != null && path.planActive;
 
-    if (started && !isLoading) {
-      _maybeShowCheckInModal(prov);
-      _maybeShowPhaseTransition(
-          prov, path, RecoveryPhaseCalculator.calculate(path));
+    if (started && !isLoading && _daysSinceLastLog >= 0) {
+      final phase = RecoveryPhaseCalculator.calculate(path);
+      _maybeQueueDialogs(prov, path, phase);
+      _maybeShowPhaseTransition(prov, path, phase);
     }
 
     Widget body;
@@ -272,18 +375,12 @@ class _RecoveryPathHomeScreenState extends State<RecoveryPathHomeScreen> {
       body = _ActiveBody(
         habitId: habitId,
         habitName: widget.habitName,
-        daysSinceLastLog: _daysSinceLastLog,
         prov: prov,
-        onModuleTap: _openModule,
         onRecordAMoment: _openRecordAMoment,
         onPhase2Journey: _openPhase2JourneyView,
-        onMidPointReflection: _openMidPointReflection,
-        onLifestyleAudit: _openLifestyleAudit,
         onFreedomJourney: _openFreedomJourneyTab,
       );
     } else if (hasError) {
-      // Load failed — show retry rather than "Begin" to prevent accidentally
-      // overwriting an existing path that failed to load.
       body = Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -401,7 +498,7 @@ class _BeginBodyState extends State<_BeginBody> {
           // Module preview list
           ...RecoveryModuleContent.modules.map((m) => _ModulePreviewRow(
                 meta: m,
-                unlocked: true, // All shown as available before start
+                unlocked: true,
                 isPremium: m.isPremium && !userIsPremium,
               )),
 
@@ -452,25 +549,17 @@ class _BeginBodyState extends State<_BeginBody> {
 class _ActiveBody extends StatelessWidget {
   final String habitId;
   final String habitName;
-  final int daysSinceLastLog;
   final RecoveryPathProvider prov;
-  final void Function(int) onModuleTap;
   final VoidCallback onRecordAMoment;
   final VoidCallback onPhase2Journey;
-  final VoidCallback onMidPointReflection;
-  final VoidCallback onLifestyleAudit;
   final VoidCallback onFreedomJourney;
 
   const _ActiveBody({
     required this.habitId,
     required this.habitName,
-    required this.daysSinceLastLog,
     required this.prov,
-    required this.onModuleTap,
     required this.onRecordAMoment,
     required this.onPhase2Journey,
-    required this.onMidPointReflection,
-    required this.onLifestyleAudit,
     required this.onFreedomJourney,
   });
 
@@ -520,8 +609,8 @@ class _ActiveBody extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          if (phase == 1) ..._buildPhase1(path, day),
-          if (phase == 2) ..._buildPhase2(path, day, compassDone),
+          if (phase == 1) ..._buildPhase1(path),
+          if (phase == 2) ..._buildPhase2(path),
           if (phase == 3) ..._buildPhase3(path, day, compassDone),
           if (phase >= 4) ..._buildPhase4(path, day, compassDone),
         ],
@@ -531,29 +620,13 @@ class _ActiveBody extends StatelessWidget {
 
   // ── Phase 1 ─────────────────────────────────────────────────────────────────
 
-  List<Widget> _buildPhase1(RecoveryPath path, int day) => [
+  List<Widget> _buildPhase1(RecoveryPath path) => [
         _PrimaryButton(label: 'Record a moment', onTap: onRecordAMoment),
-        if (day >= 8 && day <= 10 && !path.midPointReflectionDone) ...[
-          const SizedBox(height: 10),
-          _PillButton(
-            label: 'Mid-Point Reflection',
-            subtitle: 'Day 8–10 check-in',
-            onTap: onMidPointReflection,
-          ),
-        ],
-        if (daysSinceLastLog >= 5) ...[
-          const SizedBox(height: 16),
-          _NudgeCard(
-            text: 'It\'s been a few days — how\'s it going? Have you had any moments to record?',
-            buttonLabel: 'Record one now',
-            onTap: onRecordAMoment,
-          ),
-        ],
       ];
 
   // ── Phase 2 ─────────────────────────────────────────────────────────────────
 
-  List<Widget> _buildPhase2(RecoveryPath path, int day, bool compassDone) {
+  List<Widget> _buildPhase2(RecoveryPath path) {
     final allDone = _phase2AllTasksDone(path);
     final inProgress = _phase2TaskInProgress(path);
     final taskName = _currentPhase2TaskName(path);
@@ -571,14 +644,6 @@ class _ActiveBody extends StatelessWidget {
         onTap: onRecordAMoment,
         secondary: true,
       ),
-      if (day >= 21 && !compassDone) ...[
-        const SizedBox(height: 10),
-        _PillButton(
-          label: 'Values Compass',
-          subtitle: 'Weekly check-in',
-          onTap: () => onModuleTap(3),
-        ),
-      ],
     ];
   }
 
@@ -586,33 +651,11 @@ class _ActiveBody extends StatelessWidget {
 
   List<Widget> _buildPhase3(RecoveryPath path, int day, bool compassDone) {
     final letterWritten = path.module5.recoveryLetterWritten;
-    final auditDue = prov.isLifestyleAuditDue(path);
     final weekNumber = day ~/ 7;
-    final isReflectionWeek = day >= 14 && day % 14 == 0;
     return [
-      if (!compassDone) ...[
-        _PillButton(
-          label: 'Values Compass',
-          subtitle: 'Weekly',
-          onTap: () => onModuleTap(3),
-        ),
-        const SizedBox(height: 10),
-      ],
-      if (auditDue) ...[
-        _PillButton(
-          label: 'Monthly Balance Check',
-          subtitle: 'Monthly reflection',
-          onTap: onLifestyleAudit,
-        ),
-        const SizedBox(height: 10),
-      ],
       _PrimaryButton(label: 'Record a moment', onTap: onRecordAMoment, secondary: true),
       const SizedBox(height: 16),
       _EncouragementCard(weekNumber: weekNumber),
-      if (isReflectionWeek) ...[
-        const SizedBox(height: 10),
-        _ReflectionPromptCard(day: day, onTap: onFreedomJourney),
-      ],
       const SizedBox(height: 10),
       _PlanAtAGlanceCard(
         phase: RecoveryPhaseCalculator.calculate(path),
@@ -627,16 +670,7 @@ class _ActiveBody extends StatelessWidget {
   // ── Phase 4 ─────────────────────────────────────────────────────────────────
 
   List<Widget> _buildPhase4(RecoveryPath path, int day, bool compassDone) {
-    final quarterlyDue = prov.isQuarterlyReviewDue(path, day);
     return [
-      if (quarterlyDue) ...[
-        _PillButton(
-          label: 'Quarterly Review',
-          subtitle: 'Every 90 days',
-          onTap: () => onModuleTap(5),
-        ),
-        const SizedBox(height: 10),
-      ],
       ..._buildPhase3(path, day, compassDone),
       const SizedBox(height: 10),
       _ReviewJourneyCard(onTap: onFreedomJourney),
@@ -701,7 +735,7 @@ class _ModulePreviewRow extends StatelessWidget {
   }
 }
 
-// ── Phase-based Today card sub-widgets ────────────────────────────────────────
+// ── Shared UI widgets ────────────────────────────────────────────────────────
 
 class _PrimaryButton extends StatelessWidget {
   final String label;
@@ -734,102 +768,6 @@ class _PrimaryButton extends StatelessWidget {
           label,
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
-      ),
-    );
-  }
-}
-
-class _PillButton extends StatelessWidget {
-  final String label;
-  final String? subtitle;
-  final VoidCallback onTap;
-
-  const _PillButton({
-    required this.label,
-    required this.onTap,
-    this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: _kRpPurple.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _kRpPurple.withValues(alpha: 0.2), width: 0.75),
-        ),
-        child: Row(children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _kRpPurple)),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 1),
-                  Text(subtitle!,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: MyWalkColor.warmWhite.withValues(alpha: 0.4))),
-                ],
-              ],
-            ),
-          ),
-          Icon(Icons.chevron_right_rounded,
-              size: 16, color: _kRpPurple.withValues(alpha: 0.6)),
-        ]),
-      ),
-    );
-  }
-}
-
-class _NudgeCard extends StatelessWidget {
-  final String text;
-  final String buttonLabel;
-  final VoidCallback onTap;
-
-  const _NudgeCard({
-    required this.text,
-    required this.buttonLabel,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: MyWalkColor.warmCoral.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: MyWalkColor.warmCoral.withValues(alpha: 0.2), width: 0.75),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(text,
-              style: TextStyle(
-                  fontSize: 13,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
-                  height: 1.5)),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: onTap,
-            child: Text(buttonLabel,
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _kRpPurple.withValues(alpha: 0.9))),
-          ),
-        ],
       ),
     );
   }
@@ -884,55 +822,6 @@ class _EncouragementCard extends StatelessWidget {
             color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
             height: 1.55,
             fontStyle: FontStyle.italic),
-      ),
-    );
-  }
-}
-
-class _ReflectionPromptCard extends StatelessWidget {
-  final int day;
-  final VoidCallback onTap;
-  const _ReflectionPromptCard({required this.day, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final prompts = RecoveryModuleContent.phase3ReflectionPrompts;
-    final prompt = prompts[(day ~/ 14) % prompts.length];
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: MyWalkColor.sage.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: MyWalkColor.sage.withValues(alpha: 0.18), width: 0.75),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Fortnightly reflection',
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: MyWalkColor.sage.withValues(alpha: 0.8),
-                  letterSpacing: 0.3)),
-          const SizedBox(height: 6),
-          Text(prompt,
-              style: TextStyle(
-                  fontSize: 13,
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.65),
-                  height: 1.5)),
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: onTap,
-            child: Text(
-              'Reflect ›',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: MyWalkColor.sage.withValues(alpha: 0.8),
-                  fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
       ),
     );
   }

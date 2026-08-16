@@ -50,6 +50,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   int _writeToken = 0;
 
   int _logCount = 0;
+  bool _isExpanded = false;
 
   Habit get _habit => widget.habit;
   DateTime get _targetDate => widget.targetDate;
@@ -156,11 +157,16 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     );
     final isAbstain = _habit.trackingType == HabitTrackingType.abstain;
     final accentColor = isAbstain ? MyWalkColor.sage : MyWalkColor.golden;
+    final rawPinUnlocked = context.select<HabitProvider, bool>(
+      (p) => p.isPinUnlocked(_habit.id),
+    );
+    final hasPin = isAbstain && (_habit.pin?.isNotEmpty ?? false);
+    final pinLocked = hasPin && !rawPinUnlocked;
 
     return Stack(
       children: [
         GestureDetector(
-          onTap: () => _showDetail(context),
+          onTap: pinLocked ? null : () => _showDetail(context),
           child: Container(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
             decoration: BoxDecoration(
@@ -182,32 +188,43 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _header(accentColor),
-                const SizedBox(height: 8),
-                _trackingUI(accentColor),
-                if (_habit.category == HabitCategory.gratitude) ...[
-                  const SizedBox(height: 12),
-                  _gratitudeVersesSection(),
-                ] else if (_isCompleted && _completionVerse != null) ...[
-                  const SizedBox(height: 12),
-                  _verseSection(),
-                ],
-                if (isAbstain && !widget.isRetroactive) ...[
-                  if (_habit.subcategoryId == 'breaking_habits' ||
-                      _habit.hasRecoveryPath) ...[
-                    const SizedBox(height: 10),
-                    Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08), height: 1),
-                    const SizedBox(height: 10),
-                    _recordAMomentButton(context),
-                    const SizedBox(height: 10),
-                    _breakingHabitsChips(context),
+                if (pinLocked)
+                  _lockedCard(context, accentColor)
+                else ...[
+                  _header(accentColor,
+                      showLock: hasPin,
+                      onLock: hasPin
+                          ? () => context.read<HabitProvider>().lockHabit(_habit.id)
+                          : null),
+                  if (isAbstain && !hasPin) _expandToggle(),
+                  if (!isAbstain || hasPin || _isExpanded) ...[
+                    const SizedBox(height: 8),
+                    _trackingUI(accentColor),
+                    if (_habit.category == HabitCategory.gratitude) ...[
+                      const SizedBox(height: 12),
+                      _gratitudeVersesSection(),
+                    ] else if (_isCompleted && _completionVerse != null) ...[
+                      const SizedBox(height: 12),
+                      _verseSection(),
+                    ],
+                    if (isAbstain && !widget.isRetroactive) ...[
+                      if (_habit.subcategoryId == 'breaking_habits' ||
+                          _habit.hasRecoveryPath) ...[
+                        const SizedBox(height: 10),
+                        Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08), height: 1),
+                        const SizedBox(height: 10),
+                        _recordAMomentButton(context),
+                        const SizedBox(height: 10),
+                        _breakingHabitsChips(context),
+                      ],
+                      const SizedBox(height: 10),
+                      Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08), height: 1),
+                      const SizedBox(height: 10),
+                      _rpStrip(context),
+                      Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08), height: 16),
+                      _partnerStrip(context),
+                    ],
                   ],
-                  const SizedBox(height: 10),
-                  Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08), height: 1),
-                  const SizedBox(height: 10),
-                  _rpStrip(context),
-                  Divider(color: MyWalkColor.warmWhite.withValues(alpha: 0.08), height: 16),
-                  _partnerStrip(context),
                 ],
               ],
             ),
@@ -227,7 +244,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
     );
   }
 
-  Widget _header(Color accentColor) {
+  Widget _header(Color accentColor, {bool showLock = false, VoidCallback? onLock}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -299,6 +316,15 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                 ],
               ),
             ),
+            if (showLock)
+              GestureDetector(
+                onTap: onLock,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Icon(Icons.lock_rounded,
+                      color: MyWalkColor.sage.withValues(alpha: 0.65), size: 20),
+                ),
+              ),
             if (_isCompleted)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
@@ -339,6 +365,198 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _lockedCard(BuildContext context, Color accentColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    accentColor.withValues(alpha: 0.12),
+                    accentColor.withValues(alpha: 0.03),
+                  ],
+                ),
+              ),
+              child: Icon(Icons.lock_rounded, color: accentColor, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Breaking Patterns: ${_habit.displayName}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: MyWalkColor.warmWhite,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _showPinDialog(context),
+            icon: const Icon(Icons.lock_open_rounded, size: 16),
+            label: const Text('Unlock',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MyWalkColor.sage,
+              foregroundColor: MyWalkColor.charcoal,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showPinDialog(BuildContext context) async {
+    final controllers = List.generate(4, (_) => TextEditingController());
+    final focusNodes = List.generate(4, (_) => FocusNode());
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        String? errorText;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            void verify() {
+              final entered = controllers.map((c) => c.text).join();
+              if (entered == _habit.pin) {
+                Navigator.pop(ctx);
+                if (mounted) context.read<HabitProvider>().unlockHabit(_habit.id);
+              } else {
+                setDialogState(() => errorText = 'Incorrect PIN. Try again.');
+                for (final c in controllers) {
+                  c.clear();
+                }
+                focusNodes[0].requestFocus();
+              }
+            }
+
+            return AlertDialog(
+              backgroundColor: MyWalkColor.charcoal,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text('Enter PIN',
+                  style: TextStyle(
+                      color: MyWalkColor.warmWhite,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(4, (i) {
+                      return Padding(
+                        padding: EdgeInsets.only(right: i < 3 ? 12 : 0),
+                        child: SizedBox(
+                          width: 52,
+                          child: TextField(
+                            controller: controllers[i],
+                            focusNode: focusNodes[i],
+                            maxLength: 1,
+                            keyboardType: TextInputType.number,
+                            obscureText: true,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: MyWalkColor.warmWhite,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            decoration: InputDecoration(
+                              counterText: '',
+                              filled: true,
+                              fillColor: MyWalkColor.surfaceOverlay,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(
+                                    color: MyWalkColor.sage, width: 1.5),
+                              ),
+                            ),
+                            onChanged: (v) {
+                              if (errorText != null) {
+                                setDialogState(() => errorText = null);
+                              }
+                              if (v.length == 1) {
+                                if (i < 3) {
+                                  focusNodes[i + 1].requestFocus();
+                                } else {
+                                  verify();
+                                }
+                              } else if (v.isEmpty && i > 0) {
+                                focusNodes[i - 1].requestFocus();
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  if (errorText != null) ...[
+                    const SizedBox(height: 12),
+                    Text(errorText!,
+                        style: const TextStyle(
+                            color: MyWalkColor.warmCoral, fontSize: 13)),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Cancel',
+                      style: TextStyle(
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.45))),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    for (final c in controllers) {
+      c.dispose();
+    }
+    for (final f in focusNodes) {
+      f.dispose();
+    }
+  }
+
+  Widget _expandToggle() {
+    return GestureDetector(
+      onTap: () => setState(() => _isExpanded = !_isExpanded),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Center(
+          child: AnimatedRotation(
+            turns: _isExpanded ? 0.5 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 20,
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

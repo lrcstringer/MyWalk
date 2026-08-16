@@ -122,6 +122,8 @@ class _AddHabitViewState extends State<AddHabitView> {
     _notesScrollController.dispose();
     _referenceUrlController.dispose();
     _customPatternCtrl.dispose();
+    for (final c in _pinControllers) c.dispose();
+    for (final f in _pinFocusNodes) f.dispose();
     super.dispose();
   }
 
@@ -146,6 +148,10 @@ class _AddHabitViewState extends State<AddHabitView> {
   final ScrollController _notesScrollController = ScrollController();
   final TextEditingController _referenceUrlController = TextEditingController();
   final TextEditingController _customPatternCtrl = TextEditingController();
+  final List<TextEditingController> _pinControllers =
+      List.generate(4, (_) => TextEditingController());
+  final List<FocusNode> _pinFocusNodes = List.generate(4, (_) => FocusNode());
+  String _pin = '';
 
   // ── App bar ──────────────────────────────────────────────────────────────
 
@@ -665,6 +671,16 @@ class _AddHabitViewState extends State<AddHabitView> {
             'Useful if you prefer a private name that others won\'t recognise.',
             style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3)),
           ),
+          const SizedBox(height: 20),
+          _label('Privacy PIN — optional', inline: true),
+          const SizedBox(height: 4),
+          Text(
+            'Set a 4-digit PIN to lock this card on the Today screen. '
+            'Make a note of it — it cannot be recovered.',
+            style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3)),
+          ),
+          const SizedBox(height: 8),
+          _pinSetupRow(),
         ],
         const SizedBox(height: 20),
 
@@ -1783,6 +1799,7 @@ class _AddHabitViewState extends State<AddHabitView> {
       notes: notesJson,
       referenceUrl: refUrl,
       displayAlias: _displayAlias.trim().isEmpty ? null : _displayAlias.trim(),
+      pin: _pin.length == 4 ? _pin : null,
     );
     if (_selectedFruits.isNotEmpty) {
       fruitProvider.onHabitTagsChanged([], _selectedFruits);
@@ -2035,6 +2052,62 @@ class _AddHabitViewState extends State<AddHabitView> {
         ),
         contentPadding: const EdgeInsets.all(12),
       ),
+    );
+  }
+
+  Widget _pinSetupRow() {
+    final borderSide = BorderSide(
+      color: MyWalkColor.warmWhite.withValues(alpha: 0.15),
+      width: 0.75,
+    );
+    final focusedBorder = const OutlineInputBorder(
+      borderRadius: BorderRadius.all(Radius.circular(10)),
+      borderSide: BorderSide(color: MyWalkColor.eventPurple, width: 1.5),
+    );
+    return Row(
+      children: List.generate(4, (i) {
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: i < 3 ? 10 : 0),
+            child: TextField(
+              controller: _pinControllers[i],
+              focusNode: _pinFocusNodes[i],
+              maxLength: 1,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: MyWalkColor.warmWhite,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                counterText: '',
+                filled: true,
+                fillColor: MyWalkColor.surfaceOverlay,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: borderSide,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: borderSide,
+                ),
+                focusedBorder: focusedBorder,
+              ),
+              onChanged: (v) {
+                if (v.length == 1 && i < 3) {
+                  _pinFocusNodes[i + 1].requestFocus();
+                } else if (v.isEmpty && i > 0) {
+                  _pinFocusNodes[i - 1].requestFocus();
+                }
+                setState(() {
+                  _pin = _pinControllers.map((c) => c.text).join();
+                });
+              },
+            ),
+          ),
+        );
+      }),
     );
   }
 

@@ -92,12 +92,37 @@ class BibleReadingDayModal extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Journal button
-                    IconButton(
-                      icon: const Icon(Icons.edit_note,
-                          color: MyWalkColor.golden, size: 22),
-                      tooltip: 'Add journal entry',
-                      onPressed: () => _openJournal(context, weekIndex, dayIndex, dayName),
+                    // Journal pill
+                    GestureDetector(
+                      onTap: () => _openJournal(context, weekIndex, dayIndex, dayName),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: MyWalkColor.golden.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: MyWalkColor.golden.withValues(alpha: 0.35),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.edit_note,
+                                color: MyWalkColor.golden, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'Create Journal Entry',
+                              style: TextStyle(
+                                color: MyWalkColor.golden,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),

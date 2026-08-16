@@ -17,6 +17,7 @@ import '../help/today_help_view.dart';
 import '../week/week_strip_view.dart';
 import 'widgets/category_group_header.dart';
 import '../bible_reading/bible_reading_habit_card.dart';
+import '../memorization/memorization_habit_card.dart';
 
 class TodayView extends StatefulWidget {
   const TodayView({super.key});
@@ -25,8 +26,29 @@ class TodayView extends StatefulWidget {
   State<TodayView> createState() => _TodayViewState();
 }
 
+// sourceType values that identify Kingdom Life–sourced practices
+const _kKingdomSourceTypes = {
+  'micro_action_library',   // Fruit of the Spirit
+  'beatitude_practice',     // The Beatitudes
+  'parable_practice',       // The Parables
+  'i_am_practice',          // I AM Sayings
+  'women_of_valor_practice',// Women of Valor
+};
+
+// Ordered Kingdom Life modules shown as sub-sections
+const _kKingdomModules = [
+  (sourceType: 'micro_action_library',    label: 'Fruit of the Spirit'),
+  (sourceType: 'beatitude_practice',      label: 'The Beatitudes'),
+  (sourceType: 'parable_practice',        label: 'The Parables'),
+  (sourceType: 'i_am_practice',           label: 'I AM Sayings'),
+  (sourceType: 'women_of_valor_practice', label: 'Women of Valor'),
+];
+
 class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
   DateTime _selectedDate = DateTime.now();
+  bool _kingdomExpanded = false;
+  bool _practicesExpanded = true;
+
   bool get _isRetroactive {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
@@ -80,6 +102,8 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
       orElse: () => habits.first,
     );
     final userHabits = habits.where((h) => !h.isBuiltIn && h.isActive(_selectedDate)).toList();
+    final kingdomHabits = userHabits.where((h) => _kKingdomSourceTypes.contains(h.sourceType)).toList();
+    final regularHabits = userHabits.where((h) => !_kKingdomSourceTypes.contains(h.sourceType)).toList();
 
     final imageHeight = MediaQuery.of(context).size.width * 0.65;
 
@@ -211,11 +235,14 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
                       // Bible reading plan card
                       const BibleReadingHabitCard(),
 
-                      // User habits (grouped by category)
-                      ..._buildGroupedHabitList(
-                        userHabits,
-                        catProvider,
-                      ),
+                      // Scripture memorization card
+                      const MemorizationHabitCard(),
+
+                      // Kingdom Life practices
+                      ..._buildKingdomSection(kingdomHabits),
+
+                      // Regular practices
+                      ..._buildPracticesSection(regularHabits, catProvider),
 
                       const SizedBox(height: 80),
                     ],
@@ -297,6 +324,122 @@ class _TodayViewState extends State<TodayView> with WidgetsBindingObserver {
   String _dayName(DateTime date) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[date.weekday - 1];
+  }
+
+  // ── Section helpers ─────────────────────────────────────────────────────
+
+  Widget _sectionSeparator() => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Divider(
+          color: MyWalkColor.golden.withValues(alpha: 0.2),
+          thickness: 0.5,
+        ),
+      );
+
+  Widget _sectionToggleHeader(String title, bool expanded, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+            Icon(
+              expanded
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
+              color: Colors.white.withValues(alpha: 0.3),
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _kingdomSubHeading(String label) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+        child: Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 10,
+            letterSpacing: 1.4,
+            fontWeight: FontWeight.w500,
+            color: MyWalkColor.golden.withValues(alpha: 0.5),
+          ),
+        ),
+      );
+
+  // ── Kingdom Life section ─────────────────────────────────────────────────
+
+  List<Widget> _buildKingdomSection(List<Habit> kingdomHabits) {
+    if (kingdomHabits.isEmpty) return [];
+
+    final widgets = <Widget>[
+      _sectionSeparator(),
+      _sectionToggleHeader(
+        'Kingdom Life',
+        _kingdomExpanded,
+        () => setState(() => _kingdomExpanded = !_kingdomExpanded),
+      ),
+    ];
+
+    if (!_kingdomExpanded) return widgets;
+
+    for (final module in _kKingdomModules) {
+      final moduleHabits = kingdomHabits
+          .where((h) => h.sourceType == module.sourceType)
+          .toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+      if (moduleHabits.isEmpty) continue;
+
+      widgets.add(_kingdomSubHeading(module.label));
+      for (final habit in moduleHabits) {
+        widgets.add(Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: HabitCheckInCardView(
+            habit: habit,
+            targetDate: _selectedDate,
+            isRetroactive: _isRetroactive,
+          ),
+        ));
+      }
+    }
+
+    return widgets;
+  }
+
+  // ── Practices section ────────────────────────────────────────────────────
+
+  List<Widget> _buildPracticesSection(
+      List<Habit> regularHabits, HabitCategoryProvider catProvider) {
+    if (regularHabits.isEmpty) return [];
+
+    final widgets = <Widget>[
+      _sectionSeparator(),
+      _sectionToggleHeader(
+        'Practices',
+        _practicesExpanded,
+        () => setState(() => _practicesExpanded = !_practicesExpanded),
+      ),
+    ];
+
+    if (!_practicesExpanded) return widgets;
+
+    widgets.addAll(_buildGroupedHabitList(regularHabits, catProvider));
+    return widgets;
   }
 
   List<Widget> _buildGroupedHabitList(

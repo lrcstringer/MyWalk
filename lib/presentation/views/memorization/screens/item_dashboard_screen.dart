@@ -13,6 +13,44 @@ class ItemDashboardScreen extends StatelessWidget {
 
   const ItemDashboardScreen({super.key, required this.item});
 
+  Future<void> _confirmRestart(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.charcoal,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Memorize again?',
+            style: TextStyle(
+                color: MyWalkColor.warmWhite, fontWeight: FontWeight.w700)),
+        content: Text(
+          'This restarts the memorization process for "${item.title}" from the beginning. '
+          'Your history is kept but the review schedule resets.',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              fontSize: 13,
+              height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel',
+                style: TextStyle(color: MyWalkColor.softGold)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Restart',
+                style: TextStyle(
+                    color: Color(0xFF8B7EC8), fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await context.read<MemorizationProvider>().restartItem(item);
+      if (context.mounted) Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,6 +98,21 @@ class ItemDashboardScreen extends StatelessWidget {
                     onPressed: () =>
                         MemorizationRouter.pushModeSelection(context, item),
                   ),
+                if (item.status == MemorizationStatus.mastered) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: TextButton.icon(
+                      icon: Icon(Icons.refresh_rounded,
+                          size: 15,
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.45)),
+                      label: Text('Memorize again',
+                          style: TextStyle(
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
+                              fontSize: 13)),
+                      onPressed: () => _confirmRestart(context),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 40),
               ]),
             ),

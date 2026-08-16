@@ -10,37 +10,36 @@ import 'guardrails_screen.dart';
 
 const _kRpPurple = Color(0xFF8B7EC8);
 
-/// Shows the daily check-in as a modal bottom sheet.
+/// Shows the daily check-in as a dialog.
 /// Caller is responsible for the trigger logic (dayNumber % 3 == 0 && not done today).
-Future<void> showDailyCheckInModal(
+Future<void> showDailyCheckInDialog(
   BuildContext context, {
   required String habitId,
   required String habitName,
 }) {
-  return showModalBottomSheet<void>(
+  return showDialog<void>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    barrierDismissible: false,
     builder: (_) => ChangeNotifierProvider.value(
       value: context.read<RecoveryPathProvider>(),
-      child: _CheckInSheet(habitId: habitId, habitName: habitName),
+      child: _CheckInDialog(habitId: habitId, habitName: habitName),
     ),
   );
 }
 
-// ── Sheet body ────────────────────────────────────────────────────────────────
+// ── Dialog body ───────────────────────────────────────────────────────────────
 
-class _CheckInSheet extends StatefulWidget {
+class _CheckInDialog extends StatefulWidget {
   final String habitId;
   final String habitName;
 
-  const _CheckInSheet({required this.habitId, required this.habitName});
+  const _CheckInDialog({required this.habitId, required this.habitName});
 
   @override
-  State<_CheckInSheet> createState() => _CheckInSheetState();
+  State<_CheckInDialog> createState() => _CheckInDialogState();
 }
 
-class _CheckInSheetState extends State<_CheckInSheet> {
+class _CheckInDialogState extends State<_CheckInDialog> {
   int _rating = 5;
   bool _hasMovedSlider = false;
   String? _outcome; // 'slipped' | 'urge_only' | 'clear'
@@ -118,36 +117,26 @@ class _CheckInSheetState extends State<_CheckInSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1C1C2E),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomPadding + MediaQuery.of(context).padding.bottom),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHandle(),
-            const SizedBox(height: 16),
-            if (_done) _buildCompletionView() else _buildFormView(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHandle() {
-    return Center(
-      child: Container(
-        width: 36,
-        height: 4,
-        decoration: BoxDecoration(
-          color: MyWalkColor.warmWhite.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(2),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C2E),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_done) _buildCompletionView() else _buildFormView(),
+              ],
+            ),
+          ),
         ),
       ),
     );

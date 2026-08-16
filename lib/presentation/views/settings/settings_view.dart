@@ -1,6 +1,7 @@
 import 'dart:io' show exit;
 
 import 'package:app_settings/app_settings.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/habit.dart';
@@ -843,15 +844,121 @@ class _SettingsViewState extends State<SettingsView> {
             child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
           ),
           TextButton(
-            onPressed: () async {
+            onPressed: () {
               Navigator.pop(context);
-              await _deleteAccount();
+              _collectDeletionReason();
             },
-            child: const Text('Delete Forever', style: TextStyle(color: MyWalkColor.warmCoral)),
+            child: const Text('Continue', style: TextStyle(color: MyWalkColor.warmCoral)),
           ),
         ],
       ),
     );
+  }
+
+  void _collectDeletionReason() {
+    final reasonCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          backgroundColor: MyWalkColor.cardBackground,
+          title: const Text('Before you go…',
+              style: TextStyle(color: MyWalkColor.warmWhite, fontSize: 16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please let us know why you are deleting your account so that we can improve where possible.',
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.65),
+                    fontSize: 13,
+                    height: 1.5),
+              ),
+              const SizedBox(height: 14),
+              Form(
+                key: formKey,
+                child: TextFormField(
+                  controller: reasonCtrl,
+                  autofocus: true,
+                  maxLines: 3,
+                  style: const TextStyle(color: MyWalkColor.warmWhite, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Your reason…',
+                    hintStyle: TextStyle(
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.25),
+                        fontSize: 13),
+                    filled: true,
+                    fillColor: MyWalkColor.surfaceOverlay,
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.1)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide:
+                          const BorderSide(color: MyWalkColor.warmCoral),
+                    ),
+                  ),
+                  onChanged: (_) => setLocal(() {}),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                reasonCtrl.text.trim().length < 4
+                    ? 'Please enter at least 4 characters.'
+                    : '',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: MyWalkColor.warmCoral.withValues(alpha: 0.7)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+            ),
+            TextButton(
+              onPressed: reasonCtrl.text.trim().length >= 4
+                  ? () async {
+                      final reason = reasonCtrl.text.trim();
+                      Navigator.pop(ctx);
+                      await _saveDeletionReason(reason);
+                      await _deleteAccount();
+                    }
+                  : null,
+              child: const Text('Delete Forever',
+                  style: TextStyle(color: MyWalkColor.warmCoral)),
+            ),
+          ],
+        ),
+      ),
+    ).whenComplete(() => reasonCtrl.dispose());
+  }
+
+  Future<void> _saveDeletionReason(String reason) async {
+    try {
+      final uid = context.read<AuthService>().userId;
+      await FirebaseFirestore.instance.collection('account_deletions').add({
+        'userId': uid,
+        'reason': reason,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {
+      // Best-effort — proceed with deletion even if save fails.
+    }
   }
 
   Future<void> _deleteAccount() async {

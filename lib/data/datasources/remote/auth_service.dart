@@ -335,6 +335,11 @@ class AuthService extends ChangeNotifier {
       _phone = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
+      // Clear Firestore's local SQLite cache so no user data remains on device.
+      try {
+        await FirebaseFirestore.instance.terminate();
+        await FirebaseFirestore.instance.clearPersistence();
+      } catch (_) {}
       _isLoading = false;
       return true;
     } on FirebaseFunctionsException catch (e) {

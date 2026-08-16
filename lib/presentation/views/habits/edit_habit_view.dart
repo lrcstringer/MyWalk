@@ -42,6 +42,11 @@ class _EditHabitViewState extends State<EditHabitView> {
   late Set<int> _activeDays;
   late List<FruitType> _fruitTags;
   late bool _hasPrayerItems;
+  final List<TextEditingController> _pinControllers =
+      List.generate(4, (_) => TextEditingController());
+  final List<FocusNode> _pinFocusNodes = List.generate(4, (_) => FocusNode());
+  String _newPin = '';
+  bool _clearPin = false;
   String? _categoryId;
   String? _subcategoryId;
   String? _categoryName;
@@ -102,6 +107,12 @@ class _EditHabitViewState extends State<EditHabitView> {
     _notesFocusNode.dispose();
     _notesScrollController.dispose();
     _referenceUrlController.dispose();
+    for (final c in _pinControllers) {
+      c.dispose();
+    }
+    for (final f in _pinFocusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -140,6 +151,11 @@ class _EditHabitViewState extends State<EditHabitView> {
       displayAlias: _aliasController.text.trim().isEmpty
           ? null
           : _aliasController.text.trim(),
+      pin: _clearPin
+          ? null
+          : _newPin.length == 4
+              ? _newPin
+              : widget.habit.pin,
     );
     context.read<HabitProvider>().updateHabit(updated);
     // Update portfolio habit counts for changed tags.
@@ -1095,8 +1111,114 @@ class _EditHabitViewState extends State<EditHabitView> {
           'Useful if you prefer a private name that others won\'t recognise.',
           style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3)),
         ),
+        const SizedBox(height: 20),
+        Text('Privacy PIN',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+                color: MyWalkColor.softGold.withValues(alpha: 0.6))),
+        const SizedBox(height: 4),
+        Text(
+          widget.habit.pin?.isNotEmpty == true
+              ? 'A PIN is set. Enter 4 new digits to change it, or use the button below to remove it.'
+              : 'Enter 4 digits to lock this card on the Today screen (optional).',
+          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.3)),
+        ),
+        const SizedBox(height: 8),
+        _editPinRow(),
+        if (widget.habit.pin?.isNotEmpty == true && !_clearPin) ...[
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => setState(() {
+              _clearPin = true;
+              for (final c in _pinControllers) {
+                c.clear();
+              }
+              _newPin = '';
+            }),
+            child: Text('Remove PIN',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: MyWalkColor.warmCoral.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w500)),
+          ),
+        ],
+        if (_clearPin)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              children: [
+                Text('PIN will be removed on save.',
+                    style: TextStyle(
+                        fontSize: 11, color: MyWalkColor.warmCoral.withValues(alpha: 0.7))),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => setState(() => _clearPin = false),
+                  child: Text('Undo',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
+                          decoration: TextDecoration.underline)),
+                ),
+              ],
+            ),
+          ),
       ],
     ]);
+  }
+
+  Widget _editPinRow() {
+    final borderSide = BorderSide(
+      color: MyWalkColor.warmWhite.withValues(alpha: 0.15),
+      width: 0.75,
+    );
+    return Row(
+      children: List.generate(4, (i) {
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: i < 3 ? 10 : 0),
+            child: TextField(
+              controller: _pinControllers[i],
+              focusNode: _pinFocusNodes[i],
+              maxLength: 1,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: MyWalkColor.warmWhite,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                counterText: '',
+                filled: true,
+                fillColor: MyWalkColor.cardBackground,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: borderSide,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: borderSide,
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                  borderSide: BorderSide(color: MyWalkColor.eventPurple, width: 1.5),
+                ),
+              ),
+              onChanged: (v) {
+                if (v.length == 1 && i < 3) {
+                  _pinFocusNodes[i + 1].requestFocus();
+                } else if (v.isEmpty && i > 0) {
+                  _pinFocusNodes[i - 1].requestFocus();
+                }
+                setState(() {
+                  _newPin = _pinControllers.map((c) => c.text).join();
+                  if (_newPin.isNotEmpty) _clearPin = false;
+                });
+              },
+            ),
+          ),
+        );
+      }),
+    );
   }
 
   Widget _purposeSection(bool isPremium) {

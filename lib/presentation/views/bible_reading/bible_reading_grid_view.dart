@@ -1,3 +1,4 @@
+import 'dart:math' show pi;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,20 @@ import '../../theme/app_theme.dart';
 import 'bible_reading_day_modal.dart';
 import 'bible_reading_milestone_screen.dart';
 
+// Presentation-layer colour mapping for reading sections (not domain logic).
+extension _SectionDot on BibleReadingSection {
+  Color get dot {
+    switch (this) {
+      case BibleReadingSection.psalms:       return MyWalkColor.softGold;
+      case BibleReadingSection.newTestament: return const Color(0xFF6B9FD4);
+      case BibleReadingSection.torah:        return const Color(0xFFD4956A);
+      case BibleReadingSection.historical:   return MyWalkColor.sage;
+      case BibleReadingSection.prophetic:    return const Color(0xFF9B8EC8);
+      case BibleReadingSection.wisdom:       return MyWalkColor.warmCoral;
+    }
+  }
+}
+
 class BibleReadingGridView extends StatefulWidget {
   const BibleReadingGridView({super.key});
 
@@ -17,14 +32,9 @@ class BibleReadingGridView extends StatefulWidget {
 
 class _BibleReadingGridViewState extends State<BibleReadingGridView> {
   late final ScrollController _scrollController;
-  // Track which weeks are expanded; current week auto-expands.
   final Set<int> _expanded = {};
   bool _initialScrollDone = false;
-  // Keys for each week header so we can scroll to the current one.
   final Map<int, GlobalKey> _weekKeys = {};
-  // Session-local guard: milestone week indices already shown this session.
-  // A Set (not a bool) prevents re-push both while navigation is in-flight AND
-  // during the window between markMilestoneShown() and Firestore stream confirmation.
   final Set<int> _localShownMilestones = {};
 
   @override
@@ -57,72 +67,95 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<BibleReadingProvider>();
-
-    // Auto-expand current week.
     final currentWeek = provider.currentWeekIndex;
+
     if (currentWeek != null && !_expanded.contains(currentWeek)) {
       _expanded.add(currentWeek);
       _scrollToCurrentWeek(currentWeek);
     }
 
-    // Check for pending milestone after build.
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkMilestone(context));
 
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      appBar: AppBar(
-        backgroundColor: MyWalkColor.charcoal,
-        foregroundColor: MyWalkColor.warmWhite,
-        title: Text(
-          'Bible in a Year',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: MyWalkColor.warmWhite,
-          ),
-        ),
-        actions: [
-          if (provider.isActive && currentWeek != null)
-            TextButton(
-              onPressed: () => _openCurrentDayModal(context, provider),
-              child: const Text(
-                'Continue',
-                style: TextStyle(color: MyWalkColor.golden, fontSize: 13),
-              ),
-            ),
-        ],
-      ),
       body: Stack(
         children: [
           const Positioned.fill(
-            child: IgnorePointer(
-              child: DeepSpaceBackground(),
-            ),
+            child: IgnorePointer(child: DeepSpaceBackground()),
           ),
-          Column(
-            children: [
-              _ProgressHeader(provider: provider),
-              if (provider.isPending) _PendingBanner(provider: provider),
-              Expanded(
-                child: provider.isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(color: MyWalkColor.golden),
-                      )
-                    : provider.isNotStarted
-                        ? _NotStartedView(onStart: () => _startPlan(context, provider))
-                        : _WeekList(
-                            provider: provider,
-                            expanded: _expanded,
-                            weekKeys: _weekKeys,
-                            onToggle: (w) => setState(() {
-                              if (_expanded.contains(w)) {
-                                _expanded.remove(w);
-                              } else {
-                                _expanded.add(w);
-                              }
-                            }),
-                            onDayTap: (w, d) => _openDayModal(context, w, d),
-                            scrollController: _scrollController,
-                          ),
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              // ── Immersive collapsing header ─────────────────────────────────
+              SliverAppBar(
+                expandedHeight: 152,
+                pinned: true,
+                backgroundColor: MyWalkColor.charcoal,
+                foregroundColor: MyWalkColor.warmWhite,
+                title: Text(
+                  'Bible in a Year',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: MyWalkColor.warmWhite,
+                  ),
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.parallax,
+                  background: _HeaderBackground(provider: provider),
+                ),
               ),
+
+              // ── Stats strip (active only) ───────────────────────────────────
+              if (provider.isActive)
+                SliverToBoxAdapter(
+                  child: _StatsStrip(provider: provider),
+                ),
+
+              // ── Pending banner ──────────────────────────────────────────────
+              if (provider.isPending)
+                SliverToBoxAdapter(
+                  child: _PendingBanner(provider: provider),
+                ),
+
+              // ── Main content ────────────────────────────────────────────────
+              if (provider.isLoading)
+                const SliverFillRemaining(
+                  child: Center(
+                    child: CircularProgressIndicator(color: MyWalkColor.golden),
+                  ),
+                )
+              else if (provider.isNotStarted)
+                SliverFillRemaining(
+                  child: _NotStartedView(
+                    onStart: () => _startPlan(context, provider),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, w) {
+                        _weekKeys[w] ??= GlobalKey();
+                        return _WeekAccordion(
+                          key: _weekKeys[w],
+                          weekIndex: w,
+                          provider: provider,
+                          isExpanded: _expanded.contains(w),
+                          isCurrent: w == currentWeek,
+                          onToggle: () => setState(() {
+                            if (_expanded.contains(w)) {
+                              _expanded.remove(w);
+                            } else {
+                              _expanded.add(w);
+                            }
+                          }),
+                          onDayTap: (d) => _openDayModal(context, w, d),
+                        );
+                      },
+                      childCount: BibleReadingPlanData.weeks.length,
+                    ),
+                  ),
+                ),
             ],
           ),
         ],
@@ -132,12 +165,6 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
 
   Future<void> _startPlan(BuildContext context, BibleReadingProvider provider) async {
     await provider.startPlan();
-  }
-
-  void _openCurrentDayModal(BuildContext context, BibleReadingProvider provider) {
-    final w = provider.currentWeekIndex!;
-    final d = provider.currentDayIndex!;
-    _openDayModal(context, w, d);
   }
 
   void _openDayModal(BuildContext context, int weekIndex, int dayIndex) {
@@ -169,59 +196,254 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
   }
 }
 
-// ── Progress header ────────────────────────────────────────────────────────────
+// ── Immersive header background ────────────────────────────────────────────────
 
-class _ProgressHeader extends StatelessWidget {
+class _HeaderBackground extends StatelessWidget {
   final BibleReadingProvider provider;
-  const _ProgressHeader({required this.provider});
+  const _HeaderBackground({required this.provider});
 
   @override
   Widget build(BuildContext context) {
-    if (!provider.isActive) return const SizedBox.shrink();
-    final weekIndex = provider.currentWeekIndex ?? 0;
+    if (!provider.isActive) {
+      return const Stack(
+        fit: StackFit.expand,
+        children: [IgnorePointer(child: DeepSpaceBackground())],
+      );
+    }
+
     final daysRead = provider.totalDaysRead;
     final progress = daysRead / 364.0;
+    final weekIndex = provider.currentWeekIndex ?? 0;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      color: MyWalkColor.cardBackground,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Week ${weekIndex + 1} of 52',
-                style: const TextStyle(
-                  color: MyWalkColor.warmWhite,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const IgnorePointer(child: DeepSpaceBackground()),
+        // Fade into the card list below
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 56,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  MyWalkColor.charcoal.withValues(alpha: 0.65),
+                ],
               ),
-              Text(
-                '$daysRead days read',
-                style: TextStyle(
-                  color: MyWalkColor.softGold.withValues(alpha: 0.8),
-                  fontSize: 12,
+            ),
+          ),
+        ),
+        // Ring + week info — offset below the toolbar buttons
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, kToolbarHeight + 10, 20, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _ProgressRing(progress: progress, daysRead: daysRead),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Week ${weekIndex + 1} of 52',
+                      style: const TextStyle(
+                        color: MyWalkColor.warmWhite,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '$daysRead days read',
+                      style: TextStyle(
+                        color: MyWalkColor.softGold.withValues(alpha: 0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 4,
+                        backgroundColor:
+                            MyWalkColor.golden.withValues(alpha: 0.15),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                            MyWalkColor.golden),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 5,
-              backgroundColor: MyWalkColor.golden.withValues(alpha: 0.15),
-              valueColor: const AlwaysStoppedAnimation<Color>(MyWalkColor.golden),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Circular progress ring ─────────────────────────────────────────────────────
+
+class _ProgressRing extends StatelessWidget {
+  final double progress;
+  final int daysRead;
+  const _ProgressRing({required this.progress, required this.daysRead});
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (progress * 100).round();
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: CustomPaint(
+        painter: _RingPainter(progress: progress),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '$pct%',
+                style: const TextStyle(
+                  color: MyWalkColor.warmWhite,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
+              ),
+              Text(
+                'done',
+                style: TextStyle(
+                  color: MyWalkColor.softGold.withValues(alpha: 0.6),
+                  fontSize: 8,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  final double progress;
+  const _RingPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const strokeWidth = 5.0;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final trackPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..color = MyWalkColor.golden.withValues(alpha: 0.15);
+    canvas.drawCircle(center, radius, trackPaint);
+
+    if (progress > 0) {
+      final arcPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..color = MyWalkColor.golden;
+      canvas.drawArc(rect, -pi / 2, 2 * pi * progress, false, arcPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) => old.progress != progress;
+}
+
+// ── Stats strip ────────────────────────────────────────────────────────────────
+
+class _StatsStrip extends StatelessWidget {
+  final BibleReadingProvider provider;
+  const _StatsStrip({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final streak = provider.state?.streakDays ?? 0;
+    final daysRead = provider.totalDaysRead;
+    final pct = (daysRead / 364 * 100).round();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      decoration: BoxDecoration(
+        color: MyWalkColor.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
+      ),
+      child: Row(
+        children: [
+          _StatCell(emoji: '🔥', value: '$streak', label: 'day streak'),
+          _StatDivider(),
+          _StatCell(emoji: '📖', value: '$daysRead', label: 'days read'),
+          _StatDivider(),
+          _StatCell(emoji: '✝', value: '$pct%', label: 'complete'),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCell extends StatelessWidget {
+  final String emoji;
+  final String value;
+  final String label;
+  const _StatCell(
+      {required this.emoji, required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          RichText(
+            text: TextSpan(children: [
+              TextSpan(text: '$emoji ', style: const TextStyle(fontSize: 13)),
+              TextSpan(
+                text: value,
+                style: const TextStyle(
+                  color: MyWalkColor.warmWhite,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: MyWalkColor.softGold.withValues(alpha: 0.6),
+              fontSize: 10,
             ),
           ),
         ],
       ),
     );
   }
+}
+
+class _StatDivider extends StatelessWidget {
+  const _StatDivider();
+
+  @override
+  Widget build(BuildContext context) =>
+      Container(width: 0.5, height: 28, color: MyWalkColor.cardBorder);
 }
 
 // ── Pending banner ─────────────────────────────────────────────────────────────
@@ -325,50 +547,6 @@ class _NotStartedView extends StatelessWidget {
   }
 }
 
-// ── Week list ──────────────────────────────────────────────────────────────────
-
-class _WeekList extends StatelessWidget {
-  final BibleReadingProvider provider;
-  final Set<int> expanded;
-  final Map<int, GlobalKey> weekKeys;
-  final void Function(int) onToggle;
-  final void Function(int, int) onDayTap;
-  final ScrollController scrollController;
-
-  const _WeekList({
-    required this.provider,
-    required this.expanded,
-    required this.weekKeys,
-    required this.onToggle,
-    required this.onDayTap,
-    required this.scrollController,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final currentWeek = provider.currentWeekIndex;
-    final weeks = BibleReadingPlanData.weeks;
-
-    return ListView.builder(
-      controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-      itemCount: weeks.length,
-      itemBuilder: (context, w) {
-        weekKeys[w] ??= GlobalKey();
-        return _WeekAccordion(
-          key: weekKeys[w],
-          weekIndex: w,
-          provider: provider,
-          isExpanded: expanded.contains(w),
-          isCurrent: w == currentWeek,
-          onToggle: () => onToggle(w),
-          onDayTap: (d) => onDayTap(w, d),
-        );
-      },
-    );
-  }
-}
-
 // ── Week accordion ─────────────────────────────────────────────────────────────
 
 class _WeekAccordion extends StatelessWidget {
@@ -408,10 +586,20 @@ class _WeekAccordion extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCurrent
-              ? MyWalkColor.golden.withValues(alpha: 0.4)
+              ? MyWalkColor.golden.withValues(alpha: 0.5)
               : MyWalkColor.cardBorder,
           width: isCurrent ? 1.0 : 0.5,
         ),
+        boxShadow: isCurrent
+            ? [
+                BoxShadow(
+                  color: MyWalkColor.golden.withValues(alpha: 0.18),
+                  blurRadius: 14,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
       ),
       child: Column(
         children: [
@@ -419,91 +607,106 @@ class _WeekAccordion extends StatelessWidget {
           InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-              child: Row(
-                children: [
-                  // Week number badge
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: isWeekDone
-                          ? MyWalkColor.sage.withValues(alpha: 0.25)
-                          : isCurrent
-                              ? MyWalkColor.golden.withValues(alpha: 0.15)
-                              : MyWalkColor.surfaceOverlay,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: isWeekDone
-                          ? const Icon(Icons.check, color: MyWalkColor.sage, size: 16)
-                          : Text(
-                              '${weekIndex + 1}',
-                              style: TextStyle(
-                                color: isCurrent
-                                    ? MyWalkColor.golden
-                                    : MyWalkColor.softGold,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+            child: Ink(
+              decoration: isCurrent
+                  ? BoxDecoration(
+                      borderRadius: isExpanded
+                          ? const BorderRadius.vertical(
+                              top: Radius.circular(12))
+                          : BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          MyWalkColor.golden.withValues(alpha: 0.1),
+                          Colors.transparent,
+                        ],
+                      ),
+                    )
+                  : null,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                child: Row(
+                  children: [
+                    // Week number badge
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isWeekDone
+                            ? MyWalkColor.sage.withValues(alpha: 0.25)
+                            : isCurrent
+                                ? MyWalkColor.golden.withValues(alpha: 0.15)
+                                : MyWalkColor.surfaceOverlay,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: isWeekDone
+                            ? const Icon(Icons.check,
+                                color: MyWalkColor.sage, size: 16)
+                            : Text(
+                                '${weekIndex + 1}',
+                                style: TextStyle(
+                                  color: isCurrent
+                                      ? MyWalkColor.golden
+                                      : MyWalkColor.softGold,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Week ${weekIndex + 1}',
-                          style: TextStyle(
-                            color: isCurrent
-                                ? MyWalkColor.warmWhite
-                                : MyWalkColor.softGold,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (summary.isNotEmpty)
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            summary,
+                            'Week ${weekIndex + 1}',
                             style: TextStyle(
-                              color:
-                                  MyWalkColor.softGold.withValues(alpha: 0.6),
-                              fontSize: 11,
+                              color: isCurrent
+                                  ? MyWalkColor.warmWhite
+                                  : MyWalkColor.softGold,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                      ],
+                          if (summary.isNotEmpty)
+                            Text(
+                              summary,
+                              style: TextStyle(
+                                color: MyWalkColor.softGold.withValues(alpha: 0.6),
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Text(
-                    '$daysComplete/7',
-                    style: TextStyle(
-                      color: MyWalkColor.softGold.withValues(alpha: 0.7),
-                      fontSize: 11,
+                    Text(
+                      '$daysComplete/7',
+                      style: TextStyle(
+                        color: MyWalkColor.softGold.withValues(alpha: 0.7),
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: MyWalkColor.softGold.withValues(alpha: 0.5),
-                    size: 18,
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Icon(
+                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: MyWalkColor.softGold.withValues(alpha: 0.5),
+                      size: 18,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          // Rows
+          // Day rows
           if (isExpanded)
             Column(
               children: [
-                Divider(
-                  height: 1,
-                  color: MyWalkColor.cardBorder,
-                ),
+                Divider(height: 1, color: MyWalkColor.cardBorder),
                 ...List.generate(weekDays.length, (d) {
                   return _DayRow(
                     weekIndex: weekIndex,
@@ -520,14 +723,12 @@ class _WeekAccordion extends StatelessWidget {
   }
 
   String _weekSummary(int w) {
-    // Brief list of first book names encountered across the week's NT and Torah columns.
     final days = BibleReadingPlanData.weeks[w];
     final books = <String>{};
     for (final day in days) {
       for (final s in BibleReadingSection.ordered) {
         final refs = day.refsForSection(s);
         if (refs.isNotEmpty) {
-          // Extract book name: label like "Gen 1" → "Gen"
           final label = refs.first.label;
           final space = label.indexOf(' ');
           if (space > 0) books.add(label.substring(0, space));
@@ -563,7 +764,7 @@ class _DayRow extends StatelessWidget {
     final isCurrent = provider.currentWeekIndex == weekIndex &&
         provider.currentDayIndex == dayIndex;
     final dayName = BibleReadingPlanData.dayNames[dayIndex];
-    final summary = dayPlan.abbreviatedSummary;
+    final activeSections = dayPlan.activeSections;
 
     return InkWell(
       onTap: onTap,
@@ -576,10 +777,7 @@ class _DayRow extends StatelessWidget {
                   ? MyWalkColor.golden.withValues(alpha: 0.04)
                   : Colors.transparent,
           border: Border(
-            bottom: BorderSide(
-              color: MyWalkColor.cardBorder,
-              width: 0.5,
-            ),
+            bottom: BorderSide(color: MyWalkColor.cardBorder, width: 0.5),
           ),
         ),
         child: Row(
@@ -608,28 +806,46 @@ class _DayRow extends StatelessWidget {
               child: Text(
                 dayName,
                 style: TextStyle(
-                  color: isCurrent
-                      ? MyWalkColor.warmWhite
-                      : MyWalkColor.softGold,
+                  color: isCurrent ? MyWalkColor.warmWhite : MyWalkColor.softGold,
                   fontSize: 12,
-                  fontWeight:
-                      isCurrent ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            // Summary
+            // Section colour dots + reading refs
             Expanded(
-              child: Text(
-                summary,
-                style: TextStyle(
-                  color: isDone
-                      ? MyWalkColor.sage.withValues(alpha: 0.8)
-                      : MyWalkColor.softGold.withValues(alpha: 0.7),
-                  fontSize: 11,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  // One dot per active section
+                  ...activeSections.map((s) => Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Container(
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: s.dot,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      )),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      activeSections
+                          .map((s) => dayPlan.refsForSection(s).first.label)
+                          .join(' · '),
+                      style: TextStyle(
+                        color: isDone
+                            ? MyWalkColor.sage.withValues(alpha: 0.8)
+                            : MyWalkColor.softGold.withValues(alpha: 0.7),
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
             const Icon(Icons.chevron_right,

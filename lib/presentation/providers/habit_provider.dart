@@ -33,6 +33,8 @@ class HabitProvider extends ChangeNotifier {
   bool _showingAddHabit = false;
   bool _loadInProgress = false;
   bool _prevAuthenticated;
+  // Session-only: PIN-locked Breaking Patterns habits that the user has unlocked
+  final Set<String> _unlockedHabitIds = {};
 
   @override
   void dispose() {
@@ -59,6 +61,16 @@ class HabitProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get checkInPulseHabitId => _checkInPulseHabitId;
   bool get showingAddHabit => _showingAddHabit;
+
+  bool isPinUnlocked(String habitId) => _unlockedHabitIds.contains(habitId);
+  void unlockHabit(String habitId) {
+    _unlockedHabitIds.add(habitId);
+    notifyListeners();
+  }
+  void lockHabit(String habitId) {
+    _unlockedHabitIds.remove(habitId);
+    notifyListeners();
+  }
 
   Future<void> loadHabits() async {
     // Guard against concurrent loads to avoid double ensureGratitudeHabit inserts.
@@ -246,6 +258,7 @@ class HabitProvider extends ChangeNotifier {
     String notes = '',
     String referenceUrl = '',
     String? displayAlias,
+    String? pin,
   }) async {
     final created = Habit.create(
       name: name,
@@ -265,13 +278,14 @@ class HabitProvider extends ChangeNotifier {
       notes: notes,
       referenceUrl: referenceUrl,
     );
-    final habit = (categoryId != null || displayAlias != null)
+    final habit = (categoryId != null || displayAlias != null || pin != null)
         ? created.copyWith(
             categoryId: categoryId,
             subcategoryId: subcategoryId,
             categoryName: categoryName,
             subcategoryName: subcategoryName,
             displayAlias: displayAlias,
+            pin: pin,
           )
         : created;
     await _repository.insertHabit(habit);

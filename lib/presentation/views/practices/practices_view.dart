@@ -10,7 +10,9 @@ import '../bible_reading/bible_reading_grid_view.dart';
 import '../habits/add_habit_view.dart';
 import '../habits/all_practices_progress_sheet.dart';
 import '../habits/habit_detail_view.dart';
+import '../../providers/memorization_provider.dart';
 import '../memorization/memorization_router.dart';
+import '../memorization/screens/memorization_input_screen.dart';
 import '../shared/appbar_actions.dart';
 import '../shared/mywalk_paywall_view.dart';
 import '../help/practices_help_view.dart';
@@ -730,22 +732,79 @@ class _MemorizationCard extends StatelessWidget {
   final bool isPremium;
   const _MemorizationCard({required this.isPremium});
 
+  void _handleTap(BuildContext context) {
+    if (!isPremium) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: MyWalkColor.charcoal,
+        builder: (_) => const MyWalkPaywallView(),
+      );
+      return;
+    }
+
+    final hasItems = context.read<MemorizationProvider>().items.isNotEmpty;
+    if (hasItems) {
+      MemorizationRouter.pushHome(context);
+    } else {
+      _showActivationDialog(context);
+    }
+  }
+
+  void _showActivationDialog(BuildContext context) {
+    const purple = Color(0xFF8B7EC8);
+    // Save the navigator before the dialog opens so we can still use it
+    // after dismissing both the dialog and the bottom sheet.
+    final nav = Navigator.of(context);
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.charcoal,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Memorization mini-app created',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite,
+              fontWeight: FontWeight.w700,
+              fontSize: 16),
+        ),
+        content: Text(
+          'Access it on your Today screen. Add your first verse to get started.',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              fontSize: 13,
+              height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Got it',
+                style: TextStyle(
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.4))),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);   // close dialog
+              nav.pop();            // close the MiniApps bottom sheet
+              nav.push<void>(MaterialPageRoute(
+                builder: (_) => const MemorizationInputScreen(),
+              ));
+            },
+            child: const Text('Add my first verse',
+                style: TextStyle(
+                    color: purple, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        if (isPremium) {
-          MemorizationRouter.pushHome(context);
-        } else {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            useSafeArea: true,
-            backgroundColor: MyWalkColor.charcoal,
-            builder: (_) => const MyWalkPaywallView(),
-          );
-        }
-      },
+      onTap: () => _handleTap(context),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),

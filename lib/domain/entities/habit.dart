@@ -256,6 +256,8 @@ class Habit {
   final int reminderMinute;
   // Optional display alias — shown on Today card instead of name (Breaking Patterns only)
   final String? displayAlias;
+  // Optional 4-digit PIN — when set, the Today card is locked until the user enters it
+  final String? pin;
 
   const Habit({
     required this.id,
@@ -294,6 +296,7 @@ class Habit {
     this.reminderHour = 8,
     this.reminderMinute = 0,
     this.displayAlias,
+    this.pin,
   });
 
   factory Habit.create({
@@ -384,6 +387,7 @@ class Habit {
     int? reminderHour,
     int? reminderMinute,
     Object? displayAlias = _keep,
+    Object? pin = _keep,
   }) =>
       Habit(
         id: id,
@@ -428,6 +432,7 @@ class Habit {
         displayAlias: identical(displayAlias, _keep)
             ? this.displayAlias
             : displayAlias as String?,
+        pin: identical(pin, _keep) ? this.pin : pin as String?,
       );
 
   String get displayName =>
@@ -525,6 +530,7 @@ class Habit {
         'reminderHour': reminderHour,
         'reminderMinute': reminderMinute,
         if (displayAlias != null && displayAlias!.isNotEmpty) 'displayAlias': displayAlias,
+        if (pin != null && pin!.isNotEmpty) 'pin': pin,
       };
 
   factory Habit.fromFirestore(
@@ -581,6 +587,7 @@ class Habit {
       reminderHour: (data['reminderHour'] as num?)?.toInt() ?? 8,
       reminderMinute: (data['reminderMinute'] as num?)?.toInt() ?? 0,
       displayAlias: data['displayAlias'] as String?,
+      pin: data['pin'] as String?,
     );
   }
 }

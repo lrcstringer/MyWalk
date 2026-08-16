@@ -112,6 +112,21 @@ class MemorizationProvider extends ChangeNotifier {
     MemorizationNotificationService.instance.cancelReminder(item.id).ignore();
   }
 
+  // Resets SM2 scheduling in-place so the user can redo the memorization
+  // process without creating a second parallel review-date sequence.
+  // History stats are preserved; only the scheduling state is reset.
+  Future<void> restartItem(MemorizationItem item) async {
+    final restarted = item.copyWith(
+      status: MemorizationStatus.active,
+      repetitionCount: 0,
+      intervalDays: 1.0,
+      nextReviewDate: DateTime.now(),
+      streakCount: 0,
+    );
+    _repository.updateItem(restarted).ignore();
+    MemorizationNotificationService.instance.scheduleReviewReminder(restarted).ignore();
+  }
+
   // ---------------------------------------------------------------------------
   // Review completion — computes SM2 and writes attempt atomically
   // ---------------------------------------------------------------------------
