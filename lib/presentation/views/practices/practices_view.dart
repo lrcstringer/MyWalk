@@ -477,8 +477,8 @@ class _ActionPill extends StatelessWidget {
                     line,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 10,
-                      color: color.withValues(alpha: 0.6),
+                      fontSize: 11,
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.75),
                       height: 1.5,
                     ),
                   )),

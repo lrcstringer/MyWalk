@@ -8,19 +8,6 @@ import '../../theme/app_theme.dart';
 import 'bible_reading_day_modal.dart';
 import 'bible_reading_milestone_screen.dart';
 
-// Presentation-layer colour mapping for reading sections (not domain logic).
-extension _SectionDot on BibleReadingSection {
-  Color get dot {
-    switch (this) {
-      case BibleReadingSection.psalms:       return MyWalkColor.softGold;
-      case BibleReadingSection.newTestament: return const Color(0xFF6B9FD4);
-      case BibleReadingSection.torah:        return const Color(0xFFD4956A);
-      case BibleReadingSection.historical:   return MyWalkColor.sage;
-      case BibleReadingSection.prophetic:    return const Color(0xFF9B8EC8);
-      case BibleReadingSection.wisdom:       return MyWalkColor.warmCoral;
-    }
-  }
-}
 
 class BibleReadingGridView extends StatefulWidget {
   const BibleReadingGridView({super.key});
@@ -51,15 +38,21 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
   void _scrollToCurrentWeek(int weekIndex) {
     if (_initialScrollDone) return;
     _initialScrollDone = true;
+    // Week 1 is already at the top — no scroll needed; the hero stays visible.
+    if (weekIndex == 0) return;
+    // For later weeks, delay so the hero is seen before the list scrolls down.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final key = _weekKeys[weekIndex];
-      if (key?.currentContext == null) return;
-      Scrollable.ensureVisible(
-        key!.currentContext!,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-        alignment: 0.1,
-      );
+      Future.delayed(const Duration(milliseconds: 700), () {
+        if (!mounted) return;
+        final key = _weekKeys[weekIndex];
+        if (key?.currentContext == null) return;
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          alignment: 0.1,
+        );
+      });
     });
   }
 
@@ -702,39 +695,14 @@ class _DayRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // Section colour dots + reading refs
-            Expanded(
-              child: Row(
-                children: [
-                  // One dot per active section
-                  ...activeSections.map((s) => Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: Container(
-                          width: 5,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: s.dot,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      )),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      activeSections
-                          .map((s) => dayPlan.refsForSection(s).first.label)
-                          .join(' · '),
-                      style: TextStyle(
-                        color: isDone
-                            ? MyWalkColor.sage.withValues(alpha: 0.8)
-                            : MyWalkColor.softGold.withValues(alpha: 0.7),
-                        fontSize: 11,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+            // Reading count
+            Text(
+              '${activeSections.length} readings',
+              style: TextStyle(
+                color: isDone
+                    ? MyWalkColor.sage.withValues(alpha: 0.7)
+                    : MyWalkColor.softGold.withValues(alpha: 0.6),
+                fontSize: 11,
               ),
             ),
             const Icon(Icons.chevron_right,

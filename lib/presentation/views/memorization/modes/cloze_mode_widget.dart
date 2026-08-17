@@ -135,8 +135,26 @@ class _ClozeModeWidgetState extends State<ClozeModeWidget> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: MyWalkColor.cardBackground,
-              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  MyWalkColor.golden.withValues(alpha: 0.18),
+                  MyWalkColor.golden.withValues(alpha: 0.06),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: MyWalkColor.golden.withValues(alpha: 0.55),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: MyWalkColor.golden.withValues(alpha: 0.2),
+                  blurRadius: 24,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Wrap(
               spacing: 6,

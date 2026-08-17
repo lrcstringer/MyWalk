@@ -25,6 +25,9 @@ class FirestoreMemorizationRepository implements MemorizationRepository {
   CollectionReference<Map<String, dynamic>> _sharesRef(String itemId) =>
       _itemsRef.doc(itemId).collection('shares');
 
+  CollectionReference<Map<String, dynamic>> _sessionsRef(String itemId) =>
+      _itemsRef.doc(itemId).collection('sessions');
+
   // ---------------------------------------------------------------------------
   // MemorizationItem — CRUD + stream
   // ---------------------------------------------------------------------------
@@ -118,4 +121,19 @@ class FirestoreMemorizationRepository implements MemorizationRepository {
             .map((d) => ReviewAttempt.fromFirestore(d))
             .toList());
   }
+
+  // ---------------------------------------------------------------------------
+  // ReviewSession
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<ReviewSession?> loadSession(String itemId, String date) async {
+    final doc = await _sessionsRef(itemId).doc(date).get();
+    if (!doc.exists || doc.data() == null) return null;
+    return ReviewSession.fromMap(itemId, doc.data()!);
+  }
+
+  @override
+  Future<void> saveSession(ReviewSession session) =>
+      _sessionsRef(session.itemId).doc(session.date).set(session.toFirestore());
 }

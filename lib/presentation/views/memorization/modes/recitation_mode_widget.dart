@@ -13,7 +13,15 @@ import '../widgets/memorization_celebration.dart';
 class RecitationModeWidget extends StatefulWidget {
   final MemorizationItem item;
 
-  const RecitationModeWidget({super.key, required this.item});
+  /// When true, the widget pops with the similarity score (double) instead of
+  /// dispatching SM2 and navigating to the celebration screen.
+  final bool sessionMode;
+
+  const RecitationModeWidget({
+    super.key,
+    required this.item,
+    this.sessionMode = false,
+  });
 
   @override
   State<RecitationModeWidget> createState() => _RecitationModeWidgetState();
@@ -375,6 +383,14 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
   Future<void> _submitResult() async {
     if (_isSubmitting) return;
     _isSubmitting = true;
+
+    // In session mode, simply pop with the similarity score so the session
+    // screen can aggregate results and dispatch SM2 at the very end.
+    if (widget.sessionMode) {
+      if (mounted) Navigator.of(context).pop(_similarity);
+      return;
+    }
+
     final qualityScore = _similarity >= 0.9
         ? 5
         : _similarity >= 0.7

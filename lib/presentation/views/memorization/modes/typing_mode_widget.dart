@@ -72,19 +72,37 @@ class _TypingModeWidgetState extends State<TypingModeWidget> {
           // Hint
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
             decoration: BoxDecoration(
-              color: MyWalkColor.cardBackground,
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  MyWalkColor.golden.withValues(alpha: 0.18),
+                  MyWalkColor.golden.withValues(alpha: 0.06),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: MyWalkColor.golden.withValues(alpha: 0.55),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: MyWalkColor.golden.withValues(alpha: 0.2),
+                  blurRadius: 24,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Text(
               widget.chunk.hint,
-              style: TextStyle(
-                color: MyWalkColor.golden.withValues(alpha: 0.7),
-                fontSize: 14,
+              style: const TextStyle(
+                color: MyWalkColor.golden,
+                fontSize: 22,
                 fontFamily: 'monospace',
-                letterSpacing: 1.5,
-                height: 1.6,
+                letterSpacing: 2.5,
+                height: 1.9,
               ),
               textAlign: TextAlign.center,
             ),

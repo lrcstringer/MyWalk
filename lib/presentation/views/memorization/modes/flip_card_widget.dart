@@ -148,11 +148,28 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 160),
-      padding: const EdgeInsets.all(28),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
       decoration: BoxDecoration(
-        color: MyWalkColor.golden.withValues(alpha: 0.08),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            MyWalkColor.golden.withValues(alpha: 0.18),
+            MyWalkColor.golden.withValues(alpha: 0.06),
+          ],
+        ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: MyWalkColor.golden.withValues(alpha: 0.55),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: MyWalkColor.golden.withValues(alpha: 0.2),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Center(
         child: Column(
@@ -160,28 +177,33 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
           children: [
             Text(
               widget.chunk.hint,
-              style: TextStyle(
-                color: MyWalkColor.golden.withValues(alpha: 0.9),
-                fontSize: 20,
+              style: const TextStyle(
+                color: MyWalkColor.golden,
+                fontSize: 22,
                 fontFamily: 'monospace',
                 letterSpacing: 2.5,
-                height: 1.8,
+                height: 1.9,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            Icon(
-              Icons.touch_app_outlined,
-              color: MyWalkColor.golden.withValues(alpha: 0.3),
-              size: 18,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Tap to flip',
-              style: TextStyle(
-                color: MyWalkColor.golden.withValues(alpha: 0.35),
-                fontSize: 12,
-              ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.touch_app_outlined,
+                  color: MyWalkColor.golden.withValues(alpha: 0.5),
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Tap to flip',
+                  style: TextStyle(
+                    color: MyWalkColor.golden.withValues(alpha: 0.5),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -237,7 +259,7 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
           child: OutlinedButton.icon(
             onPressed: () => _onAnswer(knew: false),
             icon: const Icon(Icons.close, size: 18),
-            label: const Text("I didn't know ✗"),
+            label: const Text("I didn't know"),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red.shade300,
               side: BorderSide(color: Colors.red.shade300),
@@ -252,7 +274,7 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
           child: ElevatedButton.icon(
             onPressed: () => _onAnswer(knew: true),
             icon: const Icon(Icons.check, size: 18),
-            label: const Text('I knew it ✓'),
+            label: const Text('I knew it'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7A9E7E),
               foregroundColor: MyWalkColor.charcoal,

@@ -258,6 +258,29 @@ class MemorizationProvider extends ChangeNotifier {
       _repository.watchAttempts(itemId);
 
   // ---------------------------------------------------------------------------
+  // ReviewSession — per-item per-day progress
+  // ---------------------------------------------------------------------------
+
+  Future<ReviewSession?> loadTodaySession(String itemId) =>
+      _repository.loadSession(itemId, todayKey());
+
+  Future<ReviewSession> markModeComplete(
+    ReviewSession session,
+    ReviewMode mode,
+  ) async {
+    final updated = session.withMode(mode);
+    await _repository.saveSession(updated);
+    return updated;
+  }
+
+  static String todayKey() {
+    final now = DateTime.now();
+    return '${now.year}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+  }
+
+  // ---------------------------------------------------------------------------
   // Optional callback — set by the widget tree when wiring habit integration.
   // ---------------------------------------------------------------------------
 

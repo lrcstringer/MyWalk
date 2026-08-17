@@ -25,4 +25,12 @@ abstract class MemorizationRepository {
   });
 
   Stream<List<ReviewAttempt>> watchAttempts(String itemId);
+
+  // ---------------------------------------------------------------------------
+  // ReviewSession — per-item per-day progress
+  // ---------------------------------------------------------------------------
+
+  Future<ReviewSession?> loadSession(String itemId, String date);
+
+  Future<void> saveSession(ReviewSession session);
 }

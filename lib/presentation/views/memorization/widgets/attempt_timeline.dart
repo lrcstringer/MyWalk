@@ -67,6 +67,7 @@ class _AttemptDot extends StatelessWidget {
       ReviewMode.typing => 'Type',
       ReviewMode.recitation => 'Speak',
       ReviewMode.fill => 'Letters',
+      ReviewMode.session => 'Session',
     };
   }
 

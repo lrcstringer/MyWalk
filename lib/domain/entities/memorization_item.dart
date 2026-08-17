@@ -316,7 +316,7 @@ class MemorizationItem {
 // ReviewAttempt — sub-collection document per individual review session
 // ---------------------------------------------------------------------------
 
-enum ReviewMode { cloze, progressive, flipCard, typing, recitation, fill }
+enum ReviewMode { cloze, progressive, flipCard, typing, recitation, fill, session }
 
 class ReviewAttempt {
   final String id;
@@ -414,7 +414,7 @@ class ReviewAttempt {
     return ReviewAttempt(
       id: doc.id,
       mode: ReviewMode.values.firstWhere(
-        (m) => m.name == (data['mode'] as String),
+        (m) => m.name == (data['mode'] as String? ?? 'flipCard'),
         orElse: () => ReviewMode.flipCard,
       ),
       attemptedAt: (data['attemptedAt'] as Timestamp).toDate(),
@@ -431,4 +431,60 @@ class ReviewAttempt {
       easeFactorAfter: (data['easeFactorAfter'] as num).toDouble(),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// ReviewSession — tracks which review modes are done for a given item on a day
+// ---------------------------------------------------------------------------
+
+class ReviewSession {
+  final String itemId;
+  final String date; // 'yyyy-MM-dd'
+  final Set<ReviewMode> completedModes;
+
+  const ReviewSession({
+    required this.itemId,
+    required this.date,
+    required this.completedModes,
+  });
+
+  static const requiredModes = [
+    ReviewMode.flipCard,
+    ReviewMode.recitation,
+    ReviewMode.cloze,
+    ReviewMode.typing,
+  ];
+
+  bool get isComplete =>
+      requiredModes.every((m) => completedModes.contains(m));
+
+  ReviewMode? get nextMode =>
+      requiredModes.cast<ReviewMode?>().firstWhere(
+            (m) => !completedModes.contains(m),
+            orElse: () => null,
+          );
+
+  ReviewSession withMode(ReviewMode mode) => ReviewSession(
+        itemId: itemId,
+        date: date,
+        completedModes: {...completedModes, mode},
+      );
+
+  Map<String, dynamic> toFirestore() => {
+        'itemId': itemId,
+        'date': date,
+        'completedModes': completedModes.map((m) => m.name).toList(),
+      };
+
+  factory ReviewSession.fromMap(String itemId, Map<String, dynamic> data) =>
+      ReviewSession(
+        itemId: itemId,
+        date: data['date'] as String? ?? '',
+        completedModes: ((data['completedModes'] as List? ?? [])
+            .map((e) => ReviewMode.values.firstWhere(
+                  (m) => m.name == e,
+                  orElse: () => ReviewMode.flipCard,
+                ))
+            .toSet()),
+      );
 }

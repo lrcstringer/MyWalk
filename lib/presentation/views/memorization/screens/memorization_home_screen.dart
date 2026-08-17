@@ -229,7 +229,7 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
     return MemorizationListTile(
       item: item,
       onTap: () => MemorizationRouter.pushItemDashboard(context, item),
-      onReview: () => MemorizationRouter.pushModeSelection(context, item),
+      onReview: () => MemorizationRouter.pushReviewSession(context, item),
       onArchive: () => provider.archiveItem(item),
       onDelete: () => provider.deleteItem(item),
     );

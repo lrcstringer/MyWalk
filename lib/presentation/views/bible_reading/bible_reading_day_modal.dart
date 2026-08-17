@@ -182,6 +182,21 @@ class BibleReadingDayModal extends StatelessWidget {
   }
 }
 
+// ── Section accent colours ────────────────────────────────────────────────────
+
+extension _SectionAccent on BibleReadingSection {
+  Color get accent {
+    switch (this) {
+      case BibleReadingSection.psalms:       return MyWalkColor.softGold;
+      case BibleReadingSection.newTestament: return const Color(0xFF6B9FD4);
+      case BibleReadingSection.torah:        return const Color(0xFFD4956A);
+      case BibleReadingSection.historical:   return MyWalkColor.sage;
+      case BibleReadingSection.prophetic:    return const Color(0xFF9B8EC8);
+      case BibleReadingSection.wisdom:       return MyWalkColor.warmCoral;
+    }
+  }
+}
+
 // ── Section tile ───────────────────────────────────────────────────────────────
 
 class _SectionTile extends StatefulWidget {
@@ -252,85 +267,108 @@ class _SectionTileState extends State<_SectionTile>
         ) ??
         false;
     final refs = widget.dayPlan.refsForSection(widget.section);
+    final accent = widget.section.accent;
+    final stripeColor = isDone ? MyWalkColor.sage : accent;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: isDone
-            ? MyWalkColor.sage.withValues(alpha: 0.1)
-            : MyWalkColor.surfaceOverlay,
+        color: stripeColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDone
-              ? MyWalkColor.sage.withValues(alpha: 0.3)
-              : MyWalkColor.cardBorder,
+          color: stripeColor.withValues(alpha: 0.25),
           width: 0.5,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Section header row
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.section.label,
-                    style: TextStyle(
-                      color: isDone
-                          ? MyWalkColor.sage
-                          : MyWalkColor.softGold,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+            // Left accent stripe
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: stripeColor,
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(12),
                 ),
-                if (widget.interactive)
-                  isDone
-                      ? ScaleTransition(
-                          scale: _checkScale,
-                          child: GestureDetector(
-                            onTap: () => _toggle(isDone),
-                            child: const Icon(Icons.check_circle,
-                                color: MyWalkColor.sage, size: 22),
-                          ),
-                        )
-                      : GestureDetector(
-                          onTap: () => _toggle(isDone),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: MyWalkColor.golden.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color:
-                                    MyWalkColor.golden.withValues(alpha: 0.3),
-                                width: 0.5,
-                              ),
-                            ),
-                            child: const Text(
-                              'Done',
-                              style: TextStyle(
-                                color: MyWalkColor.golden,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
+              ),
+            ),
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Section header row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.section.label,
+                            style: TextStyle(
+                              color: isDone ? MyWalkColor.sage : accent,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            // Reading refs (tappable links)
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: refs
-                  .map((r) => _RefChip(ref: r))
-                  .toList(),
+                        if (widget.interactive)
+                          isDone
+                              ? ScaleTransition(
+                                  scale: _checkScale,
+                                  child: GestureDetector(
+                                    onTap: () => _toggle(isDone),
+                                    child: const Icon(Icons.check_circle,
+                                        color: MyWalkColor.sage, size: 22),
+                                  ),
+                                )
+                              : GestureDetector(
+                                  onTap: () => _toggle(isDone),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: accent.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: accent.withValues(alpha: 0.35),
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.check_rounded,
+                                            size: 13, color: accent),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Done',
+                                          style: TextStyle(
+                                            color: accent,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Reading refs (tappable)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: refs
+                          .map((r) => _RefChip(ref: r, accent: accent))
+                          .toList(),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -360,7 +398,8 @@ class _SectionTileState extends State<_SectionTile>
 
 class _RefChip extends StatelessWidget {
   final BibleReadingRef ref;
-  const _RefChip({required this.ref});
+  final Color accent;
+  const _RefChip({required this.ref, required this.accent});
 
   @override
   Widget build(BuildContext context) {
@@ -374,22 +413,29 @@ class _RefChip extends StatelessWidget {
         ),
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: MyWalkColor.golden.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(6),
+          color: accent.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: MyWalkColor.golden.withValues(alpha: 0.2),
+            color: accent.withValues(alpha: 0.3),
             width: 0.5,
           ),
         ),
-        child: Text(
-          ref.label,
-          style: const TextStyle(
-            color: MyWalkColor.golden,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.menu_book_outlined, size: 12, color: accent),
+            const SizedBox(width: 5),
+            Text(
+              ref.label,
+              style: TextStyle(
+                color: accent,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );

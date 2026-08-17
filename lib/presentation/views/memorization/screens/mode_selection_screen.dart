@@ -23,6 +23,7 @@ class ModeSelectionScreen extends StatelessWidget {
       title: 'Meditate & Reveal',
       description: 'See the hint, flip to reveal the phrase.',
       premium: true,
+      color: Color(0xFF9B8EC8), // lavender
     ),
     _ModeInfo(
       mode: ReviewMode.cloze,
@@ -30,6 +31,7 @@ class ModeSelectionScreen extends StatelessWidget {
       title: 'Fill the Word',
       description: 'Tap the missing words to complete each phrase.',
       premium: true,
+      color: Color(0xFF6B9FD4), // sky blue
     ),
     _ModeInfo(
       mode: ReviewMode.progressive,
@@ -37,6 +39,7 @@ class ModeSelectionScreen extends StatelessWidget {
       title: 'Step by Step',
       description: 'Reveal the passage one chunk at a time.',
       premium: true,
+      color: Color(0xFF7A9E7E), // sage green
     ),
     _ModeInfo(
       mode: ReviewMode.typing,
@@ -44,6 +47,7 @@ class ModeSelectionScreen extends StatelessWidget {
       title: 'Write It Out',
       description: 'Type the phrase from memory.',
       premium: true,
+      color: Color(0xFFD4836B), // warm coral
     ),
     _ModeInfo(
       mode: ReviewMode.recitation,
@@ -51,6 +55,7 @@ class ModeSelectionScreen extends StatelessWidget {
       title: 'Speak It Aloud',
       description: 'Recite the passage and let AI score it.',
       premium: true,
+      color: Color(0xFFD4A843), // golden amber
     ),
     _ModeInfo(
       mode: ReviewMode.fill,
@@ -58,6 +63,7 @@ class ModeSelectionScreen extends StatelessWidget {
       title: 'Fill the Letters',
       description: 'Type the missing letters one by one.',
       premium: true,
+      color: Color(0xFF5BA8A0), // teal
     ),
   ];
 
@@ -145,6 +151,7 @@ class ModeSelectionScreen extends StatelessWidget {
                 onResult: onResult,
               ),
             ReviewMode.recitation => throw StateError('unreachable'),
+            ReviewMode.session => throw StateError('unreachable'),
           },
         ),
       ),
@@ -170,6 +177,7 @@ class _ModeInfo {
   final String title;
   final String description;
   final bool premium;
+  final Color color;
 
   const _ModeInfo({
     required this.mode,
@@ -177,6 +185,7 @@ class _ModeInfo {
     required this.title,
     required this.description,
     required this.premium,
+    required this.color,
   });
 }
 
@@ -193,40 +202,52 @@ class _ModeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = locked ? MyWalkColor.warmWhite.withValues(alpha: 0.25) : info.color;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF3A342D), Color(0xFF2E2923)],
+            colors: [
+              MyWalkColor.cardBackground,
+              locked
+                  ? MyWalkColor.cardBackground
+                  : info.color.withValues(alpha: 0.18),
+            ],
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: locked
                 ? const Color(0x14FFFFFF)
-                : const Color(0x22D4A843),
+                : info.color.withValues(alpha: 0.5),
             width: 1.0,
           ),
+          boxShadow: locked
+              ? null
+              : [
+                  BoxShadow(
+                    color: info.color.withValues(alpha: 0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: locked
-                    ? Colors.white10
-                    : MyWalkColor.golden.withValues(alpha: 0.15),
+                color: accent.withValues(alpha: locked ? 0.08 : 0.18),
               ),
               child: Icon(
                 info.icon,
-                color: locked
-                    ? MyWalkColor.warmWhite.withValues(alpha: 0.3)
-                    : MyWalkColor.golden,
+                color: accent,
                 size: 22,
               ),
             ),
@@ -272,7 +293,9 @@ class _ModeTile extends StatelessWidget {
                   Text(
                     info.description,
                     style: TextStyle(
-                      color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
+                      color: locked
+                          ? MyWalkColor.warmWhite.withValues(alpha: 0.3)
+                          : MyWalkColor.warmWhite.withValues(alpha: 0.65),
                       fontSize: 13,
                     ),
                   ),
@@ -283,7 +306,7 @@ class _ModeTile extends StatelessWidget {
               locked ? Icons.lock_outline : Icons.chevron_right,
               color: locked
                   ? MyWalkColor.warmWhite.withValues(alpha: 0.2)
-                  : MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                  : info.color.withValues(alpha: 0.6),
               size: 20,
             ),
           ],

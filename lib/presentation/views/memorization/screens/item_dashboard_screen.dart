@@ -9,10 +9,78 @@ import '../widgets/chunk_heat_map.dart';
 import '../widgets/review_calendar_heatmap.dart';
 import '../memorization_router.dart';
 
+enum _ItemAction { archive, delete }
+
 class ItemDashboardScreen extends StatelessWidget {
   final MemorizationItem item;
 
   const ItemDashboardScreen({super.key, required this.item});
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.charcoal,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Delete verse?',
+            style: TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w700)),
+        content: Text(
+          'This permanently removes "${item.title}" and all its review history. This cannot be undone.',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              fontSize: 13,
+              height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: MyWalkColor.softGold)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await context.read<MemorizationProvider>().deleteItem(item);
+      if (context.mounted) Navigator.pop(context);
+    }
+  }
+
+  Future<void> _confirmArchive(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.charcoal,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Archive verse?',
+            style: TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w700)),
+        content: Text(
+          'Archive "${item.title}"? You can unarchive it later.',
+          style: TextStyle(
+              color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+              fontSize: 13,
+              height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: MyWalkColor.softGold)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Archive', style: TextStyle(color: MyWalkColor.golden, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await context.read<MemorizationProvider>().archiveItem(item);
+      if (context.mounted) Navigator.pop(context);
+    }
+  }
 
   Future<void> _confirmRestart(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -72,6 +140,38 @@ class ItemDashboardScreen extends StatelessWidget {
         ),
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
+        actions: [
+          PopupMenuButton<_ItemAction>(
+            icon: Icon(Icons.more_vert, color: MyWalkColor.warmWhite.withValues(alpha: 0.7)),
+            color: MyWalkColor.cardBackground,
+            onSelected: (action) {
+              if (action == _ItemAction.archive) _confirmArchive(context);
+              if (action == _ItemAction.delete) _confirmDelete(context);
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: _ItemAction.archive,
+                child: Row(
+                  children: [
+                    Icon(Icons.archive_outlined, size: 18, color: MyWalkColor.softGold),
+                    SizedBox(width: 10),
+                    Text('Archive', style: TextStyle(color: MyWalkColor.warmWhite)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: _ItemAction.delete,
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                    SizedBox(width: 10),
+                    Text('Delete', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -104,7 +204,7 @@ class ItemDashboardScreen extends StatelessWidget {
                     icon: const Icon(Icons.play_arrow_rounded),
                     label: const Text('Review now'),
                     onPressed: () =>
-                        MemorizationRouter.pushModeSelection(context, current),
+                        MemorizationRouter.pushReviewSession(context, current),
                   ),
                 if (current.status == MemorizationStatus.mastered) ...[
                   const SizedBox(height: 8),

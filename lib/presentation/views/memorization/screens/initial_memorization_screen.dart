@@ -843,12 +843,13 @@ class _FlipExerciseState extends State<_FlipExercise>
               ),
               const SizedBox(height: 8),
               Text(
-                'Exercise A — Flip',
+                'Exercise A — Can you remember what the verse is?',
                 style: TextStyle(
-                  color: MyWalkColor.golden.withValues(alpha: 0.55),
-                  fontSize: 11,
-                  letterSpacing: 0.5,
+                  color: MyWalkColor.golden.withValues(alpha: 0.7),
+                  fontSize: 12,
+                  letterSpacing: 0.3,
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               GestureDetector(
@@ -870,9 +871,9 @@ class _FlipExerciseState extends State<_FlipExercise>
               const SizedBox(height: 20),
               if (!isBack)
                 Text(
-                  'Tap to reveal',
+                  'Tap card above to reveal the verse',
                   style: TextStyle(
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
                     fontSize: 13,
                   ),
                 )
@@ -889,22 +890,63 @@ class _FlipExerciseState extends State<_FlipExercise>
   Widget _buildFront() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(28),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
       decoration: BoxDecoration(
-        color: MyWalkColor.golden.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        widget.chunk.hint,
-        style: TextStyle(
-          color: MyWalkColor.golden.withValues(alpha: 0.9),
-          fontSize: 20,
-          fontFamily: 'monospace',
-          letterSpacing: 2.5,
-          height: 1.8,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            MyWalkColor.golden.withValues(alpha: 0.18),
+            MyWalkColor.golden.withValues(alpha: 0.06),
+          ],
         ),
-        textAlign: TextAlign.center,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: MyWalkColor.golden.withValues(alpha: 0.55),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: MyWalkColor.golden.withValues(alpha: 0.2),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            widget.chunk.hint,
+            style: const TextStyle(
+              color: MyWalkColor.golden,
+              fontSize: 22,
+              fontFamily: 'monospace',
+              letterSpacing: 2.5,
+              height: 1.9,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.touch_app_outlined,
+                color: MyWalkColor.golden.withValues(alpha: 0.5),
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Tap to flip',
+                style: TextStyle(
+                  color: MyWalkColor.golden.withValues(alpha: 0.5),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -954,7 +996,7 @@ class _FlipExerciseState extends State<_FlipExercise>
           child: OutlinedButton.icon(
             onPressed: () => _answer(false),
             icon: const Icon(Icons.close, size: 18),
-            label: const Text("I didn't know ✗"),
+            label: const Text("I didn't know"),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red.shade300,
               side: BorderSide(color: Colors.red.shade300),
@@ -969,7 +1011,7 @@ class _FlipExerciseState extends State<_FlipExercise>
           child: ElevatedButton.icon(
             onPressed: () => _answer(true),
             icon: const Icon(Icons.check, size: 18),
-            label: const Text('I knew it ✓'),
+            label: const Text('I knew it'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7A9E7E),
               foregroundColor: MyWalkColor.charcoal,
@@ -1011,6 +1053,7 @@ class _FillExerciseState extends State<_FillExercise> {
   late List<_BlankSlot> _slots;
   int _currentSlotIndex = 0;
   int _successCount = 0;
+  int _revealedCount = 0;
   bool _allFilled = false;
   bool _programmaticClear = false;
 
@@ -1037,10 +1080,60 @@ class _FillExerciseState extends State<_FillExercise> {
     });
   }
 
+  // Re-shows the keyboard whether or not the FocusNode already has focus.
+  // On Android, requestFocus() is a no-op when the node is already focused
+  // but the user has manually dismissed the keyboard, so we prod the platform
+  // channel directly in that case.
+  void _ensureKeyboardVisible() {
+    if (!mounted || _allFilled) return;
+    if (_focus.hasFocus) {
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+    } else {
+      _focus.requestFocus();
+    }
+  }
+
+  void _revealLetter() {
+    if (_allFilled || _currentSlotIndex >= _slots.length) return;
+    final slot = _slots[_currentSlotIndex];
+    setState(() {
+      if (!slot.firstAttemptMade) {
+        slot.firstAttemptMade = true;
+        slot.firstAttemptCorrect = false;
+      }
+      slot.currentInput = slot.expected;
+      slot.revealed = true;
+      _revealedCount++;
+    });
+    _programmaticClear = true;
+    _ctrl.clear();
+    _programmaticClear = false;
+    final nextIdx = _slots.indexWhere((s) => !s.locked, _currentSlotIndex + 1);
+    if (nextIdx == -1) {
+      setState(() {
+        _allFilled = true;
+        _currentSlotIndex = _slots.length;
+      });
+      _focus.unfocus();
+    } else {
+      setState(() => _currentSlotIndex = nextIdx);
+      _ensureKeyboardVisible();
+    }
+  }
+
+  void _resetExercise() {
+    setState(() => _buildItems());
+    _programmaticClear = true;
+    _ctrl.clear();
+    _programmaticClear = false;
+    _autoFocus();
+  }
+
   void _buildItems() {
     _items = [];
     _slots = [];
     _successCount = 0;
+    _revealedCount = 0;
     _currentSlotIndex = 0;
     _allFilled = false;
 
@@ -1120,38 +1213,6 @@ class _FillExerciseState extends State<_FillExercise> {
     }
   }
 
-  // Called by the visible ⌫ button — handles both clearing current wrong
-  // input and navigating back to the previous non-locked slot.
-  void _backspaceButton() {
-    if (_allFilled) return;
-    final slot =
-        _currentSlotIndex < _slots.length ? _slots[_currentSlotIndex] : null;
-
-    if (slot != null && slot.currentInput != null && !slot.locked) {
-      // Clear current wrong input (field has wrong char — also clear field)
-      setState(() => slot.currentInput = null);
-      _programmaticClear = true;
-      _ctrl.clear();
-      _programmaticClear = false;
-      _focus.requestFocus();
-      return;
-    }
-
-    // Current slot is empty — go back to previous non-locked slot with input
-    for (var i = _currentSlotIndex - 1; i >= 0; i--) {
-      if (!_slots[i].locked && _slots[i].currentInput != null) {
-        setState(() {
-          _slots[i].currentInput = null;
-          _currentSlotIndex = i;
-        });
-        _programmaticClear = true;
-        _ctrl.clear();
-        _programmaticClear = false;
-        _focus.requestFocus();
-        return;
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1159,7 +1220,7 @@ class _FillExerciseState extends State<_FillExercise> {
     final pct = total > 0 ? ((_successCount / total) * 100).round() : 100;
 
     return GestureDetector(
-      onTap: () => _focus.requestFocus(),
+      onTap: _ensureKeyboardVisible,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -1174,11 +1235,11 @@ class _FillExerciseState extends State<_FillExercise> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Exercise B — Fill In',
+              'Exercise B — Try to complete the verse by filling in the missing text',
               style: TextStyle(
-                color: MyWalkColor.golden.withValues(alpha: 0.55),
-                fontSize: 11,
-                letterSpacing: 0.5,
+                color: MyWalkColor.golden.withValues(alpha: 0.7),
+                fontSize: 12,
+                letterSpacing: 0.3,
               ),
             ),
             const SizedBox(height: 20),
@@ -1207,12 +1268,27 @@ class _FillExerciseState extends State<_FillExercise> {
               ),
               const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _revealLetter,
+                      icon: const Icon(Icons.lightbulb_outline, size: 16),
+                      label: const Text('Show letter'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: MyWalkColor.golden.withValues(alpha: 0.85),
+                        side: BorderSide(
+                            color: MyWalkColor.golden.withValues(alpha: 0.4)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        textStyle: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   OutlinedButton.icon(
-                    onPressed: _backspaceButton,
-                    icon: const Icon(Icons.backspace_outlined, size: 16),
-                    label: const Text('Clear'),
+                    onPressed: _resetExercise,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Start over'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor:
                           MyWalkColor.warmWhite.withValues(alpha: 0.5),
@@ -1246,7 +1322,9 @@ class _FillExerciseState extends State<_FillExercise> {
                       ),
                     ),
                     child: Text(
-                      '$_successCount / $total correct',
+                      _revealedCount > 0
+                          ? '$_successCount correct · $_revealedCount revealed'
+                          : '$_successCount / $total correct',
                       style: TextStyle(
                         color: pct >= 60
                             ? const Color(0xFF7A9E7E)
@@ -1310,8 +1388,26 @@ class _FillExerciseState extends State<_FillExercise> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: MyWalkColor.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            MyWalkColor.golden.withValues(alpha: 0.18),
+            MyWalkColor.golden.withValues(alpha: 0.06),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: MyWalkColor.golden.withValues(alpha: 0.55),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: MyWalkColor.golden.withValues(alpha: 0.2),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Wrap(
         spacing: 10,
@@ -1361,7 +1457,11 @@ class _FillExerciseState extends State<_FillExercise> {
     Color textColor;
     Color? bgColor;
 
-    if (slot.locked) {
+    if (slot.revealed) {
+      borderColor = MyWalkColor.golden;
+      textColor = MyWalkColor.golden;
+      bgColor = MyWalkColor.golden.withValues(alpha: 0.12);
+    } else if (slot.locked) {
       borderColor = const Color(0xFF7A9E7E);
       textColor = const Color(0xFF7A9E7E);
       bgColor = const Color(0xFF7A9E7E).withValues(alpha: 0.12);
@@ -1380,9 +1480,7 @@ class _FillExerciseState extends State<_FillExercise> {
     }
 
     return GestureDetector(
-      onTap: () {
-        if (!_allFilled) _focus.requestFocus();
-      },
+      onTap: _ensureKeyboardVisible,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         width: 18,
@@ -1426,6 +1524,7 @@ class _BlankSlot extends _DispItem {
   final String expected;
   bool firstAttemptMade = false;
   bool firstAttemptCorrect = false;
+  bool revealed = false;
   String? currentInput;
 
   bool get locked =>

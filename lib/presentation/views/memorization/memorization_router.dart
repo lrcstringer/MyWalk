@@ -3,8 +3,8 @@ import '../../../domain/entities/memorization_item.dart';
 import 'screens/initial_memorization_screen.dart';
 import 'screens/memorization_home_screen.dart';
 import 'screens/memorization_input_screen.dart';
-import 'screens/mode_selection_screen.dart';
 import 'screens/item_dashboard_screen.dart';
+import 'screens/review_session_screen.dart';
 
 class MemorizationRouter {
   MemorizationRouter._();
@@ -21,12 +21,12 @@ class MemorizationRouter {
     );
   }
 
-  static Future<void> pushModeSelection(
+  static Future<void> pushReviewSession(
     BuildContext context,
     MemorizationItem item,
   ) {
     return Navigator.of(context).push<void>(
-      MaterialPageRoute(builder: (_) => ModeSelectionScreen(item: item)),
+      MaterialPageRoute(builder: (_) => ReviewSessionScreen(item: item)),
     );
   }
 

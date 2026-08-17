@@ -139,7 +139,7 @@ class MemorizationListTile extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (item.initialEncounterComplete && isDue)
+                  if (item.initialEncounterComplete && isDue) ...[
                     FilledButton(
                       onPressed: onReview,
                       style: FilledButton.styleFrom(
@@ -151,45 +151,18 @@ class MemorizationListTile extends StatelessWidget {
                       ),
                       child: const Text('Review', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                     ),
-                  IconButton(
-                    icon: Icon(Icons.more_vert, color: MyWalkColor.warmWhite.withValues(alpha: 0.4)),
-                    onPressed: () => _showOptions(context),
+                    const SizedBox(width: 4),
+                  ],
+                  Icon(
+                    Icons.chevron_right,
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.35),
+                    size: 20,
                   ),
                 ],
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showOptions(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: MyWalkColor.cardBackground,
-        title: Text(item.title, style: const TextStyle(color: MyWalkColor.warmWhite, fontWeight: FontWeight.w600)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: MyWalkColor.warmWhite.withValues(alpha: 0.5))),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              onArchive();
-            },
-            child: const Text('Archive', style: TextStyle(color: MyWalkColor.golden)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              onDelete();
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }
