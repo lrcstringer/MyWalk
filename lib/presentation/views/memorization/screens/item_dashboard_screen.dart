@@ -54,11 +54,18 @@ class ItemDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final live = context.select<MemorizationProvider, MemorizationItem?>(
+      (p) {
+        final matches = p.items.where((i) => i.id == item.id);
+        return matches.isEmpty ? null : matches.first;
+      },
+    );
+    final current = live ?? item;
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       appBar: AppBar(
         title: Text(
-          item.title,
+          current.title,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             color: MyWalkColor.warmWhite,
           ),
@@ -79,27 +86,27 @@ class ItemDashboardScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _MasteryRing(item: item),
+                _MasteryRing(item: current),
                 const SizedBox(height: 24),
-                _StatRow(item: item),
+                _StatRow(item: current),
                 const SizedBox(height: 24),
                 _SectionCard(
-                  child: ChunkHeatMap(chunks: item.chunks),
+                  child: ChunkHeatMap(chunks: current.chunks),
                 ),
                 const SizedBox(height: 16),
-                _AchievementsRow(item: item),
+                _AchievementsRow(item: current),
                 const SizedBox(height: 16),
-                _AttemptsSection(item: item),
+                _AttemptsSection(item: current),
                 const SizedBox(height: 24),
-                if (item.isDueNow)
+                if (current.isDueNow && current.status == MemorizationStatus.active)
                   ElevatedButton.icon(
                     style: MyWalkButtonStyle.primary(),
                     icon: const Icon(Icons.play_arrow_rounded),
                     label: const Text('Review now'),
                     onPressed: () =>
-                        MemorizationRouter.pushModeSelection(context, item),
+                        MemorizationRouter.pushModeSelection(context, current),
                   ),
-                if (item.status == MemorizationStatus.mastered) ...[
+                if (current.status == MemorizationStatus.mastered) ...[
                   const SizedBox(height: 8),
                   Center(
                     child: TextButton.icon(

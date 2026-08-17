@@ -1,4 +1,3 @@
-import 'dart:math' show pi;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -76,6 +75,7 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkMilestone(context));
 
+    final imageHeight = MediaQuery.of(context).size.width * 0.65;
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       body: Stack(
@@ -88,7 +88,7 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
             slivers: [
               // ── Immersive collapsing header ─────────────────────────────────
               SliverAppBar(
-                expandedHeight: 152,
+                expandedHeight: imageHeight,
                 pinned: true,
                 backgroundColor: MyWalkColor.charcoal,
                 foregroundColor: MyWalkColor.warmWhite,
@@ -100,7 +100,65 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
                 ),
                 flexibleSpace: FlexibleSpaceBar(
                   collapseMode: CollapseMode.parallax,
-                  background: _HeaderBackground(provider: provider),
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        'assets/bibleinayear.png',
+                        fit: BoxFit.cover,
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              MyWalkColor.charcoal.withValues(alpha: 0.5),
+                              MyWalkColor.charcoal,
+                            ],
+                            stops: const [0.0, 0.55, 1.0],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 20,
+                        right: 20,
+                        bottom: 14,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Bible in a Year',
+                              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                color: MyWalkColor.warmWhite,
+                                height: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            const Text(
+                              '"Your word is a lamp to my feet\nand a light to my path."',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontStyle: FontStyle.italic,
+                                color: MyWalkColor.softGold,
+                                height: 1.45,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            const Text(
+                              'Psalm 119:105',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: MyWalkColor.golden,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -194,175 +252,6 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
       provider.markMilestoneShown(milestone);
     });
   }
-}
-
-// ── Immersive header background ────────────────────────────────────────────────
-
-class _HeaderBackground extends StatelessWidget {
-  final BibleReadingProvider provider;
-  const _HeaderBackground({required this.provider});
-
-  @override
-  Widget build(BuildContext context) {
-    if (!provider.isActive) {
-      return const Stack(
-        fit: StackFit.expand,
-        children: [IgnorePointer(child: DeepSpaceBackground())],
-      );
-    }
-
-    final daysRead = provider.totalDaysRead;
-    final progress = daysRead / 364.0;
-    final weekIndex = provider.currentWeekIndex ?? 0;
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const IgnorePointer(child: DeepSpaceBackground()),
-        // Fade into the card list below
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 56,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  MyWalkColor.charcoal.withValues(alpha: 0.65),
-                ],
-              ),
-            ),
-          ),
-        ),
-        // Ring + week info — offset below the toolbar buttons
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, kToolbarHeight + 10, 20, 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _ProgressRing(progress: progress, daysRead: daysRead),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Week ${weekIndex + 1} of 52',
-                      style: const TextStyle(
-                        color: MyWalkColor.warmWhite,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '$daysRead days read',
-                      style: TextStyle(
-                        color: MyWalkColor.softGold.withValues(alpha: 0.8),
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 4,
-                        backgroundColor:
-                            MyWalkColor.golden.withValues(alpha: 0.15),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                            MyWalkColor.golden),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Circular progress ring ─────────────────────────────────────────────────────
-
-class _ProgressRing extends StatelessWidget {
-  final double progress;
-  final int daysRead;
-  const _ProgressRing({required this.progress, required this.daysRead});
-
-  @override
-  Widget build(BuildContext context) {
-    final pct = (progress * 100).round();
-    return SizedBox(
-      width: 64,
-      height: 64,
-      child: CustomPaint(
-        painter: _RingPainter(progress: progress),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$pct%',
-                style: const TextStyle(
-                  color: MyWalkColor.warmWhite,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  height: 1.1,
-                ),
-              ),
-              Text(
-                'done',
-                style: TextStyle(
-                  color: MyWalkColor.softGold.withValues(alpha: 0.6),
-                  fontSize: 8,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RingPainter extends CustomPainter {
-  final double progress;
-  const _RingPainter({required this.progress});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const strokeWidth = 5.0;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - strokeWidth) / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    final trackPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..color = MyWalkColor.golden.withValues(alpha: 0.15);
-    canvas.drawCircle(center, radius, trackPaint);
-
-    if (progress > 0) {
-      final arcPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round
-        ..color = MyWalkColor.golden;
-      canvas.drawArc(rect, -pi / 2, 2 * pi * progress, false, arcPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_RingPainter old) => old.progress != progress;
 }
 
 // ── Stats strip ────────────────────────────────────────────────────────────────

@@ -43,7 +43,10 @@ class ChunkingService {
       if (item is! Map) continue;
       final text = (item['text'] as String? ?? '').trim();
       if (text.isEmpty) continue;
-      final hint = (item['hint'] as String?)?.trim() ?? generateHint(text);
+      final cfHint = (item['hint'] as String?)?.trim();
+      final hint = (cfHint != null && cfHint.length == text.length)
+          ? cfHint
+          : generateHint(text);
       chunks.add(TextChunk.create(sequenceNumber: i, text: text, hint: hint));
     }
     if (chunks.isEmpty) return _fallbackChunk(fullText);

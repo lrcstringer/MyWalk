@@ -24,10 +24,12 @@ class _TypingModeWidgetState extends State<TypingModeWidget> {
   bool _submitted = false;
   double _similarity = 0;
   List<DiffToken>? _diff;
+  late int _chunkWordCount;
 
   @override
   void initState() {
     super.initState();
+    _chunkWordCount = _wordCount(widget.chunk.text);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
     });
@@ -41,11 +43,15 @@ class _TypingModeWidgetState extends State<TypingModeWidget> {
       _submitted = false;
       _similarity = 0;
       _diff = null;
+      _chunkWordCount = _wordCount(widget.chunk.text);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _focusNode.requestFocus();
       });
     }
   }
+
+  static int _wordCount(String text) =>
+      text.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
 
   @override
   void dispose() {
@@ -56,6 +62,8 @@ class _TypingModeWidgetState extends State<TypingModeWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final typedWords = _wordCount(_ctrl.text);
+    final threshold = (_chunkWordCount / 2).ceil();
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -108,14 +116,38 @@ class _TypingModeWidgetState extends State<TypingModeWidget> {
               maxLines: 3,
               minLines: 2,
               textCapitalization: TextCapitalization.sentences,
+              onChanged: (_) => setState(() {}),
               onSubmitted: (_) => _submit(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  '$typedWords / $_chunkWordCount words',
+                  style: TextStyle(
+                    color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
+                    fontSize: 12,
+                  ),
+                ),
+                if (typedWords > 0 && typedWords < threshold)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Text(
+                      '(need $threshold to submit)',
+                      style: TextStyle(
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.3),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: MyWalkButtonStyle.primary(),
-                onPressed: _ctrl.text.trim().isEmpty ? null : _submit,
+                onPressed: typedWords >= threshold ? _submit : null,
                 child: const Text('Check'),
               ),
             ),

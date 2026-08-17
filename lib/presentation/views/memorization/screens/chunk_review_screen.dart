@@ -277,8 +277,13 @@ class _ChunkTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: MyWalkColor.cardBackground,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3A342D), Color(0xFF2E2923)],
+        ),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0x18FFFFFF), width: 1.0),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

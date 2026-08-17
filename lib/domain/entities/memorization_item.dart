@@ -81,6 +81,17 @@ class TextChunk {
         successCount: (map['successCount'] as num? ?? 0).toInt(),
         attemptCount: (map['attemptCount'] as num? ?? 0).toInt(),
       );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TextChunk &&
+          id == other.id &&
+          successCount == other.successCount &&
+          attemptCount == other.attemptCount;
+
+  @override
+  int get hashCode => id.hashCode ^ successCount ^ attemptCount;
 }
 
 // ---------------------------------------------------------------------------
@@ -277,13 +288,35 @@ class MemorizationItem {
       initialEncounterComplete: data['initialEncounterComplete'] as bool? ?? false,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! MemorizationItem || id != other.id) return false;
+    if (status != other.status ||
+        totalAttempts != other.totalAttempts ||
+        successfulAttempts != other.successfulAttempts ||
+        streakCount != other.streakCount ||
+        repetitionCount != other.repetitionCount ||
+        nextReviewDate != other.nextReviewDate ||
+        initialEncounterComplete != other.initialEncounterComplete ||
+        currentInitialStep != other.currentInitialStep ||
+        chunks.length != other.chunks.length) { return false; }
+    for (var i = 0; i < chunks.length; i++) {
+      if (chunks[i] != other.chunks[i]) { return false; }
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode => id.hashCode ^ totalAttempts;
 }
 
 // ---------------------------------------------------------------------------
 // ReviewAttempt — sub-collection document per individual review session
 // ---------------------------------------------------------------------------
 
-enum ReviewMode { cloze, progressive, flipCard, typing, recitation }
+enum ReviewMode { cloze, progressive, flipCard, typing, recitation, fill }
 
 class ReviewAttempt {
   final String id;

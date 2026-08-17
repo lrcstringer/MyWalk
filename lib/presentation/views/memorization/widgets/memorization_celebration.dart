@@ -56,93 +56,100 @@ class _MemorizationCelebrationState extends State<MemorizationCelebration>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(),
-                ScaleTransition(
-                  scale: _scaleAnim,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: MyWalkColor.golden.withValues(alpha: 0.15),
-                      border: Border.all(color: MyWalkColor.golden, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.auto_stories,
-                      size: 48,
-                      color: MyWalkColor.golden,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Text(
-                  widget.message,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: MyWalkColor.warmWhite,
-                        fontWeight: FontWeight.bold,
-                        height: 1.3,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  widget.subtitle,
-                  style: TextStyle(
-                    color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
-                    fontSize: 15,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: MyWalkColor.cardBackground,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        '"Thy word have I hid in mine heart,\nthat I might not sin against thee."',
-                        style: TextStyle(
-                          color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
-                          fontSize: 14,
-                          fontStyle: FontStyle.italic,
-                          height: 1.6,
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(child: DeepSpaceBackground()),
+          ),
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Spacer(),
+                    ScaleTransition(
+                      scale: _scaleAnim,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: MyWalkColor.golden.withValues(alpha: 0.15),
+                          border: Border.all(color: MyWalkColor.golden, width: 2),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '— Psalm 119:11',
-                        style: TextStyle(
+                        child: const Icon(
+                          Icons.auto_stories,
+                          size: 48,
                           color: MyWalkColor.golden,
-                          fontSize: 12,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 32),
+                    Text(
+                      widget.message,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: MyWalkColor.warmWhite,
+                            fontWeight: FontWeight.bold,
+                            height: 1.3,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.subtitle,
+                      style: TextStyle(
+                        color: MyWalkColor.warmWhite.withValues(alpha: 0.7),
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: MyWalkColor.cardBackground,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            '"Thy word have I hid in mine heart,\nthat I might not sin against thee."',
+                            style: TextStyle(
+                              color: MyWalkColor.warmWhite.withValues(alpha: 0.85),
+                              fontSize: 14,
+                              fontStyle: FontStyle.italic,
+                              height: 1.6,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '— Psalm 119:11',
+                            style: TextStyle(
+                              color: MyWalkColor.golden,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    ElevatedButton(
+                      style: MyWalkButtonStyle.primary(),
+                      onPressed: widget.onContinue,
+                      child: const Text('Continue'),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ),
-                const Spacer(),
-                ElevatedButton(
-                  style: MyWalkButtonStyle.primary(),
-                  onPressed: widget.onContinue,
-                  child: const Text('Continue'),
-                ),
-                const SizedBox(height: 8),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

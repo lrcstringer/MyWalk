@@ -60,14 +60,12 @@ class FirestoreMemorizationRepository implements MemorizationRepository {
   }
 
   @override
-  Future<void> saveItem(MemorizationItem item) async {
-    _itemsRef.doc(item.id).set(item.toFirestore()).ignore();
-  }
+  Future<void> saveItem(MemorizationItem item) =>
+      _itemsRef.doc(item.id).set(item.toFirestore());
 
   @override
-  Future<void> updateItem(MemorizationItem item) async {
-    _itemsRef.doc(item.id).set(item.toFirestore(), SetOptions(merge: true)).ignore();
-  }
+  Future<void> updateItem(MemorizationItem item) =>
+      _itemsRef.doc(item.id).set(item.toFirestore(), SetOptions(merge: true));
 
   @override
   Future<void> deleteItem(String itemId) async {

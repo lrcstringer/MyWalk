@@ -4,6 +4,7 @@ import '../../../../domain/entities/memorization_item.dart';
 import '../../../../presentation/providers/memorization_provider.dart';
 import '../../../../presentation/theme/app_theme.dart';
 import '../widgets/achievement_badge.dart';
+import '../memorization_router.dart';
 
 class GlobalDashboardScreen extends StatelessWidget {
   const GlobalDashboardScreen({super.key});
@@ -252,7 +253,10 @@ class _ItemsList extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          ...sorted.map((item) => Padding(
+          ...sorted.map((item) => InkWell(
+                onTap: () => MemorizationRouter.pushItemDashboard(context, item),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   children: [
@@ -291,7 +295,8 @@ class _ItemsList extends StatelessWidget {
                     ),
                   ],
                 ),
-              )),
+              ),
+                )),
         ],
       ),
     );

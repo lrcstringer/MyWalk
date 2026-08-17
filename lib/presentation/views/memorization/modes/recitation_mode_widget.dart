@@ -19,12 +19,12 @@ class RecitationModeWidget extends StatefulWidget {
   State<RecitationModeWidget> createState() => _RecitationModeWidgetState();
 }
 
-enum _RecitationState { idle, listening, scored, error }
+enum _RecitationState { preview, listening, scored, error }
 
 class _RecitationModeWidgetState extends State<RecitationModeWidget> {
   final _stt = SpeechToText();
 
-  _RecitationState _state = _RecitationState.idle;
+  _RecitationState _state = _RecitationState.preview;
   String _transcript = '';
   double _similarity = 0;
   List<DiffToken>? _diff;
@@ -51,7 +51,14 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
         if (mounted) setState(() => _state = _RecitationState.error);
       },
     );
-    if (mounted) setState(() => _sttAvailable = available);
+    if (mounted) {
+      setState(() {
+        _sttAvailable = available;
+        if (_state != _RecitationState.error) {
+          _state = _RecitationState.preview;
+        }
+      });
+    }
   }
 
   @override
@@ -63,21 +70,28 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
         backgroundColor: MyWalkColor.charcoal,
         foregroundColor: MyWalkColor.warmWhite,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: switch (_state) {
-            _RecitationState.idle => _buildIdle(),
-            _RecitationState.listening => _buildListening(),
-            _RecitationState.scored => _buildScored(),
-            _RecitationState.error => _buildError(),
-          },
-        ),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(child: DeepSpaceBackground()),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: switch (_state) {
+                _RecitationState.preview => _buildPreview(),
+                _RecitationState.listening => _buildListening(),
+                _RecitationState.scored => _buildScored(),
+                _RecitationState.error => _buildError(),
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildIdle() {
+  Widget _buildPreview() {
     return Column(
       children: [
         const Spacer(),
@@ -100,7 +114,7 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
         ),
         const SizedBox(height: 24),
         Text(
-          'Read the passage above, then tap Record and recite it from memory.',
+          'Read the passage, then recite it from memory.',
           style: TextStyle(
             color: MyWalkColor.warmWhite.withValues(alpha: 0.5),
             fontSize: 14,
@@ -109,15 +123,6 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
           textAlign: TextAlign.center,
         ),
         const Spacer(),
-        if (!_sttAvailable)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              'Microphone access required for recitation mode.',
-              style: TextStyle(color: Colors.orange.shade300, fontSize: 13),
-              textAlign: TextAlign.center,
-            ),
-          ),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -130,7 +135,9 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
             ),
             onPressed: _sttAvailable ? _startListening : null,
             icon: const Icon(Icons.mic),
-            label: const Text('Record'),
+            label: Text(_sttAvailable
+                ? 'Ready to recite from memory'
+                : 'Microphone access required'),
           ),
         ),
         const SizedBox(height: 8),
@@ -143,7 +150,7 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
       children: [
         const Spacer(),
         const _PulsingMic(),
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
         Text(
           'Listening…',
           style: Theme.of(context)
@@ -169,10 +176,11 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
             onPressed: _stopListening,
             style: OutlinedButton.styleFrom(
               foregroundColor: MyWalkColor.warmWhite,
-              side: BorderSide(color: MyWalkColor.warmWhite.withValues(alpha: 0.4)),
+              side: BorderSide(
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.4)),
               minimumSize: const Size(0, 48),
             ),
-            child: const Text('Done'),
+            child: const Text('Done reading'),
           ),
         ),
         const SizedBox(height: 8),
@@ -333,10 +341,10 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
       onResult: (result) {
         if (!mounted) return;
         setState(() => _transcript = result.recognizedWords);
-        if (result.finalResult) _score();
+        // No auto-score on finalResult — only Done reading triggers scoring
       },
       listenFor: const Duration(seconds: 120),
-      pauseFor: const Duration(seconds: 4),
+      pauseFor: const Duration(seconds: 8),
       localeId: 'en_US',
     );
   }
@@ -346,7 +354,7 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
     if (_transcript.isNotEmpty) {
       _score();
     } else {
-      setState(() => _state = _RecitationState.idle);
+      setState(() => _state = _RecitationState.preview);
     }
   }
 
@@ -377,19 +385,26 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
                     ? 2
                     : 1;
 
-    final missedIds = widget.item.chunks
-        .where((c) {
-          final chunkSim = levenshteinSimilarity(_transcript, c.text);
-          return chunkSim < 0.5;
-        })
-        .map((c) => c.id)
-        .toList();
+    // Compare each chunk against its proportional slice of the transcript
+    // (with 2-word padding) so multi-chunk items score correctly.
+    final transcriptWords = _transcript.trim().split(RegExp(r'\s+'));
+    final missedIds = <String>[];
+    var offset = 0;
+    for (final chunk in widget.item.chunks) {
+      final start = (offset - 2).clamp(0, transcriptWords.length);
+      final end = (offset + chunk.wordCount + 2).clamp(0, transcriptWords.length);
+      final window = transcriptWords.sublist(start, end).join(' ');
+      if (levenshteinSimilarity(window, chunk.text) < 0.5) {
+        missedIds.add(chunk.id);
+      }
+      offset += chunk.wordCount;
+    }
 
     final nextReview = await context.read<MemorizationProvider>().completeReview(
           item: widget.item,
           mode: ReviewMode.recitation,
           qualityScore: qualityScore,
-          confidence: qualityScore,
+          confidence: 3,
           timeToRecallSeconds: _stopwatch.elapsed.inSeconds,
           missedChunkIds: missedIds,
           userResponse: _transcript,

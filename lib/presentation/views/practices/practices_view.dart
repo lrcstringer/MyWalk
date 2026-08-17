@@ -118,25 +118,34 @@ class PracticesView extends StatelessWidget {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // ── Action pills ───────────────────────────────────────────
-                Row(children: [
-                  Expanded(
-                    child: _ActionPill(
-                      icon: Icons.add_rounded,
-                      label: 'Add a Practice',
-                      color: const Color(0xFF90EE90),
-                      onTap: () => _openAddPractice(context),
-                    ),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _ActionPill(
+                          icon: Icons.add_rounded,
+                          label: 'Add a Practice',
+                          color: const Color(0xFF90EE90),
+                          onTap: () => _openAddPractice(context),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionPill(
+                          icon: Icons.apps_rounded,
+                          label: 'Add a Mini-App',
+                          color: const Color(0xFFE8A87C),
+                          onTap: () => _openMiniApps(context),
+                          subtitleLines: const [
+                            'Bible in a Year',
+                            'Scripture Memorization',
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ActionPill(
-                      icon: Icons.apps_rounded,
-                      label: 'Add a Mini-App',
-                      color: const Color(0xFFE8A87C),
-                      onTap: () => _openMiniApps(context),
-                    ),
-                  ),
-                ]),
+                ),
 
                 // ── Progress link ──────────────────────────────────────────
                 if (habits.isNotEmpty) ...[
@@ -404,7 +413,15 @@ class _ActionPill extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
-  const _ActionPill({required this.icon, required this.label, required this.color, required this.onTap});
+  final List<String>? subtitleLines;
+
+  const _ActionPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.subtitleLines,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -431,27 +448,43 @@ class _ActionPill extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.15),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withValues(alpha: 0.15),
+              ),
+              child: Icon(icon, color: color, size: 22),
             ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: MyWalkColor.warmWhite,
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: MyWalkColor.warmWhite,
+              ),
             ),
-          ),
-        ]),
+            if (subtitleLines != null && subtitleLines!.isNotEmpty) ...[
+              const SizedBox(height: 5),
+              ...subtitleLines!.map((line) => Text(
+                    line,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: color.withValues(alpha: 0.6),
+                      height: 1.5,
+                    ),
+                  )),
+            ],
+          ],
+        ),
       ),
     );
   }

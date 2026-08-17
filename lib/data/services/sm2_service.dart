@@ -125,16 +125,6 @@ class SM2Service {
     }
   }
 
-  /// Quality score for Flip Card mode.
-  ///   "Knew it":    min(5, confidence + 1)
-  ///   "Didn't know": always 1
-  static int flipCardQuality({
-    required bool knewIt,
-    required int confidence,
-  }) {
-    if (!knewIt) return 1;
-    return (confidence + 1).clamp(2, 5);
-  }
 }
 
 // ---------------------------------------------------------------------------

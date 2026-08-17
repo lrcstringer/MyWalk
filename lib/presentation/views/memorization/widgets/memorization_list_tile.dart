@@ -68,7 +68,15 @@ class MemorizationListTile extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           padding: const EdgeInsets.all(16),
-          decoration: MyWalkDecorations.card,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF3A342D), Color(0xFF2E2923)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0x20D4A843), width: 1.0),
+          ),
           child: Row(
             children: [
               // Mastery ring
@@ -111,7 +119,7 @@ class MemorizationListTile extends StatelessWidget {
                       children: [
                         if (!item.initialEncounterComplete)
                           Text(
-                            'Step ${item.currentInitialStep + 1} of 4 ready',
+                            'Step ${item.currentInitialStep + 1} of 3 ready',
                             style: TextStyle(
                               fontSize: 12,
                               color: MyWalkColor.golden,

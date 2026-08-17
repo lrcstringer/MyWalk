@@ -36,38 +36,20 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final imageHeight = MediaQuery.of(context).size.width * 0.65;
+    final provider = context.watch<MemorizationProvider>();
+    final dueItems = provider.dueItems;
+    final otherItems = provider.activeItems.where((i) => !i.isDueNow).toList();
+    final mastered = provider.masteredItems;
+
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
-      appBar: AppBar(
-        title: Text(
-          'Meditating on His Word',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: MyWalkColor.warmWhite,
-          ),
-        ),
-        backgroundColor: MyWalkColor.charcoal,
-        foregroundColor: MyWalkColor.warmWhite,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bar_chart_outlined),
-            tooltip: 'My Progress',
-            onPressed: () {
-              if (context.read<MemorizationProvider>().showAnalyticsDashboard) {
-                Navigator.of(context).pushNamed('/memorization/global-dashboard');
-              } else {
-                _showPremiumSheet(context);
-              }
-            },
-          ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: MyWalkColor.golden,
         foregroundColor: MyWalkColor.charcoal,
         icon: const Icon(Icons.add),
         label: const Text('Add verse'),
         onPressed: () {
-          final provider = context.read<MemorizationProvider>();
           if (!provider.canAddItem) {
             _showPremiumSheet(context);
           } else {
@@ -78,63 +60,144 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
       body: Stack(
         children: [
           const Positioned.fill(
-            child: IgnorePointer(
-              child: DeepSpaceBackground(),
-            ),
+            child: IgnorePointer(child: DeepSpaceBackground()),
           ),
-          Consumer<MemorizationProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator(color: MyWalkColor.golden));
-          }
-
-          if (provider.items.isEmpty) {
-            return _EmptyState(onAdd: () => MemorizationRouter.pushNewItem(context));
-          }
-
-          final dueItems = provider.dueItems;
-          final otherItems = provider.activeItems
-              .where((i) => !i.isDueNow)
-              .toList();
-          final mastered = provider.masteredItems;
-
-          return CustomScrollView(
+          CustomScrollView(
             slivers: [
-              if (dueItems.isNotEmpty) ...[
-                _SectionHeader(
-                  label: "Today's reviews",
-                  count: dueItems.length,
-                  accent: true,
-                ),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, i) => _buildTile(context, provider, dueItems[i]),
-                    childCount: dueItems.length,
+              SliverAppBar(
+                backgroundColor: MyWalkColor.charcoal,
+                foregroundColor: MyWalkColor.warmWhite,
+                expandedHeight: imageHeight,
+                pinned: true,
+                title: Text(
+                  'Meditating on His Word',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: MyWalkColor.warmWhite,
                   ),
                 ),
-              ],
-              if (otherItems.isNotEmpty) ...[
-                _SectionHeader(label: 'Coming up', count: otherItems.length),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, i) => _buildTile(context, provider, otherItems[i]),
-                    childCount: otherItems.length,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.bar_chart_outlined),
+                    tooltip: 'My Progress',
+                    onPressed: () {
+                      if (context.read<MemorizationProvider>().showAnalyticsDashboard) {
+                        Navigator.of(context).pushNamed('/memorization/global-dashboard');
+                      } else {
+                        _showPremiumSheet(context);
+                      }
+                    },
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.parallax,
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        'assets/memorization pic.png',
+                        fit: BoxFit.cover,
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              MyWalkColor.charcoal.withValues(alpha: 0.5),
+                              MyWalkColor.charcoal,
+                            ],
+                            stops: const [0.0, 0.55, 1.0],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 20,
+                        right: 20,
+                        bottom: 14,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Scripture Memorization',
+                              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                color: MyWalkColor.warmWhite,
+                                height: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            const Text(
+                              '"I have stored up your word in my heart,\nthat I might not sin against you."',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontStyle: FontStyle.italic,
+                                color: MyWalkColor.softGold,
+                                height: 1.45,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            const Text(
+                              'Psalm 119:11',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: MyWalkColor.golden,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-              if (mastered.isNotEmpty) ...[
-                _SectionHeader(label: 'Hidden in your heart', count: mastered.length),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, i) => _buildTile(context, provider, mastered[i]),
-                    childCount: mastered.length,
+              ),
+              if (provider.isLoading)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: CircularProgressIndicator(color: MyWalkColor.golden),
                   ),
-                ),
+                )
+              else if (provider.items.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _EmptyState(onAdd: () => MemorizationRouter.pushNewItem(context)),
+                )
+              else ...[
+                if (dueItems.isNotEmpty) ...[
+                  _SectionHeader(
+                    label: "Today's reviews",
+                    count: dueItems.length,
+                    accent: true,
+                  ),
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) => _buildTile(context, provider, dueItems[i]),
+                      childCount: dueItems.length,
+                    ),
+                  ),
+                ],
+                if (otherItems.isNotEmpty) ...[
+                  _SectionHeader(label: 'Coming up', count: otherItems.length),
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) => _buildTile(context, provider, otherItems[i]),
+                      childCount: otherItems.length,
+                    ),
+                  ),
+                ],
+                if (mastered.isNotEmpty) ...[
+                  _SectionHeader(label: 'Hidden in your heart', count: mastered.length),
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) => _buildTile(context, provider, mastered[i]),
+                      childCount: mastered.length,
+                    ),
+                  ),
+                ],
+                const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
               ],
-              const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
             ],
-          );
-        },
           ),
         ],
       ),
@@ -178,7 +241,7 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
         builder: (_) => const MyWalkPaywallView(
           contextTitle: 'Unlock scripture memorization',
           contextMessage:
-              'Premium: unlimited verses, all 5 review modes, and full analytics dashboard.',
+              'Premium: unlimited verses, all 6 review modes, and full analytics dashboard.',
         ),
       ),
     );
@@ -256,7 +319,7 @@ class _EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               '— Psalm 119:11',
               style: TextStyle(color: MyWalkColor.golden, fontSize: 13),
             ),

@@ -5,6 +5,7 @@ import '../../../../presentation/providers/memorization_provider.dart';
 import '../../../../presentation/theme/app_theme.dart';
 import '../../../../presentation/views/shared/mywalk_paywall_view.dart';
 import '../modes/cloze_mode_widget.dart';
+import '../modes/fill_mode_widget.dart';
 import '../modes/flip_card_widget.dart';
 import '../modes/progressive_recall_widget.dart';
 import '../modes/recitation_mode_widget.dart';
@@ -49,6 +50,13 @@ class ModeSelectionScreen extends StatelessWidget {
       icon: Icons.mic_outlined,
       title: 'Speak It Aloud',
       description: 'Recite the passage and let AI score it.',
+      premium: true,
+    ),
+    _ModeInfo(
+      mode: ReviewMode.fill,
+      icon: Icons.edit_outlined,
+      title: 'Fill the Letters',
+      description: 'Type the missing letters one by one.',
       premium: true,
     ),
   ];
@@ -115,6 +123,7 @@ class ModeSelectionScreen extends StatelessWidget {
           builder: (ctx, chunkIndex, onResult) => switch (mode) {
             ReviewMode.flipCard => FlipCardWidget(
                 chunk: item.chunks[chunkIndex],
+                itemTitle: item.title,
                 onResult: onResult,
               ),
             ReviewMode.cloze => ClozeModeWidget(
@@ -131,6 +140,10 @@ class ModeSelectionScreen extends StatelessWidget {
                 chunk: item.chunks[chunkIndex],
                 onResult: onResult,
               ),
+            ReviewMode.fill => FillModeWidget(
+                chunk: item.chunks[chunkIndex],
+                onResult: onResult,
+              ),
             ReviewMode.recitation => throw StateError('unreachable'),
           },
         ),
@@ -144,7 +157,7 @@ class ModeSelectionScreen extends StatelessWidget {
         builder: (_) => const MyWalkPaywallView(
           contextTitle: 'Premium review modes',
           contextMessage:
-              'Premium unlocks all 5 review modes, unlimited verses, and full analytics.',
+              'Premium unlocks all 6 review modes, unlimited verses, and full analytics.',
         ),
       ),
     );
@@ -185,11 +198,18 @@ class _ModeTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: MyWalkColor.cardBackground,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF3A342D), Color(0xFF2E2923)],
+          ),
           borderRadius: BorderRadius.circular(14),
-          border: locked
-              ? null
-              : Border.all(color: MyWalkColor.golden.withValues(alpha: 0.0)),
+          border: Border.all(
+            color: locked
+                ? const Color(0x14FFFFFF)
+                : const Color(0x22D4A843),
+            width: 1.0,
+          ),
         ),
         child: Row(
           children: [

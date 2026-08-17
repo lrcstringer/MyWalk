@@ -20,6 +20,7 @@ class MemorizationProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   StreamSubscription<List<MemorizationItem>>? _sub;
+  bool _notificationsRescheduled = false;
 
   // ---------------------------------------------------------------------------
   // Getters
@@ -70,12 +71,17 @@ class MemorizationProvider extends ChangeNotifier {
   void _subscribe() {
     _sub?.cancel();
     _isLoading = true;
+    _notificationsRescheduled = false;
     notifyListeners();
     _sub = _repository.watchItems().listen(
       (items) {
         _items = items;
         _isLoading = false;
         _error = null;
+        if (!_notificationsRescheduled) {
+          _notificationsRescheduled = true;
+          _rescheduleAllNotifications(items);
+        }
         notifyListeners();
       },
       onError: (e) {
@@ -86,17 +92,32 @@ class MemorizationProvider extends ChangeNotifier {
     );
   }
 
+  // Re-schedules local notifications for all active future-due items.
+  // Called once per session on first Firestore snapshot — recovers from OS
+  // clearing scheduled notifications after a reboot or reinstall.
+  void _rescheduleAllNotifications(List<MemorizationItem> items) {
+    final now = DateTime.now();
+    for (final item in items) {
+      if (item.status == MemorizationStatus.active &&
+          item.nextReviewDate.isAfter(now)) {
+        MemorizationNotificationService.instance
+            .scheduleReviewReminder(item)
+            .ignore();
+      }
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // CRUD
   // ---------------------------------------------------------------------------
 
   Future<void> createItem(MemorizationItem item) async {
-    _repository.saveItem(item).ignore();
+    await _repository.saveItem(item);
     MemorizationNotificationService.instance.scheduleReviewReminder(item).ignore();
   }
 
   Future<void> updateItem(MemorizationItem item) async {
-    _repository.updateItem(item).ignore();
+    await _repository.updateItem(item);
     MemorizationNotificationService.instance.scheduleReviewReminder(item).ignore();
   }
 
@@ -112,7 +133,7 @@ class MemorizationProvider extends ChangeNotifier {
 
   Future<void> archiveItem(MemorizationItem item) async {
     final archived = item.copyWith(status: MemorizationStatus.archived);
-    _repository.updateItem(archived).ignore();
+    await _repository.updateItem(archived);
     MemorizationNotificationService.instance.cancelReminder(item.id).ignore();
   }
 
@@ -124,7 +145,7 @@ class MemorizationProvider extends ChangeNotifier {
       nextReviewDate: DateTime.now(),
       streakCount: 0,
     );
-    _repository.updateItem(restarted).ignore();
+    await _repository.updateItem(restarted);
     MemorizationNotificationService.instance.scheduleReviewReminder(restarted).ignore();
   }
 
