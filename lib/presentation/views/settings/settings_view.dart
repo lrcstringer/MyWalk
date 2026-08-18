@@ -13,7 +13,6 @@ import '../../providers/habit_provider.dart';
 import '../../providers/journal_provider.dart';
 import '../../providers/memorization_provider.dart';
 import '../../providers/recovery_path_provider.dart';
-import '../../providers/bible_reading_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../../data/datasources/remote/auth_service.dart';
 import '../../../domain/services/milestone_service.dart';
@@ -326,8 +325,6 @@ class _SettingsViewState extends State<SettingsView> {
                 const SizedBox(height: 8),
                 _infoRow('Version', '1.0.0'),
                 const SizedBox(height: 20),
-                _resetBibleReadingButton(),
-                const SizedBox(height: 8),
                 _resetButton(),
                 const SizedBox(height: 8),
                 _deleteAccountButton(),
@@ -1022,59 +1019,6 @@ class _SettingsViewState extends State<SettingsView> {
           TextButton(
             onPressed: () => exit(0),
             child: const Text('Close',
-                style: TextStyle(color: MyWalkColor.warmCoral)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _resetBibleReadingButton() {
-    return GestureDetector(
-      onTap: _confirmResetBibleReading,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: MyWalkColor.golden.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: MyWalkColor.golden.withValues(alpha: 0.15), width: 0.5),
-        ),
-        child: Row(children: [
-          const Icon(Icons.menu_book_rounded,
-              size: 16, color: MyWalkColor.golden),
-          const SizedBox(width: 10),
-          const Expanded(
-              child: Text('Reset Bible Reading Plan',
-                  style: TextStyle(fontSize: 14, color: MyWalkColor.golden))),
-        ]),
-      ),
-    );
-  }
-
-  void _confirmResetBibleReading() {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: MyWalkColor.cardBackground,
-        title: const Text('Reset Bible Reading Plan',
-            style: TextStyle(color: MyWalkColor.warmWhite)),
-        content: const Text(
-          'This will delete all your reading progress and streaks. This cannot be undone.',
-          style: TextStyle(color: MyWalkColor.softGold),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel',
-                style: TextStyle(color: MyWalkColor.softGold)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await context.read<BibleReadingProvider>().resetPlan();
-            },
-            child: const Text('Reset',
                 style: TextStyle(color: MyWalkColor.warmCoral)),
           ),
         ],

@@ -63,7 +63,7 @@ class MemorizationHabitCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Meditating on His Word',
+                      'Scripture Memorization',
                       style: TextStyle(
                         color: MyWalkColor.warmWhite,
                         fontSize: 14,

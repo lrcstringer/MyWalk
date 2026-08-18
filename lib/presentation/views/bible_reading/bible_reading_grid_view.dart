@@ -35,23 +35,36 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
     super.dispose();
   }
 
-  void _scrollToCurrentWeek(int weekIndex) {
+  // Phase 1: jump to a rough offset so the lazy list builds items near weekIndex.
+  // Phase 2: one frame later, ensureVisible does the pixel-perfect scroll.
+  // Collapsed card height = top pad (12) + ring (44) + bottom pad (12) + margin (8) = 76px.
+  // Header extras = stats strip (~74px) + SliverPadding top (12) = 86px.
+  void _scrollToCurrentWeek(int weekIndex, double imageHeight) {
     if (_initialScrollDone) return;
     _initialScrollDone = true;
-    // Week 1 is already at the top — no scroll needed; the hero stays visible.
     if (weekIndex == 0) return;
-    // For later weeks, delay so the hero is seen before the list scrolls down.
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 700), () {
-        if (!mounted) return;
-        final key = _weekKeys[weekIndex];
-        if (key?.currentContext == null) return;
-        Scrollable.ensureVisible(
-          key!.currentContext!,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-          alignment: 0.1,
-        );
+        if (!mounted || !_scrollController.hasClients) return;
+
+        const kCollapsedCardHeight = 76.0;
+        const kHeaderExtras = 86.0;
+        final rough = (imageHeight + kHeaderExtras + weekIndex * kCollapsedCardHeight)
+            .clamp(0.0, _scrollController.position.maxScrollExtent);
+        _scrollController.jumpTo(rough);
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final key = _weekKeys[weekIndex];
+          if (key?.currentContext == null) return;
+          Scrollable.ensureVisible(
+            key!.currentContext!,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            alignment: 0.1,
+          );
+        });
       });
     });
   }
@@ -60,15 +73,14 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
   Widget build(BuildContext context) {
     final provider = context.watch<BibleReadingProvider>();
     final currentWeek = provider.currentWeekIndex;
+    final imageHeight = MediaQuery.of(context).size.width * 0.65;
 
     if (currentWeek != null && !_expanded.contains(currentWeek)) {
       _expanded.add(currentWeek);
-      _scrollToCurrentWeek(currentWeek);
+      _scrollToCurrentWeek(currentWeek, imageHeight);
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkMilestone(context));
-
-    final imageHeight = MediaQuery.of(context).size.width * 0.65;
     return Scaffold(
       backgroundColor: MyWalkColor.charcoal,
       body: Stack(
@@ -91,6 +103,28 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
                     color: MyWalkColor.warmWhite,
                   ),
                 ),
+                actions: [
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: MyWalkColor.warmWhite),
+                    color: MyWalkColor.cardBackground,
+                    onSelected: (value) {
+                      if (value == 'reset') _confirmReset(context);
+                      if (value == 'delete') _confirmDelete(context);
+                    },
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'reset',
+                        child: Text('Reset Bible Reading Plan',
+                            style: TextStyle(color: MyWalkColor.warmWhite)),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete Bible Reading Plan',
+                            style: TextStyle(color: Colors.red.shade300)),
+                      ),
+                    ],
+                  ),
+                ],
                 flexibleSpace: FlexibleSpaceBar(
                   collapseMode: CollapseMode.parallax,
                   background: Stack(
@@ -217,6 +251,67 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
 
   Future<void> _startPlan(BuildContext context, BibleReadingProvider provider) async {
     await provider.startPlan();
+  }
+
+  void _confirmReset(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.cardBackground,
+        title: const Text('Reset Bible Reading Plan',
+            style: TextStyle(color: MyWalkColor.warmWhite)),
+        content: const Text(
+          'This will clear all your reading progress and streaks. You can start the plan again from the beginning.',
+          style: TextStyle(color: MyWalkColor.softGold),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel',
+                style: TextStyle(color: MyWalkColor.softGold)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await context.read<BibleReadingProvider>().resetPlan();
+            },
+            child: const Text('Reset',
+                style: TextStyle(color: MyWalkColor.warmCoral)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: MyWalkColor.cardBackground,
+        title: const Text('Delete Bible Reading Plan',
+            style: TextStyle(color: MyWalkColor.warmWhite)),
+        content: const Text(
+          'This will permanently remove your Bible Reading Plan and all progress. This cannot be undone.',
+          style: TextStyle(color: MyWalkColor.softGold),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel',
+                style: TextStyle(color: MyWalkColor.softGold)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await context.read<BibleReadingProvider>().resetPlan();
+              if (context.mounted) Navigator.of(context).pop();
+            },
+            child: Text('Delete',
+                style: TextStyle(color: Colors.red.shade300)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _openDayModal(BuildContext context, int weekIndex, int dayIndex) {
