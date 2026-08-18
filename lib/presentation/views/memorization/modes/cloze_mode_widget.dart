@@ -317,7 +317,8 @@ class _ClozeModeWidgetState extends State<ClozeModeWidget> {
         // ── Single action button ───────────────────────────────────────────
         // "Next" while filling blanks; "Continue" once result is visible.
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+          padding: EdgeInsets.fromLTRB(
+              24, 0, 24, 16 + MediaQuery.of(context).padding.bottom),
           child: ElevatedButton(
             style: MyWalkButtonStyle.primary(),
             onPressed: buttonEnabled ? _onButtonPressed : null,

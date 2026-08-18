@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -37,9 +38,10 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
   double _similarity = 0;
   List<DiffToken>? _diff;
   bool _sttAvailable = false;
-  bool _scored = false; // guards against double-scoring from onResult + _stopListening
-  bool _isSubmitting = false; // guards against double-tap on Continue
+  bool _scored = false;
+  bool _isSubmitting = false;
   final _stopwatch = Stopwatch();
+  Timer? _silenceTimer;
 
   @override
   void initState() {
@@ -49,6 +51,7 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
 
   @override
   void dispose() {
+    _silenceTimer?.cancel();
     _stt.stop();
     super.dispose();
   }
@@ -188,7 +191,7 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
                   color: MyWalkColor.warmWhite.withValues(alpha: 0.4)),
               minimumSize: const Size(0, 48),
             ),
-            child: const Text('Done reading'),
+            child: const Text('Done speaking'),
           ),
         ),
         const SizedBox(height: 8),
@@ -349,7 +352,7 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
       onResult: (result) {
         if (!mounted) return;
         setState(() => _transcript = result.recognizedWords);
-        // No auto-score on finalResult — only Done reading triggers scoring
+        if (_transcript.isNotEmpty) _resetSilenceTimer();
       },
       listenFor: const Duration(seconds: 120),
       pauseFor: const Duration(seconds: 8),
@@ -357,7 +360,16 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
     );
   }
 
+  void _resetSilenceTimer() {
+    _silenceTimer?.cancel();
+    _silenceTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted && _state == _RecitationState.listening) _stopListening();
+    });
+  }
+
   void _stopListening() {
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
     _stt.stop();
     if (_transcript.isNotEmpty) {
       _score();

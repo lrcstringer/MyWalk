@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' show pi;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -351,6 +352,7 @@ class _ReadAloudStepState extends State<_ReadAloudStep> {
   bool _sttAvailable = false;
   bool _scored = false;
   String _transcript = '';
+  Timer? _silenceTimer;
   double _similarity = 0;
   List<DiffToken>? _diff;
 
@@ -364,6 +366,7 @@ class _ReadAloudStepState extends State<_ReadAloudStep> {
   void didUpdateWidget(_ReadAloudStep old) {
     super.didUpdateWidget(old);
     if (old.chunk.id != widget.chunk.id) {
+      _silenceTimer?.cancel();
       _stt.stop();
       if (mounted) {
         setState(() {
@@ -379,6 +382,7 @@ class _ReadAloudStepState extends State<_ReadAloudStep> {
 
   @override
   void dispose() {
+    _silenceTimer?.cancel();
     _stt.stop();
     super.dispose();
   }
@@ -407,7 +411,7 @@ class _ReadAloudStepState extends State<_ReadAloudStep> {
       onResult: (result) {
         if (!mounted) return;
         setState(() => _transcript = result.recognizedWords);
-        // No auto-score on finalResult — only Done button triggers scoring
+        if (_transcript.isNotEmpty) _resetSilenceTimer();
       },
       listenFor: const Duration(seconds: 90),
       pauseFor: const Duration(seconds: 8),
@@ -415,7 +419,16 @@ class _ReadAloudStepState extends State<_ReadAloudStep> {
     );
   }
 
+  void _resetSilenceTimer() {
+    _silenceTimer?.cancel();
+    _silenceTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted && _state == _ReadState.listening) _stopListening();
+    });
+  }
+
   void _stopListening() {
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
     _stt.stop();
     if (_transcript.isNotEmpty) {
       _score();
@@ -567,7 +580,7 @@ class _ReadAloudStepState extends State<_ReadAloudStep> {
                     color: MyWalkColor.warmWhite.withValues(alpha: 0.4)),
                 minimumSize: const Size(0, 48),
               ),
-              child: const Text('Done reading'),
+              child: const Text('Done speaking'),
             ),
           ),
           const SizedBox(height: 8),
