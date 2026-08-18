@@ -18,7 +18,7 @@ const _stopWords = {
 
 class ClozeModeWidget extends StatefulWidget {
   final TextChunk chunk;
-  final int attemptNumber; // drives blank count
+  final int attemptNumber;
   final void Function({required bool success, List<String> missedIds}) onResult;
 
   const ClozeModeWidget({
@@ -34,7 +34,9 @@ class ClozeModeWidget extends StatefulWidget {
 
 class _ClozeModeWidgetState extends State<ClozeModeWidget> {
   late List<_WordToken> _tokens;
+  late int _totalBlanks;
   int _fillIndex = 0;
+  // false = still filling blanks; true = all blanks confirmed, result visible
   bool _submitted = false;
   bool _allCorrect = false;
   final _ctrl = TextEditingController();
@@ -90,6 +92,7 @@ class _ClozeModeWidgetState extends State<ClozeModeWidget> {
       _tokens = words.asMap().entries
           .map((e) => _WordToken(text: e.value, isBlank: false))
           .toList();
+      _totalBlanks = 0;
       _fillIndex = 0;
       _submitted = true;
       _allCorrect = true;
@@ -107,233 +110,45 @@ class _ClozeModeWidgetState extends State<ClozeModeWidget> {
       );
     }).toList();
 
+    _totalBlanks = blankIndices.length;
     _fillIndex = 0;
     _submitted = false;
     _allCorrect = false;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final blankCount = _tokens.where((t) => t.isBlank).length;
-
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          Text(
-            'Type the missing word for each blank',
-            style: TextStyle(
-              color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Phrase with blanks
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  MyWalkColor.golden.withValues(alpha: 0.18),
-                  MyWalkColor.golden.withValues(alpha: 0.06),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: MyWalkColor.golden.withValues(alpha: 0.55),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: MyWalkColor.golden.withValues(alpha: 0.2),
-                  blurRadius: 24,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 8,
-              children: _tokens.map(_buildWordWidget).toList(),
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (!_submitted) ...[
-            if (_fillIndex < blankCount)
-              Text(
-                'Blank ${_fillIndex + 1} of $blankCount',
-                style: TextStyle(
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
-                  fontSize: 12,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _ctrl,
-                    focusNode: _focus,
-                    style: const TextStyle(
-                        color: MyWalkColor.warmWhite, height: 1.5),
-                    decoration: InputDecoration(
-                      hintText: 'Type the word…',
-                      hintStyle: TextStyle(
-                          color: MyWalkColor.warmWhite.withValues(alpha: 0.3)),
-                      filled: true,
-                      fillColor: MyWalkColor.cardBackground,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: MyWalkColor.golden, width: 1.5),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                    ),
-                    textCapitalization: TextCapitalization.words,
-                    onChanged: (_) => setState(() {}),
-                    onSubmitted: (_) => _submitWord(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    style: MyWalkButtonStyle.primary(),
-                    onPressed:
-                        _ctrl.text.trim().isNotEmpty ? _submitWord : null,
-                    child: const Text('Fill'),
-                  ),
-                ),
-              ],
-            ),
-          ] else ...[
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: MyWalkButtonStyle.primary(),
-                onPressed: _onNext,
-                child: const Text('Next'),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWordWidget(_WordToken token) {
-    if (!token.isBlank) {
-      return Text(
-        token.text,
-        style: const TextStyle(
-          color: MyWalkColor.warmWhite,
-          fontSize: 17,
-          height: 1.4,
-        ),
+  // ── "Next" while filling: confirms current blank (word stays on card, field
+  //     clears for next blank). On the last blank, result appears immediately
+  //     and button becomes "Continue".
+  // ── "Continue" after result: proceeds to next chunk.
+  void _onButtonPressed() {
+    if (_submitted) {
+      widget.onResult(
+        success: _allCorrect,
+        missedIds: _allCorrect ? [] : [widget.chunk.id],
       );
+      return;
     }
 
-    final filled = token.userAnswer != null;
-    final isActive = !filled && _tokens
-            .where((t) => t.isBlank)
-            .toList()
-            .indexOf(token) ==
-        _fillIndex;
-    final isCorrect = filled &&
-        token.userAnswer!.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z]'), '') ==
-            token.text.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z]'), '');
-
-    Color borderColor;
-    Color textColor;
-    if (!filled) {
-      borderColor = isActive
-          ? MyWalkColor.golden
-          : MyWalkColor.golden.withValues(alpha: 0.3);
-      textColor = Colors.transparent;
-    } else if (_submitted) {
-      borderColor =
-          isCorrect ? const Color(0xFF7A9E7E) : Colors.red.shade400;
-      textColor = MyWalkColor.warmWhite;
-    } else {
-      borderColor = MyWalkColor.golden;
-      textColor = MyWalkColor.warmWhite;
-    }
-
-    final blankBox = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: borderColor, width: 1.5)),
-        color: filled ? borderColor.withValues(alpha: 0.08) : null,
-      ),
-      child: Text(
-        filled ? token.userAnswer! : '     ',
-        style: TextStyle(
-          color: textColor,
-          fontSize: 17,
-          height: 1.4,
-          decoration:
-              (_submitted && !isCorrect) ? TextDecoration.lineThrough : null,
-          decorationColor: Colors.red.shade400,
-        ),
-      ),
-    );
-
-    // After submission show correct word below incorrect blanks
-    if (_submitted && !isCorrect) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          blankBox,
-          Text(
-            token.text,
-            style: const TextStyle(
-              color: Color(0xFF7A9E7E),
-              fontSize: 12,
-              height: 1.4,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      );
-    }
-
-    return blankBox;
-  }
-
-  void _submitWord() {
     final word = _ctrl.text.trim();
     if (word.isEmpty) return;
-
-    final blanks = _tokens.where((t) => t.isBlank).toList();
-    if (_fillIndex >= blanks.length) return;
 
     var blankCount = 0;
     for (var i = 0; i < _tokens.length; i++) {
       if (_tokens[i].isBlank) {
         if (blankCount == _fillIndex) {
+          // Confirm this blank — word stays on card, only field clears.
           setState(() {
             _tokens[i] = _tokens[i].copyWith(userAnswer: word);
             _fillIndex++;
             _ctrl.clear();
           });
+          final blanks = _tokens.where((t) => t.isBlank).toList();
           if (_fillIndex >= blanks.length) {
+            // Last blank — dismiss keyboard, show result + Continue button.
             _focus.unfocus();
             _checkAnswers();
           } else {
+            // More blanks — keep keyboard open for next word.
             _focus.requestFocus();
           }
           return;
@@ -362,11 +177,245 @@ class _ClozeModeWidgetState extends State<ClozeModeWidget> {
     });
   }
 
-  void _onNext() {
-    widget.onResult(
-      success: _allCorrect,
-      missedIds: _allCorrect ? [] : [widget.chunk.id],
+  @override
+  Widget build(BuildContext context) {
+    final buttonEnabled = _submitted || _ctrl.text.trim().isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Card area ──────────────────────────────────────────────────────
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Type the missing word for each blank',
+                  style: TextStyle(
+                    color: MyWalkColor.warmWhite,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        MyWalkColor.golden.withValues(alpha: 0.18),
+                        MyWalkColor.golden.withValues(alpha: 0.06),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: MyWalkColor.golden.withValues(alpha: 0.55),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: MyWalkColor.golden.withValues(alpha: 0.2),
+                        blurRadius: 24,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 8,
+                    children: _tokens.map(_buildWordWidget).toList(),
+                  ),
+                ),
+                // Result feedback line — appears alongside the Continue button.
+                if (_submitted) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(
+                        _allCorrect
+                            ? Icons.check_circle_outline
+                            : Icons.close_rounded,
+                        size: 16,
+                        color: _allCorrect
+                            ? const Color(0xFF7A9E7E)
+                            : Colors.red.shade400,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _allCorrect ? 'Correct!' : 'Not quite — see above',
+                        style: TextStyle(
+                          color: _allCorrect
+                              ? const Color(0xFF7A9E7E)
+                              : Colors.red.shade400,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                // Blank counter for multi-blank phrases.
+                if (!_submitted && _totalBlanks > 1) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    'Blank ${_fillIndex + 1} of $_totalBlanks',
+                    style: TextStyle(
+                      color: MyWalkColor.warmWhite.withValues(alpha: 0.45),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+
+        // ── Text field (hidden after result) ───────────────────────────────
+        if (!_submitted)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+            child: TextField(
+              controller: _ctrl,
+              focusNode: _focus,
+              style: const TextStyle(
+                color: MyWalkColor.warmWhite,
+                fontSize: 17,
+                height: 1.5,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Type the missing word…',
+                hintStyle: TextStyle(
+                  color: MyWalkColor.warmWhite.withValues(alpha: 0.35),
+                  fontSize: 15,
+                ),
+                filled: true,
+                fillColor: MyWalkColor.cardBackground,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide:
+                      const BorderSide(color: MyWalkColor.golden, width: 1.5),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              textCapitalization: TextCapitalization.none,
+              textInputAction: TextInputAction.done,
+              onChanged: (_) => setState(() {}),
+              onSubmitted: (_) => _onButtonPressed(),
+            ),
+          ),
+
+        // ── Single action button ───────────────────────────────────────────
+        // "Next" while filling blanks; "Continue" once result is visible.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+          child: ElevatedButton(
+            style: MyWalkButtonStyle.primary(),
+            onPressed: buttonEnabled ? _onButtonPressed : null,
+            child: Text(_submitted ? 'Continue' : 'Next'),
+          ),
+        ),
+      ],
     );
+  }
+
+  Widget _buildWordWidget(_WordToken token) {
+    if (!token.isBlank) {
+      return Text(
+        token.text,
+        style: const TextStyle(
+          color: MyWalkColor.warmWhite,
+          fontSize: 17,
+          height: 1.4,
+        ),
+      );
+    }
+
+    final blanks = _tokens.where((t) => t.isBlank).toList();
+    final blankPos = blanks.indexOf(token);
+    final isActive =
+        token.userAnswer == null && blankPos == _fillIndex && !_submitted;
+    final filled = token.userAnswer != null;
+
+    // Live text in the active blank as the user types.
+    final displayText = filled
+        ? token.userAnswer!
+        : (isActive && _ctrl.text.isNotEmpty)
+            ? _ctrl.text
+            : '     ';
+
+    final isCorrect = filled &&
+        token.userAnswer!.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z]'), '') ==
+            token.text.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z]'), '');
+
+    final Color borderColor;
+    final Color textColor;
+    if (!filled && !isActive) {
+      borderColor = MyWalkColor.golden.withValues(alpha: 0.3);
+      textColor = Colors.transparent;
+    } else if (!filled && isActive) {
+      borderColor = MyWalkColor.golden;
+      textColor = MyWalkColor.warmWhite;
+    } else if (_submitted) {
+      borderColor = isCorrect ? const Color(0xFF7A9E7E) : Colors.red.shade400;
+      textColor = MyWalkColor.warmWhite;
+    } else {
+      // Confirmed but not yet submitted (multi-blank — still filling others).
+      borderColor = MyWalkColor.golden;
+      textColor = MyWalkColor.warmWhite;
+    }
+
+    final blankBox = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: borderColor, width: 1.5)),
+        color: (filled || (isActive && _ctrl.text.isNotEmpty))
+            ? borderColor.withValues(alpha: 0.08)
+            : null,
+      ),
+      child: Text(
+        displayText,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 17,
+          height: 1.4,
+          decoration:
+              (_submitted && !isCorrect) ? TextDecoration.lineThrough : null,
+          decorationColor: Colors.red.shade400,
+        ),
+      ),
+    );
+
+    // After submission, show correct word below any wrong blank.
+    if (_submitted && !isCorrect) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          blankBox,
+          Text(
+            token.text,
+            style: const TextStyle(
+              color: Color(0xFF7A9E7E),
+              fontSize: 12,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return blankBox;
   }
 }
 

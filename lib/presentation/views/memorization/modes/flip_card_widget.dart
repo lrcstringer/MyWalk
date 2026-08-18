@@ -111,23 +111,6 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
               },
             ),
           ),
-          const SizedBox(height: 12),
-          AnimatedBuilder(
-            animation: _anim,
-            builder: (context, _) {
-              final isBack = _anim.value > pi / 2;
-              return Text(
-                isBack
-                    ? '← Swipe to judge, or use buttons below'
-                    : 'Tap to flip  ·  Swipe right if you knew it',
-                style: TextStyle(
-                  color: MyWalkColor.warmWhite.withValues(alpha: 0.3),
-                  fontSize: 12,
-                ),
-                textAlign: TextAlign.center,
-              );
-            },
-          ),
           const SizedBox(height: 20),
           AnimatedBuilder(
             animation: _anim,
@@ -190,17 +173,18 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.touch_app_outlined,
-                  color: MyWalkColor.golden.withValues(alpha: 0.5),
+                  color: MyWalkColor.warmWhite,
                   size: 16,
                 ),
                 const SizedBox(width: 6),
-                Text(
+                const Text(
                   'Tap to flip',
                   style: TextStyle(
-                    color: MyWalkColor.golden.withValues(alpha: 0.5),
-                    fontSize: 12,
+                    color: MyWalkColor.warmWhite,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],

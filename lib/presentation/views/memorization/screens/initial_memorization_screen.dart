@@ -844,10 +844,11 @@ class _FlipExerciseState extends State<_FlipExercise>
               const SizedBox(height: 8),
               Text(
                 'Exercise A — Can you remember what the verse is?',
-                style: TextStyle(
-                  color: MyWalkColor.golden.withValues(alpha: 0.7),
-                  fontSize: 12,
-                  letterSpacing: 0.3,
+                style: const TextStyle(
+                  color: MyWalkColor.warmWhite,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -1236,10 +1237,11 @@ class _FillExerciseState extends State<_FillExercise> {
             const SizedBox(height: 4),
             Text(
               'Exercise B — Try to complete the verse by filling in the missing text',
-              style: TextStyle(
-                color: MyWalkColor.golden.withValues(alpha: 0.7),
-                fontSize: 12,
-                letterSpacing: 0.3,
+              style: const TextStyle(
+                color: MyWalkColor.warmWhite,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
               ),
             ),
             const SizedBox(height: 20),

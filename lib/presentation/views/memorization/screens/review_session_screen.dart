@@ -81,8 +81,13 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   }
 
   Future<void> _loadSession() async {
-    final provider = context.read<MemorizationProvider>();
-    final existing = await provider.loadTodaySession(widget.item.id);
+    ReviewSession? existing;
+    try {
+      existing = await context.read<MemorizationProvider>().loadTodaySession(widget.item.id);
+    } catch (_) {
+      // Permission denied or network error — proceed with a fresh session.
+    }
+    if (!mounted) return;
     setState(() {
       _session = existing ??
           ReviewSession(
