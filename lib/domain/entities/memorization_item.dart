@@ -126,6 +126,7 @@ class MemorizationItem {
   final int totalAttempts;
   final int successfulAttempts; // quality >= 3
   final int streakCount;        // consecutive days reviewed
+  final int bestStreakCount;    // lifetime peak streak — never decremented
 
   /// Audio
   final String? audioUrl;  // user's own voice recording
@@ -150,14 +151,21 @@ class MemorizationItem {
     required this.totalAttempts,
     required this.successfulAttempts,
     required this.streakCount,
+    this.bestStreakCount = 0,
     this.audioUrl,
     this.ttsUrl,
     this.currentInitialStep = 0,
     this.initialEncounterComplete = false,
   });
 
-  double get masteryPercent =>
-      totalAttempts == 0 ? 0.0 : (successfulAttempts / totalAttempts) * 100;
+  double get masteryPercent {
+    if (totalAttempts == 0) return 0.0;
+    final successRate = (successfulAttempts / totalAttempts).clamp(0.0, 1.0);
+    // Cap at the fraction of the 3-repetition gate that has been cleared,
+    // so a single perfect review never reads as 100% mastered.
+    final repetitionProgress = (repetitionCount / 3.0).clamp(0.0, 1.0);
+    return (successRate * repetitionProgress * 100).clamp(0.0, 100.0);
+  }
 
   bool get isDueNow => DateTime.now().isAfter(nextReviewDate);
 
@@ -187,6 +195,7 @@ class MemorizationItem {
       totalAttempts: 0,
       successfulAttempts: 0,
       streakCount: 0,
+      bestStreakCount: 0,
     );
   }
 
@@ -204,6 +213,7 @@ class MemorizationItem {
     int? totalAttempts,
     int? successfulAttempts,
     int? streakCount,
+    int? bestStreakCount,
     String? audioUrl,
     String? ttsUrl,
     int? currentInitialStep,
@@ -226,6 +236,7 @@ class MemorizationItem {
       totalAttempts: totalAttempts ?? this.totalAttempts,
       successfulAttempts: successfulAttempts ?? this.successfulAttempts,
       streakCount: streakCount ?? this.streakCount,
+      bestStreakCount: bestStreakCount ?? this.bestStreakCount,
       audioUrl: audioUrl ?? this.audioUrl,
       ttsUrl: ttsUrl ?? this.ttsUrl,
       currentInitialStep: currentInitialStep ?? this.currentInitialStep,
@@ -251,6 +262,7 @@ class MemorizationItem {
         'totalAttempts': totalAttempts,
         'successfulAttempts': successfulAttempts,
         'streakCount': streakCount,
+        'bestStreakCount': bestStreakCount,
         'audioUrl': audioUrl,
         'ttsUrl': ttsUrl,
         'currentInitialStep': currentInitialStep,
@@ -282,6 +294,7 @@ class MemorizationItem {
       totalAttempts: (data['totalAttempts'] as num? ?? 0).toInt(),
       successfulAttempts: (data['successfulAttempts'] as num? ?? 0).toInt(),
       streakCount: (data['streakCount'] as num? ?? 0).toInt(),
+      bestStreakCount: (data['bestStreakCount'] as num? ?? 0).toInt(),
       audioUrl: data['audioUrl'] as String?,
       ttsUrl: data['ttsUrl'] as String?,
       currentInitialStep: (data['currentInitialStep'] as num? ?? 0).toInt(),

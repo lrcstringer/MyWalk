@@ -194,6 +194,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                   _header(accentColor,
                       showLock: hasPin,
                       showExpand: isAbstain && !hasPin,
+                      showChevron: !isAbstain && !_isCompleted,
                       onLock: hasPin
                           ? () => context.read<HabitProvider>().lockHabit(_habit.id)
                           : null),
@@ -245,7 +246,7 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
   }
 
   Widget _header(Color accentColor,
-      {bool showLock = false, bool showExpand = false, VoidCallback? onLock}) {
+      {bool showLock = false, bool showExpand = false, bool showChevron = false, VoidCallback? onLock}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -345,6 +346,15 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
                       color: MyWalkColor.warmWhite.withValues(alpha: 0.4),
                     ),
                   ),
+                ),
+              ),
+            if (showChevron)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: Colors.white.withValues(alpha: 0.25),
                 ),
               ),
           ],

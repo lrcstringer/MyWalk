@@ -95,7 +95,8 @@ class _MemorizationHomeScreenState extends State<MemorizationHomeScreen> {
                     children: [
                       Image.asset(
                         'assets/memorization pic.png',
-                        fit: BoxFit.cover,
+                        fit: BoxFit.fitWidth,
+                        alignment: Alignment.topCenter,
                       ),
                       Container(
                         decoration: BoxDecoration(

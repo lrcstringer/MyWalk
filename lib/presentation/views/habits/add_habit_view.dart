@@ -624,8 +624,8 @@ class _AddHabitViewState extends State<AddHabitView> {
         if (_selectedSubcategoryModel != null && !(_selectedCategoryModel?.isCustom ?? true))
           _subcategoryContentCard(_selectedSubcategoryModel!),
 
-        // ── ABOUT THIS PRACTICE (non-abstain only) ────────────────────────
-        if (!isAbstain) _sectionHeader('ABOUT THIS PRACTICE', MyWalkColor.sage),
+        // ── ABOUT THIS PRACTICE ───────────────────────────────────────────
+        _sectionHeader('ABOUT THIS PRACTICE', MyWalkColor.sage),
 
         // Practice Name — read-only display for abstain (driven by chip/custom field)
         _label('Practice Name'),

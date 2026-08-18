@@ -98,7 +98,8 @@ class _BibleReadingGridViewState extends State<BibleReadingGridView> {
                     children: [
                       Image.asset(
                         'assets/bibleinayear.png',
-                        fit: BoxFit.cover,
+                        fit: BoxFit.fitWidth,
+                        alignment: Alignment.topCenter,
                       ),
                       Container(
                         decoration: BoxDecoration(
@@ -460,16 +461,25 @@ class _WeekAccordion extends StatelessWidget {
             .length;
     final isWeekDone = daysComplete == weekDays.length;
     final summary = _weekSummary(weekIndex);
+    final progress = daysComplete / weekDays.length;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: MyWalkColor.cardBackground,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isWeekDone
+              ? [const Color(0xFF2C3B2E), const Color(0xFF232E26)]
+              : [const Color(0xFF3A342D), const Color(0xFF2E2923)],
+        ),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isCurrent
               ? MyWalkColor.golden.withValues(alpha: 0.5)
-              : MyWalkColor.cardBorder,
+              : isWeekDone
+                  ? const Color(0xFF7A9E7E).withValues(alpha: 0.3)
+                  : const Color(0x20D4A843),
           width: isCurrent ? 1.0 : 0.5,
         ),
         boxShadow: isCurrent
@@ -483,62 +493,55 @@ class _WeekAccordion extends StatelessWidget {
               ]
             : null,
       ),
-      child: Column(
-        children: [
-          // Header
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: onToggle,
-            child: Ink(
-              decoration: isCurrent
-                  ? BoxDecoration(
-                      borderRadius: isExpanded
-                          ? const BorderRadius.vertical(
-                              top: Radius.circular(12))
-                          : BorderRadius.circular(12),
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          MyWalkColor.golden.withValues(alpha: 0.1),
-                          Colors.transparent,
-                        ],
-                      ),
-                    )
-                  : null,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: [
+            // Header
+            InkWell(
+              onTap: onToggle,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 child: Row(
                   children: [
-                    // Week number badge
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: isWeekDone
-                            ? MyWalkColor.sage.withValues(alpha: 0.25)
-                            : isCurrent
-                                ? MyWalkColor.golden.withValues(alpha: 0.15)
-                                : MyWalkColor.surfaceOverlay,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: isWeekDone
-                            ? const Icon(Icons.check,
-                                color: MyWalkColor.sage, size: 16)
-                            : Text(
-                                '${weekIndex + 1}',
-                                style: TextStyle(
-                                  color: isCurrent
+                    // Circular progress ring
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 3.5,
+                            backgroundColor: Colors.white12,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              isWeekDone
+                                  ? const Color(0xFF7A9E7E)
+                                  : isCurrent
                                       ? MyWalkColor.golden
-                                      : MyWalkColor.softGold,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                                      : const Color(0x60D4A843),
+                            ),
+                          ),
+                          Center(
+                            child: isWeekDone
+                                ? const Icon(Icons.check,
+                                    color: Color(0xFF7A9E7E), size: 18)
+                                : Text(
+                                    '${weekIndex + 1}',
+                                    style: TextStyle(
+                                      color: isCurrent
+                                          ? MyWalkColor.golden
+                                          : MyWalkColor.softGold,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,31 +552,44 @@ class _WeekAccordion extends StatelessWidget {
                               color: isCurrent
                                   ? MyWalkColor.warmWhite
                                   : MyWalkColor.softGold,
-                              fontSize: 13,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          if (summary.isNotEmpty)
+                          if (summary.isNotEmpty) ...[
+                            const SizedBox(height: 2),
                             Text(
                               summary,
                               style: TextStyle(
-                                color: MyWalkColor.softGold.withValues(alpha: 0.6),
+                                color: MyWalkColor.softGold.withValues(alpha: 0.55),
                                 fontSize: 11,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                          ],
                         ],
                       ),
                     ),
-                    Text(
-                      '$daysComplete/7',
-                      style: TextStyle(
-                        color: MyWalkColor.softGold.withValues(alpha: 0.7),
-                        fontSize: 11,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$daysComplete/7',
+                        style: TextStyle(
+                          color: isWeekDone
+                              ? const Color(0xFF7A9E7E)
+                              : MyWalkColor.softGold.withValues(alpha: 0.7),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Icon(
                       isExpanded ? Icons.expand_less : Icons.expand_more,
                       color: MyWalkColor.softGold.withValues(alpha: 0.5),
@@ -583,23 +599,25 @@ class _WeekAccordion extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-          // Day rows
-          if (isExpanded)
-            Column(
-              children: [
-                Divider(height: 1, color: MyWalkColor.cardBorder),
-                ...List.generate(weekDays.length, (d) {
-                  return _DayRow(
-                    weekIndex: weekIndex,
-                    dayIndex: d,
-                    provider: provider,
-                    onTap: () => onDayTap(d),
-                  );
-                }),
-              ],
-            ),
-        ],
+            // Day rows
+            if (isExpanded)
+              Column(
+                children: [
+                  Divider(
+                      height: 1,
+                      color: Colors.white.withValues(alpha: 0.08)),
+                  ...List.generate(weekDays.length, (d) {
+                    return _DayRow(
+                      weekIndex: weekIndex,
+                      dayIndex: d,
+                      provider: provider,
+                      onTap: () => onDayTap(d),
+                    );
+                  }),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }

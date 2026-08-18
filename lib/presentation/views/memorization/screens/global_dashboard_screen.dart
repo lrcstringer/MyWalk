@@ -18,15 +18,17 @@ class GlobalDashboardScreen extends StatelessWidget {
 
     final totalAttempts =
         items.fold<int>(0, (sum, i) => sum + i.totalAttempts);
-    final totalSuccessful =
-        items.fold<int>(0, (sum, i) => sum + i.successfulAttempts);
-    final overallMastery = totalAttempts == 0
+    // Average each item's masteryPercent (which factors in repetitionCount)
+    // so the ring is consistent with per-item mastery rings.
+    final overallMastery = items.isEmpty
         ? 0.0
-        : totalSuccessful / totalAttempts * 100;
+        : items.fold<double>(0.0, (sum, i) => sum + i.masteryPercent) /
+            items.length;
     final masteredCount =
         items.where((i) => i.status == MemorizationStatus.mastered).length;
+    // Use bestStreakCount (lifetime peak) so the badge survives a broken streak.
     final maxStreak = items.fold<int>(
-        0, (max, i) => i.streakCount > max ? i.streakCount : max);
+        0, (max, i) => i.bestStreakCount > max ? i.bestStreakCount : max);
     final totalWords = items.fold<int>(
         0, (sum, i) => sum + i.fullText.trim().split(RegExp(r'\s+')).length);
 
@@ -67,7 +69,11 @@ class GlobalDashboardScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 _ItemsList(items: items),
                 const SizedBox(height: 16),
-                _AchievementsCard(maxStreak: maxStreak, masteredCount: masteredCount),
+                _AchievementsCard(
+                  maxStreak: maxStreak,
+                  masteredCount: masteredCount,
+                  hasFirstReview: totalAttempts >= 1,
+                ),
                 const SizedBox(height: 40),
               ]),
             ),
@@ -306,10 +312,12 @@ class _ItemsList extends StatelessWidget {
 class _AchievementsCard extends StatelessWidget {
   final int maxStreak;
   final int masteredCount;
+  final bool hasFirstReview;
 
   const _AchievementsCard({
     required this.maxStreak,
     required this.masteredCount,
+    required this.hasFirstReview,
   });
 
   @override
@@ -335,6 +343,10 @@ class _AchievementsCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
+              AchievementBadge(
+                type: AchievementType.firstReview,
+                unlocked: hasFirstReview,
+              ),
               AchievementBadge(
                 type: AchievementType.streak7,
                 unlocked: maxStreak >= 7,

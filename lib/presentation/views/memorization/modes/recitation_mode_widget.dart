@@ -384,25 +384,7 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
     if (_isSubmitting) return;
     _isSubmitting = true;
 
-    // In session mode, simply pop with the similarity score so the session
-    // screen can aggregate results and dispatch SM2 at the very end.
-    if (widget.sessionMode) {
-      if (mounted) Navigator.of(context).pop(_similarity);
-      return;
-    }
-
-    final qualityScore = _similarity >= 0.9
-        ? 5
-        : _similarity >= 0.7
-            ? 4
-            : _similarity >= 0.5
-                ? 3
-                : _similarity >= 0.3
-                    ? 2
-                    : 1;
-
-    // Compare each chunk against its proportional slice of the transcript
-    // (with 2-word padding) so multi-chunk items score correctly.
+    // Per-chunk missed IDs — computed for both session and standalone paths.
     final transcriptWords = _transcript.trim().split(RegExp(r'\s+'));
     final missedIds = <String>[];
     var offset = 0;
@@ -415,6 +397,23 @@ class _RecitationModeWidgetState extends State<RecitationModeWidget> {
       }
       offset += chunk.wordCount;
     }
+
+    // In session mode, pop with both the similarity score and missed chunk IDs
+    // so the session screen can update per-phrase strength correctly.
+    if (widget.sessionMode) {
+      if (mounted) Navigator.of(context).pop((_similarity, missedIds));
+      return;
+    }
+
+    final qualityScore = _similarity >= 0.9
+        ? 5
+        : _similarity >= 0.7
+            ? 4
+            : _similarity >= 0.5
+                ? 3
+                : _similarity >= 0.3
+                    ? 2
+                    : 1;
 
     final nextReview = await context.read<MemorizationProvider>().completeReview(
           item: widget.item,

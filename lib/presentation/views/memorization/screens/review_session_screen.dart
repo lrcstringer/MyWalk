@@ -32,10 +32,11 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   ReviewSession? _session;
   bool _loading = true;
 
-  // Per-mode accuracy tracked in memory for SM2 calculation.
-  // If the user leaves and resumes, prior-mode accuracies are lost; quality
-  // is then based solely on the confidence slider — still valid for SM2.
+  // Per-mode accuracy and missed chunk IDs tracked in memory for SM2.
+  // If the user leaves and resumes, prior-mode data is lost; quality is then
+  // based solely on the confidence slider — still valid for SM2.
   final Map<ReviewMode, double> _accuracies = {};
+  final Map<ReviewMode, List<String>> _missedIdsPerMode = {};
   int _totalElapsed = 0;
 
   // State after all 4 modes complete
@@ -199,7 +200,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
 
   Future<void> _startMode(ReviewMode mode) async {
     if (mode == ReviewMode.recitation) {
-      final similarity = await Navigator.of(context).push<double>(
+      final result = await Navigator.of(context).push<(double, List<String>)>(
         MaterialPageRoute(
           builder: (_) => RecitationModeWidget(
             item: widget.item,
@@ -207,8 +208,8 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
           ),
         ),
       );
-      if (!mounted || similarity == null) return;
-      await _onModeComplete(mode, similarity, 0);
+      if (!mounted || result == null) return;
+      await _onModeComplete(mode, result.$1, 0, missedIds: result.$2);
     } else {
       final result = await Navigator.of(context).push<_ModeOutcome>(
         MaterialPageRoute(
@@ -220,17 +221,19 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       );
       if (!mounted || result == null) return;
       await _onModeComplete(
-          mode, result.accuracy, result.elapsedSeconds);
+          mode, result.accuracy, result.elapsedSeconds, missedIds: result.missedIds);
     }
   }
 
   Future<void> _onModeComplete(
     ReviewMode mode,
     double accuracy,
-    int elapsedSeconds,
-  ) async {
+    int elapsedSeconds, {
+    List<String> missedIds = const [],
+  }) async {
     HapticFeedback.lightImpact();
     _accuracies[mode] = accuracy;
+    _missedIdsPerMode[mode] = missedIds;
     _totalElapsed += elapsedSeconds;
 
     final provider = context.read<MemorizationProvider>();
@@ -255,6 +258,13 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       confidence: confidence,
     );
 
+    // Union missed chunk IDs across all four modes so per-phrase strength
+    // reflects actual per-chunk performance, not a blanket all-success.
+    final mergedMissedIds = _missedIdsPerMode.values
+        .expand((ids) => ids)
+        .toSet()
+        .toList();
+
     final nextReview =
         await context.read<MemorizationProvider>().completeReview(
               item: widget.item,
@@ -262,7 +272,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
               qualityScore: qualityScore,
               confidence: confidence,
               timeToRecallSeconds: _totalElapsed,
-              missedChunkIds: const [],
+              missedChunkIds: mergedMissedIds,
             );
 
     if (!mounted) return;
@@ -593,7 +603,12 @@ class _ConfidencePanelState extends State<_ConfidencePanel> {
 class _ModeOutcome {
   final double accuracy; // 0.0–1.0
   final int elapsedSeconds;
-  const _ModeOutcome({required this.accuracy, required this.elapsedSeconds});
+  final List<String> missedIds;
+  const _ModeOutcome({
+    required this.accuracy,
+    required this.elapsedSeconds,
+    this.missedIds = const [],
+  });
 }
 
 class _SessionModeShell extends StatefulWidget {
@@ -719,7 +734,11 @@ class _SessionModeShellState extends State<_SessionModeShell> {
       final total = widget.item.chunks.length;
       final accuracy = total > 0 ? _successCount / total : 0.0;
       Navigator.of(context).pop(
-        _ModeOutcome(accuracy: accuracy, elapsedSeconds: _elapsedSeconds),
+        _ModeOutcome(
+          accuracy: accuracy,
+          elapsedSeconds: _elapsedSeconds,
+          missedIds: List.from(_missedIds),
+        ),
       );
     }
   }

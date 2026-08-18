@@ -224,6 +224,10 @@ class MemorizationProvider extends ChangeNotifier {
         ? MemorizationStatus.mastered
         : item.status;
 
+    final newBestStreak = newStreakCount > item.bestStreakCount
+        ? newStreakCount
+        : item.bestStreakCount;
+
     final updatedItem = item.copyWith(
       chunks: updatedChunks,
       lastReviewedAt: now,
@@ -234,6 +238,7 @@ class MemorizationProvider extends ChangeNotifier {
       totalAttempts: newTotal,
       successfulAttempts: newSuccessful,
       streakCount: newStreakCount,
+      bestStreakCount: newBestStreak,
       status: newStatus,
     );
 

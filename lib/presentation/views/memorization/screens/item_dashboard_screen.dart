@@ -434,15 +434,15 @@ class _AchievementsRow extends StatelessWidget {
               ),
               AchievementBadge(
                 type: AchievementType.streak7,
-                unlocked: item.streakCount >= 7,
+                unlocked: item.bestStreakCount >= 7,
               ),
               AchievementBadge(
                 type: AchievementType.streak30,
-                unlocked: item.streakCount >= 30,
+                unlocked: item.bestStreakCount >= 30,
               ),
               AchievementBadge(
                 type: AchievementType.streak100,
-                unlocked: item.streakCount >= 100,
+                unlocked: item.bestStreakCount >= 100,
               ),
               AchievementBadge(
                 type: AchievementType.mastered,
