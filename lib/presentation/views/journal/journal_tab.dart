@@ -7,6 +7,8 @@ import '../../../domain/entities/fruit.dart';
 import '../../providers/journal_provider.dart';
 import '../../providers/journal_theme_provider.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/store_provider.dart';
+import '../shared/mywalk_paywall_view.dart';
 import '../../theme/app_theme.dart';
 import 'journal_entry_composer.dart';
 import 'journal_entry_detail_view.dart';
@@ -198,10 +200,11 @@ class _JournalTabState extends State<JournalTab>
             h.subcategoryId == 'breaking_habits' && h.hasRecoveryPath)
         .firstOrNull;
     final hasFreedomPlan = breakingHabit != null;
+    final canWrite = context.watch<StoreProvider>().canAccessJournal;
 
     return Scaffold(
       backgroundColor: theme.bgPrimary,
-      floatingActionButton: (!hasFreedomPlan || _freedomTab == 0)
+      floatingActionButton: (!hasFreedomPlan || _freedomTab == 0) && canWrite
           ? FloatingActionButton(
               onPressed: () => Navigator.push<void>(
                 context,
@@ -350,6 +353,49 @@ class _JournalTabState extends State<JournalTab>
               ),
             ),
           ),
+
+          // ── Read-only banner (free trial expired) ────────────────────────
+          if (!canWrite && (!hasFreedomPlan || _freedomTab == 0))
+            SliverToBoxAdapter(
+              child: GestureDetector(
+                onTap: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  backgroundColor: MyWalkColor.charcoal,
+                  builder: (_) => const MyWalkPaywallView(
+                    contextTitle: 'Upgrade to continue writing in your Journal',
+                  ),
+                ),
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: MyWalkColor.golden.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: MyWalkColor.golden.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.lock_outline_rounded, size: 16, color: MyWalkColor.golden),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Journal is read-only — upgrade to keep writing',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: MyWalkColor.softGold.withValues(alpha: 0.9),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded,
+                          size: 18, color: MyWalkColor.golden.withValues(alpha: 0.6)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // ── Freedom Journey tab selector (when Freedom Plan active) ─────
           if (hasFreedomPlan)

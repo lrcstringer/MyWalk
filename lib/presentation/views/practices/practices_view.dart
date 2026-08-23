@@ -224,6 +224,25 @@ class PracticesView extends StatelessWidget {
   }
 
   void _openAddPractice(BuildContext context) {
+    final store = context.read<StoreProvider>();
+    if (!store.isPremium) {
+      final habits = context.read<HabitProvider>().habits;
+      final nonGratitudeCount = habits
+          .where((h) => h.category != HabitCategory.gratitude)
+          .length;
+      if (nonGratitudeCount >= 2) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: MyWalkColor.charcoal,
+          builder: (_) => const MyWalkPaywallView(
+            contextTitle: 'Upgrade for unlimited Practices',
+          ),
+        );
+        return;
+      }
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

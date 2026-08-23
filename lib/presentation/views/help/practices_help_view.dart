@@ -52,9 +52,9 @@ class PracticesHelpView extends StatelessWidget {
                   icon: Icons.explore_outlined,
                   iconColor: accent,
                   iconBg: Color(0x267A9E7E),
-                  title: 'Daily Practices',
+                  title: 'Add a Practice',
                   description:
-                      'Browse disciplines by category — prayer, scripture, fasting, service, and more.',
+                      'Tap the "Add a Practice" button to browse disciplines by category — prayer, scripture, fasting, service, and more.',
                 ),
                 HelpFeatureCard(
                   icon: Icons.shield_rounded,
@@ -62,7 +62,7 @@ class PracticesHelpView extends StatelessWidget {
                   iconBg: Color(0x267A9E7E),
                   title: 'Breaking Free',
                   description:
-                      'Overcome challenges with a dedicated practice, an accountability partner, and a recovery path.',
+                      'Overcome challenges with a dedicated programme. Access via "Add a Practice".',
                 ),
                 HelpFeatureCard(
                   icon: Icons.menu_book_rounded,
@@ -90,7 +90,7 @@ class PracticesHelpView extends StatelessWidget {
               accentColor: golden,
               title: 'Discover a practice',
               description:
-                  'Browse the category grid or the programme cards below it. Tap any tile to set up a new practice.',
+                  'Tap "Add a Practice" to browse disciplines by category, or "Add a Mini-App" for structured programmes like Bible in a Year or Scripture Memorization.',
             ),
             const HelpStep(
               number: 2,
@@ -107,14 +107,6 @@ class PracticesHelpView extends StatelessWidget {
               title: 'Manage from here',
               description:
                   'Tap any practice in the Your Practices section to view details, edit, or stop the practice.',
-            ),
-            const HelpStep(
-              number: 4,
-              icon: Icons.calendar_today_outlined,
-              accentColor: accent,
-              title: 'Reflect each Sunday',
-              description:
-                  'At the end of each week, the Sunday reflection asks how your practices went and invites you to dedicate the week ahead.',
               isLast: true,
             ),
 

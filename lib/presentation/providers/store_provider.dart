@@ -63,6 +63,39 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   StreamSubscription<bool>? _premiumSub;
 
+  // ── Entitlement helpers ───────────────────────────────────────────────────
+
+  /// Account creation timestamp from Firebase Auth.
+  DateTime? get _accountCreatedAt =>
+      _auth.currentUser?.metadata.creationTime;
+
+  /// True when the account is less than 61 days old (≈ 2 months).
+  bool get _freeTrialActive {
+    final created = _accountCreatedAt;
+    if (created == null) return false;
+    return DateTime.now().difference(created).inDays < 61;
+  }
+
+  /// Journal: free for the first 2 months, then premium-only.
+  bool get canAccessJournal => isPremium || _freeTrialActive;
+
+  /// Groups / Circles: free for the first 2 months, then premium-only.
+  bool get canAccessGroups => isPremium || _freeTrialActive;
+
+  /// Support/Accountability Partner invite: free for the first 2 months, then premium-only.
+  bool get canInvitePartner => isPremium || _freeTrialActive;
+
+  /// True when the practice category is accessible without premium.
+  /// Free: Breaking Patterns (subcategoryId == 'breaking_habits')
+  ///       and Loving the Lord & Spiritual Growth (categoryId == 'loving_the_lord').
+  bool isFreeCategory({
+    required String? categoryId,
+    required String? subcategoryId,
+  }) =>
+      isPremium ||
+      categoryId == 'loving_the_lord' ||
+      subcategoryId == 'breaking_habits';
+
   // ── Getters ───────────────────────────────────────────────────────────────
 
   ProductDetails? get monthlyProduct => _products[MyWalkProducts.monthly];

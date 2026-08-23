@@ -113,7 +113,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   'Everything you need to build lasting habits rooted in faith.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      fontSize: 15, color: Colors.white.withValues(alpha: 0.5)),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
                 ),
               ]),
             ),

@@ -67,12 +67,12 @@ class TodayHelpView extends StatelessWidget {
                       'Jump to any day in the current week to log past check-ins.',
                 ),
                 HelpFeatureCard(
-                  icon: Icons.add_circle_outline,
+                  icon: Icons.menu_book_rounded,
                   iconColor: MyWalkColor.warmCoral,
                   iconBg: Color(0x1AD4836B),
-                  title: 'Add Practices',
+                  title: 'Mini-App Cards',
                   description:
-                      'Tap the + button to add a new daily practice.',
+                      'Bible in a Year and Scripture Memorization cards are always visible — tap to open each programme.',
                 ),
               ],
             ),
@@ -98,7 +98,7 @@ class TodayHelpView extends StatelessWidget {
               accentColor: accent,
               title: 'Write your gratitude',
               description:
-                  'Tap the golden card, type what you\'re thankful for, then tap "Thank you, Lord."',
+                  'Tap the golden card, type what you\'re thankful for, then tap "Give thanks".',
             ),
             const HelpStep(
               number: 3,
@@ -115,14 +115,6 @@ class TodayHelpView extends StatelessWidget {
               title: 'Log a past day',
               description:
                   'Tap any earlier day in the week strip to retroactively log check-ins.',
-            ),
-            const HelpStep(
-              number: 5,
-              icon: Icons.add_circle_outline,
-              accentColor: MyWalkColor.warmCoral,
-              title: 'Add a new practice',
-              description:
-                  'Tap the + button (bottom-right) to add a practice. Free plan allows 2 practices; upgrade for unlimited.',
               isLast: true,
             ),
 
@@ -163,15 +155,21 @@ class _ScreenDiagram extends StatelessWidget {
             ),
             _divider(),
             _DiagramRow(
-              icon: Icons.check_circle_outline,
-              color: MyWalkColor.sage,
-              label: 'Practice cards grouped by category',
+              icon: Icons.menu_book_rounded,
+              color: MyWalkColor.warmCoral,
+              label: 'Bible in a Year card (built-in)',
             ),
             _divider(),
             _DiagramRow(
-              icon: Icons.add_circle_outline,
+              icon: Icons.psychology,
               color: MyWalkColor.warmCoral,
-              label: '+ FAB — add a new practice',
+              label: 'Scripture Memorization card (built-in)',
+            ),
+            _divider(),
+            _DiagramRow(
+              icon: Icons.check_circle_outline,
+              color: MyWalkColor.sage,
+              label: 'Practice cards (KINGDOM LIFE · PRACTICES sections)',
             ),
           ],
         ),

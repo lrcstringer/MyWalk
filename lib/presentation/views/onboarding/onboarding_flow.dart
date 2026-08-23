@@ -107,19 +107,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       defaultUnit: 'time',
       defaultGoal: 1,
     ),
-    _OnbCat(
-      name: 'Breaking Patterns',
-      subtitle:
-          'Overcoming bad/persistent habits, optionally with support partners and our Freedom Plan activities guide',
-      icon: Icons.shield_rounded,
-      iconBg: const Color(0xFF2A1A1A),
-      iconColor: Color(0xFFE05252),
-      category: HabitCategory.abstain,
-      defaultTracking: HabitTrackingType.abstain,
-      defaultName: 'Breaking the Pattern',
-      defaultUnit: 'day',
-      defaultGoal: 1,
-    ),
   ];
 
   @override
@@ -357,7 +344,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 height: 1.2,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 36),
             _featureRow(
               Icons.volunteer_activism_rounded,
               'Start with gratitude',
@@ -371,9 +358,15 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             ),
             const SizedBox(height: 18),
             _featureRow(
+              Icons.book_rounded,
+              'Keep a private journal',
+              'Capture your thoughts and ideas, keeping track of your growth. Your journal is fully encrypted and cannot be read by anyone.',
+            ),
+            const SizedBox(height: 18),
+            _featureRow(
               Icons.groups_rounded,
               'Walk with others',
-              'Join a Circle to stay accountable and encourage each other daily.',
+              'Join a Group to stay accountable and encourage each other daily.',
             ),
             const Spacer(),
             _primaryButton(
@@ -439,13 +432,15 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 height: 1.2,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 28),
             Text(
               'What are you thankful for today?',
               style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.white.withValues(alpha: 0.5),
-                  height: 1.5),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.95),
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 28),
             Container(
@@ -501,13 +496,15 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 16),
                 Text(
-                  'Pick something simple — you\'re not committing to forever. You can change or delete this any time.',
+                  'Pick something simple as your first Practice. This is just to show you how easy it is to create a Practice - you can change or delete it later.',
                   style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.white.withValues(alpha: 0.5),
-                      height: 1.5),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withValues(alpha: 0.85),
+                    height: 1.5,
+                  ),
                 ),
                 const SizedBox(height: 20),
               ],
@@ -836,11 +833,14 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                   fontWeight: FontWeight.w700,
                   color: MyWalkColor.warmWhite),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Text(
-              "Here's what your daily walk looks like.",
+              'When you open the app the Today screen will show your two practices.',
               style: TextStyle(
-                  fontSize: 15, color: Colors.white.withValues(alpha: 0.5)),
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
             ),
             const SizedBox(height: 28),
             _summaryCard(
@@ -858,7 +858,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             ),
             const Spacer(),
             _primaryButton(
-              label: 'Begin My Walk',
+              label: 'Next',
               loading: _processing,
               onPressed: _processing ? null : _beginMyWalk,
             ),
@@ -921,76 +921,178 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     final name = AuthService.shared.givenName ?? 'friend';
     return _shell(
       key: const ValueKey('celebrate'),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.directions_walk_rounded,
-                color: MyWalkColor.golden, size: 48),
-            const SizedBox(height: 20),
-            Text(
-              'Your walk is set.\nRemain steadfast, $name.',
-              style: const TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
-                color: MyWalkColor.warmWhite,
-                height: 1.25,
-              ),
-            ),
-            const SizedBox(height: 28),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: MyWalkColor.cardBackground,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: MyWalkColor.cardBorder, width: 0.5),
-              ),
-              child: Row(
+      child: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: MyWalkColor.golden.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(11),
+                  const Icon(Icons.directions_walk_rounded,
+                      color: MyWalkColor.golden, size: 48),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Your walk is set.\nRemain steadfast, $name.',
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                      color: MyWalkColor.warmWhite,
+                      height: 1.25,
                     ),
-                    child: const Icon(Icons.groups_rounded,
-                        color: MyWalkColor.golden, size: 22),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Want to walk with others?',
-                            style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: MyWalkColor.warmWhite)),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Join a Circle once you're inside the app. Walk together, stay accountable, and encourage each other.",
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.45),
-                              height: 1.4),
-                        ),
-                      ],
+                  const SizedBox(height: 32),
+                  Text(
+                    "THERE'S MORE WHEN YOU'RE READY",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.3,
+                      color: Colors.white.withValues(alpha: 0.6),
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 1.25,
+                    children: [
+                      _featureTile(
+                        icon: Icons.explore_rounded,
+                        iconBg: const Color(0xFF1A1622),
+                        iconColor: MyWalkColor.warmCoral,
+                        accentColor: MyWalkColor.warmCoral,
+                        name: 'Kingdom Life',
+                        hook: 'Guided study that goes deep',
+                      ),
+                      _featureTile(
+                        icon: Icons.shield_rounded,
+                        iconBg: const Color(0xFF221515),
+                        iconColor: const Color(0xFFE05252),
+                        accentColor: const Color(0xFFE05252),
+                        name: 'Breaking Patterns',
+                        hook: 'Freedom, with support',
+                      ),
+                      _featureTile(
+                        icon: Icons.book_rounded,
+                        iconBg: const Color(0xFF0F1F1E),
+                        iconColor: const Color(0xFF5DB8B0),
+                        accentColor: const Color(0xFF5DB8B0),
+                        name: 'Keep your Journal',
+                        hook: 'Capture thoughts from your day, your readings & reflections',
+                      ),
+                      _featureTile(
+                        icon: Icons.groups_rounded,
+                        iconBg: const Color(0xFF1A2420),
+                        iconColor: MyWalkColor.sage,
+                        accentColor: MyWalkColor.sage,
+                        name: 'Create a Group',
+                        hook: 'Stay accountable together',
+                      ),
+                      _featureTile(
+                        icon: Icons.menu_book_rounded,
+                        iconBg: const Color(0xFF221A08),
+                        iconColor: MyWalkColor.golden,
+                        accentColor: MyWalkColor.golden,
+                        name: 'Bible in a Year',
+                        hook: 'Read set verses every day.',
+                      ),
+                      _featureTile(
+                        icon: Icons.psychology_rounded,
+                        iconBg: const Color(0xFF1E1C10),
+                        iconColor: MyWalkColor.softGold,
+                        accentColor: MyWalkColor.softGold,
+                        name: 'Memorize Scripture',
+                        hook: 'Hide God\'s Word in your heart',
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const Spacer(),
-            _primaryButton(
+                Positioned(
+                  bottom: 0, left: 0, right: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      height: 64,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Color(0xFF0D0B0A)],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            child: _primaryButton(
               label: 'Enter MyWalk',
               loading: _processing,
               onPressed: _processing ? null : _enterMyWalk,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _featureTile({
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required Color accentColor,
+    required String name,
+    required String hook,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: MyWalkColor.cardBackground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accentColor.withValues(alpha: 0.22), width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(icon, color: iconColor, size: 18),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            name,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: MyWalkColor.warmWhite,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            hook,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withValues(alpha: 0.45),
+              height: 1.35,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../../../domain/services/recovery_module_content.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/recovery_path_provider.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/partner_invite_dialog.dart';
 import 'breaking_free_encouraging_screen.dart';
@@ -209,7 +210,8 @@ class _ValuesInventoryScreenState extends State<ValuesInventoryScreen> {
       setState(() => _saving = false);
 
       if (widget.setupMode) {
-        if (widget.wantsPartner) {
+        final canInvite = mounted && context.read<StoreProvider>().canInvitePartner;
+        if (widget.wantsPartner && canInvite) {
           await Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => PartnerInviteScreen(
               habitId: widget.habitId,

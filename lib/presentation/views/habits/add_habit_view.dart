@@ -14,6 +14,7 @@ import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import '../shared/day_of_week_picker.dart';
 import '../shared/fruit_tag_chip.dart';
+import '../shared/mywalk_paywall_view.dart';
 import '../practices/breaking_free_intro_screen.dart';
 
 class AddHabitView extends StatefulWidget {
@@ -256,8 +257,13 @@ class _AddHabitViewState extends State<AddHabitView> {
   }
 
   Widget _createMyOwnPracticeCard() {
+    final isPremium = context.watch<StoreProvider>().isPremium;
     return GestureDetector(
       onTap: () {
+        if (!isPremium) {
+          _showPaywall();
+          return;
+        }
         final cats = context.read<HabitCategoryProvider>().categories;
         final customCat = cats.where((c) => c.isCustom).firstOrNull;
         if (customCat != null) _selectCategoryModel(customCat);
@@ -269,7 +275,8 @@ class _AddHabitViewState extends State<AddHabitView> {
           color: MyWalkColor.cardBackground,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: MyWalkColor.golden.withValues(alpha: 0.25), width: 1),
+              color: MyWalkColor.golden.withValues(alpha: isPremium ? 0.25 : 0.12),
+              width: 1),
         ),
         child: Row(
           children: [
@@ -280,25 +287,64 @@ class _AddHabitViewState extends State<AddHabitView> {
                 shape: BoxShape.circle,
                 color: MyWalkColor.golden.withValues(alpha: 0.12),
               ),
-              child: const Icon(Icons.add_circle_outline_rounded,
-                  color: MyWalkColor.golden, size: 20),
+              child: Icon(
+                isPremium
+                    ? Icons.add_circle_outline_rounded
+                    : Icons.lock_rounded,
+                color: MyWalkColor.golden.withValues(alpha: isPremium ? 1.0 : 0.5),
+                size: 20,
+              ),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Create my own Practice',
                 style: TextStyle(
-                  color: MyWalkColor.warmWhite,
+                  color: isPremium
+                      ? MyWalkColor.warmWhite
+                      : Colors.white.withValues(alpha: 0.35),
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            Icon(Icons.chevron_right,
-                color: Colors.white.withValues(alpha: 0.3), size: 20),
+            if (isPremium)
+              Icon(Icons.chevron_right,
+                  color: Colors.white.withValues(alpha: 0.3), size: 20)
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.golden.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: MyWalkColor.golden.withValues(alpha: 0.5),
+                    width: 0.5,
+                  ),
+                ),
+                child: Text(
+                  'PRO',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: MyWalkColor.golden.withValues(alpha: 0.8),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showPaywall() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: MyWalkColor.charcoal,
+      builder: (_) => const MyWalkPaywallView(),
     );
   }
 
@@ -309,6 +355,7 @@ class _AddHabitViewState extends State<AddHabitView> {
         .categories
         .where((c) => !hiddenCategoryIds.contains(c.id) && !c.isCustom)
         .toList();
+    final store = context.watch<StoreProvider>();
 
     return GridView.count(
       shrinkWrap: true,
@@ -322,57 +369,109 @@ class _AddHabitViewState extends State<AddHabitView> {
           final catColor = Color(
             int.parse('FF${cat.colourHex.replaceAll('#', '')}', radix: 16),
           );
+          final isFree = store.isFreeCategory(
+            categoryId: cat.id,
+            subcategoryId: null,
+          );
           return GestureDetector(
-            onTap: () => _selectCategoryModel(cat),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    MyWalkColor.cardBackground,
-                    catColor.withValues(alpha: 0.22),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: catColor.withValues(alpha: 0.65),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: catColor.withValues(alpha: 0.18),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: catColor.withValues(alpha: 0.15),
+            onTap: () => isFree ? _selectCategoryModel(cat) : _showPaywall(),
+            child: Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        MyWalkColor.cardBackground,
+                        isFree
+                            ? catColor.withValues(alpha: 0.22)
+                            : catColor.withValues(alpha: 0.08),
+                      ],
                     ),
-                    child: Icon(iconForKey(cat.iconKey), size: 24, color: catColor),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isFree
+                          ? catColor.withValues(alpha: 0.65)
+                          : catColor.withValues(alpha: 0.25),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: catColor.withValues(alpha: isFree ? 0.18 : 0.06),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    cat.name,
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: MyWalkColor.warmWhite,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: catColor.withValues(alpha: isFree ? 0.15 : 0.07),
+                        ),
+                        child: Icon(
+                          iconForKey(cat.iconKey),
+                          size: 24,
+                          color: catColor.withValues(alpha: isFree ? 1.0 : 0.4),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        cat.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 3,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isFree
+                              ? MyWalkColor.warmWhite
+                              : Colors.white.withValues(alpha: 0.35),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!isFree)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: MyWalkColor.golden.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: MyWalkColor.golden.withValues(alpha: 0.5),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.lock_rounded,
+                              size: 9, color: MyWalkColor.golden.withValues(alpha: 0.8)),
+                          const SizedBox(width: 3),
+                          Text(
+                            'PRO',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w700,
+                              color: MyWalkColor.golden.withValues(alpha: 0.8),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
           );
         }),
@@ -554,8 +653,9 @@ class _AddHabitViewState extends State<AddHabitView> {
   }
 
   Widget _customSubcategoryCard() {
+    final isPremium = context.watch<StoreProvider>().isPremium;
     return GestureDetector(
-      onTap: _selectCustomSubcategory,
+      onTap: isPremium ? _selectCustomSubcategory : _showPaywall,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
@@ -563,29 +663,37 @@ class _AddHabitViewState extends State<AddHabitView> {
           color: MyWalkColor.cardBackground,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: MyWalkColor.golden.withValues(alpha: 0.3),
+            color: MyWalkColor.golden.withValues(alpha: isPremium ? 0.3 : 0.12),
             width: 0.5,
           ),
         ),
         child: Row(
           children: [
-            Icon(Icons.add_circle_outline, size: 20, color: MyWalkColor.golden),
+            Icon(
+              isPremium ? Icons.add_circle_outline : Icons.lock_rounded,
+              size: 20,
+              color: MyWalkColor.golden.withValues(alpha: isPremium ? 1.0 : 0.45),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Create My Own Practice',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: MyWalkColor.warmWhite,
+                      color: isPremium
+                          ? MyWalkColor.warmWhite
+                          : Colors.white.withValues(alpha: 0.35),
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Name it, set a goal, and make it yours.',
+                    isPremium
+                        ? 'Name it, set a goal, and make it yours.'
+                        : 'Available with Premium',
                     style: TextStyle(
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
@@ -595,8 +703,30 @@ class _AddHabitViewState extends State<AddHabitView> {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios,
-                size: 12, color: Colors.white.withValues(alpha: 0.3)),
+            if (isPremium)
+              Icon(Icons.arrow_forward_ios,
+                  size: 12, color: Colors.white.withValues(alpha: 0.3))
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.golden.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: MyWalkColor.golden.withValues(alpha: 0.5),
+                    width: 0.5,
+                  ),
+                ),
+                child: Text(
+                  'PRO',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: MyWalkColor.golden.withValues(alpha: 0.8),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -1518,19 +1648,47 @@ class _AddHabitViewState extends State<AddHabitView> {
             ),
           ]),
         ),
-        const SizedBox(height: 8),
-        Text(
-          '(You can set this up later if you don\'t want to now)',
-          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.35), fontStyle: FontStyle.italic),
-        ),
         const SizedBox(height: 10),
-        Row(
-          children: [
-            _pillChip(label: 'Yes', selected: _wantsPartner, onTap: () => setState(() => _wantsPartner = true)),
-            const SizedBox(width: 8),
-            _pillChip(label: 'No — set up later', selected: !_wantsPartner, onTap: () => setState(() => _wantsPartner = false)),
-          ],
-        ),
+        if (context.read<StoreProvider>().canInvitePartner) ...[
+          Text(
+            '(You can set this up later if you don\'t want to now)',
+            style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.35), fontStyle: FontStyle.italic),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _pillChip(label: 'Yes', selected: _wantsPartner, onTap: () => setState(() => _wantsPartner = true)),
+              const SizedBox(width: 8),
+              _pillChip(label: 'No — set up later', selected: !_wantsPartner, onTap: () => setState(() => _wantsPartner = false)),
+            ],
+          ),
+        ] else ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                useSafeArea: true,
+                backgroundColor: MyWalkColor.charcoal,
+                builder: (_) => const MyWalkPaywallView(
+                  contextTitle: 'Upgrade to invite a Support Partner',
+                ),
+              ),
+              icon: const Icon(Icons.lock_rounded, size: 16),
+              label: const Text(
+                'Support Partner — Premium',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2E6B5E).withValues(alpha: 0.3),
+                foregroundColor: Colors.white.withValues(alpha: 0.5),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

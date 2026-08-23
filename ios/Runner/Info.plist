@@ -80,15 +80,18 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
-		<!-- Journal: camera, photo library, microphone -->
+		<!-- Journal: camera, photo library, microphone; Scripture Memorization: speech-to-text scoring -->
 		<key>NSCameraUsageDescription</key>
 		<string>Take photos for your journal entries.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Add photos from your library to journal entries.</string>
 		<key>NSMicrophoneUsageDescription</key>
-		<string>Record voice notes for your journal entries.</string>
+		<string>Record voice notes for journal entries and recite scripture passages for scoring.</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
-		<string>Dictate text into your journal entries using your voice.</string>
+		<string>Transcribe your spoken recitation to score Scripture Memorization sessions.</string>
+		<!-- Encryption: app uses AES-256 for at-rest field encryption of journal and habit note data -->
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<true/>
 		<!-- Calendar: add circle events to the device calendar -->
 		<key>NSCalendarsUsageDescription</key>
 		<string>Add MyWalk circle events to your calendar.</string>

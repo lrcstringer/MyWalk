@@ -33,7 +33,7 @@ class CirclesHelpView extends StatelessWidget {
             const HelpHero(
               icon: Icons.groups_outlined,
               accentColor: accent,
-              title: 'Prayer Groups',
+              title: 'Groups',
               subtitle:
                   'Pray together with family and friends.\nSpur one another on in love and good deeds.',
             ),
@@ -46,7 +46,7 @@ class CirclesHelpView extends StatelessWidget {
                   icon: Icons.groups_outlined,
                   iconColor: accent,
                   iconBg: Color(0x267A9E7E),
-                  title: 'Prayer Groups',
+                  title: 'Groups',
                   description:
                       'Create private groups with family, friends, or accountability partners.',
                 ),

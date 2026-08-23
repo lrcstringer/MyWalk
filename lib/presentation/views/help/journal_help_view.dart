@@ -72,7 +72,15 @@ class JournalHelpView extends StatelessWidget {
                   iconBg: Color(0x1A9BA8C9),
                   title: 'Search & Sort',
                   description:
-                      'Find any entry by keyword or sort by date, habit, or fruit.',
+                      'Find any entry by keyword or sort by newest, oldest, habit, or fruit.',
+                ),
+                HelpFeatureCard(
+                  icon: Icons.shield_rounded,
+                  iconColor: MyWalkColor.warmCoral,
+                  iconBg: Color(0x1AD4836B),
+                  title: 'Freedom Journey',
+                  description:
+                      'A second tab appears when you\'re on a Breaking Free path — tracks your recovery journal entries separately.',
                 ),
               ],
             ),

@@ -6,6 +6,7 @@ import '../../../domain/repositories/user_preferences_repository.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/network_error_dialog.dart';
+import '../shared/terms_view.dart';
 import 'paywall_screen.dart';
 
 enum _Mode { newUser, signIn }
@@ -35,19 +36,25 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _tokenError;
 
   static const _freeFeatures = [
-    (Icons.volunteer_activism_rounded, 'Daily Gratitude'),
-    (Icons.checklist_rounded, '2 Custom Practices'),
-    (Icons.groups_rounded, 'Groups & Community'),
-    (Icons.menu_book_rounded, 'Bible in a Year'),
-    (Icons.book_rounded, 'Journal'),
+    (Icons.volunteer_activism_rounded, 'Daily Gratitude', ''),
+    (Icons.checklist_rounded, '2 Custom Daily Practices',
+        'Includes Breaking Patterns path + accountability partner (2 mo.)'),
+    (Icons.auto_stories_rounded, 'Kingdom Life',
+        'Fruit of the Spirit · How to Pray · How to Read the Bible (2 mo.)'),
+    (Icons.book_rounded, 'Journal', '2 months access'),
+    (Icons.groups_rounded, 'Groups & Community', '2 months access'),
+    (Icons.menu_book_rounded, 'Bible in a Year', ''),
   ];
 
   static const _premiumFeatures = [
-    (Icons.all_inclusive_rounded, 'Unlimited Practices'),
-    (Icons.auto_stories_rounded, 'Scripture Memorization'),
-    (Icons.shield_rounded, 'Full Recovery Path'),
-    (Icons.history_rounded, '52-week History'),
-    (Icons.format_quote_rounded, 'Extended Scripture Library'),
+    (Icons.all_inclusive_rounded, 'Unlimited Daily Practices', ''),
+    (Icons.shield_rounded, 'Breaking Patterns Recovery Path', ''),
+    (Icons.book_rounded, 'Unlimited Journal', ''),
+    (Icons.groups_rounded, 'Unlimited Groups', ''),
+    (Icons.auto_stories_rounded, 'Full Kingdom Life Access',
+        'The Beatitudes · Parables of Jesus · Women of Valor · I AM Sayings of Jesus'),
+    (Icons.menu_book_rounded, 'Bible in a Year', ''),
+    (Icons.format_quote_rounded, 'Scripture Memorization', ''),
   ];
 
   @override
@@ -230,8 +237,9 @@ class _AuthScreenState extends State<AuthScreen> {
           Text(
             'A daily walk with God.',
             style: TextStyle(
-              fontSize: 14,
-              color: MyWalkColor.softGold.withValues(alpha: 0.8),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: MyWalkColor.softGold.withValues(alpha: 0.95),
             ),
           ),
 
@@ -334,13 +342,18 @@ class _AuthScreenState extends State<AuthScreen> {
 
           const SizedBox(height: 24),
 
-          Text(
-            'By continuing you agree to our Terms of Service and Privacy Policy.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.white.withValues(alpha: 0.3),
-              height: 1.5,
+          GestureDetector(
+            onTap: () => TermsView.show(context),
+            child: Text(
+              'By continuing you agree to our Terms of Service and Privacy Policy.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.white.withValues(alpha: 0.3),
+                height: 1.5,
+                decoration: TextDecoration.underline,
+                decorationColor: Colors.white.withValues(alpha: 0.2),
+              ),
             ),
           ),
         ],
@@ -379,7 +392,7 @@ class _AuthScreenState extends State<AuthScreen> {
     required String title,
     required bool isSelected,
     required bool isGold,
-    required List<(IconData, String)> features,
+    required List<(IconData, String, String)> features,
     String? topLabel,
     required VoidCallback onTap,
   }) {
@@ -445,28 +458,54 @@ class _AuthScreenState extends State<AuthScreen> {
             ],
             const SizedBox(height: 10),
             ...features.map((f) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.only(bottom: 9),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        f.$1,
-                        size: 12,
-                        color: isGold
-                            ? MyWalkColor.golden.withValues(alpha: 0.8)
-                            : Colors.white.withValues(alpha: 0.4),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 1.5),
+                        child: Icon(
+                          f.$1,
+                          size: 11,
+                          color: isGold
+                              ? MyWalkColor.golden.withValues(alpha: 0.8)
+                              : Colors.white.withValues(alpha: 0.4),
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 7),
                       Expanded(
-                        child: Text(
-                          f.$2,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isSelected
-                                ? (isGold
-                                    ? MyWalkColor.warmWhite
-                                    : Colors.white.withValues(alpha: 0.75))
-                                : Colors.white.withValues(alpha: 0.4),
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              f.$2,
+                              style: TextStyle(
+                                fontSize: 11,
+                                height: 1.3,
+                                color: isSelected
+                                    ? (isGold
+                                        ? MyWalkColor.warmWhite
+                                        : Colors.white.withValues(alpha: 0.8))
+                                    : Colors.white.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            if (f.$3.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  f.$3,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    height: 1.4,
+                                    color: isSelected
+                                        ? (isGold
+                                            ? MyWalkColor.softGold.withValues(alpha: 0.65)
+                                            : Colors.white.withValues(alpha: 0.5))
+                                        : Colors.white.withValues(alpha: 0.28),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ],
@@ -522,12 +561,13 @@ class _AuthScreenState extends State<AuthScreen> {
               height: 1.25,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
           Text(
             'We\'ll use your first name to personalise your experience.',
             style: TextStyle(
               fontSize: 15,
-              color: Colors.white.withValues(alpha: 0.5),
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withValues(alpha: 0.85),
               height: 1.5,
             ),
           ),
@@ -573,7 +613,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   horizontal: 18, vertical: 16),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 32),
           TextField(
             controller: _tokenCtrl,
             textCapitalization: TextCapitalization.characters,
@@ -584,11 +624,12 @@ class _AuthScreenState extends State<AuthScreen> {
               letterSpacing: 2,
             ),
             decoration: InputDecoration(
-              labelText: 'Promo code (optional)',
+              labelText: 'If you have a promo code enter it here',
               labelStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.35),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 13,
-                letterSpacing: 0.5,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.3,
               ),
               hintText: 'ENTER CODE',
               hintStyle: TextStyle(

@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 import '../../../data/datasources/remote/auth_service.dart';
 import '../../../domain/repositories/circle_repository.dart';
 import '../../../domain/entities/circle.dart';
+import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
 import 'circle_detail_view.dart';
 import 'create_circle_view.dart';
 import 'join_circle_view.dart';
 import '../shared/appbar_actions.dart';
+import '../shared/mywalk_paywall_view.dart';
 import '../help/circles_help_view.dart';
 
 class CirclesTab extends StatelessWidget {
@@ -18,8 +20,87 @@ class CirclesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
-    if (auth.isAuthenticated) return _CirclesListView(refreshTrigger: refreshTrigger);
-    return const _CirclesAuthGateView();
+    if (!auth.isAuthenticated) return const _CirclesAuthGateView();
+    final canAccess = context.watch<StoreProvider>().canAccessGroups;
+    if (!canAccess) return const _CirclesPremiumGateView();
+    return _CirclesListView(refreshTrigger: refreshTrigger);
+  }
+}
+
+// ─── Premium gate (2-month trial expired) ───────────────────────────────────
+
+class _CirclesPremiumGateView extends StatelessWidget {
+  const _CirclesPremiumGateView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: MyWalkColor.charcoal,
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(child: DeepSpaceBackground()),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
+              child: Column(
+                children: [
+                  const SizedBox(height: 40),
+                  Stack(alignment: Alignment.center, children: [
+                    Container(width: 100, height: 100,
+                        decoration: BoxDecoration(shape: BoxShape.circle,
+                            color: MyWalkColor.golden.withValues(alpha: 0.08))),
+                    Container(width: 72, height: 72,
+                        decoration: BoxDecoration(shape: BoxShape.circle,
+                            color: MyWalkColor.golden.withValues(alpha: 0.12))),
+                    const Icon(Icons.lock_rounded, size: 32, color: MyWalkColor.golden),
+                  ]),
+                  const SizedBox(height: 20),
+                  Text('Upgrade to Continue',
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                          fontSize: 26, color: MyWalkColor.warmWhite)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Your free trial period has ended.\nUpgrade to Premium to keep using Prayer Groups.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: MyWalkColor.softGold.withValues(alpha: 0.7),
+                        height: 1.6),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        backgroundColor: MyWalkColor.charcoal,
+                        builder: (_) => const MyWalkPaywallView(
+                          contextTitle: 'Upgrade to continue using Groups',
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MyWalkColor.golden,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Upgrade to Premium',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 15)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

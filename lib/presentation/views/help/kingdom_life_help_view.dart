@@ -57,7 +57,7 @@ class KingdomLifeHelpView extends StatelessWidget {
                   iconBg: Color(0x1AD4836B),
                   title: 'Women of Valor',
                   description:
-                      'Wisdom and character from Proverbs 31 — free for all.',
+                      'Wisdom and character from Proverbs 31 — premium content.',
                 ),
                 HelpFeatureCard(
                   icon: Icons.volunteer_activism_outlined,
@@ -73,7 +73,7 @@ class KingdomLifeHelpView extends StatelessWidget {
                   iconBg: Color(0x26D4A843),
                   title: 'Premium Content',
                   description:
-                      'The Beatitudes, Parables of Jesus, and the I AM Sayings — unlock with premium.',
+                      'The Beatitudes, Parables of Jesus, Women of Valor, and the I AM Sayings — unlock with premium.',
                 ),
               ],
             ),
@@ -98,7 +98,7 @@ class KingdomLifeHelpView extends StatelessWidget {
               accentColor: sage,
               title: 'Free content — always available',
               description:
-                  'Fruit of the Spirit, Women of Valor, and How to Pray are free for every user.',
+                  'Fruit of the Spirit, How to Pray, How to Read the Bible, and Blue Letter Bible are free for every user.',
             ),
             const HelpStep(
               number: 3,
@@ -106,7 +106,7 @@ class KingdomLifeHelpView extends StatelessWidget {
               accentColor: golden,
               title: 'Unlock premium content',
               description:
-                  'The Beatitudes, Parables, and I AM Sayings are premium. Tap any premium card to upgrade.',
+                  'The Beatitudes, Parables, Women of Valor, and I AM Sayings are premium. Tap any premium card to upgrade.',
               isLast: true,
             ),
 
@@ -139,16 +139,22 @@ class _ContentMap extends StatelessWidget {
                 ref: 'Galatians 5:22–23',
               ),
               _ContentItem(
-                icon: Icons.person_outlined,
-                color: MyWalkColor.warmCoral,
-                title: 'Women of Valor',
-                ref: 'Proverbs 31:10',
-              ),
-              _ContentItem(
                 icon: Icons.volunteer_activism_outlined,
                 color: Color(0xFF9B7ED4),
                 title: 'How to Pray',
                 ref: 'Matthew 6:9–13',
+              ),
+              _ContentItem(
+                icon: Icons.menu_book_outlined,
+                color: Color(0xFF9BA8C9),
+                title: 'How to Read the Bible',
+                ref: 'A BibleProject guide',
+              ),
+              _ContentItem(
+                icon: Icons.search_outlined,
+                color: Color(0xFF9BA8C9),
+                title: 'Blue Letter Bible',
+                ref: 'Bible search & study tools',
               ),
             ],
           ),
@@ -169,6 +175,12 @@ class _ContentMap extends StatelessWidget {
                 color: MyWalkColor.golden,
                 title: 'Parables of Jesus',
                 ref: 'Mark 4:30',
+              ),
+              _ContentItem(
+                icon: Icons.person_outlined,
+                color: MyWalkColor.golden,
+                title: 'Women of Valor',
+                ref: 'Proverbs 31:10',
               ),
               _ContentItem(
                 icon: Icons.brightness_7_outlined,

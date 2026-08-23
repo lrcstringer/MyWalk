@@ -11,6 +11,7 @@ import '../../providers/recovery_path_provider.dart';
 import '../../utils/partner_invite_dialog.dart';
 import '../shared/fruit_tag_row.dart';
 import '../shared/golden_pulse_view.dart';
+import '../shared/mywalk_paywall_view.dart';
 import 'habit_detail_view.dart';
 import 'habit_history_view.dart';
 import 'guardrails_screen.dart';
@@ -639,6 +640,34 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         .partnershipForHabit(_habit.id);
 
     if (partnership == null) {
+      final canInvite = context.watch<StoreProvider>().canInvitePartner;
+      if (!canInvite) {
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              useSafeArea: true,
+              backgroundColor: MyWalkColor.charcoal,
+              builder: (_) => const MyWalkPaywallView(
+                contextTitle: 'Upgrade to invite a Support Partner',
+              ),
+            ),
+            icon: const Icon(Icons.lock_rounded, size: 16),
+            label: const Text(
+              'Support Partner — Premium',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E6B5E).withValues(alpha: 0.3),
+              foregroundColor: Colors.white.withValues(alpha: 0.5),
+              padding: _kPadding,
+              shape: _kShape,
+            ),
+          ),
+        );
+      }
       final accountabilityProv = context.watch<AccountabilityProvider>();
       return SizedBox(
         width: double.infinity,
@@ -770,9 +799,55 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
       ));
     }
 
+    final isPremium = context.read<StoreProvider>().isPremium;
+
+    void openPaywall() => showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: MyWalkColor.charcoal,
+          builder: (_) => const MyWalkPaywallView(
+            contextTitle: 'Upgrade to access the Freedom Plan',
+          ),
+        );
+
     // Path exists but plan not yet activated — go straight to the Freedom Plan
     // home screen which shows "Start Your Freedom Journey" / "Begin my Freedom Journey".
     if (!path.planActive) {
+      if (!isPremium) {
+        return GestureDetector(
+          onTap: openPaywall,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: purple.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(children: [
+              Icon(Icons.lock_rounded, size: 14, color: purple.withValues(alpha: 0.5)),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text('Freedom Plan — Premium',
+                    style: TextStyle(fontSize: 12, color: purple.withValues(alpha: 0.5))),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: MyWalkColor.golden.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Text('PRO',
+                    style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
+                        color: MyWalkColor.golden.withValues(alpha: 0.8),
+                        letterSpacing: 0.5)),
+              ),
+            ]),
+          ),
+        );
+      }
       return beginStrip(RecoveryPathHomeScreen(
         habitId: habitId,
         habitName: _habit.name,
@@ -788,9 +863,12 @@ class _HabitCheckInCardViewState extends State<HabitCheckInCardView> {
         : 'Freedom Plan · ${_phaseLabel(phase)} · Day $day';
 
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => MyFreedomPlanScreen(habitId: habitId, habitName: _habit.name),
-      )),
+      onTap: isPremium
+          ? () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) =>
+                    MyFreedomPlanScreen(habitId: habitId, habitName: _habit.name),
+              ))
+          : openPaywall,
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

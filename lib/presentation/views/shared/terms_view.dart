@@ -167,10 +167,16 @@ class _TermsContent extends StatelessWidget {
           '• Habit & practice data: The habits and spiritual practices you '
           'create, your daily check-in entries, timed sessions, counts, and '
           'streak progress.\n\n'
+          '• Journal content: Text reflections, photos, and voice recordings '
+          'you attach to journal entries. Sensitive text content (notes and '
+          'journal entries) is encrypted on your device before being stored.\n\n'
           '• Prayer Group data: Prayer requests, encouragements, and '
           'participation activity within circles you join or create.\n\n'
           '• App preferences: Notification settings, reminder times, and '
           'onboarding completion status.\n\n'
+          '• Calendar data: If you grant calendar access, we write circle '
+          'events to your device calendar. We do not read or store your '
+          'existing calendar events.\n\n'
           '• Device information: Basic device identifiers used by Firebase for '
           'authentication and analytics.',
         ),
@@ -203,8 +209,12 @@ class _TermsContent extends StatelessWidget {
         _body(
           'Your data is stored securely in Google Firebase Firestore, protected '
           'by Firebase Security Rules that ensure only you (and members of your '
-          'Prayer Groups) can access your data. Data is encrypted in transit '
-          'using industry-standard TLS encryption.',
+          'Prayer Groups) can access your data.\n\n'
+          '• In transit: All data is encrypted using industry-standard TLS.\n\n'
+          '• At rest: Sensitive content — including journal entries and habit '
+          'notes — is encrypted with AES-256 on your device before being sent '
+          'to our servers, so it cannot be read even in the event of a data '
+          'breach.',
         ),
 
         _heading('5. Data Retention'),

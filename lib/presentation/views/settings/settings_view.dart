@@ -1,4 +1,4 @@
-import 'dart:io' show exit;
+import 'dart:io' show Platform, exit;
 
 import 'package:app_settings/app_settings.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -21,8 +21,10 @@ import '../../../domain/entities/accountability_partnership.dart';
 import '../../providers/accountability_provider.dart';
 import '../../providers/journal_theme_provider.dart';
 import '../../theme/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../journal/journal_theme_picker.dart';
 import '../shared/mywalk_paywall_view.dart';
+import '../shared/terms_view.dart';
 import 'feedback_view.dart';
 import 'profile_edit_view.dart';
 
@@ -324,6 +326,21 @@ class _SettingsViewState extends State<SettingsView> {
                 _sectionHeader('About'),
                 const SizedBox(height: 8),
                 _infoRow('Version', '1.0.0'),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => TermsView.show(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: MyWalkDecorations.card,
+                    child: Row(children: [
+                      Icon(Icons.shield_outlined, size: 16, color: Colors.white.withValues(alpha: 0.5)),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text('Terms & Privacy Policy',
+                          style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.6)))),
+                      Icon(Icons.chevron_right, size: 16, color: Colors.white.withValues(alpha: 0.25)),
+                    ]),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 _resetButton(),
                 const SizedBox(height: 8),
@@ -378,7 +395,13 @@ class _SettingsViewState extends State<SettingsView> {
             child: Row(children: [
               const Icon(Icons.logout_rounded, size: 16, color: MyWalkColor.warmCoral),
               const SizedBox(width: 10),
-              const Text('Sign Out', style: TextStyle(fontSize: 14, color: MyWalkColor.warmCoral)),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Sign Out', style: TextStyle(fontSize: 14, color: MyWalkColor.warmCoral)),
+                  if (auth.email != null)
+                    Text(auth.email!, style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.38))),
+                ]),
+              ),
             ]),
           ),
         ),
@@ -489,6 +512,26 @@ class _SettingsViewState extends State<SettingsView> {
               Text(store.error!,
                   style: const TextStyle(fontSize: 11, color: MyWalkColor.warmCoral)),
             ],
+          ]),
+        ),
+      ),
+      const SizedBox(height: 8),
+      GestureDetector(
+        onTap: () async {
+          final url = Platform.isIOS
+              ? 'https://apps.apple.com/account/subscriptions'
+              : 'https://play.google.com/store/account/subscriptions?package=com.mywalk.faith';
+          await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: MyWalkDecorations.card,
+          child: Row(children: [
+            const Icon(Icons.manage_accounts_outlined, size: 16, color: MyWalkColor.softGold),
+            const SizedBox(width: 10),
+            Expanded(child: Text('Manage Subscription',
+                style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.6)))),
+            Icon(Icons.open_in_new, size: 14, color: Colors.white.withValues(alpha: 0.25)),
           ]),
         ),
       ),

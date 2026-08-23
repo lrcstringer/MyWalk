@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../fruit/fruit_portfolio_view.dart';
 import '../kingdom_life/beatitudes_view.dart';
@@ -234,52 +234,71 @@ class _KingdomLifeViewState extends State<KingdomLifeView> {
                       ),
 
                       // ── Premium grid ─────────────────────────────────────
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          SizedBox(
-                            width: cardWidth,
-                            child: _KingdomCard(
-                              imagePath: 'assets/beatitudes_golden_etched_separate/Beatitudes.jpg',
-                              title: 'The Beatitudes',
-                              subtitle: 'Matthew 5:3-12',
-                              onTap: () => Navigator.push(context,
-                                  MaterialPageRoute(builder: (_) => const BeatitudesView())),
+                      Builder(builder: (ctx) {
+                        final isPremium = ctx.watch<StoreProvider>().isPremium;
+                        void openOrPaywall(Widget screen) {
+                          if (isPremium) {
+                            Navigator.push(ctx, MaterialPageRoute(builder: (_) => screen));
+                          } else {
+                            showModalBottomSheet(
+                              context: ctx,
+                              isScrollControlled: true,
+                              useSafeArea: true,
+                              backgroundColor: MyWalkColor.charcoal,
+                              builder: (_) => const MyWalkPaywallView(
+                                contextTitle: 'Upgrade for full Kingdom Life access',
+                              ),
+                            );
+                          }
+                        }
+
+                        return Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            SizedBox(
+                              width: cardWidth,
+                              child: _KingdomCard(
+                                imagePath: 'assets/beatitudes_golden_etched_separate/Beatitudes.jpg',
+                                title: 'The Beatitudes',
+                                subtitle: 'Matthew 5:3-12',
+                                locked: !isPremium,
+                                onTap: () => openOrPaywall(const BeatitudesView()),
+                              ),
                             ),
-                          ),
-                          SizedBox(
-                            width: cardWidth,
-                            child: _KingdomCard(
-                              imagePath: 'assets/parables/Header.webp',
-                              title: 'The Parables of Jesus',
-                              subtitle: 'Mark 4:30',
-                              onTap: () => Navigator.push(context,
-                                  MaterialPageRoute(builder: (_) => const ParablesView())),
+                            SizedBox(
+                              width: cardWidth,
+                              child: _KingdomCard(
+                                imagePath: 'assets/parables/Header.webp',
+                                title: 'The Parables of Jesus',
+                                subtitle: 'Mark 4:30',
+                                locked: !isPremium,
+                                onTap: () => openOrPaywall(const ParablesView()),
+                              ),
                             ),
-                          ),
-                          SizedBox(
-                            width: cardWidth,
-                            child: _KingdomCard(
-                              imagePath: 'assets/Women/womenofvalor.webp',
-                              title: 'Women of Valor',
-                              subtitle: 'Proverbs 31:10',
-                              onTap: () => Navigator.push(context,
-                                  MaterialPageRoute(builder: (_) => const WomenOfValorView())),
+                            SizedBox(
+                              width: cardWidth,
+                              child: _KingdomCard(
+                                imagePath: 'assets/Women/womenofvalor.webp',
+                                title: 'Women of Valor',
+                                subtitle: 'Proverbs 31:10',
+                                locked: !isPremium,
+                                onTap: () => openOrPaywall(const WomenOfValorView()),
+                              ),
                             ),
-                          ),
-                          SizedBox(
-                            width: cardWidth,
-                            child: _KingdomCard(
-                              imagePath: 'assets/I Am/Header.webp',
-                              title: 'The \u201cI AM\u201d Sayings of Jesus',
-                              subtitle: 'Gospel of John',
-                              onTap: () => Navigator.push(context,
-                                  MaterialPageRoute(builder: (_) => const IAmSayingsView())),
+                            SizedBox(
+                              width: cardWidth,
+                              child: _KingdomCard(
+                                imagePath: 'assets/I Am/Header.webp',
+                                title: 'The \u201cI AM\u201d Sayings of Jesus',
+                                subtitle: 'Gospel of John',
+                                locked: !isPremium,
+                                onTap: () => openOrPaywall(const IAmSayingsView()),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        );
+                      }),
                     ],
                   );
                 },
@@ -587,6 +606,7 @@ class _KingdomCard extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
   final BoxFit imageFit;
+  final bool locked;
 
   const _KingdomCard({
     required this.imagePath,
@@ -594,6 +614,7 @@ class _KingdomCard extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.imageFit = BoxFit.cover,
+    this.locked = false,
   });
 
   @override
@@ -669,6 +690,28 @@ class _KingdomCard extends StatelessWidget {
                   ],
                 ),
               ),
+              // PRO badge — top-right when locked
+              if (locked)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: MyWalkColor.golden,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'PRO',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
           ),
