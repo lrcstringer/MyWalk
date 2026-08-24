@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../fruit/fruit_portfolio_view.dart';
 import '../kingdom_life/beatitudes_view.dart';
@@ -400,12 +400,11 @@ class _PremiumUpsellCard extends StatelessWidget {
   const _PremiumUpsellCard({required this.cardWidth});
 
   static const _features = [
-    (Icons.menu_book_rounded, 'Bible in a Year — 52-week daily reading plan'),
-    (Icons.psychology, 'Scripture Memorisation'),
     (Icons.format_list_bulleted, 'The Beatitudes — Matthew 5:3–12'),
     (Icons.auto_stories, 'The Parables of Jesus'),
     (Icons.favorite_border, 'Women of Valor — Proverbs 31'),
-    (Icons.record_voice_over_outlined, 'The \u201cI AM\u201d Sayings of Jesus'),
+    (Icons.record_voice_over_outlined, 'The “I AM” Sayings of Jesus'),
+    (Icons.add_circle_outline, 'Access to any future modules & content'),
   ];
 
   @override

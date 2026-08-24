@@ -458,7 +458,7 @@ class _SettingsViewState extends State<SettingsView> {
             ),
             const SizedBox(width: 12),
             const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('MyWalk Pro', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.golden)),
+              Text('MyWalk Premium', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: MyWalkColor.golden)),
               Text('All premium features unlocked',
                   style: TextStyle(fontSize: 12, color: MyWalkColor.softGold)),
             ])),

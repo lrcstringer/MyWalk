@@ -21,12 +21,13 @@ class _MyWalkPaywallViewState extends State<MyWalkPaywallView> {
   StoreProvider? _store;
 
   static const _features = [
-    (Icons.all_inclusive_rounded, 'Unlimited habits'),
-    (Icons.shield_rounded, 'Recovery Path & partner support'),
-    (Icons.bar_chart_rounded, 'Detailed analytics & insights'),
-    (Icons.format_quote_rounded, 'Custom purpose statements'),
-    (Icons.calendar_month_rounded, '52-week Year in MyWalk heatmap'),
-    (Icons.notifications_rounded, 'Smart reminders'),
+    (Icons.all_inclusive_rounded, 'Unlimited practices'),
+    (Icons.shield_rounded, 'Breaking Pattern Freedom recovery plan'),
+    (Icons.book_rounded, 'Unlimited journalling'),
+    (Icons.groups_rounded, 'Unlimited groups'),
+    (Icons.auto_stories_rounded, 'Full Kingdom Life access'),
+    (Icons.menu_book_rounded, 'Bible in a Year mini-app'),
+    (Icons.format_quote_rounded, 'Scripture Memorization mini-app'),
   ];
 
   @override
@@ -114,7 +115,7 @@ class _MyWalkPaywallViewState extends State<MyWalkPaywallView> {
             size: 28, color: MyWalkColor.golden),
       ),
       const SizedBox(height: 10),
-      const Text('MyWalk Pro',
+      const Text('MyWalk Premium',
           style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -308,7 +309,7 @@ class _MyWalkPaywallViewState extends State<MyWalkPaywallView> {
             const Icon(Icons.check_circle_rounded,
                 color: MyWalkColor.sage, size: 18),
             const SizedBox(width: 8),
-            const Text('Welcome to MyWalk Pro',
+            const Text('Welcome to MyWalk Premium',
                 style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

@@ -1739,19 +1739,46 @@ class _AddHabitViewState extends State<AddHabitView> {
             ),
           ]),
         ),
-        const SizedBox(height: 8),
-        Text(
-          '(You can set this up later if you don\'t want to now)',
-          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.35), fontStyle: FontStyle.italic),
-        ),
         const SizedBox(height: 10),
-        Row(
-          children: [
-            _pillChip(label: 'Yes', selected: _wantsRecoveryPath, onTap: () => setState(() => _wantsRecoveryPath = true)),
-            const SizedBox(width: 8),
-            _pillChip(label: 'No — set up later', selected: !_wantsRecoveryPath, onTap: () => setState(() => _wantsRecoveryPath = false)),
-          ],
-        ),
+        if (context.read<StoreProvider>().isPremium) ...[
+          Text(
+            '(You can set this up later if you don\'t want to now)',
+            style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.35), fontStyle: FontStyle.italic),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _pillChip(label: 'Yes', selected: _wantsRecoveryPath, onTap: () => setState(() => _wantsRecoveryPath = true)),
+              const SizedBox(width: 8),
+              _pillChip(label: 'No — set up later', selected: !_wantsRecoveryPath, onTap: () => setState(() => _wantsRecoveryPath = false)),
+            ],
+          ),
+        ] else ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                useSafeArea: true,
+                backgroundColor: MyWalkColor.charcoal,
+                builder: (_) => const MyWalkPaywallView(
+                  contextTitle: 'Upgrade to unlock the Freedom Plan',
+                ),
+              ),
+              icon: const Icon(Icons.lock_rounded, size: 16),
+              label: const Text('Freedom Plan — Premium',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6B4FA0).withValues(alpha: 0.18),
+                foregroundColor: Colors.white.withValues(alpha: 0.5),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

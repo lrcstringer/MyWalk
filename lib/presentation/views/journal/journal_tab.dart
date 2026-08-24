@@ -6,14 +6,12 @@ import '../../../domain/entities/journal_theme.dart';
 import '../../../domain/entities/fruit.dart';
 import '../../providers/journal_provider.dart';
 import '../../providers/journal_theme_provider.dart';
-import '../../providers/habit_provider.dart';
 import '../../providers/store_provider.dart';
 import '../shared/mywalk_paywall_view.dart';
 import '../../theme/app_theme.dart';
 import 'journal_entry_composer.dart';
 import 'journal_entry_detail_view.dart';
 import 'journal_theme_picker.dart';
-import 'freedom_journey_tab.dart';
 import '../shared/appbar_actions.dart';
 import '../help/journal_help_view.dart';
 
@@ -28,7 +26,6 @@ class _JournalTabState extends State<JournalTab>
     with TickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
   bool _initialized = false;
-  int _freedomTab = 0; // 0 = Journal, 1 = Freedom Journey
 
   bool _showSkinHint = false;
   late final AnimationController _pulseCtrl;
@@ -192,19 +189,12 @@ class _JournalTabState extends State<JournalTab>
   Widget build(BuildContext context) {
     final provider = context.watch<JournalProvider>();
     final theme = context.watch<JournalThemeProvider>().theme;
-    final habitProv = context.watch<HabitProvider>();
     final entries = provider.filteredEntries;
-
-    final breakingHabit = habitProv.habits
-        .where((h) =>
-            h.subcategoryId == 'breaking_habits' && h.hasRecoveryPath)
-        .firstOrNull;
-    final hasFreedomPlan = breakingHabit != null;
     final canWrite = context.watch<StoreProvider>().canAccessJournal;
 
     return Scaffold(
       backgroundColor: theme.bgPrimary,
-      floatingActionButton: (!hasFreedomPlan || _freedomTab == 0) && canWrite
+      floatingActionButton: canWrite
           ? FloatingActionButton(
               onPressed: () => Navigator.push<void>(
                 context,
@@ -355,7 +345,7 @@ class _JournalTabState extends State<JournalTab>
           ),
 
           // ── Read-only banner (free trial expired) ────────────────────────
-          if (!canWrite && (!hasFreedomPlan || _freedomTab == 0))
+          if (!canWrite)
             SliverToBoxAdapter(
               child: GestureDetector(
                 onTap: () => showModalBottomSheet(
@@ -397,45 +387,8 @@ class _JournalTabState extends State<JournalTab>
               ),
             ),
 
-          // ── Freedom Journey tab selector (when Freedom Plan active) ─────
-          if (hasFreedomPlan)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: SegmentedButton<int>(
-                  segments: const [
-                    ButtonSegment(value: 0, label: Text('Journal')),
-                    ButtonSegment(value: 1, label: Text('Freedom Journey')),
-                  ],
-                  selected: {_freedomTab},
-                  onSelectionChanged: (s) =>
-                      setState(() => _freedomTab = s.first),
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return const Color(0xFF8B7EC8);
-                      }
-                      return theme.bgCard;
-                    }),
-                    foregroundColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return theme.textSecondary;
-                    }),
-                  ),
-                ),
-              ),
-            ),
-
-          // ── Freedom Journey content (when tab 1 active) ──────────────────
-          if (hasFreedomPlan && _freedomTab == 1)
-            SliverFillRemaining(
-              child: FreedomJourneyTab(habitId: breakingHabit.id),
-            ),
-
           // ── Skin hint banner (first visit only) ─────────────────────────
-          if ((!hasFreedomPlan || _freedomTab == 0) && _showSkinHint)
+          if (_showSkinHint)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -478,9 +431,7 @@ class _JournalTabState extends State<JournalTab>
               ),
             ),
 
-          // ── Loading / empty / entries (journal tab only) ─────────────────
-          if (!hasFreedomPlan || _freedomTab == 0) ...[
-
+          // ── Loading / empty / entries ─────────────────────────────────────
           if (provider.isLoading)
             SliverFillRemaining(
               child: Center(
@@ -592,7 +543,6 @@ class _JournalTabState extends State<JournalTab>
               ]);
             }),
           ],
-          ], // end journal-tab-only slivers
         ],
       ),
     );
