@@ -46,6 +46,7 @@ dependencies:
 
   # In-app purchases (native StoreKit / Play Billing)
   in_app_purchase: ^3.2.0
+  in_app_purchase_storekit: ^0.4.0
 
   # Firebase
   firebase_core: ^3.6.0

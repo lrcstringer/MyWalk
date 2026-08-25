@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../data/services/referral_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -22,6 +26,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
   );
   bool _loadingCode = false;
   bool _copied = false;
+  bool _claimingTier1 = false;
 
   @override
   void initState() {
@@ -101,6 +106,10 @@ class _ReferralScreenState extends State<ReferralScreen> {
               title: '50% off next renewal',
               body: 'Get 3 friends to subscribe and your next annual renewal is half price.',
             ),
+            if (_data.tier1Granted && !_data.tier2Granted && !kIsWeb && Platform.isIOS) ...[
+              const SizedBox(height: 12),
+              _appleTier1Banner(),
+            ],
             const SizedBox(height: 12),
             _rewardCard(
               tier: 2,
@@ -110,6 +119,10 @@ class _ReferralScreenState extends State<ReferralScreen> {
               title: 'Free lifetime upgrade',
               body: 'Get 5 friends to subscribe and your account is upgraded to lifetime — free.',
             ),
+            if (_data.tier2Granted && !kIsWeb && Platform.isIOS) ...[
+              const SizedBox(height: 16),
+              _appleCancelBanner(),
+            ],
             const SizedBox(height: 24),
             _howItWorksCard(),
           ],
@@ -305,6 +318,183 @@ class _ReferralScreenState extends State<ReferralScreen> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _claimTier1Offer() async {
+    setState(() => _claimingTier1 = true);
+    try {
+      final offer = await ReferralService.shared.getApplePromoOffer();
+      if (offer == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not load offer — please try again.')),
+          );
+        }
+        return;
+      }
+      final payment = SKPaymentWrapper(
+        productIdentifier: offer.productId,
+        applicationUsername: offer.applicationUsername,
+        quantity: 1,
+        simulatesAskToBuyInSandbox: false,
+        paymentDiscount: SKPaymentDiscountWrapper(
+          identifier: offer.offerId,
+          keyIdentifier: offer.keyIdentifier,
+          nonce: offer.nonce,
+          signature: offer.signature,
+          timestamp: offer.timestamp,
+        ),
+      );
+      // Purchase result flows through StoreProvider's existing purchaseStream listener.
+      await SKPaymentQueueWrapper().addPayment(payment);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Purchase failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _claimingTier1 = false);
+    }
+  }
+
+  Widget _appleTier1Banner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MyWalkColor.golden.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border:
+            Border.all(color: MyWalkColor.golden.withValues(alpha: 0.4), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.celebration_rounded,
+                  color: MyWalkColor.softGold, size: 16),
+              const SizedBox(width: 6),
+              const Text(
+                'REWARD UNLOCKED',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                  color: MyWalkColor.softGold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Claim your 50% off next annual renewal. '
+            'Tap below — your next year will be billed at \$19.99.',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.7),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _claimingTier1 ? null : _claimTier1Offer,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MyWalkColor.golden,
+                foregroundColor: MyWalkColor.charcoal,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              child: _claimingTier1
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: MyWalkColor.charcoal),
+                    )
+                  : const Text(
+                      'Claim 50% off next year',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _appleCancelBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MyWalkColor.golden.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border:
+            Border.all(color: MyWalkColor.golden.withValues(alpha: 0.4), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.info_outline_rounded,
+                  color: MyWalkColor.softGold, size: 16),
+              const SizedBox(width: 6),
+              const Text(
+                'ACTION NEEDED',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                  color: MyWalkColor.softGold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "You're now Lifetime — no more annual renewals needed. "
+            "Cancel your App Store subscription so you're not billed again.",
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.7),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => launchUrl(
+                Uri.parse('https://apps.apple.com/account/subscriptions'),
+                mode: LaunchMode.externalApplication,
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MyWalkColor.golden.withValues(alpha: 0.15),
+                foregroundColor: MyWalkColor.golden,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: BorderSide(
+                      color: MyWalkColor.golden.withValues(alpha: 0.4), width: 1),
+                ),
+              ),
+              child: const Text(
+                'Cancel in App Store',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+            ),
+          ),
         ],
       ),
     );

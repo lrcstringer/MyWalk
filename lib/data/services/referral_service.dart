@@ -24,6 +24,26 @@ class ReferralData {
   });
 }
 
+class ApplePromoOfferData {
+  final String keyIdentifier;
+  final String offerId;
+  final String productId;
+  final String applicationUsername;
+  final String nonce;
+  final int timestamp;
+  final String signature;
+
+  const ApplePromoOfferData({
+    required this.keyIdentifier,
+    required this.offerId,
+    required this.productId,
+    required this.applicationUsername,
+    required this.nonce,
+    required this.timestamp,
+    required this.signature,
+  });
+}
+
 class ReferralService {
   static final ReferralService shared = ReferralService._();
   ReferralService._();
@@ -47,6 +67,25 @@ class ReferralService {
       };
     } catch (_) {
       return ApplyReferralResult.networkError;
+    }
+  }
+
+  Future<ApplePromoOfferData?> getApplePromoOffer() async {
+    try {
+      final callable = _fn.httpsCallable('getApplePromoOffer');
+      final result = await callable.call<Map<String, dynamic>>({'productId': 'annualsub'});
+      final d = Map<String, dynamic>.from(result.data as Map);
+      return ApplePromoOfferData(
+        keyIdentifier: d['keyIdentifier'] as String,
+        offerId: d['offerId'] as String,
+        productId: d['productId'] as String,
+        applicationUsername: d['applicationUsername'] as String,
+        nonce: d['nonce'] as String,
+        timestamp: (d['timestamp'] as num).toInt(),
+        signature: d['signature'] as String,
+      );
+    } catch (_) {
+      return null;
     }
   }
 

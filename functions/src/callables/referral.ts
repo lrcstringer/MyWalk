@@ -31,6 +31,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { db } from '../lib/admin';
 import { referralCodesCol, referralPurchasesCol, usersCol } from '../lib/firestore';
 import { sendPushToUsers } from '../lib/fcm';
+import { cancelSubscription, deferSubscription, googleServiceAccount } from '../lib/google-play';
 
 // ── Code generation ────────────────────────────────────────────────────────────
 
@@ -127,7 +128,7 @@ export const applyReferralCode = onCall(
 // ── processReferralConfirmations (scheduled) ───────────────────────────────────
 
 export const processReferralConfirmations = onSchedule(
-  { schedule: 'every 24 hours', region: 'us-central1', memory: '256MiB' },
+  { schedule: 'every 24 hours', region: 'us-central1', memory: '256MiB', secrets: [googleServiceAccount] },
   async () => {
     const thirtyDaysAgo = Timestamp.fromMillis(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
@@ -195,6 +196,8 @@ export async function recordReferralPurchase(uid: string): Promise<void> {
 //
 // Reads the referrer's current count and grants any newly-hit reward tiers.
 // All reward grants are idempotent via the tier1Granted / tier2Granted flags.
+// Google Play store operations run after Firestore writes so a Play API failure
+// never blocks the in-app reward.
 
 async function _checkAndGrantRewards(referrerUid: string): Promise<void> {
   const userRef = usersCol().doc(referrerUid);
@@ -205,45 +208,73 @@ async function _checkAndGrantRewards(referrerUid: string): Promise<void> {
   const count = (data.referralCount as number) ?? 0;
   const rewards = (data.referralRewards as Record<string, unknown>) ?? {};
 
-  const updates: Record<string, unknown> = {};
+  const grantTier1 = count >= 3 && !rewards.tier1Granted;
+  const grantTier2 = count >= 5 && !rewards.tier2Granted;
+  if (!grantTier1 && !grantTier2) return;
 
-  if (count >= 3 && !rewards.tier1Granted) {
+  const updates: Record<string, unknown> = {};
+  const now = Timestamp.now();
+
+  if (grantTier1) {
     updates['referralRewards.tier1Granted'] = true;
-    updates['referralRewards.tier1GrantedAt'] = Timestamp.now();
+    updates['referralRewards.tier1GrantedAt'] = now;
+  }
+  if (grantTier2) {
+    updates['referralRewards.tier2Granted'] = true;
+    updates['referralRewards.tier2GrantedAt'] = now;
   }
 
-  if (count >= 5 && !rewards.tier2Granted) {
-    updates['referralRewards.tier2Granted'] = true;
-    updates['referralRewards.tier2GrantedAt'] = Timestamp.now();
+  // Read subscription doc once — needed for both tiers' store operations.
+  const subRef = userRef.collection('subscription').doc('status');
+  const subSnap = await subRef.get();
+  const subData = subSnap.data();
+  const platform = (subData?.platform as string) ?? 'unknown';
+  const productId = (subData?.productId as string) ?? '';
+  const purchaseId = (subData?.purchaseId as string) ?? '';
+  const isAndroidSub = platform === 'android' && !!purchaseId &&
+    (productId === 'annualsub' || productId === 'monthlysub');
 
-    // Read current subscription platform before overwriting.
-    const subRef = userRef.collection('subscription').doc('status');
-    const subSnap = await subRef.get();
-    const platform = (subSnap.data()?.platform as string) ?? 'unknown';
-
+  // Tier 2: overwrite subscription to lifetime in Firestore, then cancel the store sub.
+  if (grantTier2) {
     await subRef.set({
       productId: 'lifetimeonetime',
       platform,
       purchaseId: `referral_reward_${Date.now()}`,
       status: 'active',
       expiresAt: null,
-      validatedAt: Timestamp.now(),
+      validatedAt: now,
       source: 'referral_reward',
     });
+
+    if (isAndroidSub) {
+      await cancelSubscription(purchaseId, productId).catch((e) =>
+        console.error('Play cancel failed for tier2 reward:', e)
+      );
+    }
   }
 
-  if (Object.keys(updates).length === 0) return;
+  // Tier 1: defer the next billing date by 183 days on Google Play (≈ 6 months free).
+  // Skip if Tier 2 is also being granted in this same run — cancel supersedes.
+  if (grantTier1 && !grantTier2 && isAndroidSub && productId === 'annualsub') {
+    await deferSubscription(purchaseId, productId, 183).catch((e) =>
+      console.error('Play defer failed for tier1 reward:', e)
+    );
+  }
 
   await userRef.update(updates);
 
   // Push notifications — fire after writes so partial failures don't block the reward.
-  if (updates['referralRewards.tier2Granted']) {
+  if (grantTier2) {
+    const isIos = platform === 'ios';
     await sendPushToUsers([referrerUid], {
       title: "You've been upgraded to Lifetime!",
-      body: '5 referrals confirmed — you now have lifetime access to MyWalk.',
+      body: isIos
+        ? '5 referrals confirmed — you now have lifetime access. Please cancel your App Store subscription to avoid further billing.'
+        : '5 referrals confirmed — your Google Play subscription has been cancelled. You now have lifetime access.',
       channelId: 'circles',
+      ...(isIos && { data: { action: 'cancel_apple_subscription' } }),
     }).catch((e) => console.error('referral tier2 push failed:', e));
-  } else if (updates['referralRewards.tier1Granted']) {
+  } else if (grantTier1) {
     await sendPushToUsers([referrerUid], {
       title: "You've earned a reward!",
       body: '3 referrals confirmed — your next annual renewal is 50% off.',

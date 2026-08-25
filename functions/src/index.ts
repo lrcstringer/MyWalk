@@ -79,6 +79,7 @@ export {
   applyReferralCode,
   processReferralConfirmations,
 } from './callables/referral';
+export { getApplePromoOffer } from './callables/apple-promo';
 export { redeemToken } from './callables/tokens';
 
 // ── Scheduled: purge expired notifications ─────────────────────────────────
