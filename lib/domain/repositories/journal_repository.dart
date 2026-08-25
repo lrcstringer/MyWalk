@@ -9,6 +9,10 @@ abstract class JournalRepository {
   /// Load all journal entries for the authenticated user, newest first.
   Future<List<JournalEntry>> loadEntries();
 
+  /// Load entries older than [before], newest-first, up to [limit] items.
+  /// Used for pagination beyond the initial streamed window.
+  Future<List<JournalEntry>> loadEntriesBefore(DateTime before, {int limit = 50});
+
   /// Persist a new journal entry.
   Future<void> saveEntry(JournalEntry entry);
 

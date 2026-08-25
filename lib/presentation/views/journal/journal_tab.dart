@@ -25,6 +25,7 @@ class JournalTab extends StatefulWidget {
 class _JournalTabState extends State<JournalTab>
     with TickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
   bool _initialized = false;
 
   bool _showSkinHint = false;
@@ -39,6 +40,14 @@ class _JournalTabState extends State<JournalTab>
       duration: const Duration(milliseconds: 900),
     );
     _pulseAnim = CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut);
+    _scrollCtrl.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final pos = _scrollCtrl.position;
+    if (pos.pixels >= pos.maxScrollExtent - 300) {
+      context.read<JournalProvider>().loadMore();
+    }
   }
 
   @override
@@ -121,6 +130,7 @@ class _JournalTabState extends State<JournalTab>
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scrollCtrl.dispose();
     _pulseCtrl.dispose();
     super.dispose();
   }
@@ -207,6 +217,7 @@ class _JournalTabState extends State<JournalTab>
             )
           : null,
       body: CustomScrollView(
+        controller: _scrollCtrl,
         slivers: [
           // ── Hero image app bar ───────────────────────────────────────────
           SliverAppBar(
@@ -519,7 +530,7 @@ class _JournalTabState extends State<JournalTab>
                           label: 'ENTRIES', icon: null, theme: theme),
                     ),
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, provider.hasMore ? 0 : 80),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (ctx, i) {
@@ -540,6 +551,26 @@ class _JournalTabState extends State<JournalTab>
                     ),
                   ),
                 ],
+
+                // Pagination indicator — shown when more entries exist beyond the loaded window.
+                if (provider.hasMore || provider.isLoadingMore)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
+                      child: Center(
+                        child: provider.isLoadingMore
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: theme.textSecondary,
+                                  strokeWidth: 1.5,
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
               ]);
             }),
           ],

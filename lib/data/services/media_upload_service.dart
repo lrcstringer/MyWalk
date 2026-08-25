@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/repositories/journal_repository.dart';
+import 'local_image_cache_service.dart';
 import 'local_voice_cache_service.dart';
 
 /// Describes a single local media file waiting to be uploaded.
@@ -81,6 +82,7 @@ class MediaUploadService {
     _prefs = prefs;
     _repo = repo;
     LocalVoiceCacheService.instance.init(prefs);
+    LocalImageCacheService.instance.init(prefs);
 
     // Listen for connectivity changes and process queue when online.
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
@@ -126,6 +128,7 @@ class MediaUploadService {
 
     queue.removeWhere((e) => e.entryId == entryId);
     await _saveQueue(queue);
+    await LocalImageCacheService.instance.removePaths(entryId);
 
     if (_processing) {
       // If currently processing, the running snapshot already has this entry.
@@ -271,12 +274,14 @@ class MediaUploadService {
       // Clean up local staging files; retain voice files for offline playback.
       for (final (:file, url: _) in uploaded) {
         if (file.type == 'voice') {
-          // Keep the voice file for offline playback and register it.
           LocalVoiceCacheService.instance
               .setPath(pending.entryId, file.localPath)
               .ignore();
         } else {
-          try { File(file.localPath).deleteSync(); } catch (_) {}
+          // Keep image file for offline access; register by index.
+          LocalImageCacheService.instance
+              .setPath(pending.entryId, file.index, file.localPath)
+              .ignore();
         }
         stillPending.remove(file);
       }

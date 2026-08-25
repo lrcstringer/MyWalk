@@ -280,9 +280,23 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final lifetime = store.lifetimeProduct;
 
     if (monthly == null && annual == null && lifetime == null) {
-      return Text('Loading plans\u2026',
-          style:
-              TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4)));
+      if (store.isLoading) {
+        return Text('Loading plans\u2026',
+            style: TextStyle(
+                fontSize: 13, color: Colors.white.withValues(alpha: 0.4)));
+      }
+      return Column(children: [
+        Text(
+          'Plans unavailable right now.',
+          style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.5)),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: () => store.retryProducts(),
+          child: const Text('Tap to retry',
+              style: TextStyle(fontSize: 13, color: MyWalkColor.golden)),
+        ),
+      ]);
     }
 
     return Column(children: [

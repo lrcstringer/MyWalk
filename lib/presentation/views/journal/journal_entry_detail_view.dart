@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:provider/provider.dart';
+import '../../../data/services/local_image_cache_service.dart';
 import '../../../data/services/local_voice_cache_service.dart';
 import '../../../domain/entities/fruit.dart';
 import '../../../domain/entities/journal_entry.dart';
@@ -311,8 +312,15 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
           // Images
           if (entry.imageUrls.isNotEmpty) ...[
             const SizedBox(height: 20),
-            ...entry.imageUrls
-                .map((url) => _NetworkImageTile(url: url, theme: theme)),
+            ...() {
+              final localPaths = LocalImageCacheService.instance
+                  .getPaths(entry.id, entry.imageUrls.length);
+              return entry.imageUrls.asMap().entries.map((e) => _NetworkImageTile(
+                url: e.value,
+                localPath: localPaths[e.key],
+                theme: theme,
+              ));
+            }(),
           ],
 
           // Voice playback
@@ -412,9 +420,10 @@ class _SourceChipRow extends StatelessWidget {
 
 class _NetworkImageTile extends StatefulWidget {
   final String url;
+  final String? localPath;
   final JournalTheme theme;
 
-  const _NetworkImageTile({required this.url, required this.theme});
+  const _NetworkImageTile({required this.url, this.localPath, required this.theme});
 
   @override
   State<_NetworkImageTile> createState() => _NetworkImageTileState();
@@ -444,15 +453,31 @@ class _NetworkImageTileState extends State<_NetworkImageTile> {
     );
   }
 
-  Widget _thumbnail() {
-    return SizedBox(
-      width: _thumbSize,
-      height: _thumbSize,
-      child: CachedNetworkImage(
-        imageUrl: widget.url,
-        fit: BoxFit.cover,
-        errorWidget: (_, _, _) => Container(
-          color: widget.theme.bgCard,
+  Widget _imageContent({required BoxFit fit, double? width, double? height}) {
+    final local = widget.localPath;
+    if (local != null) {
+      return Image.file(
+        File(local),
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (ctx, e, st) => _networkImage(fit: fit, width: width, height: height),
+      );
+    }
+    return _networkImage(fit: fit, width: width, height: height);
+  }
+
+  Widget _networkImage({required BoxFit fit, double? width, double? height}) {
+    return CachedNetworkImage(
+      imageUrl: widget.url,
+      fit: fit,
+      width: width,
+      height: height,
+      errorWidget: (ctx, e, st) => Container(
+        width: width,
+        height: height ?? 160,
+        color: widget.theme.bgCard,
+        child: Center(
           child: Icon(Icons.broken_image_outlined,
               color: widget.theme.textSecondary, size: 28),
         ),
@@ -460,21 +485,18 @@ class _NetworkImageTileState extends State<_NetworkImageTile> {
     );
   }
 
+  Widget _thumbnail() {
+    return SizedBox(
+      width: _thumbSize,
+      height: _thumbSize,
+      child: _imageContent(fit: BoxFit.cover, width: _thumbSize, height: _thumbSize),
+    );
+  }
+
   Widget _expandedImage() {
     return SizedBox(
       width: double.infinity,
-      child: CachedNetworkImage(
-        imageUrl: widget.url,
-        fit: BoxFit.cover,
-        errorWidget: (_, _, _) => Container(
-          height: 160,
-          color: widget.theme.bgCard,
-          child: Center(
-            child: Icon(Icons.broken_image_outlined,
-                color: widget.theme.textSecondary, size: 32),
-          ),
-        ),
-      ),
+      child: _imageContent(fit: BoxFit.cover),
     );
   }
 }

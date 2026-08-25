@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../data/datasources/remote/auth_service.dart';
+import '../../data/services/local_image_cache_service.dart';
 import '../../data/services/local_voice_cache_service.dart';
 import '../../data/services/media_upload_service.dart';
 import '../../domain/entities/fruit.dart';
@@ -21,16 +22,34 @@ class JournalProvider extends ChangeNotifier {
     if (AuthService.shared.isAuthenticated) _subscribeToEntries();
   }
 
-  List<JournalEntry> _entries = [];
+  // Latest 50 entries kept in sync by the Firestore stream.
+  List<JournalEntry> _streamedEntries = [];
+  // Older entries loaded on demand via loadMore().
+  List<JournalEntry> _olderEntries = [];
+
   bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = false;
   String _searchQuery = '';
   JournalSortOrder _sortOrder = JournalSortOrder.newestFirst;
 
   StreamSubscription<List<JournalEntry>>? _entriesSub;
 
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _hasMore;
   String get searchQuery => _searchQuery;
   JournalSortOrder get sortOrder => _sortOrder;
+
+  // Merged view: live top-50 + older paginated entries (deduplicated).
+  List<JournalEntry> get _entries {
+    if (_olderEntries.isEmpty) return _streamedEntries;
+    final streamedIds = _streamedEntries.map((e) => e.id).toSet();
+    return [
+      ..._streamedEntries,
+      ..._olderEntries.where((e) => !streamedIds.contains(e.id)),
+    ];
+  }
 
   @override
   void dispose() {
@@ -45,19 +64,27 @@ class JournalProvider extends ChangeNotifier {
     } else {
       _entriesSub?.cancel();
       _entriesSub = null;
-      _entries = [];
+      _streamedEntries = [];
+      _olderEntries = [];
+      _hasMore = false;
       _isLoading = false;
+      _isLoadingMore = false;
       notifyListeners();
     }
   }
 
   void _subscribeToEntries() {
     _entriesSub?.cancel();
+    _olderEntries = [];
+    _hasMore = false;
+    _isLoadingMore = false;
     _isLoading = true;
     notifyListeners();
     _entriesSub = _repository.watchEntries().listen(
       (entries) {
-        _entries = entries;
+        _streamedEntries = entries;
+        // If the stream returned a full page, older entries may exist.
+        _hasMore = entries.length >= 50;
         _isLoading = false;
         notifyListeners();
       },
@@ -203,8 +230,14 @@ class JournalProvider extends ChangeNotifier {
     final pendingFiles =
         await _stageMediaFiles(entry.id, newImageLocalPaths, newVoiceLocalPath);
 
-    // Fire-and-forget: stream reflects update automatically.
+    // Fire-and-forget: stream reflects update automatically for entries in the
+    // top-50 window. For older (paginated) entries, update the local list directly.
     _repository.updateEntry(updated).ignore();
+    final olderIdx = _olderEntries.indexWhere((e) => e.id == entry.id);
+    if (olderIdx != -1) {
+      _olderEntries[olderIdx] = updated;
+      notifyListeners();
+    }
 
     if (pendingFiles.isNotEmpty) {
       await MediaUploadService.instance.enqueueUploads(entry.id, pendingFiles);
@@ -232,11 +265,51 @@ class JournalProvider extends ChangeNotifier {
       _repository.deleteMedia(entry.voiceUrl!).ignore();
     }
 
-    // Remove any cached local voice path so it doesn't linger indefinitely.
     LocalVoiceCacheService.instance.removePath(entry.id).ignore();
+
+    // Delete cached local image files and remove from index.
+    final localImagePaths = LocalImageCacheService.instance
+        .getPaths(entry.id, entry.imageUrls.length);
+    for (final path in localImagePaths) {
+      if (path != null) try { File(path).deleteSync(); } catch (_) {}
+    }
+    LocalImageCacheService.instance.removePaths(entry.id).ignore();
+
+    // Remove from older entries list immediately (stream handles the streamed window).
+    _olderEntries.removeWhere((e) => e.id == entry.id);
 
     // Fire-and-forget: stream reflects deletion automatically.
     _repository.deleteEntry(entry.id).ignore();
+  }
+
+  /// Fetch the next page of older entries and append them to [_olderEntries].
+  Future<void> loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    final oldest = _entries.lastOrNull;
+    if (oldest == null) return;
+
+    _isLoadingMore = true;
+    notifyListeners();
+    try {
+      const pageSize = 50;
+      final page = await _repository.loadEntriesBefore(
+        oldest.createdAt,
+        limit: pageSize,
+      );
+      if (page.isEmpty) {
+        _hasMore = false;
+      } else {
+        final knownIds = _entries.map((e) => e.id).toSet();
+        final fresh = page.where((e) => !knownIds.contains(e.id)).toList();
+        _olderEntries = [..._olderEntries, ...fresh];
+        _hasMore = page.length >= pageSize;
+      }
+    } catch (_) {
+      // Network error — leave _hasMore unchanged so user can retry by scrolling.
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
+    }
   }
 
   void setSearchQuery(String query) {

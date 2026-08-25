@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import '../../../data/services/local_image_cache_service.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -23,7 +25,9 @@ import 'doodle_canvas_screen.dart';
 
 const _kMaxRecordSeconds = 180; // 3 minutes
 const _kMaxImagesPerEntry = 3;
-const _kMaxImageBytes = 10 * 1024 * 1024; // 10 MB
+const _kMaxImageBytes = 10 * 1024 * 1024; // 10 MB pre-compression guard
+const _kImageMaxDimension = 1920; // longest edge after resize
+const _kImageQuality = 80; // JPEG quality after resize
 
 class JournalEntryComposer extends StatefulWidget {
   /// If provided, the composer opens in edit mode.
@@ -221,17 +225,42 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
       return;
     }
 
-    final xfile = await _imagePicker.pickImage(
-        source: source, imageQuality: 80);
+    // Pick without quality reduction — we apply our own resize+compress below.
+    final xfile = await _imagePicker.pickImage(source: source);
     if (xfile == null || !mounted) return;
 
+    // Guard against extremely large originals before we attempt compression.
     if (File(xfile.path).lengthSync() > _kMaxImageBytes) {
       _showSnack('Image is too large (max 10 MB). Please choose a smaller photo.');
       return;
     }
 
+    // Resize to max _kImageMaxDimension on the longest edge and re-encode at
+    // _kImageQuality. This brings a typical 12MP photo (~4 MB) down to ~300 KB.
+    final tempDir = await getTemporaryDirectory();
+    final targetPath =
+        '${tempDir.path}/journal_img_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+    final compressed = await FlutterImageCompress.compressAndGetFile(
+      xfile.path,
+      targetPath,
+      minWidth: _kImageMaxDimension,
+      minHeight: _kImageMaxDimension,
+      quality: _kImageQuality,
+      keepExif: false,
+    );
+
+    if (!mounted) return;
+    if (compressed == null) {
+      // Compression failed — fall back to original rather than blocking the user.
+      if (_kMaxImagesPerEntry - _totalImageCount > 0) {
+        setState(() => _newImagePaths.add(xfile.path));
+      }
+      return;
+    }
+
     if (_kMaxImagesPerEntry - _totalImageCount <= 0) return;
-    setState(() => _newImagePaths.add(xfile.path));
+    setState(() => _newImagePaths.add(compressed.path));
   }
 
   void _removeNewImage(int index) =>
@@ -265,7 +294,7 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
     final path = '${appDir.path}/journal_voice_tmp.m4a';
 
     await _recorder.start(
-        const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+        const RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 64000), path: path);
 
     setState(() {
       _isRecording = true;
@@ -654,6 +683,10 @@ class _JournalEntryComposerState extends State<JournalEntryComposer> {
           if (_totalImageCount > 0) ...[
             _AttachmentThumbnails(
               existingUrls: _existingImageUrls,
+              existingLocalPaths: widget.initialEntry == null
+                  ? []
+                  : LocalImageCacheService.instance.getPaths(
+                      widget.initialEntry!.id, _existingImageUrls.length),
               newPaths: _newImagePaths,
               theme: theme,
               onRemoveExisting: _removeExistingImage,
@@ -932,6 +965,7 @@ class _BottomFormattingBar extends StatelessWidget {
 
 class _AttachmentThumbnails extends StatelessWidget {
   final List<String> existingUrls;
+  final List<String?> existingLocalPaths;
   final List<String> newPaths;
   final JournalTheme theme;
   final ValueChanged<String> onRemoveExisting;
@@ -939,6 +973,7 @@ class _AttachmentThumbnails extends StatelessWidget {
 
   const _AttachmentThumbnails({
     required this.existingUrls,
+    required this.existingLocalPaths,
     required this.newPaths,
     required this.theme,
     required this.onRemoveExisting,
@@ -952,8 +987,13 @@ class _AttachmentThumbnails extends StatelessWidget {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          for (final url in existingUrls)
-            _ImageThumb.network(url: url, theme: theme, onRemove: () => onRemoveExisting(url)),
+          for (var i = 0; i < existingUrls.length; i++)
+            _ImageThumb.network(
+              url: existingUrls[i],
+              localPath: i < existingLocalPaths.length ? existingLocalPaths[i] : null,
+              theme: theme,
+              onRemove: () => onRemoveExisting(existingUrls[i]),
+            ),
           for (var i = 0; i < newPaths.length; i++)
             _ImageThumb.file(path: newPaths[i], theme: theme, onRemove: () => onRemoveNew(i)),
         ],
@@ -1072,21 +1112,34 @@ class _ImageThumb extends StatelessWidget {
 
   factory _ImageThumb.network({
     required String url,
+    String? localPath,
     required JournalTheme theme,
     required VoidCallback onRemove,
   }) {
-    return _ImageThumb(
-      theme: theme,
-      onRemove: onRemove,
-      child: Image.network(
-        url,
-        width: 80,
-        height: 80,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) =>
-            Icon(Icons.broken_image, color: theme.textSecondary),
-      ),
-    );
+    final Widget image = localPath != null
+        ? Image.file(
+            File(localPath),
+            width: 80,
+            height: 80,
+            fit: BoxFit.cover,
+            errorBuilder: (ctx, e, st) => Image.network(
+              url,
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              errorBuilder: (ctx2, e2, st2) =>
+                  Icon(Icons.broken_image, color: theme.textSecondary),
+            ),
+          )
+        : Image.network(
+            url,
+            width: 80,
+            height: 80,
+            fit: BoxFit.cover,
+            errorBuilder: (ctx, e, st) =>
+                Icon(Icons.broken_image, color: theme.textSecondary),
+          );
+    return _ImageThumb(theme: theme, onRemove: onRemove, child: image);
   }
 
   factory _ImageThumb.file({

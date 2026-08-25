@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:provider/provider.dart';
 import '../../providers/store_provider.dart';
 import '../../theme/app_theme.dart';
@@ -162,11 +163,28 @@ class _MyWalkPaywallViewState extends State<MyWalkPaywallView> {
     final lifetime = store.lifetimeProduct;
 
     if (monthly == null && annual == null && lifetime == null) {
+      if (store.isLoading) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Text('Loading plans\u2026',
+              style: TextStyle(
+                  fontSize: 13, color: Colors.white.withValues(alpha: 0.4))),
+        );
+      }
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Text('Loading plans\u2026',
-            style: TextStyle(
-                fontSize: 13, color: Colors.white.withValues(alpha: 0.4))),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(children: [
+          Text(
+            'Plans unavailable right now.',
+            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.5)),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => store.retryProducts(),
+            child: const Text('Tap to retry',
+                style: TextStyle(fontSize: 13, color: MyWalkColor.golden)),
+          ),
+        ]),
       );
     }
 
@@ -319,7 +337,7 @@ class _MyWalkPaywallViewState extends State<MyWalkPaywallView> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: (store.isPurchasing || store.isLoading)
+              onPressed: (store.isPurchasing || store.isLoading || _selectedProduct(store) == null)
                   ? null
                   : () => _purchase(store),
               style: ElevatedButton.styleFrom(
@@ -379,12 +397,14 @@ class _MyWalkPaywallViewState extends State<MyWalkPaywallView> {
         _Plan.lifetime => 'Buy Lifetime Access',
       };
 
+  ProductDetails? _selectedProduct(StoreProvider store) => switch (_selectedPlan) {
+        _Plan.monthly => store.monthlyProduct,
+        _Plan.annual => store.annualProduct,
+        _Plan.lifetime => store.lifetimeProduct,
+      };
+
   Future<void> _purchase(StoreProvider store) async {
-    final product = switch (_selectedPlan) {
-      _Plan.monthly => store.monthlyProduct,
-      _Plan.annual => store.annualProduct,
-      _Plan.lifetime => store.lifetimeProduct,
-    };
+    final product = _selectedProduct(store);
     if (product != null) await store.purchase(product);
   }
 }

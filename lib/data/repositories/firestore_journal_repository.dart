@@ -34,6 +34,7 @@ class FirestoreJournalRepository implements JournalRepository {
     if (uid == null) return const Stream.empty();
     return _journalRef
         .orderBy('createdAt', descending: true)
+        .limit(50)
         .snapshots()
         .map((snap) => snap.docs.map((d) {
               final data = Map<String, dynamic>.from(d.data());
@@ -48,6 +49,24 @@ class FirestoreJournalRepository implements JournalRepository {
     if (uid == null) return const [];
 
     final snap = await _journalRef.orderBy('createdAt', descending: true).get();
+    return snap.docs.map((d) {
+      final data = Map<String, dynamic>.from(d.data());
+      data['text'] = _enc.decryptField(data['text'] as String?, uid);
+      return JournalEntry.fromFirestore(data);
+    }).toList();
+  }
+
+  @override
+  Future<List<JournalEntry>> loadEntriesBefore(
+      DateTime before, {int limit = 50}) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return const [];
+
+    final snap = await _journalRef
+        .orderBy('createdAt', descending: true)
+        .where('createdAt', isLessThan: Timestamp.fromDate(before))
+        .limit(limit)
+        .get();
     return snap.docs.map((d) {
       final data = Map<String, dynamic>.from(d.data());
       data['text'] = _enc.decryptField(data['text'] as String?, uid);
