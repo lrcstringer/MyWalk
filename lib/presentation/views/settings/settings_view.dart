@@ -27,6 +27,7 @@ import '../shared/mywalk_paywall_view.dart';
 import '../shared/terms_view.dart';
 import 'feedback_view.dart';
 import 'profile_edit_view.dart';
+import 'referral_screen.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -297,6 +298,10 @@ class _SettingsViewState extends State<SettingsView> {
                 const SizedBox(height: 8),
                 _subscriptionSection(store),
                 const SizedBox(height: 20),
+                _sectionHeader('Invite Friends'),
+                const SizedBox(height: 8),
+                _referralTile(),
+                const SizedBox(height: 20),
                 _sectionHeader('Reminders'),
                 const SizedBox(height: 8),
                 _remindersSection(),
@@ -351,6 +356,53 @@ class _SettingsViewState extends State<SettingsView> {
         ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _referralTile() {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ReferralScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: MyWalkDecorations.card,
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: MyWalkColor.golden.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.card_giftcard_rounded,
+                  size: 20, color: MyWalkColor.golden),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Refer a friend',
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: MyWalkColor.warmWhite)),
+                  const SizedBox(height: 2),
+                  Text('Earn rewards when friends subscribe',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.4))),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right,
+                size: 18, color: Colors.white.withValues(alpha: 0.25)),
+          ],
+        ),
       ),
     );
   }

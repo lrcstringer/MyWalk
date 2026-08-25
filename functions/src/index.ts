@@ -74,6 +74,11 @@ export {
 } from './callables/recovery_path_notify';
 export { rpAnalyseCues } from './callables/recovery_path_analyse';
 export { deleteAccount } from './callables/account';
+export {
+  generateReferralCode,
+  applyReferralCode,
+  processReferralConfirmations,
+} from './callables/referral';
 export { redeemToken } from './callables/tokens';
 
 // ── Scheduled: purge expired notifications ─────────────────────────────────

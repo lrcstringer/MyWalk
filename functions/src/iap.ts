@@ -27,6 +27,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { onRequest } from 'firebase-functions/v2/https';
 import { onMessagePublished } from 'firebase-functions/v2/pubsub';
 import { Timestamp } from 'firebase-admin/firestore';
+import { recordReferralPurchase } from './callables/referral';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -313,6 +314,13 @@ async function writeSubscriptionStatus(uid: string, status: SubscriptionStatus):
   }
 
   await batch.commit();
+
+  // Non-fatal: record first-time purchase for referral tracking.
+  if (status.status === 'active') {
+    recordReferralPurchase(uid).catch((e) =>
+      console.error('recordReferralPurchase failed:', e)
+    );
+  }
 }
 
 /**

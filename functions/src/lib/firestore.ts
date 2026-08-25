@@ -45,6 +45,10 @@ export const eventsCol = (circleId: string) =>
 export const circleHabitMilestonesCol = (circleId: string) =>
   db.collection(`circles/${circleId}/circle_habit_milestones`);
 
+// ── Referrals ─────────────────────────────────────────────────────────────────
+export const referralCodesCol = () => db.collection('referralCodes');
+export const referralPurchasesCol = () => db.collection('referralPurchases');
+
 // ── Recovery paths ────────────────────────────────────────────────────────────
 export const recoveryPathsCol = () => db.collection('recovery_paths');
 export const recoverySessionsCol = (habitId: string) =>

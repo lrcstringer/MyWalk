@@ -8,6 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/network_error_dialog.dart';
 import '../shared/terms_view.dart';
 import 'paywall_screen.dart';
+import '../../../data/services/referral_service.dart';
 
 enum _Mode { newUser, signIn }
 
@@ -33,7 +34,9 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _showNameField = false;
   final _nameCtrl = TextEditingController();
   final _tokenCtrl = TextEditingController();
+  final _referralCtrl = TextEditingController();
   String? _tokenError;
+  String? _referralError;
 
   static const _freeFeatures = [
     (Icons.volunteer_activism_rounded, 'Daily Gratitude', ''),
@@ -61,6 +64,7 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _tokenCtrl.dispose();
+    _referralCtrl.dispose();
     super.dispose();
   }
 
@@ -115,10 +119,21 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() {
       _processing = true;
       _tokenError = null;
+      _referralError = null;
     });
     try {
       await AuthService.shared.updateProfile(firstName: name);
       if (!mounted) return;
+
+      // Apply referral code (non-fatal — proceed even on failure).
+      final referralCode = _referralCtrl.text.trim();
+      if (referralCode.isNotEmpty) {
+        final refResult = await ReferralService.shared.applyReferralCode(referralCode);
+        if (!mounted) return;
+        if (refResult != ApplyReferralResult.success) {
+          setState(() => _referralError = _referralErrorMessage(refResult));
+        }
+      }
 
       // Token path takes priority over plan selection.
       final tokenCode = _tokenCtrl.text.trim();
@@ -162,6 +177,17 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) setState(() => _processing = false);
     }
   }
+
+  String _referralErrorMessage(ApplyReferralResult result) => switch (result) {
+        ApplyReferralResult.invalidCode =>
+          "That referral code wasn't recognised. You can continue without it.",
+        ApplyReferralResult.selfReferral =>
+          "You can't use your own referral code.",
+        ApplyReferralResult.alreadyApplied =>
+          "A referral code has already been applied to your account.",
+        _ =>
+          "Couldn't apply the referral code right now — you can continue.",
+      };
 
   String _tokenErrorMessage(TokenRedemptionResult result) => switch (result) {
         TokenRedemptionResult.invalidToken =>
@@ -664,6 +690,61 @@ class _AuthScreenState extends State<AuthScreen> {
               style: const TextStyle(
                 fontSize: 13,
                 color: MyWalkColor.warmCoral,
+                height: 1.4,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          TextField(
+            controller: _referralCtrl,
+            textCapitalization: TextCapitalization.characters,
+            style: const TextStyle(
+              color: MyWalkColor.warmWhite,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 2,
+            ),
+            decoration: InputDecoration(
+              labelText: 'Referred by a friend? Enter their code',
+              labelStyle: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0.3,
+              ),
+              hintText: 'ENTER CODE',
+              hintStyle: TextStyle(
+                color: Colors.white.withValues(alpha: 0.2),
+                letterSpacing: 2,
+                fontWeight: FontWeight.w400,
+              ),
+              filled: true,
+              fillColor: MyWalkColor.cardBackground,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: MyWalkColor.cardBorder, width: 0.5),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: MyWalkColor.cardBorder, width: 0.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: MyWalkColor.golden.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            ),
+          ),
+          if (_referralError != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _referralError!,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withValues(alpha: 0.5),
                 height: 1.4,
               ),
             ),
