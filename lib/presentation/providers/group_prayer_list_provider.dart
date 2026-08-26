@@ -112,12 +112,19 @@ class GroupPrayerListProvider extends ChangeNotifier {
     required String circleId,
     required String text,
     required bool isAnonymous,
-  }) =>
-      _repo.shareGratitude(
+  }) async {
+    try {
+      await _repo.shareGratitude(
         circleIds: [circleId],
         gratitudeText: text,
         isAnonymous: isAnonymous,
       );
+    } catch (e) {
+      error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
 
   Future<void> deleteItem(String circleId, String itemId) async {
     await _repo.deleteGroupPrayerItem(circleId, itemId);

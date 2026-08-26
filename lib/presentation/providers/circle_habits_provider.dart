@@ -207,16 +207,32 @@ class CircleHabitsProvider extends ChangeNotifier {
   }
 
   Future<void> deleteHabit(String circleId, String habitId) async {
-    await _repo.deleteCircleHabit(circleId, habitId);
+    final prev = _habitsByCircle[circleId];
     _habitsByCircle[circleId] =
-        (_habitsByCircle[circleId] ?? []).where((h) => h.id != habitId).toList();
+        (prev ?? []).where((h) => h.id != habitId).toList();
     notifyListeners();
+    try {
+      await _repo.deleteCircleHabit(circleId, habitId);
+    } catch (e) {
+      if (prev != null) _habitsByCircle[circleId] = prev;
+      error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Future<void> deactivate(String circleId, String habitId) async {
-    await _repo.deactivateCircleHabit(circleId, habitId);
+    final prev = _habitsByCircle[circleId];
     _habitsByCircle[circleId] =
-        (_habitsByCircle[circleId] ?? []).where((h) => h.id != habitId).toList();
+        (prev ?? []).where((h) => h.id != habitId).toList();
     notifyListeners();
+    try {
+      await _repo.deactivateCircleHabit(circleId, habitId);
+    } catch (e) {
+      if (prev != null) _habitsByCircle[circleId] = prev;
+      error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 }

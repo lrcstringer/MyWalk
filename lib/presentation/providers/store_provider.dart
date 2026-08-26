@@ -376,7 +376,7 @@ class StoreProvider extends ChangeNotifier with WidgetsBindingObserver {
       );
       _setPremium(validated);
     } catch (e) {
-      error = 'Receipt validation failed: ${e.toString()}';
+      error = 'Purchase recorded but could not be verified — tap "Restore Purchases" to activate your plan.';
     }
   }
 }

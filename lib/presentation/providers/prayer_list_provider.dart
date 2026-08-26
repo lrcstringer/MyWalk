@@ -127,9 +127,15 @@ class PrayerListProvider extends ChangeNotifier {
 
   Future<void> markAnswered(String circleId, String requestId,
       {String? answeredNote}) async {
-    await _repo.markPrayerAnswered(circleId, requestId,
-        answeredNote: answeredNote);
-    await load(circleId);
+    try {
+      await _repo.markPrayerAnswered(circleId, requestId,
+          answeredNote: answeredNote);
+      await load(circleId);
+    } catch (e) {
+      error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Future<void> respondToIndividualRequest(
@@ -169,12 +175,19 @@ class PrayerListProvider extends ChangeNotifier {
     required String circleId,
     required String text,
     required bool isAnonymous,
-  }) =>
-      _repo.shareGratitude(
+  }) async {
+    try {
+      await _repo.shareGratitude(
         circleIds: [circleId],
         gratitudeText: text,
         isAnonymous: isAnonymous,
       );
+    } catch (e) {
+      error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
 
   void _updateIndividualRequest(String circleId, String requestId,
       PrayerRequest Function(PrayerRequest) updater) {

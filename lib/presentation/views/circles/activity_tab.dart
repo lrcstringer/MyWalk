@@ -1225,6 +1225,7 @@ class _GratitudeComposeSheetState extends State<_GratitudeComposeSheet> {
     setState(() => _submitting = true);
     final provider = context.read<GroupPrayerListProvider>();
     final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       await provider.shareGratitude(
         circleId: widget.circleId,
@@ -1234,6 +1235,8 @@ class _GratitudeComposeSheetState extends State<_GratitudeComposeSheet> {
       nav.pop(true);
     } catch (_) {
       if (mounted) setState(() => _submitting = false);
+      messenger.showSnackBar(const SnackBar(
+          content: Text("Couldn't share. Check your connection.")));
     }
   }
 }

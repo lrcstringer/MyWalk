@@ -267,6 +267,7 @@ class _GratitudeCheckInViewState extends State<GratitudeCheckInView> {
         gratitudeText: _lastCompletedText,
         onShare: (circleIds, isAnonymous) {
           final auth = context.read<AuthService>();
+          final messenger = ScaffoldMessenger.of(context);
           final text = (_lastCompletedText?.isNotEmpty ?? false)
               ? _lastCompletedText!
               : (isAnonymous ? 'gave thanks to God today' : '${auth.displayName?.split(' ').first ?? 'Someone'} gave thanks to God today');
@@ -282,7 +283,10 @@ class _GratitudeCheckInViewState extends State<GratitudeCheckInView> {
                 if (mounted) setState(() { _shareConfirmed = false; _showSharePrompt = false; });
               });
             }
-          }).catchError((_) {});
+          }).catchError((Object _) {
+            messenger.showSnackBar(const SnackBar(
+                content: Text("Couldn't share. Check your connection.")));
+          });
         },
       ),
     );

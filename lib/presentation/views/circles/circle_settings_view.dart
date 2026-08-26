@@ -615,10 +615,15 @@ class _CircleSettingsViewState extends State<CircleSettingsView> {
           ),
           TextButton(
             onPressed: () {
+              final repo = context.read<CircleRepository>();
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(context);
-              context.read<CircleRepository>().updateMemberRole(
+              repo.updateMemberRole(
                 widget.circleId, m.userId, isAdmin ? 'member' : 'admin',
-              );
+              ).catchError((Object _) {
+                messenger.showSnackBar(const SnackBar(
+                    content: Text('Could not update role. Please try again.')));
+              });
             },
             child: Text(isAdmin ? 'Remove Admin' : 'Make Admin',
                 style: const TextStyle(color: MyWalkColor.golden)),

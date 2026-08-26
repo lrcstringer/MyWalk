@@ -89,7 +89,10 @@ void _showMarkAnsweredDialogFor(
               return;
             }
             dialogNav.pop();
-            provider.markAnswered(circleId, requestId, answeredNote: note);
+            provider.markAnswered(circleId, requestId, answeredNote: note).catchError((Object _) {
+              messenger.showSnackBar(const SnackBar(
+                  content: Text('Could not mark prayer answered. Please try again.')));
+            });
             // ignore: use_build_context_synchronously
             _promptGratitudeShareFor(context, circleId, note ?? requestText);
           },
